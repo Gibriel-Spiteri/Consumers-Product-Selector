@@ -1,71 +1,6 @@
 import { useParams, Link } from "wouter";
-import { useGetCategories, getGetCategoryProductsQueryOptions } from "@workspace/api-client-react";
-import { useQuery } from "@tanstack/react-query";
-import { Loader2, ArrowLeft, Layers, Package, PackageX } from "lucide-react";
-
-interface Product {
-  id: number;
-  name: string;
-  sku: string | null;
-  price: number | null;
-}
-
-function Level3Section({ id, name }: { id: number; name: string }) {
-  const { data, isLoading } = useQuery({
-    ...getGetCategoryProductsQueryOptions(id),
-    enabled: true,
-  });
-
-  const products = data?.products ?? [];
-
-  return (
-    <div className="border-t border-border/60 pt-5 mt-5 first:border-0 first:pt-0 first:mt-0">
-      <div className="flex items-center gap-2 mb-3">
-        <Package size={14} className="text-accent shrink-0" />
-        <h3 className="font-bold text-sm text-foreground uppercase tracking-wide">
-          {name}
-        </h3>
-        {!isLoading && (
-          <span className="ml-auto text-xs text-muted-foreground font-medium">
-            {products.length} item{products.length !== 1 ? "s" : ""}
-          </span>
-        )}
-      </div>
-
-      {isLoading ? (
-        <div className="flex items-center gap-2 text-muted-foreground text-xs py-2 pl-4">
-          <Loader2 size={12} className="animate-spin" />
-          Loading...
-        </div>
-      ) : products.length === 0 ? (
-        <p className="text-xs text-muted-foreground italic pl-4 py-1">No products found.</p>
-      ) : (
-        <div className="rounded-lg overflow-hidden border border-border/50">
-          <table className="w-full text-sm text-left">
-            <thead>
-              <tr className="bg-secondary/60 border-b border-border/50">
-                <th className="px-4 py-2.5 font-bold text-xs uppercase tracking-wider text-muted-foreground w-[140px]">SKU</th>
-                <th className="px-4 py-2.5 font-bold text-xs uppercase tracking-wider text-muted-foreground">Product Name</th>
-                <th className="px-4 py-2.5 font-bold text-xs uppercase tracking-wider text-muted-foreground text-right w-[120px]">Price</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/40 bg-white">
-              {products.map((p: Product) => (
-                <tr key={p.id} className="hover:bg-blue-50/40 transition-colors">
-                  <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{p.sku || "—"}</td>
-                  <td className="px-4 py-3 font-medium text-foreground">{p.name}</td>
-                  <td className="px-4 py-3 text-right font-bold text-accent text-sm">
-                    {p.price != null ? `$${Number(p.price).toFixed(2)}` : <span className="font-normal text-muted-foreground text-xs">Call for price</span>}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-}
+import { useGetCategories } from "@workspace/api-client-react";
+import { ChevronRight, Loader2, ArrowLeft, Layers } from "lucide-react";
 
 export default function CategoryOverview() {
   const { categoryId } = useParams();
@@ -76,11 +11,6 @@ export default function CategoryOverview() {
 
   const category = categories.find((c) => c.id === id);
   const subCategories = category?.children || [];
-
-  const totalProducts = subCategories.reduce(
-    (acc, sub) => acc + (sub.children?.length ?? 0),
-    0
-  );
 
   return (
     <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10">
@@ -106,7 +36,6 @@ export default function CategoryOverview() {
         </div>
       ) : (
         <>
-          {/* Page Header */}
           <div className="mb-10 flex items-center gap-4">
             <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center text-white shrink-0">
               <Layers size={22} />
@@ -116,44 +45,44 @@ export default function CategoryOverview() {
                 {category.name}
               </h1>
               <p className="text-muted-foreground mt-1 font-medium">
-                {subCategories.length} subcategor{subCategories.length === 1 ? "y" : "ies"} · {totalProducts} product section{totalProducts !== 1 ? "s" : ""}
+                {subCategories.length} subcategor{subCategories.length === 1 ? "y" : "ies"}
               </p>
             </div>
           </div>
 
           {subCategories.length === 0 ? (
-            <div className="py-20 text-center border-2 border-dashed border-border rounded-2xl bg-white shadow-sm">
-              <PackageX className="mx-auto text-muted-foreground mb-4" size={36} />
-              <p className="text-muted-foreground">No subcategories found in this section.</p>
+            <div className="py-20 text-center border-2 border-dashed border-border rounded-2xl bg-white shadow-sm text-muted-foreground">
+              No subcategories found in this section.
             </div>
           ) : (
-            <div className="flex flex-col gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {subCategories.map((sub) => (
                 <div
                   key={sub.id}
-                  className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden"
+                  className="bg-white rounded-2xl border border-border shadow-sm p-6 hover:shadow-md hover:border-accent/30 transition-all"
                 >
-                  {/* Level 2 Header */}
-                  <div className="bg-primary px-6 py-4 flex items-center gap-3">
-                    <h2 className="font-display font-bold text-white uppercase tracking-widest text-sm">
-                      {sub.name}
-                    </h2>
-                    <div className="h-px flex-1 bg-white/20" />
-                    <span className="text-xs text-white/60 font-medium">
-                      {(sub.children || []).length} section{(sub.children || []).length !== 1 ? "s" : ""}
-                    </span>
-                  </div>
-
-                  {/* Level 3 + Products */}
-                  <div className="px-6 py-5">
-                    {(sub.children || []).length === 0 ? (
-                      <p className="text-sm text-muted-foreground italic">No sub-categories.</p>
-                    ) : (
-                      (sub.children || []).map((item) => (
-                        <Level3Section key={item.id} id={item.id} name={item.name} />
-                      ))
+                  <h2 className="font-display font-bold text-primary uppercase tracking-wide text-sm border-b-2 border-accent/30 pb-3 mb-4">
+                    {sub.name}
+                  </h2>
+                  <ul className="space-y-2">
+                    {(sub.children || []).map((item) => (
+                      <li key={item.id}>
+                        <Link
+                          href={`/products/${item.id}`}
+                          className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center group py-0.5"
+                        >
+                          <ChevronRight
+                            size={13}
+                            className="opacity-0 -ml-3.5 group-hover:opacity-100 group-hover:ml-0 transition-all text-accent mr-1 shrink-0"
+                          />
+                          {item.name}
+                        </Link>
+                      </li>
+                    ))}
+                    {(sub.children || []).length === 0 && (
+                      <li className="text-xs text-muted-foreground italic">No items</li>
                     )}
-                  </div>
+                  </ul>
                 </div>
               ))}
             </div>
