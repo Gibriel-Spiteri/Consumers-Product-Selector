@@ -16,37 +16,39 @@ export interface SyncResult {
   productsSynced: number;
 }
 
-function buildCategoryLevels(
-  categories: NetSuiteCategory[]
-): Map<string, { level: number; parentNetsuiteId: string | null }> {
-  const idToParent = new Map<string, string | null>();
+function topologicalSortCategories(categories: NetSuiteCategory[]): NetSuiteCategory[] {
+  const idMap = new Map<string, NetSuiteCategory>();
   for (const cat of categories) {
-    idToParent.set(cat.id, cat.parent ?? null);
+    idMap.set(cat.id, cat);
   }
 
-  const levels = new Map<string, { level: number; parentNetsuiteId: string | null }>();
+  const visited = new Set<string>();
+  const sorted: NetSuiteCategory[] = [];
 
-  function getLevel(id: string): number {
-    const parent = idToParent.get(id);
-    if (!parent) return 1;
-    return getLevel(parent) + 1;
+  function visit(id: string) {
+    if (visited.has(id)) return;
+    visited.add(id);
+    const cat = idMap.get(id);
+    if (!cat) return;
+    if (cat.parent) {
+      visit(cat.parent);
+    }
+    sorted.push(cat);
   }
 
   for (const cat of categories) {
-    levels.set(cat.id, {
-      level: getLevel(cat.id),
-      parentNetsuiteId: cat.parent ?? null,
-    });
+    visit(cat.id);
   }
 
-  return levels;
+  return sorted;
 }
 
 export async function syncFromNetSuite(): Promise<SyncResult> {
   if (!isNetSuiteConfigured()) {
     return {
       success: false,
-      message: "NetSuite credentials not configured. Set NETSUITE_ACCOUNT_ID, NETSUITE_CLIENT_ID, and NETSUITE_CLIENT_SECRET environment variables.",
+      message:
+        "NetSuite credentials not configured. Set NETSUITE_ACCOUNT_ID, NETSUITE_CLIENT_ID, and NETSUITE_CLIENT_SECRET environment variables.",
       categoriesSynced: 0,
       productsSynced: 0,
     };
@@ -58,14 +60,20 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
     const nsCategories = await fetchNetSuiteCategories();
     logger.info({ count: nsCategories.length }, "Fetched categories from NetSuite");
 
-    const categoryLevels = buildCategoryLevels(nsCategories);
+    const sortedCategories = topologicalSortCategories(nsCategories);
 
     const netsuiteIdToDbId = new Map<string, number>();
 
     let categoriesSynced = 0;
-    for (const cat of nsCategories) {
-      const meta = categoryLevels.get(cat.id);
-      if (!meta) continue;
+    for (const cat of sortedCategories) {
+      const parentNetsuiteId = cat.parent ?? null;
+
+      let parentDbId: number | null = null;
+      if (parentNetsuiteId) {
+        parentDbId = netsuiteIdToDbId.get(parentNetsuiteId) ?? null;
+      }
+
+      const level = parentDbId == null ? 1 : await getCategoryLevel(parentDbId, netsuiteIdToDbId);
 
       const existing = await db
         .select()
@@ -73,30 +81,24 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
         .where(eq(categoriesTable.netsuiteId, cat.id))
         .limit(1);
 
-      let parentDbId: number | null = null;
-      if (meta.parentNetsuiteId) {
-        parentDbId = netsuiteIdToDbId.get(meta.parentNetsuiteId) ?? null;
-      }
-
       if (existing.length > 0) {
-        const [updated] = await db
+        await db
           .update(categoriesTable)
           .set({
             name: cat.name,
-            level: meta.level,
+            level,
             parentId: parentDbId,
             updatedAt: new Date(),
           })
-          .where(eq(categoriesTable.netsuiteId, cat.id))
-          .returning();
-        netsuiteIdToDbId.set(cat.id, updated.id);
+          .where(eq(categoriesTable.netsuiteId, cat.id));
+        netsuiteIdToDbId.set(cat.id, existing[0].id);
       } else {
         const [inserted] = await db
           .insert(categoriesTable)
           .values({
             netsuiteId: cat.id,
             name: cat.name,
-            level: meta.level,
+            level,
             parentId: parentDbId,
           })
           .returning();
@@ -157,9 +159,26 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
     logger.error({ err }, "NetSuite sync failed");
     return {
       success: false,
-      message: err instanceof Error ? err.message : "Unknown error during sync",
+      message:
+        err instanceof Error ? err.message : "Unknown error during sync",
       categoriesSynced: 0,
       productsSynced: 0,
     };
   }
+}
+
+async function getCategoryLevel(
+  dbId: number,
+  _netsuiteIdToDbId: Map<string, number>
+): Promise<number> {
+  const rows = await db
+    .select()
+    .from(categoriesTable)
+    .where(eq(categoriesTable.id, dbId))
+    .limit(1);
+
+  if (rows.length === 0) return 2;
+
+  const parent = rows[0];
+  return parent.level + 1;
 }

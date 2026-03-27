@@ -1,15 +1,16 @@
 import { useParams, Link } from "wouter";
-import { useSearchProducts } from "@workspace/api-client-react";
+import { getSearchProductsQueryOptions } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
 import { Search, Loader2, ArrowLeft, PackageX } from "lucide-react";
 
 export default function SearchPage() {
   const { query } = useParams();
   const q = decodeURIComponent(query || '');
 
-  const { data: productsData, isLoading } = useSearchProducts(
-    { q }, 
-    { query: { enabled: !!q } }
-  );
+  const { data: productsData, isLoading } = useQuery({
+    ...getSearchProductsQueryOptions({ q }),
+    enabled: !!q,
+  });
 
   return (
     <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10">

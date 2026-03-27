@@ -1,5 +1,6 @@
 import { useParams, Link } from "wouter";
-import { useGetCategoryProducts, useGetCategories } from "@workspace/api-client-react";
+import { useGetCategories, getGetCategoryProductsQueryOptions } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, PackageX, Loader2, ArrowLeft } from "lucide-react";
 import { useCategoryPath } from "@/hooks/use-category-path";
 
@@ -7,8 +8,9 @@ export default function CategoryProducts() {
   const { categoryId } = useParams();
   const id = Number(categoryId);
 
-  const { data: productsData, isLoading: isLoadingProducts } = useGetCategoryProducts(id, {
-    query: { enabled: !!id }
+  const { data: productsData, isLoading: isLoadingProducts } = useQuery({
+    ...getGetCategoryProductsQueryOptions(id),
+    enabled: !!id,
   });
   
   const { data: categoriesData } = useGetCategories();

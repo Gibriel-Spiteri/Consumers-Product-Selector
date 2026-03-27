@@ -11,11 +11,22 @@ import { MOCK_CATEGORIES, MOCK_PRODUCTS } from "../lib/mockData";
 
 const router: IRouter = Router();
 
-function buildCategoryTree(flatCategories: typeof MOCK_CATEGORIES) {
-  type CategoryNode = (typeof MOCK_CATEGORIES)[number] & {
-    children: CategoryNode[];
-  };
+interface CategoryNode {
+  id: number;
+  name: string;
+  level: number;
+  parentId: number | null;
+  netsuiteId: string | null;
+  children: CategoryNode[];
+}
 
+function buildCategoryTree(flatCategories: Array<{
+  id: number;
+  name: string;
+  level: number;
+  parentId: number | null;
+  netsuiteId: string | null;
+}>): CategoryNode[] {
   const nodeMap = new Map<number, CategoryNode>();
   for (const cat of flatCategories) {
     nodeMap.set(cat.id, { ...cat, children: [] });
@@ -45,26 +56,32 @@ async function hasDatabaseData(): Promise<boolean> {
   }
 }
 
-router.get("/categories", async (req, res) => {
+router.get("/categories", async (_req, res) => {
   const hasData = await hasDatabaseData();
 
   if (!hasData) {
-    const tree = buildCategoryTree(MOCK_CATEGORIES);
+    const flat = MOCK_CATEGORIES.map((c) => ({
+      id: c.id,
+      name: c.name,
+      level: c.level,
+      parentId: c.parentId,
+      netsuiteId: c.netsuiteId,
+    }));
+    const tree = buildCategoryTree(flat);
     const response = GetCategoriesResponse.parse({ categories: tree, usingMockData: true });
     return res.json(response);
   }
 
   const categories = await db.select().from(categoriesTable);
-  const flatList = categories.map((c) => ({
+  const flat = categories.map((c) => ({
     id: c.id,
     name: c.name,
     level: c.level,
     parentId: c.parentId ?? null,
     netsuiteId: c.netsuiteId ?? null,
-    children: [] as typeof flatList,
   }));
 
-  const tree = buildCategoryTree(flatList as typeof MOCK_CATEGORIES);
+  const tree = buildCategoryTree(flat);
   const response = GetCategoriesResponse.parse({ categories: tree, usingMockData: false });
   return res.json(response);
 });
@@ -79,7 +96,15 @@ router.get("/categories/:categoryId/products", async (req, res) => {
 
   if (!hasData) {
     const mockProducts = MOCK_PRODUCTS.filter((p) => p.categoryId === categoryId);
-    const response = GetCategoryProductsResponse.parse({ products: mockProducts, usingMockData: true });
+    const mapped = mockProducts.map((p) => ({
+      id: p.id,
+      name: p.name,
+      sku: p.sku,
+      price: p.price,
+      categoryId: p.categoryId,
+      netsuiteId: p.netsuiteId,
+    }));
+    const response = GetCategoryProductsResponse.parse({ products: mapped, usingMockData: true });
     return res.json(response);
   }
 
@@ -116,7 +141,15 @@ router.get("/products/search", async (req, res) => {
         p.name.toLowerCase().includes(lower) ||
         (p.sku && p.sku.toLowerCase().includes(lower))
     );
-    const response = SearchProductsResponse.parse({ products: mockResults, usingMockData: true });
+    const mapped = mockResults.map((p) => ({
+      id: p.id,
+      name: p.name,
+      sku: p.sku,
+      price: p.price,
+      categoryId: p.categoryId,
+      netsuiteId: p.netsuiteId,
+    }));
+    const response = SearchProductsResponse.parse({ products: mapped, usingMockData: true });
     return res.json(response);
   }
 
