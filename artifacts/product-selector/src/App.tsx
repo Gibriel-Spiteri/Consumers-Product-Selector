@@ -2,6 +2,7 @@ import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Layout from "@/components/layout";
 import Home from "@/pages/home";
+import CategoryOverview from "@/pages/category-overview";
 import CategoryProducts from "@/pages/category-products";
 import SearchPage from "@/pages/search";
 import NotFound from "@/pages/not-found";
@@ -24,6 +25,7 @@ function App() {
         <Layout>
           <Switch>
             <Route path="/" component={Home} />
+            <Route path="/category/:categoryId" component={CategoryOverview} />
             <Route path="/products/:categoryId" component={CategoryProducts} />
             <Route path="/search/:query" component={SearchPage} />
             <Route component={NotFound} />

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Search, Loader2, RefreshCw, AlertCircle, Database, ChevronRight } from "lucide-react";
 import { useGetCategories, useGetNetSuiteStatus, useTriggerNetSuiteSync, getGetCategoriesQueryKey, getGetNetSuiteStatusQueryKey } from "@workspace/api-client-react";
@@ -146,11 +146,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <ul className="flex items-center overflow-x-auto hide-scrollbar">
               {topLevelCategories.map(cat => (
                 <li key={cat.id} className="flex-shrink-0">
-                  <div
+                  <Link
+                    href={`/category/${cat.id}`}
                     onMouseEnter={() => handleMouseEnterTab(cat.id)}
-                    onClick={() => handleMouseEnterTab(cat.id)}
+                    onClick={() => {
+                      setIsHoveringNav(false);
+                      setActiveTab(null);
+                    }}
                     className={cn(
-                      "px-6 lg:px-8 py-4 cursor-pointer font-semibold transition-all border-r border-white/10 text-sm uppercase tracking-wider relative",
+                      "block px-6 lg:px-8 py-4 cursor-pointer font-semibold transition-all border-r border-white/10 text-sm uppercase tracking-wider relative",
                       activeTab === cat.id 
                         ? "bg-white text-primary" 
                         : "hover:bg-white/10 text-white"
@@ -163,7 +167,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                         className="absolute bottom-0 left-0 w-full h-1 bg-accent" 
                       />
                     )}
-                  </div>
+                  </Link>
                 </li>
               ))}
             </ul>
