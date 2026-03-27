@@ -6,4 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./category";
+export * from "./categoryTreeResponse";
 export * from "./healthStatus";
+export * from "./netSuiteStatus";
+export * from "./product";
+export * from "./productListResponse";
+export * from "./searchProductsParams";
+export * from "./syncResponse";

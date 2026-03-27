@@ -14,3 +14,86 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * Returns the full 3-level category hierarchy
+ * @summary Get category tree
+ */
+export const GetCategoriesResponse = zod.object({
+  categories: zod.array(
+    zod.object({
+      id: zod.number(),
+      name: zod.string(),
+      level: zod.number(),
+      parentId: zod.number().nullable(),
+      netsuiteId: zod.string().nullable(),
+      children: zod.array(zod.unknown()).optional(),
+    }),
+  ),
+  usingMockData: zod.boolean(),
+});
+
+/**
+ * Returns products belonging to a specific category
+ * @summary Get products for a category
+ */
+export const GetCategoryProductsParams = zod.object({
+  categoryId: zod.coerce.number(),
+});
+
+export const GetCategoryProductsResponse = zod.object({
+  products: zod.array(
+    zod.object({
+      id: zod.number(),
+      name: zod.string(),
+      sku: zod.string().nullable(),
+      price: zod.number().nullable(),
+      categoryId: zod.number().nullable(),
+      netsuiteId: zod.string().nullable(),
+    }),
+  ),
+  usingMockData: zod.boolean(),
+});
+
+/**
+ * Search products by name or SKU
+ * @summary Search products
+ */
+export const SearchProductsQueryParams = zod.object({
+  q: zod.coerce.string().describe("Search query"),
+});
+
+export const SearchProductsResponse = zod.object({
+  products: zod.array(
+    zod.object({
+      id: zod.number(),
+      name: zod.string(),
+      sku: zod.string().nullable(),
+      price: zod.number().nullable(),
+      categoryId: zod.number().nullable(),
+      netsuiteId: zod.string().nullable(),
+    }),
+  ),
+  usingMockData: zod.boolean(),
+});
+
+/**
+ * Manually triggers a sync of categories and products from NetSuite
+ * @summary Trigger NetSuite sync
+ */
+export const TriggerNetSuiteSyncResponse = zod.object({
+  success: zod.boolean(),
+  message: zod.string(),
+  categoriesSynced: zod.number(),
+  productsSynced: zod.number(),
+});
+
+/**
+ * Returns whether NetSuite credentials are configured
+ * @summary Get NetSuite connection status
+ */
+export const GetNetSuiteStatusResponse = zod.object({
+  connected: zod.boolean(),
+  accountId: zod.string().nullable(),
+  lastSyncAt: zod.string().nullable(),
+});

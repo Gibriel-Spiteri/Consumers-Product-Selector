@@ -5,15 +5,25 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { HealthStatus } from "./api.schemas";
+import type {
+  CategoryTreeResponse,
+  HealthStatus,
+  NetSuiteStatus,
+  ProductListResponse,
+  SearchProductsParams,
+  SyncResponse,
+} from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
 import type { ErrorType } from "../custom-fetch";
@@ -92,6 +102,428 @@ export function useHealthCheck<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getHealthCheckQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Returns the full 3-level category hierarchy
+ * @summary Get category tree
+ */
+export const getGetCategoriesUrl = () => {
+  return `/api/categories`;
+};
+
+export const getCategories = async (
+  options?: RequestInit,
+): Promise<CategoryTreeResponse> => {
+  return customFetch<CategoryTreeResponse>(getGetCategoriesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetCategoriesQueryKey = () => {
+  return [`/api/categories`] as const;
+};
+
+export const getGetCategoriesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCategories>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getCategories>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetCategoriesQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCategories>>> = ({
+    signal,
+  }) => getCategories({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getCategories>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetCategoriesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCategories>>
+>;
+export type GetCategoriesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get category tree
+ */
+
+export function useGetCategories<
+  TData = Awaited<ReturnType<typeof getCategories>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getCategories>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCategoriesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Returns products belonging to a specific category
+ * @summary Get products for a category
+ */
+export const getGetCategoryProductsUrl = (categoryId: number) => {
+  return `/api/categories/${categoryId}/products`;
+};
+
+export const getCategoryProducts = async (
+  categoryId: number,
+  options?: RequestInit,
+): Promise<ProductListResponse> => {
+  return customFetch<ProductListResponse>(
+    getGetCategoryProductsUrl(categoryId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetCategoryProductsQueryKey = (categoryId: number) => {
+  return [`/api/categories/${categoryId}/products`] as const;
+};
+
+export const getGetCategoryProductsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCategoryProducts>>,
+  TError = ErrorType<unknown>,
+>(
+  categoryId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getCategoryProducts>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetCategoryProductsQueryKey(categoryId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getCategoryProducts>>
+  > = ({ signal }) =>
+    getCategoryProducts(categoryId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!categoryId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getCategoryProducts>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetCategoryProductsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCategoryProducts>>
+>;
+export type GetCategoryProductsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get products for a category
+ */
+
+export function useGetCategoryProducts<
+  TData = Awaited<ReturnType<typeof getCategoryProducts>>,
+  TError = ErrorType<unknown>,
+>(
+  categoryId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getCategoryProducts>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCategoryProductsQueryOptions(categoryId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Search products by name or SKU
+ * @summary Search products
+ */
+export const getSearchProductsUrl = (params: SearchProductsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/products/search?${stringifiedParams}`
+    : `/api/products/search`;
+};
+
+export const searchProducts = async (
+  params: SearchProductsParams,
+  options?: RequestInit,
+): Promise<ProductListResponse> => {
+  return customFetch<ProductListResponse>(getSearchProductsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getSearchProductsQueryKey = (params?: SearchProductsParams) => {
+  return [`/api/products/search`, ...(params ? [params] : [])] as const;
+};
+
+export const getSearchProductsQueryOptions = <
+  TData = Awaited<ReturnType<typeof searchProducts>>,
+  TError = ErrorType<unknown>,
+>(
+  params: SearchProductsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof searchProducts>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getSearchProductsQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof searchProducts>>> = ({
+    signal,
+  }) => searchProducts(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof searchProducts>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type SearchProductsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof searchProducts>>
+>;
+export type SearchProductsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Search products
+ */
+
+export function useSearchProducts<
+  TData = Awaited<ReturnType<typeof searchProducts>>,
+  TError = ErrorType<unknown>,
+>(
+  params: SearchProductsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof searchProducts>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getSearchProductsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Manually triggers a sync of categories and products from NetSuite
+ * @summary Trigger NetSuite sync
+ */
+export const getTriggerNetSuiteSyncUrl = () => {
+  return `/api/netsuite/sync`;
+};
+
+export const triggerNetSuiteSync = async (
+  options?: RequestInit,
+): Promise<SyncResponse> => {
+  return customFetch<SyncResponse>(getTriggerNetSuiteSyncUrl(), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getTriggerNetSuiteSyncMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof triggerNetSuiteSync>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof triggerNetSuiteSync>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["triggerNetSuiteSync"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof triggerNetSuiteSync>>,
+    void
+  > = () => {
+    return triggerNetSuiteSync(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type TriggerNetSuiteSyncMutationResult = NonNullable<
+  Awaited<ReturnType<typeof triggerNetSuiteSync>>
+>;
+
+export type TriggerNetSuiteSyncMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Trigger NetSuite sync
+ */
+export const useTriggerNetSuiteSync = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof triggerNetSuiteSync>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof triggerNetSuiteSync>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getTriggerNetSuiteSyncMutationOptions(options));
+};
+
+/**
+ * Returns whether NetSuite credentials are configured
+ * @summary Get NetSuite connection status
+ */
+export const getGetNetSuiteStatusUrl = () => {
+  return `/api/netsuite/status`;
+};
+
+export const getNetSuiteStatus = async (
+  options?: RequestInit,
+): Promise<NetSuiteStatus> => {
+  return customFetch<NetSuiteStatus>(getGetNetSuiteStatusUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetNetSuiteStatusQueryKey = () => {
+  return [`/api/netsuite/status`] as const;
+};
+
+export const getGetNetSuiteStatusQueryOptions = <
+  TData = Awaited<ReturnType<typeof getNetSuiteStatus>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getNetSuiteStatus>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetNetSuiteStatusQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getNetSuiteStatus>>
+  > = ({ signal }) => getNetSuiteStatus({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getNetSuiteStatus>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetNetSuiteStatusQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getNetSuiteStatus>>
+>;
+export type GetNetSuiteStatusQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get NetSuite connection status
+ */
+
+export function useGetNetSuiteStatus<
+  TData = Awaited<ReturnType<typeof getNetSuiteStatus>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getNetSuiteStatus>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetNetSuiteStatusQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

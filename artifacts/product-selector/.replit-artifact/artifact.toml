@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Consumers Product Selector"
+version = "1.0.0"
+id = "artifacts/product-selector"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22524
+
+[services.development]
+run = "pnpm --filter @workspace/product-selector run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/product-selector", "run", "build" ]
+publicDir = "artifacts/product-selector/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22524"
+BASE_PATH = "/"

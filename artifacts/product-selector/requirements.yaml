@@ -1,0 +1,8 @@
+packages:
+  "framer-motion": "For page transitions and dropdown animations"
+  "clsx": "For tailwind class merging"
+  "tailwind-merge": "For tailwind class merging"
+images: []
+notes:
+  - "Using generated hooks from @workspace/api-client-react as per implementation notes"
+  - "Wouter route for search uses path params (/search/:query) for better reactivity"

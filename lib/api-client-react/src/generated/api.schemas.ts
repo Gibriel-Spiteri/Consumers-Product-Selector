@@ -8,3 +8,51 @@
 export interface HealthStatus {
   status: string;
 }
+
+export interface Category {
+  id: number;
+  name: string;
+  level: number;
+  parentId: number | null;
+  netsuiteId: string | null;
+  children?: Category[];
+}
+
+export interface CategoryTreeResponse {
+  categories: Category[];
+  usingMockData: boolean;
+}
+
+export interface Product {
+  id: number;
+  name: string;
+  sku: string | null;
+  price: number | null;
+  categoryId: number | null;
+  netsuiteId: string | null;
+}
+
+export interface ProductListResponse {
+  products: Product[];
+  usingMockData: boolean;
+}
+
+export interface SyncResponse {
+  success: boolean;
+  message: string;
+  categoriesSynced: number;
+  productsSynced: number;
+}
+
+export interface NetSuiteStatus {
+  connected: boolean;
+  accountId: string | null;
+  lastSyncAt: string | null;
+}
+
+export type SearchProductsParams = {
+  /**
+   * Search query
+   */
+  q: string;
+};

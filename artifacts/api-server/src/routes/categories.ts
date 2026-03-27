@@ -1,0 +1,141 @@
+import { Router, type IRouter } from "express";
+import { db } from "@workspace/db";
+import { categoriesTable, productsTable } from "@workspace/db";
+import { eq, or, ilike } from "drizzle-orm";
+import {
+  GetCategoriesResponse,
+  GetCategoryProductsResponse,
+  SearchProductsResponse,
+} from "@workspace/api-zod";
+import { MOCK_CATEGORIES, MOCK_PRODUCTS } from "../lib/mockData";
+
+const router: IRouter = Router();
+
+function buildCategoryTree(flatCategories: typeof MOCK_CATEGORIES) {
+  type CategoryNode = (typeof MOCK_CATEGORIES)[number] & {
+    children: CategoryNode[];
+  };
+
+  const nodeMap = new Map<number, CategoryNode>();
+  for (const cat of flatCategories) {
+    nodeMap.set(cat.id, { ...cat, children: [] });
+  }
+
+  const roots: CategoryNode[] = [];
+  for (const node of nodeMap.values()) {
+    if (node.parentId == null) {
+      roots.push(node);
+    } else {
+      const parent = nodeMap.get(node.parentId);
+      if (parent) {
+        parent.children.push(node);
+      }
+    }
+  }
+
+  return roots;
+}
+
+async function hasDatabaseData(): Promise<boolean> {
+  try {
+    const rows = await db.select().from(categoriesTable).limit(1);
+    return rows.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+router.get("/categories", async (req, res) => {
+  const hasData = await hasDatabaseData();
+
+  if (!hasData) {
+    const tree = buildCategoryTree(MOCK_CATEGORIES);
+    const response = GetCategoriesResponse.parse({ categories: tree, usingMockData: true });
+    return res.json(response);
+  }
+
+  const categories = await db.select().from(categoriesTable);
+  const flatList = categories.map((c) => ({
+    id: c.id,
+    name: c.name,
+    level: c.level,
+    parentId: c.parentId ?? null,
+    netsuiteId: c.netsuiteId ?? null,
+    children: [] as typeof flatList,
+  }));
+
+  const tree = buildCategoryTree(flatList as typeof MOCK_CATEGORIES);
+  const response = GetCategoriesResponse.parse({ categories: tree, usingMockData: false });
+  return res.json(response);
+});
+
+router.get("/categories/:categoryId/products", async (req, res) => {
+  const categoryId = parseInt(req.params.categoryId, 10);
+  if (isNaN(categoryId)) {
+    return res.status(400).json({ error: "Invalid categoryId" });
+  }
+
+  const hasData = await hasDatabaseData();
+
+  if (!hasData) {
+    const mockProducts = MOCK_PRODUCTS.filter((p) => p.categoryId === categoryId);
+    const response = GetCategoryProductsResponse.parse({ products: mockProducts, usingMockData: true });
+    return res.json(response);
+  }
+
+  const products = await db
+    .select()
+    .from(productsTable)
+    .where(eq(productsTable.categoryId, categoryId));
+
+  const mapped = products.map((p) => ({
+    id: p.id,
+    name: p.name,
+    sku: p.sku ?? null,
+    price: p.price ? parseFloat(p.price) : null,
+    categoryId: p.categoryId ?? null,
+    netsuiteId: p.netsuiteId ?? null,
+  }));
+
+  const response = GetCategoryProductsResponse.parse({ products: mapped, usingMockData: false });
+  return res.json(response);
+});
+
+router.get("/products/search", async (req, res) => {
+  const q = req.query.q as string;
+  if (!q || q.trim() === "") {
+    return res.status(400).json({ error: "Missing search query" });
+  }
+
+  const hasData = await hasDatabaseData();
+
+  if (!hasData) {
+    const lower = q.toLowerCase();
+    const mockResults = MOCK_PRODUCTS.filter(
+      (p) =>
+        p.name.toLowerCase().includes(lower) ||
+        (p.sku && p.sku.toLowerCase().includes(lower))
+    );
+    const response = SearchProductsResponse.parse({ products: mockResults, usingMockData: true });
+    return res.json(response);
+  }
+
+  const products = await db
+    .select()
+    .from(productsTable)
+    .where(or(ilike(productsTable.name, `%${q}%`), ilike(productsTable.sku, `%${q}%`)));
+
+  const mapped = products.map((p) => ({
+    id: p.id,
+    name: p.name,
+    sku: p.sku ?? null,
+    price: p.price ? parseFloat(p.price) : null,
+    categoryId: p.categoryId ?? null,
+    netsuiteId: p.netsuiteId ?? null,
+  }));
+
+  const response = SearchProductsResponse.parse({ products: mapped, usingMockData: false });
+  return res.json(response);
+});
+
+export default router;

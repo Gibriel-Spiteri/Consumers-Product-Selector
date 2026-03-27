@@ -1,0 +1,101 @@
+import { useParams, Link } from "wouter";
+import { useGetCategoryProducts, useGetCategories } from "@workspace/api-client-react";
+import { ChevronRight, PackageX, Loader2, ArrowLeft } from "lucide-react";
+import { useCategoryPath } from "@/hooks/use-category-path";
+
+export default function CategoryProducts() {
+  const { categoryId } = useParams();
+  const id = Number(categoryId);
+
+  const { data: productsData, isLoading: isLoadingProducts } = useGetCategoryProducts(id, {
+    query: { enabled: !!id }
+  });
+  
+  const { data: categoriesData } = useGetCategories();
+  const path = useCategoryPath(categoriesData?.categories || [], id);
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10">
+      {/* Breadcrumb Navigation */}
+      <nav className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-10 overflow-x-auto whitespace-nowrap pb-2">
+         <Link href="/" className="hover:text-accent transition-colors flex items-center gap-1.5">
+           <ArrowLeft size={16} />
+           Back to Home
+         </Link>
+         <div className="w-px h-4 bg-border mx-2"></div>
+         {path.map((cat, index) => (
+           <div key={cat.id} className="flex items-center gap-2">
+             <span className={index === path.length - 1 ? "text-primary font-bold px-3 py-1 bg-white rounded-md shadow-sm border border-border" : ""}>
+               {cat.name}
+             </span>
+             {index < path.length - 1 && <ChevronRight size={14} className="text-muted-foreground/50" />}
+           </div>
+         ))}
+      </nav>
+
+      {/* Page Header */}
+      <div className="mb-8 flex items-end justify-between">
+        <div>
+          <h1 className="text-4xl font-display font-bold text-primary uppercase tracking-tight">
+            {path.length > 0 ? path[path.length - 1].name : "Products"}
+          </h1>
+          <p className="text-muted-foreground mt-2 font-medium">
+            Showing {productsData?.products.length || 0} items in this category
+          </p>
+        </div>
+      </div>
+
+      {/* Product List */}
+      {isLoadingProducts ? (
+         <div className="py-32 flex flex-col items-center justify-center bg-white rounded-2xl border border-border shadow-sm">
+           <Loader2 className="animate-spin text-accent mb-4" size={40} />
+           <p className="text-primary font-medium text-lg">Loading products...</p>
+         </div>
+      ) : !productsData?.products || productsData.products.length === 0 ? (
+         <div className="py-24 px-4 text-center border-2 border-dashed border-border rounded-2xl bg-white shadow-sm flex flex-col items-center">
+           <div className="w-20 h-20 bg-secondary rounded-full flex items-center justify-center mb-6">
+             <PackageX size={32} className="text-muted-foreground" />
+           </div>
+           <h3 className="text-2xl font-display font-bold text-primary uppercase tracking-tight mb-2">No products found</h3>
+           <p className="text-muted-foreground max-w-md mx-auto">
+             There are currently no items available in this category. Try selecting a different category from the menu above.
+           </p>
+           <Link href="/" className="mt-8 px-6 py-3 bg-primary text-white font-semibold rounded-lg hover:bg-accent transition-colors shadow-md inline-block">
+             Browse Categories
+           </Link>
+         </div>
+      ) : (
+         <div className="bg-white border border-border shadow-md shadow-black/5 rounded-2xl overflow-hidden">
+           <div className="overflow-x-auto">
+             <table className="w-full text-left text-sm whitespace-nowrap">
+               <thead>
+                 <tr className="bg-secondary/80 border-b-2 border-border">
+                   <th className="px-6 lg:px-8 py-5 font-display font-bold uppercase tracking-wider text-primary w-[150px]">Item SKU</th>
+                   <th className="px-6 lg:px-8 py-5 font-display font-bold uppercase tracking-wider text-primary">Product Details</th>
+                   <th className="px-6 lg:px-8 py-5 font-display font-bold uppercase tracking-wider text-primary text-right w-[200px]">MSRP Price</th>
+                 </tr>
+               </thead>
+               <tbody className="divide-y divide-border">
+                 {productsData.products.map(p => (
+                   <tr key={p.id} className="hover:bg-blue-50/50 transition-colors group">
+                     <td className="px-6 lg:px-8 py-5 font-mono text-muted-foreground font-medium group-hover:text-primary transition-colors">
+                       {p.sku || 'N/A'}
+                     </td>
+                     <td className="px-6 lg:px-8 py-5 font-semibold text-foreground text-base">
+                       {p.name}
+                     </td>
+                     <td className="px-6 lg:px-8 py-5 text-right">
+                       <span className="inline-block px-3 py-1 bg-secondary rounded-md font-bold text-accent border border-border group-hover:bg-white group-hover:border-accent/30 transition-colors">
+                         {p.price ? `$${Number(p.price).toFixed(2)}` : 'Call for price'}
+                       </span>
+                     </td>
+                   </tr>
+                 ))}
+               </tbody>
+             </table>
+           </div>
+         </div>
+      )}
+    </div>
+  );
+}

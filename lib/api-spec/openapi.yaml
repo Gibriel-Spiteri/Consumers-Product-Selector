@@ -10,6 +10,12 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: categories
+    description: Product category operations
+  - name: products
+    description: Product operations
+  - name: netsuite
+    description: NetSuite sync operations
 paths:
   /healthz:
     get:
@@ -24,6 +30,84 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /categories:
+    get:
+      operationId: getCategories
+      tags: [categories]
+      summary: Get category tree
+      description: Returns the full 3-level category hierarchy
+      responses:
+        "200":
+          description: Category tree
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryTreeResponse"
+  /categories/{categoryId}/products:
+    get:
+      operationId: getCategoryProducts
+      tags: [categories]
+      summary: Get products for a category
+      description: Returns products belonging to a specific category
+      parameters:
+        - name: categoryId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of products
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductListResponse"
+  /products/search:
+    get:
+      operationId: searchProducts
+      tags: [products]
+      summary: Search products
+      description: Search products by name or SKU
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Search query
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductListResponse"
+  /netsuite/sync:
+    post:
+      operationId: triggerNetSuiteSync
+      tags: [netsuite]
+      summary: Trigger NetSuite sync
+      description: Manually triggers a sync of categories and products from NetSuite
+      responses:
+        "200":
+          description: Sync result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncResponse"
+  /netsuite/status:
+    get:
+      operationId: getNetSuiteStatus
+      tags: [netsuite]
+      summary: Get NetSuite connection status
+      description: Returns whether NetSuite credentials are configured
+      responses:
+        "200":
+          description: NetSuite status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NetSuiteStatus"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +117,109 @@ components:
           type: string
       required:
         - status
-
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        level:
+          type: integer
+        parentId:
+          type: integer
+          nullable: true
+        netsuiteId:
+          type: string
+          nullable: true
+        children:
+          type: array
+          items:
+            $ref: "#/components/schemas/Category"
+      required:
+        - id
+        - name
+        - level
+        - parentId
+        - netsuiteId
+    CategoryTreeResponse:
+      type: object
+      properties:
+        categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/Category"
+        usingMockData:
+          type: boolean
+      required:
+        - categories
+        - usingMockData
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        sku:
+          type: string
+          nullable: true
+        price:
+          type: number
+          nullable: true
+        categoryId:
+          type: integer
+          nullable: true
+        netsuiteId:
+          type: string
+          nullable: true
+      required:
+        - id
+        - name
+        - sku
+        - price
+        - categoryId
+        - netsuiteId
+    ProductListResponse:
+      type: object
+      properties:
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/Product"
+        usingMockData:
+          type: boolean
+      required:
+        - products
+        - usingMockData
+    SyncResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        categoriesSynced:
+          type: integer
+        productsSynced:
+          type: integer
+      required:
+        - success
+        - message
+        - categoriesSynced
+        - productsSynced
+    NetSuiteStatus:
+      type: object
+      properties:
+        connected:
+          type: boolean
+        accountId:
+          type: string
+          nullable: true
+        lastSyncAt:
+          type: string
+          nullable: true
+      required:
+        - connected
+        - accountId
+        - lastSyncAt

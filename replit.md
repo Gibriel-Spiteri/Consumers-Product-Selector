@@ -48,6 +48,33 @@ Every package extends `tsconfig.base.json` which sets `composite: true`. The roo
 - `pnpm run build` — runs `typecheck` first, then recursively runs `build` in all packages that define it
 - `pnpm run typecheck` — runs `tsc --build --emitDeclarationOnly` using project references
 
+## Features
+
+### Consumers Product Selector (`artifacts/product-selector`)
+
+A React + Vite web application served at `/` that implements a 3-level category mega-menu product selector.
+
+- **Level 1** — top navigation bar (Bath, Kitchen, Plumbing, Home, Displays, Clearance, Internal)
+- **Level 2** — column headers in the mega-menu dropdown (e.g., Accessories, Countertops, Medicine Cabinets)
+- **Level 3** — clickable links within each column that navigate to the product list page
+- **Product List** — table with Name, SKU, Price columns at `/products/:categoryId`
+- **Search** — searches products by name or SKU at `/search/:query`
+- **NetSuite Banner** — yellow warning banner shown when NetSuite is not connected (using mock data)
+- **Sync Button** — triggers POST `/api/netsuite/sync` to pull live data from NetSuite
+
+### NetSuite M2M Integration (backend)
+
+Machine-to-Machine OAuth 2.0 connection to NetSuite using client credentials flow.
+
+**Required environment secrets (set these to enable live data):**
+- `NETSUITE_ACCOUNT_ID` — your NetSuite account ID (e.g. 1234567)
+- `NETSUITE_CLIENT_ID` — OAuth 2.0 Client ID from NetSuite integration record
+- `NETSUITE_CLIENT_SECRET` — OAuth 2.0 Client Secret from NetSuite integration record
+
+Without credentials, the app uses built-in sample data (Bath/Kitchen/Plumbing products).
+
+**Sync flow:** POST `/api/netsuite/sync` → fetches `ItemCategory` via SuiteQL → fetches `Item` records → upserts into local PostgreSQL cache.
+
 ## Packages
 
 ### `artifacts/api-server` (`@workspace/api-server`)
