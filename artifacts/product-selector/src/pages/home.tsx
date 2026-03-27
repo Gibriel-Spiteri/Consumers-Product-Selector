@@ -10,8 +10,7 @@ export default function Home() {
   return (
     <div className="max-w-7xl mx-auto px-4 lg:px-8 py-12 lg:py-16">
       {/* Hero Section */}
-      <div className="relative rounded-3xl overflow-hidden shadow-2xl mb-16 bg-primary">
-        {/* modern bright kitchen interior with white cabinets */}
+      <div className="relative rounded-2xl overflow-hidden shadow-xl mb-12 bg-primary">
         <img 
           src="https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=1920&q=80&fit=crop" 
           alt="Modern Kitchen Hero" 
@@ -19,20 +18,20 @@ export default function Home() {
         />
         <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/90 to-transparent"></div>
         
-        <div className="relative z-10 p-10 sm:p-16 lg:p-24 max-w-3xl">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent text-white text-xs font-bold uppercase tracking-widest mb-8 shadow-lg">
-            <Zap size={14} className="fill-current" />
+        <div className="relative z-10 p-8 sm:p-10 lg:p-14 max-w-2xl">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent text-white text-xs font-bold uppercase tracking-widest mb-5 shadow-lg">
+            <Zap size={12} className="fill-current" />
             Live Catalog
           </div>
-          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-display font-bold text-white uppercase tracking-tight leading-[1.1] mb-6">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-bold text-white uppercase tracking-tight leading-[1.15] mb-4">
             Find the perfect product for your next project
           </h2>
-          <p className="text-lg sm:text-xl text-primary-foreground/80 font-medium leading-relaxed mb-10 max-w-2xl">
+          <p className="text-sm sm:text-base text-primary-foreground/80 font-medium leading-relaxed mb-6 max-w-xl">
             Browse our extensive catalog of bath, kitchen, plumbing, and home products. Synchronized directly with NetSuite for real-time inventory precision.
           </p>
           
-          <div className="flex items-center gap-4 text-sm font-semibold text-white/60 uppercase tracking-wider">
-            <ArrowRight className="animate-pulse text-accent" />
+          <div className="flex items-center gap-3 text-xs font-semibold text-white/60 uppercase tracking-wider">
+            <ArrowRight size={14} className="animate-pulse text-accent" />
             Select a category above to start browsing
           </div>
         </div>
