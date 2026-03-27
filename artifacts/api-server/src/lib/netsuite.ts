@@ -96,29 +96,47 @@ async function netsuiteRequest<T>(
   return response.json() as Promise<T>;
 }
 
-async function netsuiteSuiteQL<T>(query: string): Promise<{ items: T[] }> {
+const SUITEQL_PAGE_SIZE = 1000;
+
+async function netsuiteSuiteQL<T>(baseQuery: string): Promise<{ items: T[] }> {
   const { accountId } = getNetSuiteConfig();
-  const token = await getAccessToken();
+  const allItems: T[] = [];
+  let offset = 0;
+  let hasMore = true;
 
-  const url = `https://${accountId}.suitetalk.api.netsuite.com/services/rest/query/v1/suiteql?limit=1000`;
+  while (hasMore) {
+    const token = await getAccessToken();
+    const url = `https://${accountId}.suitetalk.api.netsuite.com/services/rest/query/v1/suiteql?limit=${SUITEQL_PAGE_SIZE}&offset=${offset}`;
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      "prefer": "transient",
-    },
-    body: JSON.stringify({ q: query }),
-  });
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        "prefer": "transient",
+      },
+      body: JSON.stringify({ q: baseQuery }),
+    });
 
-  if (!response.ok) {
-    const text = await response.text();
-    logger.error({ status: response.status, url, query, body: text }, "NetSuite SuiteQL request failed");
-    throw new Error(`NetSuite SuiteQL request failed: ${response.status} ${text}`);
+    if (!response.ok) {
+      const text = await response.text();
+      logger.error({ status: response.status, url, query: baseQuery, body: text }, "NetSuite SuiteQL request failed");
+      throw new Error(`NetSuite SuiteQL request failed: ${response.status} ${text}`);
+    }
+
+    const page = await response.json() as { items: T[]; hasMore?: boolean; totalResults?: number };
+    allItems.push(...page.items);
+
+    if (page.hasMore === false || page.items.length < SUITEQL_PAGE_SIZE) {
+      hasMore = false;
+    } else {
+      offset += SUITEQL_PAGE_SIZE;
+    }
+
+    logger.info({ fetched: allItems.length, offset }, "SuiteQL page fetched");
   }
 
-  return response.json() as Promise<{ items: T[] }>;
+  return { items: allItems };
 }
 
 export interface NetSuiteCategory {
