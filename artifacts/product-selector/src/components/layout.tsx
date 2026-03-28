@@ -375,7 +375,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         className="bg-white relative z-30"
         onMouseLeave={handleMouseLeaveNav}
       >
-        <div className="max-w-7xl mx-auto px-4 lg:px-8">
+        <div className="w-full pl-4 lg:pl-6 pr-4 lg:pr-8">
           {isLoadingCategories ? (
             <div className="flex items-center gap-2 py-3 text-muted-foreground text-sm">
               <Loader2 size={14} className="animate-spin" />
