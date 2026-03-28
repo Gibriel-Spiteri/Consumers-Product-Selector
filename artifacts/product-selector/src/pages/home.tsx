@@ -12,7 +12,7 @@ export default function Home() {
       {/* Full-bleed Hero */}
       <div className="relative w-full h-[420px] overflow-hidden">
         <img
-          src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1920&q=80&fit=crop"
+          src={`${import.meta.env.BASE_URL}hero-kitchen.png`}
           alt="Modern Kitchen"
           className="absolute inset-0 w-full h-full object-cover"
         />
