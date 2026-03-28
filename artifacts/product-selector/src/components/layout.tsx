@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { Search, Loader2, RefreshCw, AlertCircle, Database, ChevronRight } from "lucide-react";
-import { useGetCategories, useGetNetSuiteStatus, useTriggerNetSuiteSync, getGetCategoriesQueryKey, getGetNetSuiteStatusQueryKey } from "@workspace/api-client-react";
+import { Search, Loader2, RefreshCw, AlertCircle, Database, ChevronRight, Package } from "lucide-react";
+import { useGetCategories, useGetNetSuiteStatus, useTriggerNetSuiteSync, getGetCategoriesQueryKey, getGetNetSuiteStatusQueryKey, useSearchProducts, getSearchProductsQueryKey } from "@workspace/api-client-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
@@ -48,8 +48,12 @@ function SyncStatus() {
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<number | null>(null);
   const [isHoveringNav, setIsHoveringNav] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
 
   const { data: categoryData, isLoading: isLoadingCategories } = useGetCategories();
   const { data: status } = useGetNetSuiteStatus();
@@ -57,13 +61,64 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const categories = categoryData?.categories || [];
   const topLevelCategories = categories.filter(c => c.level === 1);
 
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(searchQuery), 250);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const isSearchEnabled = debouncedQuery.trim().length >= 2;
+  const { data: searchData, isFetching: isSearching } = useSearchProducts(
+    { q: debouncedQuery },
+    { query: { enabled: isSearchEnabled, queryKey: getSearchProductsQueryKey({ q: debouncedQuery }) } }
+  );
+  const suggestions = searchData?.products?.slice(0, 8) ?? [];
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+        setHighlightedIndex(-1);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       setLocation(`/search/${encodeURIComponent(searchQuery.trim())}`);
       setSearchQuery("");
+      setDebouncedQuery("");
+      setDropdownOpen(false);
+      setHighlightedIndex(-1);
       setIsHoveringNav(false);
       setActiveTab(null);
+    }
+  };
+
+  const handleSelectSuggestion = (product: { id: number; categoryId: number | null }) => {
+    setLocation(`/products/${product.categoryId}`);
+    setSearchQuery("");
+    setDebouncedQuery("");
+    setDropdownOpen(false);
+    setHighlightedIndex(-1);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!dropdownOpen || suggestions.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlightedIndex(i => Math.min(i + 1, suggestions.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlightedIndex(i => Math.max(i - 1, -1));
+    } else if (e.key === "Enter" && highlightedIndex >= 0) {
+      e.preventDefault();
+      handleSelectSuggestion(suggestions[highlightedIndex]);
+    } else if (e.key === "Escape") {
+      setDropdownOpen(false);
+      setHighlightedIndex(-1);
     }
   };
 
@@ -78,6 +133,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   };
 
   const showMockBanner = categoryData?.usingMockData || (status && !status.connected);
+  const showDropdown = dropdownOpen && debouncedQuery.trim().length >= 2;
 
   return (
     <div className="min-h-screen flex flex-col bg-secondary/30">
@@ -106,22 +162,92 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </span>
           </Link>
 
-          <div className="flex-1 max-w-2xl relative w-full">
+          <div className="flex-1 max-w-2xl relative w-full" ref={searchContainerRef}>
             <form onSubmit={handleSearch} className="relative group">
               <input
                 type="search"
                 placeholder="Your Product Name or SKU"
                 value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
+                onChange={e => {
+                  setSearchQuery(e.target.value);
+                  setDropdownOpen(true);
+                  setHighlightedIndex(-1);
+                }}
+                onFocus={() => setDropdownOpen(true)}
+                onKeyDown={handleKeyDown}
+                autoComplete="off"
                 className="w-full pl-5 pr-12 py-3.5 bg-secondary/50 border-2 border-border rounded-lg focus:bg-white focus:border-accent focus:ring-4 focus:ring-accent/10 focus:outline-none transition-all text-sm font-medium placeholder:text-muted-foreground shadow-inner shadow-black/5"
               />
               <button 
                 type="submit" 
                 className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-md transition-colors"
               >
-                <Search size={20} strokeWidth={2.5} />
+                {isSearching ? <Loader2 size={18} className="animate-spin" /> : <Search size={20} strokeWidth={2.5} />}
               </button>
             </form>
+
+            <AnimatePresence>
+              {showDropdown && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -4, scale: 0.98 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-2xl shadow-black/15 border border-border overflow-hidden z-50"
+                >
+                  {isSearching && suggestions.length === 0 ? (
+                    <div className="flex items-center gap-2 px-4 py-4 text-sm text-muted-foreground">
+                      <Loader2 size={14} className="animate-spin" />
+                      Searching...
+                    </div>
+                  ) : suggestions.length === 0 ? (
+                    <div className="flex items-center gap-2 px-4 py-4 text-sm text-muted-foreground">
+                      <Package size={14} />
+                      No products found for "{debouncedQuery}"
+                    </div>
+                  ) : (
+                    <ul>
+                      {suggestions.map((product, idx) => (
+                        <li key={product.id}>
+                          <button
+                            type="button"
+                            onMouseDown={e => { e.preventDefault(); handleSelectSuggestion(product); }}
+                            onMouseEnter={() => setHighlightedIndex(idx)}
+                            className={cn(
+                              "w-full flex items-center gap-3 px-4 py-3 text-left transition-colors border-b border-border/50 last:border-0",
+                              highlightedIndex === idx ? "bg-accent/5" : "hover:bg-secondary/60"
+                            )}
+                          >
+                            <Package size={14} className="text-accent flex-shrink-0" />
+                            <span className="flex-1 min-w-0">
+                              <span className="block text-sm font-semibold text-foreground truncate">{product.name}</span>
+                              {product.sku && (
+                                <span className="text-xs text-muted-foreground font-mono">{product.sku}</span>
+                              )}
+                            </span>
+                            {product.price != null && (
+                              <span className="text-sm font-bold text-accent flex-shrink-0">
+                                ${product.price.toFixed(2)}
+                              </span>
+                            )}
+                          </button>
+                        </li>
+                      ))}
+                      <li>
+                        <button
+                          type="button"
+                          onMouseDown={e => { e.preventDefault(); handleSearch(e as unknown as React.FormEvent); }}
+                          className="w-full flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-accent hover:bg-accent/5 transition-colors border-t border-border"
+                        >
+                          <Search size={12} />
+                          See all results for "{debouncedQuery}"
+                        </button>
+                      </li>
+                    </ul>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           <div className="hidden md:block">
