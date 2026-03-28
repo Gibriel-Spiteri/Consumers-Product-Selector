@@ -2,9 +2,10 @@ import { useState } from "react";
 import { useParams, Link } from "wouter";
 import { useGetCategories, getGetCategoryProductsQueryOptions } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, PackageX, Loader2, ArrowLeft, ImageOff } from "lucide-react";
+import { ChevronRight, PackageX, Loader2, ArrowLeft, ImageOff, LayoutList, LayoutGrid } from "lucide-react";
 import { useCategoryPath } from "@/hooks/use-category-path";
 import ProductModal from "@/components/product-modal";
+import { cn } from "@/lib/utils";
 
 interface Product {
   id: number;
@@ -15,22 +16,100 @@ interface Product {
   netsuiteId?: string | null;
 }
 
-function ProductThumbnail({ id, name }: { id: number; name: string }) {
+function ProductImage({ id, name, className }: { id: number; name: string; className?: string }) {
   const [failed, setFailed] = useState(false);
   if (failed) {
     return (
-      <div className="w-12 h-12 rounded-lg bg-secondary border border-border flex items-center justify-center shrink-0">
-        <ImageOff size={14} className="text-muted-foreground" />
+      <div className={cn("bg-secondary flex items-center justify-center text-muted-foreground", className)}>
+        <ImageOff size={20} />
       </div>
     );
   }
   return (
     <img
-      src={`https://picsum.photos/seed/product-${id}/96/96`}
+      src={`https://picsum.photos/seed/product-${id}/400/300`}
       alt={name}
       onError={() => setFailed(true)}
-      className="w-12 h-12 rounded-lg object-cover border border-border shrink-0"
+      className={cn("object-cover", className)}
     />
+  );
+}
+
+function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: Product) => void }) {
+  return (
+    <div className="bg-white border border-border shadow-md shadow-black/5 rounded-2xl overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-sm">
+          <thead>
+            <tr className="bg-secondary/80 border-b-2 border-border">
+              <th className="px-4 lg:px-6 py-4 font-display font-bold uppercase tracking-wider text-primary w-16"></th>
+              <th className="px-4 lg:px-6 py-4 font-display font-bold uppercase tracking-wider text-primary w-[150px] whitespace-nowrap">Item SKU</th>
+              <th className="px-4 lg:px-6 py-4 font-display font-bold uppercase tracking-wider text-primary">Product Details</th>
+              <th className="px-4 lg:px-6 py-4 font-display font-bold uppercase tracking-wider text-primary text-right w-[160px] whitespace-nowrap">MSRP Price</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {products.map(p => (
+              <tr
+                key={p.id}
+                onClick={() => onSelect(p)}
+                className="hover:bg-blue-50/50 transition-colors group cursor-pointer"
+              >
+                <td className="px-4 lg:px-6 py-3">
+                  <ProductImage
+                    id={p.id}
+                    name={p.name}
+                    className="w-12 h-12 rounded-lg border border-border shrink-0"
+                  />
+                </td>
+                <td className="px-4 lg:px-6 py-3 font-mono text-muted-foreground font-medium group-hover:text-primary transition-colors whitespace-nowrap">
+                  {p.sku || 'N/A'}
+                </td>
+                <td className="px-4 lg:px-6 py-3 font-semibold text-foreground text-base group-hover:text-primary transition-colors">
+                  {p.name}
+                </td>
+                <td className="px-4 lg:px-6 py-3 text-right whitespace-nowrap">
+                  <span className="inline-block px-3 py-1 bg-secondary rounded-md font-bold text-accent border border-border group-hover:bg-white group-hover:border-accent/30 transition-colors">
+                    {p.price ? `$${Number(p.price).toFixed(2)}` : 'Call for price'}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: Product) => void }) {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+      {products.map(p => (
+        <div
+          key={p.id}
+          onClick={() => onSelect(p)}
+          className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden cursor-pointer hover:shadow-md hover:border-accent/30 hover:-translate-y-0.5 transition-all group"
+        >
+          <ProductImage
+            id={p.id}
+            name={p.name}
+            className="w-full aspect-square"
+          />
+          <div className="p-3">
+            <p className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors leading-snug line-clamp-2 mb-1.5">
+              {p.name}
+            </p>
+            {p.sku && (
+              <p className="font-mono text-xs text-muted-foreground mb-2">{p.sku}</p>
+            )}
+            <p className="font-bold text-accent text-sm">
+              {p.price ? `$${Number(p.price).toFixed(2)}` : <span className="text-muted-foreground font-normal">Call for price</span>}
+            </p>
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -38,6 +117,7 @@ export default function CategoryProducts() {
   const { categoryId } = useParams();
   const id = Number(categoryId);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [view, setView] = useState<"list" | "grid">("list");
 
   const { data: productsData, isLoading: isLoadingProducts } = useQuery({
     ...getGetCategoryProductsQueryOptions(id),
@@ -74,17 +154,49 @@ export default function CategoryProducts() {
         ))}
       </nav>
 
-      {/* Page Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-display font-bold text-primary uppercase tracking-tight">
-          {path.length > 0 ? path[path.length - 1].name : "Products"}
-        </h1>
-        <p className="text-muted-foreground mt-2 font-medium">
-          Showing {productsData?.products.length || 0} items · click any row for details
-        </p>
+      {/* Page Header with view toggle */}
+      <div className="mb-8 flex items-end justify-between gap-4">
+        <div>
+          <h1 className="text-4xl font-display font-bold text-primary uppercase tracking-tight">
+            {path.length > 0 ? path[path.length - 1].name : "Products"}
+          </h1>
+          <p className="text-muted-foreground mt-2 font-medium">
+            Showing {productsData?.products.length || 0} items · click {view === "list" ? "any row" : "a card"} for details
+          </p>
+        </div>
+
+        {/* View toggle */}
+        <div className="flex items-center bg-white border border-border rounded-xl shadow-sm p-1 shrink-0">
+          <button
+            onClick={() => setView("list")}
+            title="List view"
+            className={cn(
+              "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all",
+              view === "list"
+                ? "bg-primary text-white shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <LayoutList size={16} />
+            <span className="hidden sm:inline">List</span>
+          </button>
+          <button
+            onClick={() => setView("grid")}
+            title="Grid view"
+            className={cn(
+              "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all",
+              view === "grid"
+                ? "bg-primary text-white shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <LayoutGrid size={16} />
+            <span className="hidden sm:inline">Grid</span>
+          </button>
+        </div>
       </div>
 
-      {/* Product List */}
+      {/* Product List / Grid */}
       {isLoadingProducts ? (
         <div className="py-32 flex flex-col items-center justify-center bg-white rounded-2xl border border-border shadow-sm">
           <Loader2 className="animate-spin text-accent mb-4" size={40} />
@@ -103,45 +215,10 @@ export default function CategoryProducts() {
             Browse Categories
           </Link>
         </div>
+      ) : view === "list" ? (
+        <ListView products={productsData.products} onSelect={setSelectedProduct} />
       ) : (
-        <div className="bg-white border border-border shadow-md shadow-black/5 rounded-2xl overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="bg-secondary/80 border-b-2 border-border">
-                  <th className="px-4 lg:px-6 py-4 font-display font-bold uppercase tracking-wider text-primary w-16"></th>
-                  <th className="px-4 lg:px-6 py-4 font-display font-bold uppercase tracking-wider text-primary w-[150px] whitespace-nowrap">Item SKU</th>
-                  <th className="px-4 lg:px-6 py-4 font-display font-bold uppercase tracking-wider text-primary">Product Details</th>
-                  <th className="px-4 lg:px-6 py-4 font-display font-bold uppercase tracking-wider text-primary text-right w-[160px] whitespace-nowrap">MSRP Price</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {productsData.products.map(p => (
-                  <tr
-                    key={p.id}
-                    onClick={() => setSelectedProduct(p)}
-                    className="hover:bg-blue-50/50 transition-colors group cursor-pointer"
-                  >
-                    <td className="px-4 lg:px-6 py-4">
-                      <ProductThumbnail id={p.id} name={p.name} />
-                    </td>
-                    <td className="px-4 lg:px-6 py-4 font-mono text-muted-foreground font-medium group-hover:text-primary transition-colors whitespace-nowrap">
-                      {p.sku || 'N/A'}
-                    </td>
-                    <td className="px-4 lg:px-6 py-4 font-semibold text-foreground text-base group-hover:text-primary transition-colors">
-                      {p.name}
-                    </td>
-                    <td className="px-4 lg:px-6 py-4 text-right whitespace-nowrap">
-                      <span className="inline-block px-3 py-1 bg-secondary rounded-md font-bold text-accent border border-border group-hover:bg-white group-hover:border-accent/30 transition-colors">
-                        {p.price ? `$${Number(p.price).toFixed(2)}` : 'Call for price'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <GridView products={productsData.products} onSelect={setSelectedProduct} />
       )}
     </div>
   );
