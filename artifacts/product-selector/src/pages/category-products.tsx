@@ -117,7 +117,7 @@ export default function CategoryProducts() {
   const { categoryId } = useParams();
   const id = Number(categoryId);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [view, setView] = useState<"list" | "grid">("list");
+  const [view, setView] = useState<"list" | "grid">("grid");
 
   const { data: productsData, isLoading: isLoadingProducts } = useQuery({
     ...getGetCategoryProductsQueryOptions(id),
