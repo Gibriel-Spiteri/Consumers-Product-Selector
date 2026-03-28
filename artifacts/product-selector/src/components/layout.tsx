@@ -200,7 +200,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <header className="bg-white py-4 shadow-sm relative z-40">
         <div className="w-full pl-4 lg:pl-6 pr-4 lg:pr-8 flex flex-row items-center justify-between gap-6">
           <Link href="/" className="flex items-baseline gap-2 cursor-pointer group w-fit">
-            <h1 className="font-display font-bold lg:text-3xl text-primary uppercase tracking-tight text-[24px]">
+            <h1 className="font-display font-bold lg:text-3xl text-primary uppercase tracking-tight text-[26px]">
               Consumers
             </h1>
             <span className="font-display text-lg lg:text-xl text-amber-500 leading-none font-medium">
