@@ -12,8 +12,8 @@ export default function Home() {
       {/* Full-bleed Hero */}
       <div className="relative w-full h-[420px] overflow-hidden">
         <img
-          src="https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=1920&q=80&fit=crop"
-          alt="Modern Bathroom"
+          src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1920&q=80&fit=crop"
+          alt="Modern Kitchen"
           className="absolute inset-0 w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/45 to-transparent" />
