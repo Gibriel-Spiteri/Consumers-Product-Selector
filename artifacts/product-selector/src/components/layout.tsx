@@ -94,7 +94,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </motion.div>
         )}
       </AnimatePresence>
-
       {/* Main Header */}
       <header className="bg-white border-b border-border py-6 shadow-sm relative z-20">
         <div className="max-w-7xl mx-auto px-4 lg:px-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -102,7 +101,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <h1 className="font-display font-bold text-2xl lg:text-3xl text-primary leading-none uppercase tracking-tight">
               Consumers
             </h1>
-            <span className="font-display font-semibold text-lg lg:text-xl text-amber-500 leading-none">
+            <span className="font-display text-lg lg:text-xl text-amber-500 leading-none font-medium">
               Product Selector
             </span>
           </Link>
@@ -130,7 +129,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </header>
-
       {/* Navigation Bar */}
       <nav 
         className="bg-primary text-primary-foreground relative z-30 shadow-md"
@@ -216,12 +214,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           )}
         </AnimatePresence>
       </nav>
-
       {/* Main Content Area */}
       <main className="flex-1 relative z-10">
         {children}
       </main>
-
       {/* Footer */}
       <footer className="bg-primary text-primary-foreground py-12 border-t-4 border-accent mt-auto relative z-10">
         <div className="max-w-7xl mx-auto px-4 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
