@@ -392,12 +392,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       setIsHoveringNav(false);
                       setActiveTab(null);
                     }}
-                    className={cn(
-                      "block px-4 lg:px-5 py-5 cursor-pointer font-semibold transition-all text-xs uppercase tracking-wider relative border-b-2",
-                      activeTab === cat.id
-                        ? "border-amber-500 text-primary"
-                        : "border-transparent text-gray-500 hover:text-primary hover:border-gray-300"
-                    )}
+                    className="block px-4 lg:px-5 py-5 cursor-pointer font-semibold transition-all uppercase tracking-wider relative border-b-2 border-amber-500 text-primary text-[13px]"
                   >
                     {cat.name}
                   </Link>
