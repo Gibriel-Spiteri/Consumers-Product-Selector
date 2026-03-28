@@ -1,6 +1,6 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Tag, Barcode, DollarSign, Package } from "lucide-react";
+import { X, Tag, Barcode, DollarSign, ImageOff } from "lucide-react";
 
 interface Product {
   id: number;
@@ -15,6 +15,29 @@ interface ProductModalProps {
   product: Product | null;
   categoryPath?: string;
   onClose: () => void;
+}
+
+function ProductImage({ id, name }: { id: number; name: string }) {
+  const [failed, setFailed] = useState(false);
+  const src = `https://picsum.photos/seed/product-${id}/600/360`;
+
+  if (failed) {
+    return (
+      <div className="w-full h-48 bg-secondary flex flex-col items-center justify-center text-muted-foreground gap-2">
+        <ImageOff size={28} />
+        <span className="text-xs">No image available</span>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={name}
+      onError={() => setFailed(true)}
+      className="w-full h-48 object-cover"
+    />
+  );
 }
 
 export default function ProductModal({ product, categoryPath, onClose }: ProductModalProps) {
@@ -53,56 +76,58 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
               className="bg-white rounded-2xl shadow-2xl w-full max-w-md pointer-events-auto overflow-hidden"
               onClick={e => e.stopPropagation()}
             >
-              {/* Header */}
-              <div className="bg-primary px-6 py-5 flex items-start justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
-                    <Package size={20} className="text-white" />
-                  </div>
-                  <div>
-                    <p className="text-white/60 text-xs font-semibold uppercase tracking-widest mb-0.5">
-                      Product Detail
-                    </p>
-                    <h2 className="text-white font-display font-bold text-xl uppercase leading-tight">
-                      {product.name}
-                    </h2>
-                  </div>
-                </div>
+              {/* Product Image */}
+              <div className="relative">
+                <ProductImage id={product.id} name={product.name} />
+                {/* Close button overlaid on image */}
                 <button
                   onClick={onClose}
-                  className="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center text-white/70 hover:text-white transition-colors shrink-0 mt-0.5"
+                  className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-sm flex items-center justify-center text-white transition-colors"
                 >
-                  <X size={18} />
+                  <X size={16} />
                 </button>
+                {/* Price badge overlaid on image */}
+                {product.price != null && (
+                  <div className="absolute bottom-3 right-3 bg-accent text-white font-bold text-lg px-3 py-1 rounded-lg shadow-lg">
+                    ${Number(product.price).toFixed(2)}
+                  </div>
+                )}
+              </div>
+
+              {/* Header */}
+              <div className="bg-primary px-6 py-4">
+                <p className="text-white/60 text-xs font-semibold uppercase tracking-widest mb-0.5">
+                  Product Detail
+                </p>
+                <h2 className="text-white font-display font-bold text-xl uppercase leading-tight">
+                  {product.name}
+                </h2>
               </div>
 
               {/* Body */}
-              <div className="px-6 py-6 space-y-4">
+              <div className="px-6 py-5 space-y-3">
 
-                {/* SKU */}
-                <div className="flex items-center gap-4 p-4 bg-secondary/50 rounded-xl border border-border">
-                  <div className="w-9 h-9 rounded-lg bg-white border border-border flex items-center justify-center shrink-0">
-                    <Barcode size={18} className="text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-0.5">Item SKU</p>
-                    <p className="font-mono font-semibold text-foreground text-base">
-                      {product.sku || <span className="text-muted-foreground italic font-sans font-normal text-sm">Not assigned</span>}
+                {/* SKU + Price row */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3.5 bg-secondary/50 rounded-xl border border-border">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <Barcode size={13} className="text-muted-foreground" />
+                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">SKU</p>
+                    </div>
+                    <p className="font-mono font-semibold text-foreground text-sm">
+                      {product.sku || <span className="text-muted-foreground italic font-sans font-normal">—</span>}
                     </p>
                   </div>
-                </div>
 
-                {/* Price */}
-                <div className="flex items-center gap-4 p-4 bg-accent/5 rounded-xl border border-accent/20">
-                  <div className="w-9 h-9 rounded-lg bg-accent flex items-center justify-center shrink-0">
-                    <DollarSign size={18} className="text-white" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-0.5">MSRP Price</p>
-                    <p className="font-bold text-accent text-2xl">
+                  <div className="p-3.5 bg-accent/5 rounded-xl border border-accent/20">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <DollarSign size={13} className="text-accent" />
+                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">MSRP</p>
+                    </div>
+                    <p className="font-bold text-accent text-lg">
                       {product.price != null
                         ? `$${Number(product.price).toFixed(2)}`
-                        : <span className="text-muted-foreground italic font-normal text-base">Call for price</span>
+                        : <span className="text-muted-foreground italic font-normal text-sm">Call for price</span>
                       }
                     </p>
                   </div>
@@ -110,10 +135,8 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
 
                 {/* Category Path */}
                 {categoryPath && (
-                  <div className="flex items-center gap-4 p-4 bg-secondary/50 rounded-xl border border-border">
-                    <div className="w-9 h-9 rounded-lg bg-white border border-border flex items-center justify-center shrink-0">
-                      <Tag size={18} className="text-primary" />
-                    </div>
+                  <div className="flex items-center gap-3 p-3.5 bg-secondary/50 rounded-xl border border-border">
+                    <Tag size={15} className="text-primary shrink-0" />
                     <div>
                       <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-0.5">Category</p>
                       <p className="text-sm font-medium text-foreground">{categoryPath}</p>
@@ -123,11 +146,9 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
 
                 {/* NetSuite ID */}
                 {product.netsuiteId && (
-                  <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-secondary/30 border border-border/60">
-                    <p className="text-xs text-muted-foreground font-medium">
-                      NetSuite ID: <span className="font-mono">{product.netsuiteId}</span>
-                    </p>
-                  </div>
+                  <p className="text-xs text-muted-foreground px-1">
+                    NetSuite ID: <span className="font-mono">{product.netsuiteId}</span>
+                  </p>
                 )}
               </div>
 

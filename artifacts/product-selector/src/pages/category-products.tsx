@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, Link } from "wouter";
 import { useGetCategories, getGetCategoryProductsQueryOptions } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, PackageX, Loader2, ArrowLeft } from "lucide-react";
+import { ChevronRight, PackageX, Loader2, ArrowLeft, ImageOff } from "lucide-react";
 import { useCategoryPath } from "@/hooks/use-category-path";
 import ProductModal from "@/components/product-modal";
 
@@ -13,6 +13,25 @@ interface Product {
   price: number | null;
   categoryId?: number | null;
   netsuiteId?: string | null;
+}
+
+function ProductThumbnail({ id, name }: { id: number; name: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return (
+      <div className="w-12 h-12 rounded-lg bg-secondary border border-border flex items-center justify-center shrink-0">
+        <ImageOff size={14} className="text-muted-foreground" />
+      </div>
+    );
+  }
+  return (
+    <img
+      src={`https://picsum.photos/seed/product-${id}/96/96`}
+      alt={name}
+      onError={() => setFailed(true)}
+      className="w-12 h-12 rounded-lg object-cover border border-border shrink-0"
+    />
+  );
 }
 
 export default function CategoryProducts() {
@@ -56,15 +75,13 @@ export default function CategoryProducts() {
       </nav>
 
       {/* Page Header */}
-      <div className="mb-8 flex items-end justify-between">
-        <div>
-          <h1 className="text-4xl font-display font-bold text-primary uppercase tracking-tight">
-            {path.length > 0 ? path[path.length - 1].name : "Products"}
-          </h1>
-          <p className="text-muted-foreground mt-2 font-medium">
-            Showing {productsData?.products.length || 0} items · click any row for details
-          </p>
-        </div>
+      <div className="mb-8">
+        <h1 className="text-4xl font-display font-bold text-primary uppercase tracking-tight">
+          {path.length > 0 ? path[path.length - 1].name : "Products"}
+        </h1>
+        <p className="text-muted-foreground mt-2 font-medium">
+          Showing {productsData?.products.length || 0} items · click any row for details
+        </p>
       </div>
 
       {/* Product List */}
@@ -89,12 +106,13 @@ export default function CategoryProducts() {
       ) : (
         <div className="bg-white border border-border shadow-md shadow-black/5 rounded-2xl overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm whitespace-nowrap">
+            <table className="w-full text-left text-sm">
               <thead>
                 <tr className="bg-secondary/80 border-b-2 border-border">
-                  <th className="px-6 lg:px-8 py-5 font-display font-bold uppercase tracking-wider text-primary w-[150px]">Item SKU</th>
-                  <th className="px-6 lg:px-8 py-5 font-display font-bold uppercase tracking-wider text-primary">Product Details</th>
-                  <th className="px-6 lg:px-8 py-5 font-display font-bold uppercase tracking-wider text-primary text-right w-[200px]">MSRP Price</th>
+                  <th className="px-4 lg:px-6 py-4 font-display font-bold uppercase tracking-wider text-primary w-16"></th>
+                  <th className="px-4 lg:px-6 py-4 font-display font-bold uppercase tracking-wider text-primary w-[150px] whitespace-nowrap">Item SKU</th>
+                  <th className="px-4 lg:px-6 py-4 font-display font-bold uppercase tracking-wider text-primary">Product Details</th>
+                  <th className="px-4 lg:px-6 py-4 font-display font-bold uppercase tracking-wider text-primary text-right w-[160px] whitespace-nowrap">MSRP Price</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -104,13 +122,16 @@ export default function CategoryProducts() {
                     onClick={() => setSelectedProduct(p)}
                     className="hover:bg-blue-50/50 transition-colors group cursor-pointer"
                   >
-                    <td className="px-6 lg:px-8 py-5 font-mono text-muted-foreground font-medium group-hover:text-primary transition-colors">
+                    <td className="px-4 lg:px-6 py-4">
+                      <ProductThumbnail id={p.id} name={p.name} />
+                    </td>
+                    <td className="px-4 lg:px-6 py-4 font-mono text-muted-foreground font-medium group-hover:text-primary transition-colors whitespace-nowrap">
                       {p.sku || 'N/A'}
                     </td>
-                    <td className="px-6 lg:px-8 py-5 font-semibold text-foreground text-base group-hover:text-primary transition-colors">
+                    <td className="px-4 lg:px-6 py-4 font-semibold text-foreground text-base group-hover:text-primary transition-colors">
                       {p.name}
                     </td>
-                    <td className="px-6 lg:px-8 py-5 text-right">
+                    <td className="px-4 lg:px-6 py-4 text-right whitespace-nowrap">
                       <span className="inline-block px-3 py-1 bg-secondary rounded-md font-bold text-accent border border-border group-hover:bg-white group-hover:border-accent/30 transition-colors">
                         {p.price ? `$${Number(p.price).toFixed(2)}` : 'Call for price'}
                       </span>
