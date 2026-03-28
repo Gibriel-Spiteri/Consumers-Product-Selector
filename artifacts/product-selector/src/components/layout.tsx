@@ -209,10 +209,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </Link>
 
           <div className="flex-1 max-w-2xl relative w-full" ref={searchContainerRef}>
-            <form onSubmit={handleSearch} className="relative group">
+            <form onSubmit={handleSearch} className="relative flex items-center">
+              <Search size={15} className="absolute left-4 text-muted-foreground pointer-events-none z-10" />
               <input
                 type="search"
-                placeholder="Your Product Name or SKU"
+                placeholder="Search for products, categories, or SKUs..."
                 value={searchQuery}
                 onChange={e => {
                   setSearchQuery(e.target.value);
@@ -222,13 +223,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 onFocus={() => setDropdownOpen(true)}
                 onKeyDown={handleKeyDown}
                 autoComplete="off"
-                className="w-full pl-5 pr-12 py-3.5 bg-secondary/50 border-2 border-border rounded-lg focus:bg-white focus:border-accent focus:ring-4 focus:ring-accent/10 focus:outline-none transition-all text-sm font-medium placeholder:text-muted-foreground shadow-inner shadow-black/5"
+                className="w-full pl-10 pr-28 py-2.5 bg-gray-100 border border-gray-200 rounded-full focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 focus:outline-none transition-all text-sm placeholder:text-muted-foreground"
               />
-              <button 
-                type="submit" 
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-md transition-colors"
+              <button
+                type="submit"
+                className="absolute right-1.5 bg-primary hover:bg-primary/90 text-white px-5 py-1.5 rounded-full font-semibold text-sm transition-colors flex items-center gap-1.5 flex-shrink-0"
               >
-                {isSearching ? <Loader2 size={18} className="animate-spin" /> : <Search size={20} strokeWidth={2.5} />}
+                {isSearching && <Loader2 size={13} className="animate-spin" />}
+                Search
               </button>
             </form>
 
@@ -369,14 +371,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       {/* Navigation Bar */}
-      <nav 
-        className="bg-primary text-primary-foreground relative z-30 shadow-md"
+      <nav
+        className="bg-white border-b border-gray-200 relative z-30"
         onMouseLeave={handleMouseLeaveNav}
       >
         <div className="max-w-7xl mx-auto px-4 lg:px-8">
           {isLoadingCategories ? (
-            <div className="flex items-center gap-2 py-4 text-primary-foreground/70 text-sm font-medium">
-              <Loader2 size={16} className="animate-spin" />
+            <div className="flex items-center gap-2 py-3 text-muted-foreground text-sm">
+              <Loader2 size={14} className="animate-spin" />
               Loading catalog...
             </div>
           ) : (
@@ -391,19 +393,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       setActiveTab(null);
                     }}
                     className={cn(
-                      "block px-6 lg:px-8 py-4 cursor-pointer font-semibold transition-all border-r border-white/10 text-sm uppercase tracking-wider relative",
-                      activeTab === cat.id 
-                        ? "bg-white text-primary" 
-                        : "hover:bg-white/10 text-white"
+                      "block px-4 lg:px-5 py-3.5 cursor-pointer font-semibold transition-all text-xs uppercase tracking-wider relative border-b-2",
+                      activeTab === cat.id
+                        ? "border-amber-500 text-primary"
+                        : "border-transparent text-gray-500 hover:text-primary hover:border-gray-300"
                     )}
                   >
                     {cat.name}
-                    {activeTab === cat.id && (
-                      <motion.div 
-                        layoutId="activeTab" 
-                        className="absolute bottom-0 left-0 w-full h-1 bg-accent" 
-                      />
-                    )}
                   </Link>
                 </li>
               ))}
