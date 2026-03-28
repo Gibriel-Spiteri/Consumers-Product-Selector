@@ -203,7 +203,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <h1 className="font-display font-bold lg:text-3xl text-primary uppercase tracking-tight text-[26px]">
               Consumers
             </h1>
-            <span className="font-display text-lg lg:text-xl text-amber-500 leading-none font-medium">
+            <span className="font-display text-lg lg:text-xl text-amber-500 leading-none font-normal">
               Product Selector
             </span>
           </Link>
