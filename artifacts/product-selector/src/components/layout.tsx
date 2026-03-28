@@ -98,7 +98,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <header className="bg-white border-b border-border py-6 shadow-sm relative z-20">
         <div className="max-w-7xl mx-auto px-4 lg:px-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <Link href="/" className="flex items-baseline gap-2 cursor-pointer group w-fit">
-            <h1 className="font-display font-bold text-2xl lg:text-3xl text-primary leading-none uppercase tracking-tight">
+            <h1 className="font-display font-bold lg:text-3xl text-primary uppercase tracking-tight text-[24px]">
               Consumers
             </h1>
             <span className="font-display text-lg lg:text-xl text-amber-500 leading-none font-medium">
