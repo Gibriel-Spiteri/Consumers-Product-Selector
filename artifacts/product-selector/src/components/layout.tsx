@@ -372,7 +372,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </header>
       {/* Navigation Bar */}
       <nav
-        className="bg-white border-b border-gray-200 relative z-30"
+        className="bg-white relative z-30"
         onMouseLeave={handleMouseLeaveNav}
       >
         <div className="max-w-7xl mx-auto px-4 lg:px-8">
