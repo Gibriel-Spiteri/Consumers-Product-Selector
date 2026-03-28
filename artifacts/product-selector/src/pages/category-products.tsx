@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, Link } from "wouter";
 import { useGetCategories, getGetCategoryProductsQueryOptions } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, PackageX, Loader2, ArrowLeft, ImageOff, LayoutList, LayoutGrid } from "lucide-react";
+import { ChevronRight, PackageX, Loader2, ArrowLeft, ImageOff, LayoutList, LayoutGrid, Copy, Check } from "lucide-react";
 import { useCategoryPath } from "@/hooks/use-category-path";
 import ProductModal from "@/components/product-modal";
 import { cn } from "@/lib/utils";
@@ -82,6 +82,33 @@ function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: P
   );
 }
 
+function CopySkuButton({ sku }: { sku: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(sku).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      title="Copy model number"
+      className={cn(
+        "ml-1 p-0.5 rounded transition-all shrink-0",
+        copied
+          ? "text-green-500"
+          : "text-muted-foreground/40 hover:text-accent opacity-0 group-hover:opacity-100"
+      )}
+    >
+      {copied ? <Check size={11} strokeWidth={2.5} /> : <Copy size={11} />}
+    </button>
+  );
+}
+
 function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: Product) => void }) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -101,7 +128,10 @@ function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: P
               {p.name}
             </p>
             {p.sku && (
-              <p className="font-mono text-xs text-muted-foreground mb-2">{p.sku}</p>
+              <div className="flex items-center gap-0.5 mb-2">
+                <p className="font-mono text-xs text-muted-foreground">{p.sku}</p>
+                <CopySkuButton sku={p.sku} />
+              </div>
             )}
             <p className="font-bold text-accent text-sm">
               {p.price ? `$${Number(p.price).toFixed(2)}` : <span className="text-muted-foreground font-normal">Call for price</span>}
