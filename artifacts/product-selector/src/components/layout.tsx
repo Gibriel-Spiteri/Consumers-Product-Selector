@@ -98,11 +98,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Main Header */}
       <header className="bg-white border-b border-border py-6 shadow-sm relative z-20">
         <div className="max-w-7xl mx-auto px-4 lg:px-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <Link href="/" className="flex flex-col group cursor-pointer w-fit">
-            <h1 className="font-display font-bold text-4xl lg:text-5xl text-primary leading-none uppercase tracking-tight group-hover:text-accent transition-colors">
+          <Link href="/" className="flex items-baseline gap-2 cursor-pointer group w-fit">
+            <h1 className="font-display font-bold text-2xl lg:text-3xl text-primary leading-none uppercase tracking-tight">
               Consumers
             </h1>
-            <span className="bg-primary group-hover:bg-accent transition-colors text-white text-[10px] lg:text-xs uppercase font-bold tracking-[0.25em] px-2 py-0.5 mt-1 inline-block w-fit">
+            <span className="font-display font-semibold text-lg lg:text-xl text-amber-500 leading-none">
               Product Selector
             </span>
           </Link>
