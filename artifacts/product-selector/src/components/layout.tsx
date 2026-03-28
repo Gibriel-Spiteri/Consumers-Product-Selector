@@ -461,7 +461,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <h2 className="font-display font-bold text-2xl uppercase tracking-tight mb-2">Consumers</h2>
             <p className="text-primary-foreground/60 text-sm">© {new Date().getFullYear()} Consumers Product Selector. All rights reserved.</p>
           </div>
-
+          <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 text-sm">
+            <a href="#" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">PRD Product Reference Directory</a>
+            <a href="#" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">Kitchen Photoshoot Showcase</a>
+            <a href="#" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">Report an Issue</a>
+          </div>
         </div>
       </footer>
     </div>
