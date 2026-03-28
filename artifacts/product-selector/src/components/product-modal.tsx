@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Tag, Barcode, DollarSign, ImageOff } from "lucide-react";
 
@@ -48,7 +49,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
     return () => document.removeEventListener("keydown", onKey);
   }, [product, onClose]);
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {product && (
         <>
@@ -59,7 +60,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9999]"
             onClick={onClose}
           />
 
@@ -70,7 +71,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 16 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none"
           >
             <div
               className="bg-white rounded-2xl shadow-2xl w-full max-w-md pointer-events-auto overflow-hidden"
@@ -165,6 +166,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
