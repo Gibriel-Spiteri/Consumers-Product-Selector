@@ -1,6 +1,6 @@
 import { useParams, Link } from "wouter";
 import { useGetCategories } from "@workspace/api-client-react";
-import { ChevronRight, Loader2, ArrowLeft, Layers } from "lucide-react";
+import { ChevronRight, Loader2, ArrowLeft } from "lucide-react";
 
 export default function CategoryOverview() {
   const { categoryId } = useParams();
@@ -37,9 +37,6 @@ export default function CategoryOverview() {
       ) : (
         <>
           <div className="mb-10 flex items-center gap-4">
-            <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center text-white shrink-0">
-              <Layers size={22} />
-            </div>
             <div>
               <h1 className="text-4xl font-display font-bold text-primary uppercase tracking-tight">
                 {category.name}
