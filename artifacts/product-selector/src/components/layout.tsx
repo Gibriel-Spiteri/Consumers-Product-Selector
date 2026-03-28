@@ -95,8 +95,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         )}
       </AnimatePresence>
       {/* Main Header */}
-      <header className="bg-white border-b border-border py-6 shadow-sm relative z-20">
-        <div className="max-w-7xl mx-auto px-4 lg:px-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <header className="bg-white border-b border-border py-4 shadow-sm relative z-20">
+        <div className="w-full pl-4 lg:pl-6 pr-4 lg:pr-8 flex flex-row items-center justify-between gap-6">
           <Link href="/" className="flex items-baseline gap-2 cursor-pointer group w-fit">
             <h1 className="font-display font-bold lg:text-3xl text-primary uppercase tracking-tight text-[24px]">
               Consumers
