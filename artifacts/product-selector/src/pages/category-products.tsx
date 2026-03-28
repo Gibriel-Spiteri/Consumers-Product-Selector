@@ -176,9 +176,15 @@ export default function CategoryProducts() {
         <div className="w-px h-4 bg-border mx-2"></div>
         {path.map((cat, index) => (
           <div key={cat.id} className="flex items-center gap-2">
-            <span className={index === path.length - 1 ? "text-primary font-bold px-3 py-1 bg-white rounded-md shadow-sm border border-border" : ""}>
-              {cat.name}
-            </span>
+            {index === path.length - 1 ? (
+              <span className="text-primary font-bold px-3 py-1 bg-white rounded-md shadow-sm border border-border">
+                {cat.name}
+              </span>
+            ) : (
+              <Link href={`/category/${cat.id}`} className="hover:text-accent transition-colors">
+                {cat.name}
+              </Link>
+            )}
             {index < path.length - 1 && <ChevronRight size={14} className="text-muted-foreground/50" />}
           </div>
         ))}
