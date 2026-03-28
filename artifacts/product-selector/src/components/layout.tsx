@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import { Search, Loader2, RefreshCw, AlertCircle, Database, ChevronRight, Package, Folders, Copy, Check } from "lucide-react";
+import { Search, Loader2, RefreshCw, AlertCircle, Database, ChevronRight, Package, Folders, Copy, Check, BookOpen, Camera, Flag } from "lucide-react";
 import { useGetCategories, useGetNetSuiteStatus, useTriggerNetSuiteSync, getGetCategoriesQueryKey, getGetNetSuiteStatusQueryKey, useSearchProducts, getSearchProductsQueryKey } from "@workspace/api-client-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -462,9 +462,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <p className="text-primary-foreground/60 text-sm">© {new Date().getFullYear()} Consumers Product Selector. All rights reserved.</p>
           </div>
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 text-sm">
-            <a href="#" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">PRD Product Reference Directory</a>
-            <a href="#" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">Kitchen Photoshoot Showcase</a>
-            <a href="#" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">Report an Issue</a>
+            <a href="#" className="flex items-center gap-2 text-primary-foreground/70 hover:text-primary-foreground transition-colors">
+              <BookOpen size={15} />
+              PRD Product Reference Directory
+            </a>
+            <a href="#" className="flex items-center gap-2 text-primary-foreground/70 hover:text-primary-foreground transition-colors">
+              <Camera size={15} />
+              Kitchen Photoshoot Showcase
+            </a>
+            <a href="#" className="flex items-center gap-2 text-primary-foreground/70 hover:text-primary-foreground transition-colors">
+              <Flag size={15} />
+              Report an Issue
+            </a>
           </div>
         </div>
       </footer>
