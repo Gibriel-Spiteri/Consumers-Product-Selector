@@ -461,9 +461,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <h2 className="font-display font-bold text-2xl uppercase tracking-tight mb-2">Consumers</h2>
             <p className="text-primary-foreground/60 text-sm">© {new Date().getFullYear()} Consumers Product Selector. All rights reserved.</p>
           </div>
-          <div className="text-sm text-primary-foreground/60 font-medium">
-            Powered by NetSuite Integration
-          </div>
+
         </div>
       </footer>
     </div>
