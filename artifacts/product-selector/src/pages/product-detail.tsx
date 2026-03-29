@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useGetCategories, getGetCategoryProductsQueryOptions } from "@workspace/api-client-react";
 import { useCategoryPath } from "@/hooks/use-category-path";
-import { ChevronRight, ImageOff, PackageSearch, Copy, Check } from "lucide-react";
+import { ChevronRight, ImageOff, PackageSearch, Copy, Check, ChevronLeft, ChevronRight as ChevronRightIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 const CUSTOM_PRODUCT_IDS = new Set([39, 40, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98]);
 
@@ -20,38 +21,131 @@ interface ProductData {
   features: string[] | null;
 }
 
-function useProductSrc(id: number) {
-  const custom = CUSTOM_PRODUCT_IDS.has(id);
-  return {
-    main: custom
-      ? `${import.meta.env.BASE_URL}products/prod-${id}.png`
-      : `https://picsum.photos/seed/product-${id}/800/800`,
-    fallback: `https://picsum.photos/seed/product-${id}/800/800`,
-    isCustom: custom,
-  };
+const PICSUM_ANGLE_SEEDS = ["angle", "detail", "side", "context"];
+
+function useProductImages(id: number): string[] {
+  const isCustom = CUSTOM_PRODUCT_IDS.has(id);
+  const picsumImages = PICSUM_ANGLE_SEEDS.map(
+    s => `https://picsum.photos/seed/product-${id}-${s}/800/800`
+  );
+  if (isCustom) {
+    return [
+      `${import.meta.env.BASE_URL}products/prod-${id}.png`,
+      ...picsumImages,
+    ];
+  }
+  return [
+    `https://picsum.photos/seed/product-${id}/800/800`,
+    ...picsumImages,
+  ];
 }
 
-function MainImage({ id, name }: { id: number; name: string }) {
-  const [useFallback, setUseFallback] = useState(false);
-  const [failed, setFailed] = useState(false);
-  const { main, fallback, isCustom } = useProductSrc(id);
-  const src = isCustom && !useFallback ? main : fallback;
+function ImageGallery({ id, name }: { id: number; name: string }) {
+  const images = useProductImages(id);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [direction, setDirection] = useState(0);
+  const [failedIndexes, setFailedIndexes] = useState<Set<number>>(new Set());
 
-  if (failed) {
-    return (
-      <div className="w-full h-full flex items-center justify-center text-muted-foreground flex-col gap-2">
-        <ImageOff size={36} />
-        <span className="text-xs">No image</span>
-      </div>
-    );
-  }
+  const goTo = useCallback((index: number) => {
+    setDirection(index > selectedIndex ? 1 : -1);
+    setSelectedIndex(index);
+  }, [selectedIndex]);
+
+  const goPrev = () => { if (selectedIndex > 0) goTo(selectedIndex - 1); };
+  const goNext = () => { if (selectedIndex < images.length - 1) goTo(selectedIndex + 1); };
+
+  const handleError = (index: number) => {
+    setFailedIndexes(prev => new Set([...prev, index]));
+  };
+
+  const visibleImages = images.map((src, i) => ({ src, i })).filter(({ i }) => !failedIndexes.has(i));
+
+  const currentSrc = images[selectedIndex];
+  const isFailed = failedIndexes.has(selectedIndex);
+
   return (
-    <img
-      src={src}
-      alt={name}
-      onError={() => (isCustom && !useFallback ? setUseFallback(true) : setFailed(true))}
-      className="w-full h-full object-contain"
-    />
+    <div className="flex flex-col gap-3">
+      {/* Main image */}
+      <div className="relative bg-[#f7f8fa] rounded-3xl aspect-square overflow-hidden group">
+        <AnimatePresence mode="wait" initial={false} custom={direction}>
+          {isFailed ? (
+            <div className="absolute inset-0 flex items-center justify-center flex-col gap-2 text-gray-300">
+              <ImageOff size={36} />
+              <span className="text-xs">No image</span>
+            </div>
+          ) : (
+            <motion.div
+              key={selectedIndex}
+              custom={direction}
+              initial={{ opacity: 0, x: direction * 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: direction * -30 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="absolute inset-0 flex items-center justify-center p-12"
+            >
+              <img
+                src={currentSrc}
+                alt={`${name} — view ${selectedIndex + 1}`}
+                onError={() => handleError(selectedIndex)}
+                className="w-full h-full object-contain"
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Prev / Next arrows */}
+        {visibleImages.length > 1 && (
+          <>
+            <button
+              onClick={goPrev}
+              disabled={selectedIndex === 0}
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm shadow-sm flex items-center justify-center text-gray-500 hover:text-gray-900 hover:bg-white transition-all opacity-0 group-hover:opacity-100 disabled:opacity-0"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button
+              onClick={goNext}
+              disabled={selectedIndex === images.length - 1}
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm shadow-sm flex items-center justify-center text-gray-500 hover:text-gray-900 hover:bg-white transition-all opacity-0 group-hover:opacity-100 disabled:opacity-0"
+            >
+              <ChevronRightIcon size={16} />
+            </button>
+          </>
+        )}
+
+        {/* Image counter */}
+        {visibleImages.length > 1 && (
+          <div className="absolute bottom-3 right-3 bg-black/30 backdrop-blur-sm text-white text-[11px] font-medium px-2 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+            {selectedIndex + 1} / {visibleImages.length}
+          </div>
+        )}
+      </div>
+
+      {/* Thumbnail strip */}
+      {visibleImages.length > 1 && (
+        <div className="flex gap-2 overflow-x-auto pb-0.5">
+          {visibleImages.map(({ src, i }) => (
+            <button
+              key={i}
+              onClick={() => goTo(i)}
+              className={cn(
+                "shrink-0 w-16 h-16 rounded-xl bg-[#f7f8fa] overflow-hidden border-2 transition-all duration-150 p-1.5",
+                i === selectedIndex
+                  ? "border-gray-900"
+                  : "border-transparent hover:border-gray-200"
+              )}
+            >
+              <img
+                src={src}
+                alt={`View ${i + 1}`}
+                onError={() => handleError(i)}
+                className="w-full h-full object-contain"
+              />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -76,20 +170,24 @@ function CopySku({ sku }: { sku: string }) {
 }
 
 function RelatedCard({ product }: { product: ProductData }) {
-  const [useFallback, setUseFallback] = useState(false);
-  const { main, fallback, isCustom } = useProductSrc(product.id);
-  const src = isCustom && !useFallback ? main : fallback;
+  const images = useProductImages(product.id);
+  const [failed, setFailed] = useState(false);
+  const src = images[0];
 
   return (
     <Link href={`/product/${product.id}`}>
       <div className="shrink-0 w-48 bg-white rounded-2xl overflow-hidden cursor-pointer group hover:-translate-y-1 hover:shadow-lg transition-all duration-200 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
         <div className="h-40 bg-[#f7f8fa] flex items-center justify-center p-5">
-          <img
-            src={src}
-            alt={product.name}
-            onError={() => setUseFallback(true)}
-            className="w-full h-full object-contain"
-          />
+          {failed ? (
+            <ImageOff size={24} className="text-gray-300" />
+          ) : (
+            <img
+              src={src}
+              alt={product.name}
+              onError={() => setFailed(true)}
+              className="w-full h-full object-contain"
+            />
+          )}
         </div>
         <div className="p-4">
           <p className="text-[13px] font-medium text-gray-800 leading-snug line-clamp-2 group-hover:text-primary transition-colors mb-1.5">
@@ -182,11 +280,9 @@ export default function ProductDetail() {
         {/* Main layout */}
         <div className="flex flex-col lg:flex-row gap-16 mb-20">
 
-          {/* Left — image */}
+          {/* Left — image gallery */}
           <div className="lg:w-[48%] shrink-0">
-            <div className="bg-[#f7f8fa] rounded-3xl aspect-square flex items-center justify-center p-12">
-              <MainImage id={product.id} name={product.name} />
-            </div>
+            <ImageGallery id={product.id} name={product.name} />
           </div>
 
           {/* Right — product info */}
