@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, Link } from "wouter";
 import { useGetCategories, getGetCategoryProductsQueryOptions } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, PackageX, Loader2, ArrowLeft, ImageOff, LayoutList, LayoutGrid, Copy, Check } from "lucide-react";
+import { ChevronRight, PackageX, Loader2, ImageOff, LayoutList, LayoutGrid, Copy, Check } from "lucide-react";
 import { useCategoryPath } from "@/hooks/use-category-path";
 import ProductModal from "@/components/product-modal";
 import { cn } from "@/lib/utils";
@@ -72,22 +72,22 @@ function CopySkuButton({ sku }: { sku: string }) {
 
 function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: Product) => void }) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
       {products.map(p => (
         <div
           key={p.id}
           onClick={() => onSelect(p)}
-          className="bg-white rounded-2xl overflow-hidden cursor-pointer group hover:-translate-y-1 hover:shadow-xl transition-all duration-200 shadow-sm"
+          className="bg-white rounded-2xl overflow-hidden cursor-pointer group hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/8 transition-all duration-200 shadow-[0_1px_4px_rgba(0,0,0,0.06)]"
         >
-          <div className="bg-[#f7f8fa] aspect-square flex items-center justify-center p-6">
+          <div className="bg-[#f7f8fa] aspect-[4/3] flex items-center justify-center p-8">
             <ProductImage
               id={p.id}
               name={p.name}
               className="w-full h-full"
             />
           </div>
-          <div className="p-4 border-t border-gray-100">
-            <p className="text-sm font-medium text-gray-900 leading-snug line-clamp-2 mb-2 group-hover:text-primary transition-colors">
+          <div className="p-5">
+            <p className="text-[14px] font-medium text-gray-900 leading-snug line-clamp-2 mb-2.5 group-hover:text-primary transition-colors">
               {p.name}
             </p>
             {p.sku && (
@@ -96,10 +96,10 @@ function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: P
                 <CopySkuButton sku={p.sku} />
               </div>
             )}
-            <p className="font-semibold text-gray-900 text-sm">
+            <p className="font-semibold text-gray-900">
               {p.price
                 ? `$${Number(p.price).toFixed(2)}`
-                : <span className="text-gray-300 font-normal text-xs">—</span>
+                : <span className="text-gray-300 font-normal text-sm">—</span>
               }
             </p>
           </div>
@@ -178,61 +178,60 @@ export default function CategoryProducts() {
         onClose={() => setSelectedProduct(null)}
       />
 
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-[13px] text-gray-400 mb-8 overflow-x-auto whitespace-nowrap">
-        <Link href="/" className="hover:text-gray-700 transition-colors flex items-center gap-1">
-          <ArrowLeft size={13} />
-          Home
-        </Link>
-        {path.map((cat) => (
-          <span key={cat.id} className="flex items-center gap-1.5">
-            <ChevronRight size={12} className="text-gray-300" />
-            <Link href={`/category/${cat.id}`} className="hover:text-gray-700 transition-colors">
-              {cat.name}
-            </Link>
-          </span>
-        ))}
-      </nav>
-
       {/* Page Header */}
-      <div className="mb-8 flex items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">
-            {path.length > 0 ? path[path.length - 1].name : "Products"}
-          </h1>
-          {!isLoadingProducts && products.length > 0 && (
-            <p className="text-sm text-gray-400 mt-1">{products.length} {products.length === 1 ? "item" : "items"}</p>
-          )}
-        </div>
+      <div className="mb-8">
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-1 text-[12px] text-gray-400 mb-4 overflow-x-auto whitespace-nowrap">
+          <Link href="/" className="hover:text-gray-600 transition-colors">Home</Link>
+          {path.map((cat) => (
+            <span key={cat.id} className="flex items-center gap-1">
+              <ChevronRight size={11} className="text-gray-300" />
+              <Link href={`/category/${cat.id}`} className="hover:text-gray-600 transition-colors">
+                {cat.name}
+              </Link>
+            </span>
+          ))}
+        </nav>
 
-        {/* View toggle */}
-        <div className="flex items-center bg-white border border-gray-100 rounded-xl shadow-sm p-1 shrink-0">
-          <button
-            onClick={() => setView("list")}
-            title="List view"
-            className={cn(
-              "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all",
-              view === "list"
-                ? "bg-gray-900 text-white shadow-sm"
-                : "text-gray-400 hover:text-gray-700"
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900">
+              {path.length > 0 ? path[path.length - 1].name : "Products"}
+            </h1>
+            {!isLoadingProducts && products.length > 0 && (
+              <p className="text-[13px] text-gray-400 mt-1">{products.length} {products.length === 1 ? "item" : "items"}</p>
             )}
-          >
-            <LayoutList size={15} />
-            <span className="hidden sm:inline">List</span>
-          </button>
-          <button
-            onClick={() => setView("grid")}
-            title="Grid view"
-            className={cn(
-              "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all",
-              view === "grid"
-                ? "bg-gray-900 text-white shadow-sm"
-                : "text-gray-400 hover:text-gray-700"
-            )}
-          >
-            <LayoutGrid size={15} />
-            <span className="hidden sm:inline">Grid</span>
-          </button>
+          </div>
+
+          {/* View toggle */}
+          <div className="flex items-center bg-gray-100 rounded-lg p-0.5 shrink-0">
+            <button
+              onClick={() => setView("list")}
+              title="List view"
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] font-medium transition-all",
+                view === "list"
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-400 hover:text-gray-700"
+              )}
+            >
+              <LayoutList size={14} />
+              <span className="hidden sm:inline">List</span>
+            </button>
+            <button
+              onClick={() => setView("grid")}
+              title="Grid view"
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] font-medium transition-all",
+                view === "grid"
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-400 hover:text-gray-700"
+              )}
+            >
+              <LayoutGrid size={14} />
+              <span className="hidden sm:inline">Grid</span>
+            </button>
+          </div>
         </div>
       </div>
 
