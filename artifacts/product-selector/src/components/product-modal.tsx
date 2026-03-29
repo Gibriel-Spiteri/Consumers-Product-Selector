@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Tag, Barcode, DollarSign, ImageOff } from "lucide-react";
+import { X, Tag, Barcode, DollarSign, ImageOff, Copy, Check } from "lucide-react";
 
 interface Product {
   id: number;
@@ -48,6 +48,17 @@ function ProductImage({ id, name }: { id: number; name: string }) {
 }
 
 export default function ProductModal({ product, categoryPath, onClose }: ProductModalProps) {
+  const [copiedSku, setCopiedSku] = useState(false);
+
+  const handleCopySku = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!product?.sku) return;
+    navigator.clipboard.writeText(product.sku).then(() => {
+      setCopiedSku(true);
+      setTimeout(() => setCopiedSku(false), 1500);
+    });
+  };
+
   useEffect(() => {
     if (!product) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -121,9 +132,21 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                       <Barcode size={13} className="text-muted-foreground" />
                       <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">SKU</p>
                     </div>
-                    <p className="font-mono font-semibold text-foreground text-sm">
-                      {product.sku || <span className="text-muted-foreground italic font-sans font-normal">—</span>}
-                    </p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="font-mono font-semibold text-foreground text-sm">
+                        {product.sku || <span className="text-muted-foreground italic font-sans font-normal">—</span>}
+                      </p>
+                      {product.sku && (
+                        <button
+                          type="button"
+                          onClick={handleCopySku}
+                          className="flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                          title="Copy model number"
+                        >
+                          {copiedSku ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   <div className="p-3.5 bg-accent/5 rounded-xl border border-accent/20">
