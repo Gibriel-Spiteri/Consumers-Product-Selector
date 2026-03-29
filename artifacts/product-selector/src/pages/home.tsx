@@ -12,9 +12,6 @@ export default function Home() {
         />
         <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/45 to-transparent" />
         <div className="relative z-10 h-full flex flex-col justify-center px-10 lg:px-20 max-w-2xl">
-          <span className="text-amber-400 text-[11px] font-bold uppercase tracking-[0.2em] mb-4">
-            New Collection 2025
-          </span>
           <h2 className="text-4xl lg:text-5xl font-bold text-white leading-tight mb-4">
             Elevate Your<br />Living Spaces.
           </h2>
