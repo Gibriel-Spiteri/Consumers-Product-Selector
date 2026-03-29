@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ImageOff, Copy, Check, Tag } from "lucide-react";
+import { X, ImageOff, Copy, Check, Tag, ArrowRight } from "lucide-react";
 
 interface Product {
   id: number;
@@ -166,6 +167,15 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                   >
                     Close
                   </button>
+
+                  {/* Full product page link */}
+                  <Link
+                    href={`/product/${product.id}`}
+                    onClick={onClose}
+                    className="flex items-center justify-center gap-1.5 w-full text-sm text-muted-foreground hover:text-primary transition-colors py-1"
+                  >
+                    View full details <ArrowRight size={13} />
+                  </Link>
                 </div>
               </div>
             </div>

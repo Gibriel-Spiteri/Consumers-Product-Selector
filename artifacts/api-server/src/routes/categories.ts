@@ -171,4 +171,42 @@ router.get("/products/search", async (req, res) => {
   return res.json(response);
 });
 
+router.get("/products/:productId", async (req, res) => {
+  const productId = parseInt(req.params.productId, 10);
+  if (isNaN(productId)) {
+    return res.status(400).json({ error: "Invalid productId" });
+  }
+
+  const hasData = await hasDatabaseData();
+
+  if (!hasData) {
+    const product = MOCK_PRODUCTS.find((p) => p.id === productId);
+    if (!product) return res.status(404).json({ error: "Product not found" });
+    return res.json({
+      product: {
+        id: product.id,
+        name: product.name,
+        sku: product.sku,
+        price: product.price,
+        categoryId: product.categoryId,
+        netsuiteId: product.netsuiteId,
+      },
+    });
+  }
+
+  const rows = await db.select().from(productsTable).where(eq(productsTable.id, productId));
+  if (rows.length === 0) return res.status(404).json({ error: "Product not found" });
+  const p = rows[0];
+  return res.json({
+    product: {
+      id: p.id,
+      name: p.name,
+      sku: p.sku ?? null,
+      price: p.price ? parseFloat(p.price) : null,
+      categoryId: p.categoryId ?? null,
+      netsuiteId: p.netsuiteId ?? null,
+    },
+  });
+});
+
 export default router;
