@@ -217,7 +217,7 @@ export default function ProductDetail() {
             </div>
 
             {product.sku && (
-              <p className="mt-6 text-[11px] text-muted-foreground/60">
+              <p className="mt-6 border-t-[#475261bd] border-r-[#475261bd] border-b-[#475261bd] border-l-[#475261bd] text-[#4c5869e6] text-[15px]">
                 SKU: <span className="font-mono">{product.sku}</span>
               </p>
             )}
