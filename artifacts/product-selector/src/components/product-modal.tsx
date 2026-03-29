@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Tag, Barcode, DollarSign, ImageOff, Copy, Check } from "lucide-react";
+import { X, ImageOff, Copy, Check, Tag } from "lucide-react";
 
 interface Product {
   id: number;
@@ -26,11 +26,11 @@ function ProductImage({ id, name }: { id: number; name: string }) {
   const useCustom = CUSTOM_PRODUCT_IDS.has(id) && !fallback;
   const src = useCustom
     ? `${import.meta.env.BASE_URL}products/prod-${id}.png`
-    : `https://picsum.photos/seed/product-${id}/600/360`;
+    : `https://picsum.photos/seed/product-${id}/600/600`;
 
   if (failed) {
     return (
-      <div className="w-full h-48 bg-secondary flex flex-col items-center justify-center text-muted-foreground gap-2">
+      <div className="w-full h-full bg-secondary flex flex-col items-center justify-center text-muted-foreground gap-2">
         <ImageOff size={28} />
         <span className="text-xs">No image available</span>
       </div>
@@ -42,7 +42,7 @@ function ProductImage({ id, name }: { id: number; name: string }) {
       src={src}
       alt={name}
       onError={() => useCustom ? setFallback(true) : setFailed(true)}
-      className="w-full h-48 object-cover"
+      className="w-full h-full object-cover"
     />
   );
 }
@@ -76,7 +76,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.18 }}
             className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9999]"
             onClick={onClose}
           />
@@ -84,112 +84,89 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
           {/* Modal Card */}
           <motion.div
             key="modal"
-            initial={{ opacity: 0, scale: 0.95, y: 16 }}
+            initial={{ opacity: 0, scale: 0.96, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 16 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
+            exit={{ opacity: 0, scale: 0.96, y: 12 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
             className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none"
           >
             <div
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-md pointer-events-auto overflow-hidden"
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-lg pointer-events-auto overflow-hidden flex"
               onClick={e => e.stopPropagation()}
             >
-              {/* Product Image */}
-              <div className="relative">
+              {/* Left — image panel */}
+              <div className="w-[42%] shrink-0 bg-[#f3f4f6] relative">
                 <ProductImage id={product.id} name={product.name} />
-                {/* Close button overlaid on image */}
+              </div>
+
+              {/* Right — product info */}
+              <div className="flex-1 p-7 flex flex-col relative">
+                {/* Close button */}
                 <button
                   onClick={onClose}
-                  className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-sm flex items-center justify-center text-white transition-colors"
+                  className="absolute top-4 right-4 w-7 h-7 rounded-full bg-secondary hover:bg-border flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  <X size={16} />
+                  <X size={14} />
                 </button>
-                {/* Price badge overlaid on image */}
-                {product.price != null && (
-                  <div className="absolute bottom-3 right-3 bg-accent text-white font-bold text-lg px-3 py-1 rounded-lg shadow-lg">
-                    ${Number(product.price).toFixed(2)}
-                  </div>
-                )}
-              </div>
 
-              {/* Header */}
-              <div className="bg-primary px-6 py-4">
-                <p className="text-white/60 text-xs font-semibold uppercase tracking-widest mb-0.5">
-                  Product Detail
-                </p>
-                <h2 className="text-white font-display font-bold text-xl uppercase leading-tight">
-                  {product.name}
-                </h2>
-              </div>
-
-              {/* Body */}
-              <div className="px-6 py-5 space-y-3">
-
-                {/* SKU + Price row */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3.5 bg-secondary/50 rounded-xl border border-border">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <Barcode size={13} className="text-muted-foreground" />
-                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">SKU</p>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <p className="font-mono font-semibold text-foreground text-sm">
-                        {product.sku || <span className="text-muted-foreground italic font-sans font-normal">—</span>}
+                {/* SKU */}
+                <div className="flex items-center gap-2 mb-2">
+                  {product.sku ? (
+                    <>
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+                        SKU: {product.sku}
                       </p>
-                      {product.sku && (
-                        <button
-                          type="button"
-                          onClick={handleCopySku}
-                          className="flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-                          title="Copy model number"
-                        >
-                          {copiedSku ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="p-3.5 bg-accent/5 rounded-xl border border-accent/20">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <DollarSign size={13} className="text-accent" />
-                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">MSRP</p>
-                    </div>
-                    <p className="font-bold text-accent text-lg">
-                      {product.price != null
-                        ? `$${Number(product.price).toFixed(2)}`
-                        : <span className="text-muted-foreground italic font-normal text-sm">Call for price</span>
-                      }
-                    </p>
-                  </div>
+                      <button
+                        type="button"
+                        onClick={handleCopySku}
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                        title="Copy model number"
+                      >
+                        {copiedSku ? <Check size={11} className="text-green-500" /> : <Copy size={11} />}
+                      </button>
+                    </>
+                  ) : (
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">No SKU</p>
+                  )}
                 </div>
 
-                {/* Category Path */}
-                {categoryPath && (
-                  <div className="flex items-center gap-3 p-3.5 bg-secondary/50 rounded-xl border border-border">
-                    <Tag size={15} className="text-primary shrink-0" />
-                    <div>
-                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-0.5">Category</p>
-                      <p className="text-sm font-medium text-foreground">{categoryPath}</p>
-                    </div>
-                  </div>
-                )}
+                {/* Product name */}
+                <h2 className="font-display font-bold text-foreground text-xl leading-snug mb-3 pr-6">
+                  {product.name}
+                </h2>
 
-                {/* NetSuite ID */}
-                {product.netsuiteId && (
-                  <p className="text-xs text-muted-foreground px-1">
-                    NetSuite ID: <span className="font-mono">{product.netsuiteId}</span>
+                {/* Category path */}
+                {categoryPath && (
+                  <p className="text-sm text-muted-foreground mb-5 flex items-center gap-1.5">
+                    <Tag size={12} className="shrink-0" />
+                    {categoryPath}
                   </p>
                 )}
-              </div>
 
-              {/* Footer */}
-              <div className="px-6 pb-6">
-                <button
-                  onClick={onClose}
-                  className="w-full py-3 bg-primary text-white font-bold rounded-xl hover:bg-accent transition-colors text-sm uppercase tracking-wider"
-                >
-                  Close
-                </button>
+                {/* Price */}
+                <p className="text-3xl font-bold text-foreground mb-6">
+                  {product.price != null
+                    ? `$${Number(product.price).toFixed(2)}`
+                    : <span className="text-muted-foreground text-xl font-normal italic">Call for price</span>
+                  }
+                </p>
+
+                <div className="mt-auto space-y-2">
+                  {/* NetSuite ID */}
+                  {product.netsuiteId && (
+                    <p className="text-[11px] text-muted-foreground">
+                      NetSuite ID: <span className="font-mono">{product.netsuiteId}</span>
+                    </p>
+                  )}
+
+                  {/* Close / dismiss */}
+                  <button
+                    onClick={onClose}
+                    className="w-full py-2.5 bg-primary text-white font-semibold rounded-xl hover:bg-primary/90 transition-colors text-sm"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
             </div>
           </motion.div>
