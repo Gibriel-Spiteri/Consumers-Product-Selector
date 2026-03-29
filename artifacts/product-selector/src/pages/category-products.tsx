@@ -204,9 +204,6 @@ export default function CategoryProducts() {
           <h1 className="text-4xl font-display font-bold text-primary uppercase tracking-tight">
             {path.length > 0 ? path[path.length - 1].name : "Products"}
           </h1>
-          <p className="text-muted-foreground mt-2 font-medium">
-            Showing {productsData?.products.length || 0} items · click {view === "list" ? "any row" : "a card"} for details
-          </p>
         </div>
 
         {/* View toggle */}
