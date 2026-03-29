@@ -42,7 +42,7 @@ function ProductImage({ id, name }: { id: number; name: string }) {
       src={src}
       alt={name}
       onError={() => useCustom ? setFallback(true) : setFailed(true)}
-      className="w-full h-full object-cover"
+      className="w-full h-full object-contain p-4"
     />
   );
 }
