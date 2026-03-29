@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { useGetCategories, useGetCategoryProducts } from "@workspace/api-client-react";
+import { useGetCategories, getGetCategoryProductsQueryOptions } from "@workspace/api-client-react";
 import { useCategoryPath } from "@/hooks/use-category-path";
-import { ChevronRight, ImageOff, Copy, Check, PackageSearch, Truck, ShieldCheck } from "lucide-react";
+import { ChevronRight, ImageOff, PackageSearch, Truck, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const CUSTOM_PRODUCT_IDS = new Set([39, 40, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98]);
@@ -85,8 +85,6 @@ function RelatedCard({ product }: { product: ProductData }) {
 
 export default function ProductDetail() {
   const { productId } = useParams<{ productId: string }>();
-  const [copiedSku, setCopiedSku] = useState(false);
-
   const { data, isLoading, isError } = useQuery({
     queryKey: [`/api/products/${productId}`],
     queryFn: async () => {
@@ -101,20 +99,13 @@ export default function ProductDetail() {
   const product = data?.product;
   const path = useCategoryPath(categoryData?.categories ?? [], product?.categoryId ?? null);
 
-  const { data: relatedData } = useGetCategoryProducts(
-    product?.categoryId ?? 0,
-    { query: { enabled: !!product?.categoryId } }
-  );
+  const { data: relatedData } = useQuery({
+    ...getGetCategoryProductsQueryOptions(product?.categoryId ?? 0),
+    enabled: !!product?.categoryId,
+  });
   const relatedProducts = (relatedData?.products ?? [])
     .filter(p => p.id !== product?.id) as ProductData[];
 
-  const handleCopySku = () => {
-    if (!product?.sku) return;
-    navigator.clipboard.writeText(product.sku).then(() => {
-      setCopiedSku(true);
-      setTimeout(() => setCopiedSku(false), 1500);
-    });
-  };
 
   if (isLoading) {
     return (
@@ -211,25 +202,6 @@ export default function ProductDetail() {
               <span className="text-sm text-green-600 font-semibold">In Stock &amp; Ready to Ship</span>
             </div>
 
-            {/* SKU copy action */}
-            {product.sku && (
-              <div className="mb-8">
-                <button
-                  onClick={handleCopySku}
-                  className={cn(
-                    "w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-semibold text-sm transition-all",
-                    copiedSku
-                      ? "bg-green-600 text-white"
-                      : "bg-primary text-white hover:bg-primary/90"
-                  )}
-                >
-                  {copiedSku
-                    ? <><Check size={16} /> Copied to Clipboard</>
-                    : <><Copy size={16} /> Copy Model Number ({product.sku})</>
-                  }
-                </button>
-              </div>
-            )}
 
             {/* Feature callouts */}
             <div className="grid grid-cols-2 gap-3">
