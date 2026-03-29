@@ -16,8 +16,16 @@ interface Product {
   netsuiteId?: string | null;
 }
 
+const CUSTOM_PRODUCT_IDS = new Set([39, 40, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98]);
+
 function ProductImage({ id, name, className }: { id: number; name: string; className?: string }) {
+  const [fallback, setFallback] = useState(false);
   const [failed, setFailed] = useState(false);
+
+  const customSrc = `${import.meta.env.BASE_URL}products/prod-${id}.png`;
+  const fallbackSrc = `https://picsum.photos/seed/product-${id}/400/300`;
+  const useCustom = CUSTOM_PRODUCT_IDS.has(id) && !fallback;
+
   if (failed) {
     return (
       <div className={cn("bg-secondary flex items-center justify-center text-muted-foreground", className)}>
@@ -27,9 +35,9 @@ function ProductImage({ id, name, className }: { id: number; name: string; class
   }
   return (
     <img
-      src={`https://picsum.photos/seed/product-${id}/400/300`}
+      src={useCustom ? customSrc : fallbackSrc}
       alt={name}
-      onError={() => setFailed(true)}
+      onError={() => useCustom ? setFallback(true) : setFailed(true)}
       className={cn("object-cover", className)}
     />
   );

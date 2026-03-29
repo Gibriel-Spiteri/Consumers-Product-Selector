@@ -18,9 +18,15 @@ interface ProductModalProps {
   onClose: () => void;
 }
 
+const CUSTOM_PRODUCT_IDS = new Set([39, 40, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98]);
+
 function ProductImage({ id, name }: { id: number; name: string }) {
+  const [fallback, setFallback] = useState(false);
   const [failed, setFailed] = useState(false);
-  const src = `https://picsum.photos/seed/product-${id}/600/360`;
+  const useCustom = CUSTOM_PRODUCT_IDS.has(id) && !fallback;
+  const src = useCustom
+    ? `${import.meta.env.BASE_URL}products/prod-${id}.png`
+    : `https://picsum.photos/seed/product-${id}/600/360`;
 
   if (failed) {
     return (
@@ -35,7 +41,7 @@ function ProductImage({ id, name }: { id: number; name: string }) {
     <img
       src={src}
       alt={name}
-      onError={() => setFailed(true)}
+      onError={() => useCustom ? setFallback(true) : setFailed(true)}
       className="w-full h-48 object-cover"
     />
   );
