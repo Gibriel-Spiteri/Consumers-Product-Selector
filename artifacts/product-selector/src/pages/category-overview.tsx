@@ -13,7 +13,7 @@ export default function CategoryOverview() {
   const subCategories = category?.children || [];
 
   return (
-    <div className="w-full px-4 lg:px-8 py-10">
+    <div className="w-full px-4 lg:px-8 pt-5 pb-10">
       <Link
         href="/"
         className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-accent transition-colors mb-4"
