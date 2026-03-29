@@ -197,13 +197,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* System Status Banner */}
       <AnimatePresence>
         {showMockBanner && (
-          <motion.div 
+          <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
-            className="bg-amber-100 border-b border-amber-200 text-amber-900 text-xs sm:text-sm text-center py-2 font-medium px-4 flex items-center justify-center gap-2"
+            className="bg-gray-50 border-b border-gray-100 text-gray-500 text-xs text-center py-2 px-4 flex items-center justify-center gap-2"
           >
-            <AlertCircle size={16} className="text-amber-600" />
-            Showing sample data — NetSuite is not currently connected. Add credentials to environment secrets to view live data.
+            <AlertCircle size={12} className="text-gray-400 shrink-0" />
+            Sample data — NetSuite not connected. Add credentials to view live data.
           </motion.div>
         )}
       </AnimatePresence>

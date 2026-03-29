@@ -23,12 +23,12 @@ function ProductImage({ id, name, className }: { id: number; name: string; class
   const [failed, setFailed] = useState(false);
 
   const customSrc = `${import.meta.env.BASE_URL}products/prod-${id}.png`;
-  const fallbackSrc = `https://picsum.photos/seed/product-${id}/400/300`;
+  const fallbackSrc = `https://picsum.photos/seed/product-${id}/400/400`;
   const useCustom = CUSTOM_PRODUCT_IDS.has(id) && !fallback;
 
   if (failed) {
     return (
-      <div className={cn("bg-secondary flex items-center justify-center text-muted-foreground", className)}>
+      <div className={cn("flex items-center justify-center text-muted-foreground/30", className)}>
         <ImageOff size={20} />
       </div>
     );
@@ -38,55 +38,8 @@ function ProductImage({ id, name, className }: { id: number; name: string; class
       src={useCustom ? customSrc : fallbackSrc}
       alt={name}
       onError={() => useCustom ? setFallback(true) : setFailed(true)}
-      className={cn("object-cover", className)}
+      className={cn("object-contain", className)}
     />
-  );
-}
-
-function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: Product) => void }) {
-  return (
-    <div className="bg-white border border-border shadow-md shadow-black/5 rounded-2xl overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm">
-          <thead>
-            <tr className="bg-secondary/80 border-b-2 border-border">
-              <th className="px-4 lg:px-6 py-4 font-display font-bold uppercase tracking-wider text-primary w-16"></th>
-              <th className="px-4 lg:px-6 py-4 font-display font-bold uppercase tracking-wider text-primary w-[150px] whitespace-nowrap">Item SKU</th>
-              <th className="px-4 lg:px-6 py-4 font-display font-bold uppercase tracking-wider text-primary">Product Details</th>
-              <th className="px-4 lg:px-6 py-4 font-display font-bold uppercase tracking-wider text-primary text-right w-[160px] whitespace-nowrap">MSRP Price</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {products.map(p => (
-              <tr
-                key={p.id}
-                onClick={() => onSelect(p)}
-                className="hover:bg-blue-50/50 transition-colors group cursor-pointer"
-              >
-                <td className="px-4 lg:px-6 py-3">
-                  <ProductImage
-                    id={p.id}
-                    name={p.name}
-                    className="w-12 h-12 rounded-lg border border-border shrink-0"
-                  />
-                </td>
-                <td className="px-4 lg:px-6 py-3 font-mono text-muted-foreground font-medium group-hover:text-primary transition-colors whitespace-nowrap">
-                  {p.sku || 'N/A'}
-                </td>
-                <td className="px-4 lg:px-6 py-3 font-semibold text-foreground text-base group-hover:text-primary transition-colors">
-                  {p.name}
-                </td>
-                <td className="px-4 lg:px-6 py-3 text-right whitespace-nowrap">
-                  <span className="inline-block px-3 py-1 bg-secondary rounded-md font-bold text-accent border border-border group-hover:bg-white group-hover:border-accent/30 transition-colors">
-                    {p.price ? `$${Number(p.price).toFixed(2)}` : 'Call for price'}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
   );
 }
 
@@ -109,7 +62,7 @@ function CopySkuButton({ sku }: { sku: string }) {
         "ml-1 p-0.5 rounded transition-all shrink-0",
         copied
           ? "text-green-500"
-          : "text-muted-foreground/40 hover:text-accent opacity-0 group-hover:opacity-100"
+          : "text-muted-foreground/30 hover:text-muted-foreground opacity-0 group-hover:opacity-100"
       )}
     >
       {copied ? <Check size={11} strokeWidth={2.5} /> : <Copy size={11} />}
@@ -119,34 +72,82 @@ function CopySkuButton({ sku }: { sku: string }) {
 
 function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: Product) => void }) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
       {products.map(p => (
         <div
           key={p.id}
           onClick={() => onSelect(p)}
-          className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden cursor-pointer hover:shadow-md hover:border-accent/30 hover:-translate-y-0.5 transition-all group"
+          className="bg-white rounded-2xl overflow-hidden cursor-pointer group hover:-translate-y-1 hover:shadow-xl transition-all duration-200 shadow-sm"
         >
-          <ProductImage
-            id={p.id}
-            name={p.name}
-            className="w-full aspect-square"
-          />
-          <div className="p-3">
-            <p className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors leading-snug line-clamp-2 mb-1.5">
+          <div className="bg-[#f7f8fa] aspect-square flex items-center justify-center p-6">
+            <ProductImage
+              id={p.id}
+              name={p.name}
+              className="w-full h-full"
+            />
+          </div>
+          <div className="p-4 border-t border-gray-100">
+            <p className="text-sm font-medium text-gray-900 leading-snug line-clamp-2 mb-2 group-hover:text-primary transition-colors">
               {p.name}
             </p>
             {p.sku && (
-              <div className="flex items-center gap-0.5 mb-2">
-                <p className="font-mono text-xs text-muted-foreground">{p.sku}</p>
+              <div className="flex items-center gap-0.5 mb-3">
+                <p className="font-mono text-[11px] text-gray-400">{p.sku}</p>
                 <CopySkuButton sku={p.sku} />
               </div>
             )}
-            <p className="font-bold text-accent text-sm">
-              {p.price ? `$${Number(p.price).toFixed(2)}` : <span className="text-muted-foreground font-normal">Call for price</span>}
+            <p className="font-semibold text-gray-900 text-sm">
+              {p.price
+                ? `$${Number(p.price).toFixed(2)}`
+                : <span className="text-gray-300 font-normal text-xs">—</span>
+              }
             </p>
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: Product) => void }) {
+  return (
+    <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-sm">
+          <thead>
+            <tr className="border-b border-gray-100">
+              <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-16"></th>
+              <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[140px]">SKU</th>
+              <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400">Product</th>
+              <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 text-right w-[140px]">MSRP</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-50">
+            {products.map(p => (
+              <tr
+                key={p.id}
+                onClick={() => onSelect(p)}
+                className="hover:bg-gray-50 transition-colors group cursor-pointer"
+              >
+                <td className="px-5 py-3">
+                  <div className="w-11 h-11 rounded-xl bg-[#f7f8fa] flex items-center justify-center overflow-hidden shrink-0 p-1.5">
+                    <ProductImage id={p.id} name={p.name} className="w-full h-full" />
+                  </div>
+                </td>
+                <td className="px-5 py-3 font-mono text-[12px] text-gray-400 group-hover:text-gray-600 transition-colors whitespace-nowrap">
+                  {p.sku || '—'}
+                </td>
+                <td className="px-5 py-3 font-medium text-gray-900 group-hover:text-primary transition-colors">
+                  {p.name}
+                </td>
+                <td className="px-5 py-3 text-right whitespace-nowrap font-semibold text-gray-900">
+                  {p.price ? `$${Number(p.price).toFixed(2)}` : <span className="text-gray-300 font-normal">—</span>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -166,6 +167,8 @@ export default function CategoryProducts() {
   const path = useCategoryPath(categoriesData?.categories || [], id);
   const categoryPath = path.map(c => c.name).join(" › ");
 
+  const products = productsData?.products ?? [];
+
   return (
     <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10">
 
@@ -175,63 +178,59 @@ export default function CategoryProducts() {
         onClose={() => setSelectedProduct(null)}
       />
 
-      {/* Breadcrumb Navigation */}
-      <nav className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-10 overflow-x-auto whitespace-nowrap pb-2">
-        <Link href="/" className="hover:text-accent transition-colors flex items-center gap-1.5">
-          <ArrowLeft size={16} />
-          Back to Home
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-[13px] text-gray-400 mb-8 overflow-x-auto whitespace-nowrap">
+        <Link href="/" className="hover:text-gray-700 transition-colors flex items-center gap-1">
+          <ArrowLeft size={13} />
+          Home
         </Link>
-        <div className="w-px h-4 bg-border mx-2"></div>
-        {path.map((cat, index) => (
-          <div key={cat.id} className="flex items-center gap-2">
-            {index === path.length - 1 ? (
-              <span className="text-primary font-bold px-3 py-1 bg-white rounded-md shadow-sm border border-border">
-                {cat.name}
-              </span>
-            ) : (
-              <Link href={`/category/${cat.id}`} className="hover:text-accent transition-colors">
-                {cat.name}
-              </Link>
-            )}
-            {index < path.length - 1 && <ChevronRight size={14} className="text-muted-foreground/50" />}
-          </div>
+        {path.map((cat) => (
+          <span key={cat.id} className="flex items-center gap-1.5">
+            <ChevronRight size={12} className="text-gray-300" />
+            <Link href={`/category/${cat.id}`} className="hover:text-gray-700 transition-colors">
+              {cat.name}
+            </Link>
+          </span>
         ))}
       </nav>
 
-      {/* Page Header with view toggle */}
+      {/* Page Header */}
       <div className="mb-8 flex items-end justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-display font-bold text-primary uppercase tracking-tight">
+          <h1 className="text-2xl font-semibold text-gray-900">
             {path.length > 0 ? path[path.length - 1].name : "Products"}
           </h1>
+          {!isLoadingProducts && products.length > 0 && (
+            <p className="text-sm text-gray-400 mt-1">{products.length} {products.length === 1 ? "item" : "items"}</p>
+          )}
         </div>
 
         {/* View toggle */}
-        <div className="flex items-center bg-white border border-border rounded-xl shadow-sm p-1 shrink-0">
+        <div className="flex items-center bg-white border border-gray-100 rounded-xl shadow-sm p-1 shrink-0">
           <button
             onClick={() => setView("list")}
             title="List view"
             className={cn(
-              "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all",
+              "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all",
               view === "list"
-                ? "bg-primary text-white shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+                ? "bg-gray-900 text-white shadow-sm"
+                : "text-gray-400 hover:text-gray-700"
             )}
           >
-            <LayoutList size={16} />
+            <LayoutList size={15} />
             <span className="hidden sm:inline">List</span>
           </button>
           <button
             onClick={() => setView("grid")}
             title="Grid view"
             className={cn(
-              "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all",
+              "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all",
               view === "grid"
-                ? "bg-primary text-white shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+                ? "bg-gray-900 text-white shadow-sm"
+                : "text-gray-400 hover:text-gray-700"
             )}
           >
-            <LayoutGrid size={16} />
+            <LayoutGrid size={15} />
             <span className="hidden sm:inline">Grid</span>
           </button>
         </div>
@@ -239,27 +238,30 @@ export default function CategoryProducts() {
 
       {/* Product List / Grid */}
       {isLoadingProducts ? (
-        <div className="py-32 flex flex-col items-center justify-center bg-white rounded-2xl border border-border shadow-sm">
-          <Loader2 className="animate-spin text-accent mb-4" size={40} />
-          <p className="text-primary font-medium text-lg">Loading products...</p>
+        <div className="py-40 flex flex-col items-center justify-center bg-white rounded-2xl shadow-sm">
+          <Loader2 className="animate-spin text-gray-300 mb-4" size={32} />
+          <p className="text-sm text-gray-400">Loading products…</p>
         </div>
-      ) : !productsData?.products || productsData.products.length === 0 ? (
-        <div className="py-24 px-4 text-center border-2 border-dashed border-border rounded-2xl bg-white shadow-sm flex flex-col items-center">
-          <div className="w-20 h-20 bg-secondary rounded-full flex items-center justify-center mb-6">
-            <PackageX size={32} className="text-muted-foreground" />
+      ) : products.length === 0 ? (
+        <div className="py-32 text-center bg-white rounded-2xl shadow-sm flex flex-col items-center">
+          <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mb-5">
+            <PackageX size={24} className="text-gray-300" />
           </div>
-          <h3 className="text-2xl font-display font-bold text-primary uppercase tracking-tight mb-2">No products found</h3>
-          <p className="text-muted-foreground max-w-md mx-auto">
-            There are currently no items available in this category. Try selecting a different category from the menu above.
+          <h3 className="text-base font-semibold text-gray-700 mb-1">No products found</h3>
+          <p className="text-sm text-gray-400 max-w-xs mx-auto mb-6">
+            There are no items in this category yet. Try a different one.
           </p>
-          <Link href="/" className="mt-8 px-6 py-3 bg-primary text-white font-semibold rounded-lg hover:bg-accent transition-colors shadow-md inline-block">
+          <Link
+            href="/"
+            className="px-5 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-colors"
+          >
             Browse Categories
           </Link>
         </div>
       ) : view === "list" ? (
-        <ListView products={productsData.products} onSelect={setSelectedProduct} />
+        <ListView products={products} onSelect={setSelectedProduct} />
       ) : (
-        <GridView products={productsData.products} onSelect={setSelectedProduct} />
+        <GridView products={products} onSelect={setSelectedProduct} />
       )}
     </div>
   );

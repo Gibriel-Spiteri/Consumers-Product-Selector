@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ImageOff, Copy, Check, Tag, ArrowRight } from "lucide-react";
+import { X, ImageOff, Copy, Check, ArrowRight } from "lucide-react";
 
 interface Product {
   id: number;
@@ -31,9 +31,9 @@ function ProductImage({ id, name }: { id: number; name: string }) {
 
   if (failed) {
     return (
-      <div className="w-full h-full bg-secondary flex flex-col items-center justify-center text-muted-foreground gap-2">
+      <div className="w-full h-full flex flex-col items-center justify-center text-gray-300 gap-2">
         <ImageOff size={28} />
-        <span className="text-xs">No image available</span>
+        <span className="text-xs">No image</span>
       </div>
     );
   }
@@ -43,7 +43,7 @@ function ProductImage({ id, name }: { id: number; name: string }) {
       src={src}
       alt={name}
       onError={() => useCustom ? setFallback(true) : setFailed(true)}
-      className="w-full h-full object-contain p-4"
+      className="w-full h-full object-contain p-5"
     />
   );
 }
@@ -77,105 +77,95 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.18 }}
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9999]"
+            transition={{ duration: 0.15 }}
+            className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-[9999]"
             onClick={onClose}
           />
 
-          {/* Modal Card */}
+          {/* Modal */}
           <motion.div
             key="modal"
-            initial={{ opacity: 0, scale: 0.96, y: 12 }}
+            initial={{ opacity: 0, scale: 0.97, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 12 }}
-            transition={{ duration: 0.18, ease: "easeOut" }}
+            exit={{ opacity: 0, scale: 0.97, y: 10 }}
+            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
             className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none"
           >
             <div
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-lg pointer-events-auto overflow-hidden flex"
+              className="bg-white rounded-3xl shadow-2xl shadow-black/20 w-full max-w-lg pointer-events-auto overflow-hidden flex"
               onClick={e => e.stopPropagation()}
             >
-              {/* Left — image panel */}
-              <div className="w-[42%] shrink-0 bg-[#f3f4f6] relative">
+              {/* Left — image */}
+              <div className="w-[42%] shrink-0 bg-[#f7f8fa]">
                 <ProductImage id={product.id} name={product.name} />
               </div>
 
-              {/* Right — product info */}
-              <div className="flex-1 p-7 flex flex-col relative">
-                {/* Close button */}
+              {/* Right — info */}
+              <div className="flex-1 p-6 flex flex-col relative">
+                {/* Close */}
                 <button
                   onClick={onClose}
-                  className="absolute top-4 right-4 w-7 h-7 rounded-full bg-secondary hover:bg-border flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                  className="absolute top-4 right-4 w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
                 >
                   <X size={14} />
                 </button>
 
-                {/* SKU */}
-                <div className="flex items-center gap-2 mb-2">
-                  {product.sku ? (
-                    <>
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-                        SKU: {product.sku}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={handleCopySku}
-                        className="text-muted-foreground hover:text-foreground transition-colors"
-                        title="Copy model number"
-                      >
-                        {copiedSku ? <Check size={11} className="text-green-500" /> : <Copy size={11} />}
-                      </button>
-                    </>
-                  ) : (
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">No SKU</p>
-                  )}
-                </div>
-
-                {/* Product name */}
-                <h2 className="font-display font-bold text-foreground text-xl leading-snug mb-3 pr-6">
-                  {product.name}
-                </h2>
-
                 {/* Category path */}
                 {categoryPath && (
-                  <p className="text-sm text-muted-foreground mb-5 flex items-center gap-1.5">
-                    <Tag size={12} className="shrink-0" />
-                    {categoryPath}
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-amber-500 mb-2">
+                    {categoryPath.split(" › ")[0]}
                   </p>
                 )}
 
+                {/* Product name */}
+                <h2 className="font-display font-bold text-gray-900 text-xl leading-snug mb-4 pr-8">
+                  {product.name}
+                </h2>
+
                 {/* Price */}
-                <p className="text-3xl font-bold text-foreground mb-6">
+                <p className="text-3xl font-bold text-gray-900 mb-1">
                   {product.price != null
                     ? `$${Number(product.price).toFixed(2)}`
-                    : <span className="text-muted-foreground text-xl font-normal italic">Call for price</span>
+                    : <span className="text-gray-400 text-xl font-normal">Call for price</span>
                   }
                 </p>
 
+                {/* Availability */}
+                <div className="flex items-center gap-1.5 mb-5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                  <span className="text-xs text-emerald-600 font-medium">In Stock</span>
+                </div>
+
+                {/* SKU */}
+                {product.sku && (
+                  <div className="flex items-center gap-1.5 mb-5 bg-gray-50 rounded-xl px-3 py-2.5">
+                    <span className="text-[11px] text-gray-400 uppercase tracking-widest font-semibold">SKU</span>
+                    <span className="font-mono text-[12px] text-gray-600 flex-1">{product.sku}</span>
+                    <button
+                      type="button"
+                      onClick={handleCopySku}
+                      className="text-gray-300 hover:text-gray-500 transition-colors ml-auto"
+                      title="Copy SKU"
+                    >
+                      {copiedSku ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                    </button>
+                  </div>
+                )}
+
                 <div className="mt-auto space-y-2">
-                  {/* NetSuite ID */}
-                  {product.netsuiteId && (
-                    <p className="text-[11px] text-muted-foreground">
-                      NetSuite ID: <span className="font-mono">{product.netsuiteId}</span>
-                    </p>
-                  )}
-
-                  {/* Close / dismiss */}
-                  <button
-                    onClick={onClose}
-                    className="w-full py-2.5 bg-primary text-white font-semibold rounded-xl hover:bg-primary/90 transition-colors text-sm"
-                  >
-                    Close
-                  </button>
-
-                  {/* Full product page link */}
                   <Link
                     href={`/product/${product.id}`}
                     onClick={onClose}
-                    className="flex items-center justify-center gap-1.5 w-full text-sm text-muted-foreground hover:text-primary transition-colors py-1"
+                    className="flex items-center justify-center gap-1.5 w-full py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-800 transition-colors"
                   >
-                    View full details <ArrowRight size={13} />
+                    View Full Details <ArrowRight size={14} />
                   </Link>
+                  <button
+                    onClick={onClose}
+                    className="w-full py-2 text-gray-400 hover:text-gray-600 text-sm transition-colors"
+                  >
+                    Dismiss
+                  </button>
                 </div>
               </div>
             </div>

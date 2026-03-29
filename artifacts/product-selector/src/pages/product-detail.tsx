@@ -69,11 +69,16 @@ function DetailRow({
   green?: boolean;
 }) {
   return (
-    <tr className="border-b border-border last:border-0">
-      <td className="px-4 py-2.5 text-muted-foreground bg-secondary/30 font-medium w-36 text-xs uppercase tracking-wide whitespace-nowrap">
+    <tr className="border-b border-gray-100 last:border-0">
+      <td className="px-4 py-3 bg-gray-50 text-[11px] uppercase tracking-widest font-semibold text-gray-400 w-36 whitespace-nowrap">
         {label}
       </td>
-      <td className={cn("px-4 py-2.5", mono && "font-mono", highlight && "font-bold text-foreground", green && "text-green-600 font-semibold")}>
+      <td className={cn(
+        "px-4 py-3 text-sm text-gray-700",
+        mono && "font-mono text-gray-500",
+        highlight && "font-bold text-gray-900 text-base",
+        green && "text-emerald-600 font-semibold"
+      )}>
         {value}
       </td>
     </tr>
@@ -87,8 +92,8 @@ function RelatedCard({ product }: { product: ProductData }) {
 
   return (
     <Link href={`/product/${product.id}`}>
-      <div className="shrink-0 w-44 bg-white rounded-xl border border-border hover:border-primary/30 hover:shadow-md transition-all cursor-pointer group">
-        <div className="h-36 bg-[#f5f5f5] rounded-t-xl overflow-hidden flex items-center justify-center p-3">
+      <div className="shrink-0 w-44 bg-white rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group overflow-hidden">
+        <div className="h-36 bg-[#f7f8fa] flex items-center justify-center p-4">
           <img
             src={src}
             alt={product.name}
@@ -96,14 +101,14 @@ function RelatedCard({ product }: { product: ProductData }) {
             className="w-full h-full object-contain"
           />
         </div>
-        <div className="p-3">
-          <p className="text-xs font-semibold text-foreground leading-snug line-clamp-2 group-hover:text-primary transition-colors mb-1">
+        <div className="p-3 border-t border-gray-100">
+          <p className="text-xs font-medium text-gray-800 leading-snug line-clamp-2 group-hover:text-primary transition-colors mb-1.5">
             {product.name}
           </p>
           {product.price != null ? (
-            <p className="text-xs font-bold text-foreground">${Number(product.price).toFixed(2)}</p>
+            <p className="text-xs font-semibold text-gray-900">${Number(product.price).toFixed(2)}</p>
           ) : (
-            <p className="text-xs text-muted-foreground italic">Call for price</p>
+            <p className="text-xs text-gray-300">—</p>
           )}
         </div>
       </div>
@@ -157,42 +162,36 @@ export default function ProductDetail() {
   const directCategory = path[path.length - 1];
 
   return (
-    <div className="bg-white min-h-screen">
-      <div className="max-w-6xl mx-auto px-4 lg:px-8 py-6">
+    <div className="min-h-screen">
+      <div className="max-w-6xl mx-auto px-4 lg:px-8 py-10">
 
         {/* Breadcrumbs */}
-        <nav className="flex items-center gap-1.5 text-sm text-muted-foreground mb-8">
-          <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
+        <nav className="flex items-center gap-1.5 text-[13px] text-gray-400 mb-8 flex-wrap">
+          <Link href="/" className="hover:text-gray-700 transition-colors">Home</Link>
           {path.map((crumb) => (
             <span key={crumb.id} className="flex items-center gap-1.5">
-              <ChevronRight size={13} className="text-muted-foreground/40 shrink-0" />
+              <ChevronRight size={12} className="text-gray-300 shrink-0" />
               <Link
                 href={crumb.level === 3 ? `/products/${crumb.id}` : `/category/${crumb.id}`}
-                className="hover:text-foreground transition-colors"
+                className="hover:text-gray-700 transition-colors"
               >
                 {crumb.name}
               </Link>
             </span>
           ))}
           <span className="flex items-center gap-1.5">
-            <ChevronRight size={13} className="text-muted-foreground/40 shrink-0" />
-            <span className="text-foreground font-medium">{product.name}</span>
+            <ChevronRight size={12} className="text-gray-300 shrink-0" />
+            <span className="text-gray-700 font-medium">{product.name}</span>
           </span>
         </nav>
 
         {/* Main layout */}
         <div className="flex flex-col lg:flex-row gap-12 mb-16">
 
-          {/* Left — image + thumbnail strip */}
-          <div className="lg:w-[48%] shrink-0">
-            <div className="bg-white border border-border rounded-2xl overflow-hidden aspect-square flex items-center justify-center p-10">
+          {/* Left — image */}
+          <div className="lg:w-[46%] shrink-0">
+            <div className="bg-[#f7f8fa] rounded-3xl overflow-hidden aspect-square flex items-center justify-center p-10">
               <MainImage id={product.id} name={product.name} />
-            </div>
-            {/* Thumbnail */}
-            <div className="mt-4 flex gap-3">
-              <div className="w-20 h-20 border-2 border-primary rounded-xl overflow-hidden flex items-center justify-center bg-[#f5f5f5] p-2 cursor-pointer">
-                <MainImage id={product.id} name={product.name} />
-              </div>
             </div>
           </div>
 
@@ -212,7 +211,7 @@ export default function ProductDetail() {
             </h1>
 
             {/* Product details table */}
-            <div className="border border-border rounded-xl overflow-hidden mb-6">
+            <div className="border border-gray-100 rounded-2xl overflow-hidden mb-6 shadow-sm">
               <table className="w-full text-sm">
                 <tbody>
                   <DetailRow label="SKU" value={product.sku ?? "—"} mono />
@@ -234,11 +233,11 @@ export default function ProductDetail() {
             {/* Features */}
             {product.features && product.features.length > 0 && (
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Features</p>
-                <ul className="space-y-1.5">
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-3">Features</p>
+                <ul className="space-y-2">
                   {product.features.map((f, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-foreground">
-                      <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                    <li key={i} className="flex items-start gap-3 text-sm text-gray-700">
+                      <span className="mt-2 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
                       {f}
                     </li>
                   ))}
@@ -251,11 +250,11 @@ export default function ProductDetail() {
         {/* More in category */}
         {relatedProducts.length > 0 && (
           <div>
-            <div className="flex items-center gap-3 mb-4">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+            <div className="flex items-center gap-4 mb-5">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 whitespace-nowrap">
                 More in {directCategory?.name ?? "this category"}
               </p>
-              <div className="flex-1 h-px bg-border" />
+              <div className="flex-1 h-px bg-gray-100" />
             </div>
             <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
               {relatedProducts.map(p => (
