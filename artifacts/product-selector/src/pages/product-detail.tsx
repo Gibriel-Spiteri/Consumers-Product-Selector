@@ -295,19 +295,38 @@ export default function ProductDetail() {
           </h1>
         </div>
 
-        {/* Main layout */}
-        <div className="flex flex-col lg:flex-row gap-16 mb-20">
+        {/* 3-column layout: image | features | details */}
+        <div className="flex flex-col lg:flex-row gap-10 mb-20">
 
-          {/* Left — image gallery */}
-          <div className="lg:w-[48%] shrink-0">
+          {/* Left — image gallery (smaller) */}
+          <div className="lg:w-[30%] shrink-0">
             <ImageGallery id={product.id} name={product.name} />
           </div>
 
-          {/* Right — product info */}
-          <div className="flex-1 pt-1">
+          {/* Middle — features */}
+          <div className="lg:w-[36%] shrink-0 lg:border-l lg:border-gray-100 lg:pl-10">
+            {product.features && product.features.length > 0 ? (
+              <>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-5">Features</p>
+                <ul className="space-y-3.5">
+                  {product.features.map((f, i) => (
+                    <li key={i} className="flex items-start gap-3 text-[14px] text-gray-600 leading-relaxed">
+                      <span className="mt-2 w-1 h-1 rounded-full bg-amber-400 shrink-0" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : (
+              <p className="text-sm text-gray-300 italic">No features listed.</p>
+            )}
+          </div>
 
-            {/* Pricing block */}
-            <div className="flex items-baseline gap-3 mb-2">
+          {/* Right — pricing + details */}
+          <div className="flex-1 lg:border-l lg:border-gray-100 lg:pl-10">
+
+            {/* Pricing */}
+            <div className="flex items-baseline gap-3 mb-1">
               {displayPrice != null && (
                 <span className="text-3xl font-bold text-gray-900">
                   ${Number(displayPrice).toFixed(2)}
@@ -318,53 +337,36 @@ export default function ProductDetail() {
                   ${Number(product.price).toFixed(2)}
                 </span>
               )}
-              <span className="text-[12px] font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full">
-                In Stock
-              </span>
             </div>
             {product.ourPrice != null && (
-              <p className="text-[12px] text-gray-400 mb-8">Our price · Retail {product.price != null ? `$${Number(product.price).toFixed(2)}` : "—"}</p>
+              <p className="text-[12px] text-gray-400 mb-6">Our price · Retail {product.price != null ? `$${Number(product.price).toFixed(2)}` : "—"}</p>
             )}
 
-            <hr className="border-gray-100 mb-8" />
+            <span className="inline-flex items-center text-[12px] font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full mb-8">
+              In Stock
+            </span>
 
-            {/* Open metadata */}
-            <dl className="grid grid-cols-2 gap-x-10 gap-y-7 mb-8">
+            <hr className="border-gray-100 mb-7" />
+
+            {/* Metadata */}
+            <dl className="space-y-5">
               {product.manufacturer && (
                 <div>
-                  <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1.5">Manufacturer</dt>
+                  <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1">Manufacturer</dt>
                   <dd className="text-sm font-medium text-gray-900">{product.manufacturer}</dd>
                 </div>
               )}
               {product.sku && (
                 <div>
-                  <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1.5">SKU</dt>
+                  <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1">SKU</dt>
                   <dd className="font-mono text-sm text-gray-700">{product.sku}</dd>
                 </div>
               )}
               <div>
-                <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1.5">Availability</dt>
+                <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1">Availability</dt>
                 <dd className="text-sm font-medium text-emerald-600">In Stock</dd>
               </div>
             </dl>
-
-            {/* Features */}
-            {product.features && product.features.length > 0 && (
-              <>
-                <hr className="border-gray-100 mb-8" />
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-5">Features</p>
-                  <ul className="space-y-3.5">
-                    {product.features.map((f, i) => (
-                      <li key={i} className="flex items-start gap-3 text-[14px] text-gray-600 leading-relaxed">
-                        <span className="mt-2 w-1 h-1 rounded-full bg-amber-400 shrink-0" />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </>
-            )}
           </div>
         </div>
 
