@@ -172,15 +172,10 @@ export default function ProductDetail() {
           <div className="flex-1">
 
             {/* Category + SKU row */}
-            <div className="flex items-start justify-between gap-4 mb-3">
+            <div className="mb-3">
               <p className="text-[11px] font-bold uppercase tracking-widest text-amber-500">
                 {l1Category?.name ?? directCategory?.name ?? "Product"}
               </p>
-              {product.sku && (
-                <p className="text-[11px] text-muted-foreground font-mono shrink-0">
-                  SKU: {product.sku}
-                </p>
-              )}
             </div>
 
             {/* Product name */}
@@ -221,10 +216,9 @@ export default function ProductDetail() {
               </div>
             </div>
 
-            {/* NetSuite ID (small, de-emphasized) */}
-            {product.netsuiteId && (
+            {product.sku && (
               <p className="mt-6 text-[11px] text-muted-foreground/60">
-                NetSuite ID: <span className="font-mono">{product.netsuiteId}</span>
+                SKU: <span className="font-mono">{product.sku}</span>
               </p>
             )}
           </div>
