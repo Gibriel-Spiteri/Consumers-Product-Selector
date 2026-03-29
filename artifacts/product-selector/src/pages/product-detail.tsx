@@ -307,7 +307,7 @@ export default function ProductDetail() {
           <div className="lg:w-[36%] shrink-0 lg:border-l lg:border-gray-100 lg:pl-10">
             {product.features && product.features.length > 0 ? (
               <>
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-5">Features</p>
+                <p className="font-semibold uppercase tracking-widest text-gray-400 mb-5 text-[14px]">Features</p>
                 <ul className="space-y-3.5">
                   {product.features.map((f, i) => (
                     <li key={i} className="flex items-start gap-3 text-[14px] text-gray-600 leading-relaxed">
