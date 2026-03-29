@@ -90,9 +90,85 @@ export const MOCK_PRODUCTS = [
   { id: 20, netsuiteId: "prod-20", name: "48\" Gray Vanity", sku: "VAN-048-GRY", price: 699.99, categoryId: 143 },
   { id: 21, netsuiteId: "prod-21", name: "60\" Double Vanity", sku: "VAN-060-DBL", price: 999.99, categoryId: 143 },
 
-  { id: 22, netsuiteId: "prod-22", name: "Granite Kitchen Countertop", sku: "KC-GRN-001", price: 599.99, categoryId: 210 },
-  { id: 23, netsuiteId: "prod-23", name: "Quartz Kitchen Countertop", sku: "KC-QTZ-001", price: 799.99, categoryId: 211 },
+  // Bath – Accessories
+  { id: 26, netsuiteId: "prod-26", name: "Matte Black Robe Hook", sku: "RH-MBK-004", price: 27.99, categoryId: 100 },
+  { id: 27, netsuiteId: "prod-27", name: "Double Robe Hook Chrome", sku: "RH-DBL-005", price: 39.99, categoryId: 100 },
+  { id: 28, netsuiteId: "prod-28", name: "Towel Ring Brushed Nickel", sku: "TR-BN-001", price: 21.99, categoryId: 100 },
+  { id: 29, netsuiteId: "prod-29", name: "Wall-Mount Soap Dispenser Chrome", sku: "SD-WM-003", price: 31.99, categoryId: 101 },
+  { id: 30, netsuiteId: "prod-30", name: "Recessed Soap Dish Ceramic White", sku: "SD-REC-004", price: 14.99, categoryId: 101 },
 
-  { id: 24, netsuiteId: "prod-24", name: "1/2\" Copper Pipe 10ft", sku: "PP-COP-05-10", price: 24.99, categoryId: 300 },
-  { id: 25, netsuiteId: "prod-25", name: "3/4\" Copper Pipe 10ft", sku: "PP-COP-75-10", price: 32.99, categoryId: 301 },
+  // Bath – Countertops
+  { id: 31, netsuiteId: "prod-31", name: "28\" Quartz Vanity Top White", sku: "CT-QTZ-028", price: 259.99, categoryId: 110 },
+  { id: 32, netsuiteId: "prod-32", name: "34\" Solid Surface Top", sku: "CT-SS-034", price: 229.99, categoryId: 111 },
+  { id: 33, netsuiteId: "prod-33", name: "34\" Porcelain Vanity Top", sku: "CT-PRC-034", price: 179.99, categoryId: 111 },
+  { id: 34, netsuiteId: "prod-34", name: "40\" Marble Vanity Top", sku: "CT-MAR-040", price: 419.99, categoryId: 112 },
+  { id: 35, netsuiteId: "prod-35", name: "52\" Quartz Double Sink Top", sku: "CT-QTZ-052", price: 549.99, categoryId: 113 },
+  { id: 36, netsuiteId: "prod-36", name: "64\" Cultured Marble Top", sku: "CT-CM-064", price: 489.99, categoryId: 114 },
+
+  // Bath – Medicine Cabinets & Lights
+  { id: 37, netsuiteId: "prod-37", name: "24\" Mirrored Medicine Cabinet", sku: "MC-MIR-024", price: 159.99, categoryId: 120 },
+  { id: 38, netsuiteId: "prod-38", name: "28\" LED Medicine Cabinet", sku: "MC-LED-028", price: 299.99, categoryId: 120 },
+  { id: 39, netsuiteId: "prod-39", name: "30\" Frameless Recessed Cabinet", sku: "MC-FRM-030", price: 219.99, categoryId: 121 },
+  { id: 40, netsuiteId: "prod-40", name: "34\" Tri-View Cabinet", sku: "MC-TRI-034", price: 349.99, categoryId: 121 },
+  { id: 41, netsuiteId: "prod-41", name: "36\" Recessed Aluminum Cabinet", sku: "MC-ALU-036", price: 289.99, categoryId: 122 },
+  { id: 42, netsuiteId: "prod-42", name: "48\" Frameless Surface Mount", sku: "MC-FRM-048", price: 399.99, categoryId: 123 },
+  { id: 43, netsuiteId: "prod-43", name: "60\" Wide Double Door Cabinet", sku: "MC-DBL-060", price: 529.99, categoryId: 124 },
+  { id: 44, netsuiteId: "prod-44", name: "Vanity Light Bar 3-Light Chrome", sku: "LB-3L-CHR", price: 89.99, categoryId: 126 },
+  { id: 45, netsuiteId: "prod-45", name: "Vanity Light Bar 5-Light Nickel", sku: "LB-5L-NKL", price: 119.99, categoryId: 126 },
+  { id: 46, netsuiteId: "prod-46", name: "Single Top Light Chrome", sku: "TL-SGL-CHR", price: 74.99, categoryId: 127 },
+  { id: 47, netsuiteId: "prod-47", name: "30\" Frameless Wall Mirror", sku: "WM-FRM-030", price: 79.99, categoryId: 128 },
+  { id: 48, netsuiteId: "prod-48", name: "36\" Beveled Wall Mirror", sku: "WM-BEV-036", price: 99.99, categoryId: 128 },
+  { id: 49, netsuiteId: "prod-49", name: "48\" LED Backlit Mirror", sku: "WM-LED-048", price: 249.99, categoryId: 128 },
+
+  // Bath – Tub & Shower Doors
+  { id: 50, netsuiteId: "prod-50", name: "36\" Chrome Bypass Shower Door", sku: "SD-BYP-036", price: 349.99, categoryId: 130 },
+  { id: 51, netsuiteId: "prod-51", name: "48\" Neo-Angle Shower Door", sku: "SD-NEO-048", price: 599.99, categoryId: 130 },
+  { id: 52, netsuiteId: "prod-52", name: "60\" Sliding Shower Door Nickel", sku: "SD-SLD-060", price: 649.99, categoryId: 130 },
+  { id: 53, netsuiteId: "prod-53", name: "60\" Bi-Fold Tub Door Chrome", sku: "TD-BFD-060", price: 399.99, categoryId: 131 },
+  { id: 54, netsuiteId: "prod-54", name: "60\" Sliding Tub Door Oil Rubbed", sku: "TD-SLD-060", price: 449.99, categoryId: 131 },
+
+  // Bath – Vanities
+  { id: 55, netsuiteId: "prod-55", name: "24\" White Shaker Vanity", sku: "VAN-024-SHK", price: 329.99, categoryId: 143 },
+  { id: 56, netsuiteId: "prod-56", name: "30\" Navy Blue Vanity", sku: "VAN-030-NVY", price: 449.99, categoryId: 143 },
+  { id: 57, netsuiteId: "prod-57", name: "36\" Walnut Vanity", sku: "VAN-036-WLN", price: 599.99, categoryId: 143 },
+  { id: 58, netsuiteId: "prod-58", name: "48\" Freestanding Vanity White", sku: "VAN-048-FSW", price: 749.99, categoryId: 143 },
+  { id: 59, netsuiteId: "prod-59", name: "72\" Double Vanity Gray", sku: "VAN-072-GRY", price: 1299.99, categoryId: 143 },
+  { id: 60, netsuiteId: "prod-60", name: "Vanity Light Matching Kit Chrome", sku: "VLK-CHR-001", price: 89.99, categoryId: 140 },
+  { id: 61, netsuiteId: "prod-61", name: "Matching Oval Mirror 30\"", sku: "VWM-OVL-030", price: 109.99, categoryId: 142 },
+
+  // Kitchen – Cabinets
+  { id: 62, netsuiteId: "prod-62", name: "12\" Base Cabinet White", sku: "BC-WHT-012", price: 119.99, categoryId: 200 },
+  { id: 63, netsuiteId: "prod-63", name: "24\" Base Cabinet Gray", sku: "BC-GRY-024", price: 189.99, categoryId: 200 },
+  { id: 64, netsuiteId: "prod-64", name: "36\" Base Cabinet Espresso", sku: "BC-ESP-036", price: 249.99, categoryId: 200 },
+  { id: 65, netsuiteId: "prod-65", name: "12\" Wall Cabinet White", sku: "WC-WHT-012", price: 89.99, categoryId: 201 },
+  { id: 66, netsuiteId: "prod-66", name: "24\" Wall Cabinet Gray", sku: "WC-GRY-024", price: 129.99, categoryId: 201 },
+  { id: 67, netsuiteId: "prod-67", name: "36\" Wall Cabinet Espresso", sku: "WC-ESP-036", price: 179.99, categoryId: 201 },
+  { id: 68, netsuiteId: "prod-68", name: "84\" Pantry Tall Cabinet", sku: "TC-PAN-084", price: 399.99, categoryId: 202 },
+  { id: 69, netsuiteId: "prod-69", name: "90\" Utility Tall Cabinet White", sku: "TC-UTL-090", price: 449.99, categoryId: 202 },
+
+  // Kitchen – Countertops
+  { id: 70, netsuiteId: "prod-70", name: "Granite Slab 96\" x 26\"", sku: "KC-GRN-096", price: 899.99, categoryId: 210 },
+  { id: 71, netsuiteId: "prod-71", name: "Butcher Block 96\" x 25\"", sku: "KC-BB-096", price: 349.99, categoryId: 210 },
+  { id: 72, netsuiteId: "prod-72", name: "Calacatta Quartz 108\" x 26\"", sku: "KC-QTZ-108", price: 1199.99, categoryId: 211 },
+  { id: 73, netsuiteId: "prod-73", name: "White Quartz 96\" x 26\"", sku: "KC-QTZ-096", price: 999.99, categoryId: 211 },
+  { id: 74, netsuiteId: "prod-74", name: "Laminate Formica Sheet 96\"", sku: "KC-LAM-096", price: 149.99, categoryId: 212 },
+
+  // Plumbing
+  { id: 75, netsuiteId: "prod-75", name: "1\" Copper Pipe 10ft", sku: "PP-COP-10-10", price: 44.99, categoryId: 300 },
+  { id: 76, netsuiteId: "prod-76", name: "PVC 90° Elbow 3/4\"", sku: "FIT-ELB-075", price: 2.49, categoryId: 302 },
+  { id: 77, netsuiteId: "prod-77", name: "PVC Tee 1\"", sku: "FIT-TEE-100", price: 3.99, categoryId: 302 },
+  { id: 78, netsuiteId: "prod-78", name: "Ball Valve 1/2\" Chrome", sku: "VLV-BLL-050", price: 14.99, categoryId: 31 },
+  { id: 79, netsuiteId: "prod-79", name: "Gate Valve 3/4\"", sku: "VLV-GAT-075", price: 18.99, categoryId: 31 },
+  { id: 80, netsuiteId: "prod-80", name: "40-Gallon Electric Water Heater", sku: "WH-ELC-040", price: 599.99, categoryId: 32 },
+  { id: 81, netsuiteId: "prod-81", name: "50-Gallon Gas Water Heater", sku: "WH-GAS-050", price: 799.99, categoryId: 32 },
+  { id: 82, netsuiteId: "prod-82", name: "Tankless Electric Water Heater", sku: "WH-TNK-ELC", price: 499.99, categoryId: 32 },
+
+  // Kitchen – Sinks & Faucets (adding L3 categories first handled by products)
+  { id: 83, netsuiteId: "prod-83", name: "Single Bowl Stainless Sink 30\"", sku: "KS-SB-030", price: 179.99, categoryId: 22 },
+  { id: 84, netsuiteId: "prod-84", name: "Double Bowl Undermount Sink", sku: "KS-DB-UND", price: 299.99, categoryId: 22 },
+  { id: 85, netsuiteId: "prod-85", name: "Farmhouse Apron Sink White", sku: "KS-APR-WHT", price: 449.99, categoryId: 22 },
+  { id: 86, netsuiteId: "prod-86", name: "Pull-Down Kitchen Faucet Chrome", sku: "KF-PD-CHR", price: 189.99, categoryId: 23 },
+  { id: 87, netsuiteId: "prod-87", name: "Pull-Out Faucet Brushed Nickel", sku: "KF-PO-BN", price: 159.99, categoryId: 23 },
+  { id: 88, netsuiteId: "prod-88", name: "Bridge Faucet Oil Rubbed Bronze", sku: "KF-BR-ORB", price: 349.99, categoryId: 23 },
+
 ];
