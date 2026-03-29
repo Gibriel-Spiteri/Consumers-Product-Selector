@@ -76,6 +76,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const categoryMap = useMemo(() => new Map(flatCategories.map(c => [c.id, c.name])), [flatCategories]);
 
+  const parentCategoryMap = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const cat of flatCategories) {
+      if (cat.parentId !== null) {
+        const parentName = categoryMap.get(cat.parentId);
+        if (parentName) map.set(cat.id, parentName);
+      }
+    }
+    return map;
+  }, [flatCategories, categoryMap]);
+
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(searchQuery), 250);
     return () => clearTimeout(timer);
@@ -265,7 +276,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                           <ul>
                             {productSuggestions.map((product, idx) => {
                               const globalIdx = idx;
-                              const categoryName = product.categoryId ? categoryMap.get(product.categoryId) : null;
+                              const categoryName = product.categoryId
+                                ? (parentCategoryMap.get(product.categoryId) ?? categoryMap.get(product.categoryId))
+                                : null;
                               return (
                                 <li key={product.id}>
                                   <button
