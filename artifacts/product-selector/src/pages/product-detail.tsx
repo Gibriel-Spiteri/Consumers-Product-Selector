@@ -169,6 +169,24 @@ function CopySku({ sku }: { sku: string }) {
   );
 }
 
+function CopyIconButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      onClick={() => {
+        navigator.clipboard.writeText(text).then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1500);
+        });
+      }}
+      title="Copy SKU"
+      className="p-1 rounded text-gray-300 hover:text-gray-600 hover:bg-gray-100 transition-all"
+    >
+      {copied ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+    </button>
+  );
+}
+
 function RelatedCard({ product }: { product: ProductData }) {
   const images = useProductImages(product.id);
   const [failed, setFailed] = useState(false);
@@ -359,7 +377,10 @@ export default function ProductDetail() {
               {product.sku && (
                 <div>
                   <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1">SKU</dt>
-                  <dd className="font-mono text-sm text-gray-700">{product.sku}</dd>
+                  <dd className="flex items-center gap-2">
+                    <span className="font-mono text-sm text-gray-700">{product.sku}</span>
+                    <CopyIconButton text={product.sku} />
+                  </dd>
                 </div>
               )}
               <div>
