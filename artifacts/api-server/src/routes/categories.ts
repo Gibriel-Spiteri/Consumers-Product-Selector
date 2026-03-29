@@ -188,8 +188,11 @@ router.get("/products/:productId", async (req, res) => {
         name: product.name,
         sku: product.sku,
         price: product.price,
+        ourPrice: product.ourPrice ?? null,
         categoryId: product.categoryId,
         netsuiteId: product.netsuiteId,
+        manufacturer: product.manufacturer ?? null,
+        features: product.features ?? null,
       },
     });
   }
@@ -203,8 +206,11 @@ router.get("/products/:productId", async (req, res) => {
       name: p.name,
       sku: p.sku ?? null,
       price: p.price ? parseFloat(p.price) : null,
+      ourPrice: null,
       categoryId: p.categoryId ?? null,
       netsuiteId: p.netsuiteId ?? null,
+      manufacturer: null,
+      features: null,
     },
   });
 });

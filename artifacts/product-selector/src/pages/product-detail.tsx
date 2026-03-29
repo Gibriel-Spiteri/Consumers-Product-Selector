@@ -3,7 +3,7 @@ import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useGetCategories, getGetCategoryProductsQueryOptions } from "@workspace/api-client-react";
 import { useCategoryPath } from "@/hooks/use-category-path";
-import { ChevronRight, ImageOff, PackageSearch, Truck, ShieldCheck } from "lucide-react";
+import { ChevronRight, ImageOff, PackageSearch } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const CUSTOM_PRODUCT_IDS = new Set([39, 40, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98]);
@@ -13,8 +13,11 @@ interface ProductData {
   name: string;
   sku: string | null;
   price: number | null;
+  ourPrice: number | null;
   categoryId: number | null;
   netsuiteId: string | null;
+  manufacturer: string | null;
+  features: string[] | null;
 }
 
 function useProductSrc(id: number) {
@@ -49,6 +52,31 @@ function MainImage({ id, name }: { id: number; name: string }) {
       onError={() => (isCustom && !useFallback ? setUseFallback(true) : setFailed(true))}
       className="w-full h-full object-contain"
     />
+  );
+}
+
+function DetailRow({
+  label,
+  value,
+  mono,
+  highlight,
+  green,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+  highlight?: boolean;
+  green?: boolean;
+}) {
+  return (
+    <tr className="border-b border-border last:border-0">
+      <td className="px-4 py-2.5 text-muted-foreground bg-secondary/30 font-medium w-36 text-xs uppercase tracking-wide whitespace-nowrap">
+        {label}
+      </td>
+      <td className={cn("px-4 py-2.5", mono && "font-mono", highlight && "font-bold text-foreground", green && "text-green-600 font-semibold")}>
+        {value}
+      </td>
+    </tr>
   );
 }
 
@@ -171,7 +199,7 @@ export default function ProductDetail() {
           {/* Right — product info */}
           <div className="flex-1">
 
-            {/* Category + SKU row */}
+            {/* Category label */}
             <div className="mb-3">
               <p className="text-[11px] font-bold uppercase tracking-widest text-amber-500">
                 {l1Category?.name ?? directCategory?.name ?? "Product"}
@@ -183,43 +211,39 @@ export default function ProductDetail() {
               {product.name}
             </h1>
 
-            {/* Price */}
-            <p className="text-4xl font-bold text-foreground mb-3">
-              {product.price != null
-                ? `$${Number(product.price).toFixed(2)}`
-                : <span className="text-2xl font-normal text-muted-foreground italic">Call for price</span>
-              }
-            </p>
-
-            {/* Stock badge */}
-            <div className="flex items-center gap-1.5 mb-6">
-              <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
-              <span className="text-sm text-green-600 font-semibold">In Stock &amp; Ready to Ship</span>
+            {/* Product details table */}
+            <div className="border border-border rounded-xl overflow-hidden mb-6">
+              <table className="w-full text-sm">
+                <tbody>
+                  <DetailRow label="SKU" value={product.sku ?? "—"} mono />
+                  <DetailRow label="Manufacturer" value={product.manufacturer ?? "—"} />
+                  <DetailRow
+                    label="Retail Price"
+                    value={product.price != null ? `$${Number(product.price).toFixed(2)}` : "—"}
+                  />
+                  <DetailRow
+                    label="Our Price"
+                    value={product.ourPrice != null ? `$${Number(product.ourPrice).toFixed(2)}` : "—"}
+                    highlight
+                  />
+                  <DetailRow label="Availability" value="In Stock" green />
+                </tbody>
+              </table>
             </div>
 
-
-            {/* Feature callouts */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex items-start gap-3 p-4 bg-secondary/40 border border-border rounded-xl">
-                <Truck size={18} className="text-amber-500 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-semibold text-foreground">Free Shipping</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">On all orders over $500 nationwide.</p>
-                </div>
+            {/* Features */}
+            {product.features && product.features.length > 0 && (
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Features</p>
+                <ul className="space-y-1.5">
+                  {product.features.map((f, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-foreground">
+                      <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <div className="flex items-start gap-3 p-4 bg-secondary/40 border border-border rounded-xl">
-                <ShieldCheck size={18} className="text-amber-500 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-semibold text-foreground">Lifetime Warranty</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Quality guaranteed for your peace of mind.</p>
-                </div>
-              </div>
-            </div>
-
-            {product.sku && (
-              <p className="mt-6 border-t-[#475261bd] border-r-[#475261bd] border-b-[#475261bd] border-l-[#475261bd] text-[#4c5869e6] text-[15px]">
-                SKU: <span className="font-mono">{product.sku}</span>
-              </p>
             )}
           </div>
         </div>
