@@ -16,7 +16,7 @@ export default function CategoryOverview() {
     <div className="w-full px-4 lg:px-8 py-10">
       <Link
         href="/"
-        className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-accent transition-colors mb-8"
+        className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-accent transition-colors mb-4"
       >
         <ArrowLeft size={16} />
         Back to Home
@@ -36,16 +36,9 @@ export default function CategoryOverview() {
         </div>
       ) : (
         <>
-          <div className="mb-10 flex items-center gap-4">
-            <div>
-              <h1 className="text-4xl font-display font-bold text-primary uppercase tracking-tight">
-                {category.name}
-              </h1>
-              <p className="text-muted-foreground mt-1 font-medium">
-                {subCategories.length} subcategor{subCategories.length === 1 ? "y" : "ies"}
-              </p>
-            </div>
-          </div>
+          <h1 className="text-3xl font-display font-bold text-primary uppercase tracking-tight mb-5">
+            {category.name}
+          </h1>
 
           {subCategories.length === 0 ? (
             <div className="py-20 text-center border-2 border-dashed border-border rounded-2xl bg-white shadow-sm text-muted-foreground">
