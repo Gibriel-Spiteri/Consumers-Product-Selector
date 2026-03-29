@@ -18,16 +18,13 @@ export default function Home() {
           <h2 className="text-4xl lg:text-5xl font-bold text-white leading-tight mb-4">
             Elevate Your<br />Living Spaces.
           </h2>
-          <p className="text-white/75 text-sm lg:text-base leading-relaxed max-w-md">
-            Discover premium fixtures and finishes for your next home renovation project. Sourced globally, curated locally.
-          </p>
+          <p className="text-white/75 text-sm lg:text-base leading-relaxed max-w-md">Discover premium fixtures and finishes for your home.</p>
           <div className="flex items-center gap-2 mt-6 text-white/50 text-xs font-semibold uppercase tracking-widest">
             <ArrowRight size={13} className="text-amber-400" />
             Select a category above to start browsing
           </div>
         </div>
       </div>
-
     </div>
   );
 }
