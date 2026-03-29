@@ -277,6 +277,24 @@ export default function ProductDetail() {
           </span>
         </nav>
 
+        {/* Full-width product title */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-3">
+            <span className="text-[11px] font-bold uppercase tracking-widest text-amber-500">
+              {l1Category?.name ?? directCategory?.name ?? "Product"}
+            </span>
+            {product.sku && (
+              <>
+                <span className="text-gray-200">·</span>
+                <CopySku sku={product.sku} />
+              </>
+            )}
+          </div>
+          <h1 className="font-display font-bold text-gray-900 text-3xl lg:text-4xl leading-tight">
+            {product.name}
+          </h1>
+        </div>
+
         {/* Main layout */}
         <div className="flex flex-col lg:flex-row gap-16 mb-20">
 
@@ -287,24 +305,6 @@ export default function ProductDetail() {
 
           {/* Right — product info */}
           <div className="flex-1 pt-1">
-
-            {/* Category + SKU row */}
-            <div className="flex items-center gap-3 mb-5">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-amber-500">
-                {l1Category?.name ?? directCategory?.name ?? "Product"}
-              </span>
-              {product.sku && (
-                <>
-                  <span className="text-gray-200">·</span>
-                  <CopySku sku={product.sku} />
-                </>
-              )}
-            </div>
-
-            {/* Product name */}
-            <h1 className="font-display font-bold text-gray-900 text-3xl lg:text-4xl leading-tight mb-8">
-              {product.name}
-            </h1>
 
             {/* Pricing block */}
             <div className="flex items-baseline gap-3 mb-2">
