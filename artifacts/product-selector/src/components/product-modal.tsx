@@ -256,7 +256,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
               onClick={e => e.stopPropagation()}
             >
               {/* Close button */}
-              <div className="flex justify-end px-8 pt-6 pb-0 shrink-0">
+              <div className="flex justify-end px-8 pt-3 pb-0 shrink-0">
                 <button
                   onClick={onClose}
                   className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors shrink-0"
@@ -266,7 +266,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
               </div>
 
               {/* Product name */}
-              <div className="px-8 pt-4 pb-5 shrink-0">
+              <div className="px-8 pt-2 pb-5 shrink-0">
                 <h2 className="font-display font-bold text-gray-900 text-2xl lg:text-3xl leading-tight">
                   {displayProduct?.name}
                 </h2>
