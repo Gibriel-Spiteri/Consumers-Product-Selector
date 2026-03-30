@@ -158,7 +158,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         onMouseLeave={handleMouseLeaveNav}
       >
         {/* Top row: logo + search (centered) + actions */}
-        <div className="max-w-screen-xl mx-auto px-6 h-[52px] flex items-center relative">
+        <div className="max-w-screen-xl mx-auto px-6 h-[65px] flex items-center relative">
           <Link href="/" className="flex items-baseline gap-2 shrink-0 group">
             <span className="font-bold text-gray-900 text-lg tracking-tight group-hover:text-primary transition-colors">
               CONSUMERS
@@ -329,7 +329,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="border-t border-gray-100">
           <div className="max-w-screen-xl mx-auto px-4">
             {isLoadingCategories ? (
-              <div className="flex items-center gap-2 h-10 text-gray-300 text-xs">
+              <div className="flex items-center gap-2 h-[50px] text-gray-300 text-xs">
                 <Loader2 size={12} className="animate-spin" />
                 Loading…
               </div>
@@ -341,7 +341,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       href={`/category/${cat.id}`}
                       onMouseEnter={() => handleMouseEnterTab(cat.id)}
                       onClick={() => { setIsHoveringNav(false); setActiveTab(null); }}
-                      className="block px-4 py-2.5 font-semibold uppercase tracking-widest transition-colors relative text-gray-900 text-[13px]"
+                      className="flex items-center h-[50px] px-4 font-semibold uppercase tracking-widest transition-colors relative text-gray-900 text-[13px]"
                     >
                       {cat.name}
                       {activeTab === cat.id && (
