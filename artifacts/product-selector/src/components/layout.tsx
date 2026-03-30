@@ -214,8 +214,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         className="bg-white border-b border-gray-200 sticky top-0 z-40"
         onMouseLeave={handleMouseLeaveNav}
       >
-        {/* Top row: logo + search + actions */}
-        <div className="max-w-screen-xl mx-auto px-6 h-[52px] flex items-center gap-5">
+        {/* Top row: logo + search (centered) + actions */}
+        <div className="max-w-screen-xl mx-auto px-6 h-[52px] flex items-center relative">
           <Link href="/" className="flex items-baseline gap-2 shrink-0 group">
             <span className="font-bold text-gray-900 text-lg tracking-tight group-hover:text-primary transition-colors">
               Consumers
@@ -225,8 +225,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </span>
           </Link>
 
-          {/* Search */}
-          <div className="flex-1 max-w-lg relative" ref={searchContainerRef}>
+          {/* Search — absolutely centered in the bar */}
+          <div className="absolute left-1/2 -translate-x-1/2 w-full max-w-md" ref={searchContainerRef}>
             <form onSubmit={handleSearch} className="relative flex items-center">
               <Search size={14} className="absolute left-3 text-gray-400 pointer-events-none z-10" />
               <input
