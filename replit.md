@@ -64,14 +64,30 @@ A React + Vite web application served at `/` that implements a 3-level category 
 
 ### NetSuite M2M Integration (backend)
 
-Machine-to-Machine OAuth 2.0 connection to NetSuite using client credentials flow.
+Machine-to-Machine OAuth 2.0 connection to NetSuite using JWT client assertions (PS256). This matches the approach used in the Pro-Appointment-Scheduler reference project.
 
-**Required environment secrets (set these to enable live data):**
-- `NETSUITE_ACCOUNT_ID` — your NetSuite account ID (e.g. 1234567)
-- `NETSUITE_CLIENT_ID` — OAuth 2.0 Client ID from NetSuite integration record
-- `NETSUITE_CLIENT_SECRET` — OAuth 2.0 Client Secret from NetSuite integration record
+**Authentication flow:**
+1. A PS256-signed JWT is created using the RSA private key at `artifacts/api-server/certs/private_key.pem`
+2. The JWT is sent to the NetSuite token endpoint as a `client_assertion` (grant type: `client_credentials`)
+3. The returned bearer token is cached and reused until it expires
 
-Without credentials, the app uses built-in sample data (Bath/Kitchen/Plumbing products).
+**Required environment secrets:**
+- `NETSUITE_ACCOUNT_ID` — NetSuite account ID (e.g. `1234567` or `1234567_SB1` for sandbox)
+- `NETSUITE_CLIENT_ID` — OAuth 2.0 Client ID from the NetSuite integration record
+- `NETSUITE_OIDC_CLIENT_ID` — (optional) OIDC Client ID; takes precedence over `NETSUITE_CLIENT_ID` if set
+- `NETSUITE_CERTIFICATE_ID` — Certificate ID shown in NetSuite's OAuth 2.0 Client Credentials setup
+
+**Required file:**
+- `artifacts/api-server/certs/private_key.pem` — RSA private key (excluded from git via `.gitignore`)
+
+**Generating a key pair:**
+```bash
+openssl genrsa -out private_key.pem 2048
+openssl rsa -in private_key.pem -pubout -out public_key.pem
+# Upload public_key.pem to NetSuite → Setup → Integration → OAuth 2.0 Client Credentials
+```
+
+Without the private key file or credentials, the `/api/netsuite/status` endpoint reports missing configuration and the app uses built-in sample data.
 
 **Sync flow:** POST `/api/netsuite/sync` → fetches `ItemCategory` via SuiteQL → fetches `Item` records → upserts into local PostgreSQL cache.
 
