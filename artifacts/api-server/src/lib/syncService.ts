@@ -73,7 +73,9 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
         parentDbId = netsuiteIdToDbId.get(parentNetsuiteId) ?? null;
       }
 
-      const level = parentDbId == null ? 1 : await getCategoryLevel(parentDbId, netsuiteIdToDbId);
+      const level = cat.fullname
+        ? cat.fullname.split(" : ").length
+        : parentDbId == null ? 1 : await getCategoryLevel(parentDbId, netsuiteIdToDbId);
 
       const existing = await db
         .select()
@@ -112,7 +114,9 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
 
     let productsSynced = 0;
     for (const item of nsItems) {
-      const categoryDbId: number | null = null;
+      const categoryDbId = item.sitecategoryid
+        ? (netsuiteIdToDbId.get(item.sitecategoryid) ?? null)
+        : null;
 
       const name = item.fullname || item.itemid;
 
@@ -128,7 +132,7 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
           .set({
             name,
             sku: item.itemid,
-            price: item.cost ? String(item.cost) : null,
+            price: item.baseprice ? String(item.baseprice) : null,
             categoryId: categoryDbId,
             updatedAt: new Date(),
           })
@@ -138,7 +142,7 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
           netsuiteId: item.id,
           name,
           sku: item.itemid,
-          price: item.cost ? String(item.cost) : null,
+          price: item.baseprice ? String(item.baseprice) : null,
           categoryId: categoryDbId,
         });
       }

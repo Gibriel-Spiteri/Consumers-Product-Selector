@@ -241,6 +241,7 @@ export async function executeSuiteQL<T = any>(
 export interface NetSuiteCategory {
   id: string;
   name: string;
+  fullname: string;
   parent?: string | null;
 }
 
@@ -248,20 +249,25 @@ export interface NetSuiteItem {
   id: string;
   itemid: string;
   fullname?: string;
-  cost?: number;
+  baseprice?: number;
+  sitecategoryid?: string | null;
 }
 
 export async function fetchNetSuiteCategories(): Promise<NetSuiteCategory[]> {
   const result = await executeSuiteQL<{
     id: string;
-    name: string;
-    parent: string | null;
-  }>("SELECT id, name, parent FROM classification WHERE isinactive = 'F' ORDER BY name");
+    itemid: string;
+    fullname: string;
+    parentcategory: string | null;
+  }>(
+    "SELECT id, itemid, fullname, parentcategory FROM SiteCategory WHERE isinactive = 'F' ORDER BY fullname"
+  );
 
   return result.items.map((row) => ({
     id: String(row.id),
-    name: row.name,
-    parent: row.parent ? String(row.parent) : null,
+    name: row.itemid,
+    fullname: row.fullname,
+    parent: row.parentcategory ? String(row.parentcategory) : null,
   }));
 }
 
@@ -270,15 +276,27 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
     id: string;
     itemid: string;
     fullname: string | null;
-    cost: string | null;
+    baseprice: string | null;
+    sitecategoryid: string | null;
   }>(
-    "SELECT id, itemid, fullname, cost FROM item WHERE isinactive = 'F' ORDER BY itemid"
+    `SELECT
+      item.id,
+      item.itemid,
+      item.fullname,
+      p.unitprice AS baseprice,
+      isc.category AS sitecategoryid
+    FROM item
+    LEFT JOIN pricing p ON p.item = item.id AND p.pricelevel = 1 AND p.quantity = 1
+    LEFT JOIN ItemSiteCategory isc ON isc.item = item.id AND isc.isdefault = 'T'
+    WHERE item.isinactive = 'F'
+    ORDER BY item.itemid`
   );
 
   return result.items.map((row) => ({
     id: String(row.id),
     itemid: row.itemid,
     fullname: row.fullname ?? undefined,
-    cost: row.cost != null ? Number(row.cost) : undefined,
+    baseprice: row.baseprice != null ? Number(row.baseprice) : undefined,
+    sitecategoryid: row.sitecategoryid ? String(row.sitecategoryid) : null,
   }));
 }
