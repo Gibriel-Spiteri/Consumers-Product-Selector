@@ -399,7 +399,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       href={`/category/${cat.id}`}
                       onMouseEnter={() => handleMouseEnterTab(cat.id)}
                       onClick={() => { setIsHoveringNav(false); setActiveTab(null); }}
-                      className="block px-4 py-2.5 font-semibold uppercase tracking-widest transition-colors relative text-gray-900 text-[14px]"
+                      className="block px-4 py-2.5 font-semibold uppercase tracking-widest transition-colors relative text-gray-900 text-[13px]"
                     >
                       {cat.name}
                       {activeTab === cat.id && (
