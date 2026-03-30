@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { getGetCategoryProductsQueryOptions } from "@workspace/api-client-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ImageOff, Copy, Check, ArrowRight, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -137,6 +138,41 @@ function ImageGallery({ id, name }: { id: number; name: string }) {
   );
 }
 
+function RelatedMiniCard({ product, onClose }: { product: FullProduct; onClose: () => void }) {
+  const images = useProductImages(product.id);
+  const [failed, setFailed] = useState(false);
+  const displayPrice = product.ourPrice ?? product.price;
+
+  return (
+    <Link href={`/product/${product.id}`} onClick={onClose}>
+      <div className="shrink-0 w-44 bg-gray-50 rounded-2xl overflow-hidden cursor-pointer group hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+        <div className="h-36 flex items-center justify-center p-4">
+          {failed ? (
+            <ImageOff size={20} className="text-gray-300" />
+          ) : (
+            <img
+              src={images[0]}
+              alt={product.name}
+              onError={() => setFailed(true)}
+              className="w-full h-full object-contain"
+            />
+          )}
+        </div>
+        <div className="px-3 pb-3">
+          <p className="text-[12px] font-medium text-gray-800 leading-snug line-clamp-2 group-hover:text-primary transition-colors mb-1">
+            {product.name}
+          </p>
+          {displayPrice != null ? (
+            <p className="text-[13px] font-semibold text-gray-900">${Number(displayPrice).toFixed(2)}</p>
+          ) : (
+            <p className="text-[12px] text-gray-300">—</p>
+          )}
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 function CopySku({ sku }: { sku: string }) {
   const [copied, setCopied] = useState(false);
   return (
@@ -171,6 +207,18 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [product, onClose]);
+
+  const categoryId = full?.categoryId ?? product?.categoryId ?? null;
+  const { data: relatedData } = useQuery({
+    ...getGetCategoryProductsQueryOptions(categoryId ?? 0),
+    enabled: !!categoryId,
+  });
+  const relatedProducts = ((relatedData?.products ?? []) as FullProduct[])
+    .filter(p => p.id !== product?.id);
+
+  const directCategoryName = categoryPath
+    ? categoryPath.split(" › ").at(-1)
+    : null;
 
   const hasDiscount = full?.ourPrice != null && full?.price != null && full.ourPrice < full.price;
   const displayPrice = full?.ourPrice ?? full?.price ?? product?.price;
@@ -312,6 +360,23 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                           <dd className="text-sm font-medium text-emerald-600">In Stock</dd>
                         </div>
                       </dl>
+                    </div>
+                  </div>
+                )}
+
+                {/* More from category */}
+                {relatedProducts.length > 0 && (
+                  <div className="mt-8 pt-7 border-t border-gray-100 pb-4">
+                    <div className="flex items-center gap-4 mb-4">
+                      <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 whitespace-nowrap">
+                        More from {directCategoryName ?? "this category"}
+                      </p>
+                      <div className="flex-1 h-px bg-gray-100" />
+                    </div>
+                    <div className="flex gap-3 overflow-x-auto pb-1">
+                      {relatedProducts.map(p => (
+                        <RelatedMiniCard key={p.id} product={p} onClose={onClose} />
+                      ))}
                     </div>
                   </div>
                 )}
