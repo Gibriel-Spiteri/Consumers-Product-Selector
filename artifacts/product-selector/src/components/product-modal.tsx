@@ -68,7 +68,7 @@ function ImageGallery({ product }: { product: Product }) {
 
   if (images.length === 0) {
     return (
-      <div className="bg-[#f7f8fa] rounded-2xl aspect-square flex items-center justify-center flex-col gap-2 text-gray-300">
+      <div className="bg-[#f7f8fa] rounded-2xl h-[180px] lg:aspect-square lg:h-auto flex items-center justify-center flex-col gap-2 text-gray-300">
         <ImageOff size={32} />
         <span className="text-xs">No image</span>
       </div>
@@ -77,7 +77,7 @@ function ImageGallery({ product }: { product: Product }) {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="relative bg-[#f7f8fa] rounded-2xl aspect-square overflow-hidden group">
+      <div className="relative bg-[#f7f8fa] rounded-2xl h-[180px] lg:aspect-square lg:h-auto overflow-hidden group">
         <AnimatePresence mode="wait" initial={false} custom={direction}>
           {isFailed ? (
             <div className="absolute inset-0 flex items-center justify-center flex-col gap-2 text-gray-300">
@@ -287,20 +287,20 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
               onClick={e => e.stopPropagation()}
             >
               {/* Product name */}
-              <div className="px-8 pt-7 pb-5 shrink-0">
-                <h2 className="font-display font-bold text-gray-900 text-2xl lg:text-3xl leading-tight">
+              <div className="px-5 pt-5 pb-3 lg:px-8 lg:pt-7 lg:pb-5 shrink-0">
+                <h2 className="font-display font-bold text-gray-900 text-xl lg:text-3xl leading-tight">
                   {displayProduct?.name}
                 </h2>
               </div>
 
               {/* 3-column body */}
-              <div className="flex-1 overflow-y-auto px-8 pb-0">
+              <div className="flex-1 overflow-y-auto px-5 lg:px-8 pb-0">
                 {isLoading ? (
                   <div className="flex items-center justify-center py-20 text-gray-300">
                     <Loader2 size={28} className="animate-spin" />
                   </div>
                 ) : (
-                  <div className="flex flex-col lg:flex-row gap-8 pb-2">
+                  <div className="flex flex-col lg:flex-row gap-5 lg:gap-8 pb-2">
 
                     {/* Left — image gallery */}
                     <div className="lg:w-[30%] shrink-0">
@@ -308,7 +308,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                     </div>
 
                     {/* Middle — features */}
-                    <div className="lg:w-[36%] shrink-0 lg:border-l lg:border-gray-100 lg:pl-8">
+                    <div className="lg:w-[36%] shrink-0 border-t lg:border-t-0 lg:border-l border-gray-100 pt-4 lg:pt-0 lg:pl-8">
                       {full?.features && full.features.length > 0 ? (
                         <>
                           <p className="font-semibold uppercase tracking-widest text-gray-400 mb-4 text-[12px]">Features</p>
@@ -327,7 +327,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                     </div>
 
                     {/* Right — pricing + details */}
-                    <div className="flex-1 lg:border-l lg:border-gray-100 lg:pl-8">
+                    <div className="flex-1 border-t lg:border-t-0 lg:border-l border-gray-100 pt-4 lg:pt-0 lg:pl-8">
                       {/* Pricing */}
                       <div className="mb-5">
                         {full?.ourPrice != null ? (
@@ -378,9 +378,9 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                 )}
 
                 {/* Bottom tabbed section */}
-                <div className="mt-8 pt-0 border-t border-gray-100">
+                <div className="mt-5 lg:mt-8 pt-0 border-t border-gray-100">
                   {/* Tab bar */}
-                  <div className="flex items-center gap-0 border-b border-gray-100 mb-5">
+                  <div className="flex items-center gap-0 border-b border-gray-100 mb-4 lg:mb-5 overflow-x-auto">
                     {(
                       [
                         { key: "more", label: `More from ${directCategoryName ?? "Category"}` },
@@ -392,7 +392,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                       <button
                         key={tab.key}
                         onClick={() => setBottomTab(tab.key)}
-                        className="px-4 py-3 relative transition-colors whitespace-nowrap hover:text-gray-600 text-[13px] font-normal text-[#4a5565]"
+                        className="px-3 lg:px-4 py-2.5 lg:py-3 relative transition-colors whitespace-nowrap hover:text-gray-600 text-[12px] lg:text-[13px] font-normal text-[#4a5565]"
                       >
                         {tab.label}
                         {bottomTab === tab.key && (
@@ -503,7 +503,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
               </div>
 
               {/* Footer actions */}
-              <div className="px-8 py-5 border-t border-gray-100 shrink-0 flex justify-end">
+              <div className="px-5 py-4 lg:px-8 lg:py-5 border-t border-gray-100 shrink-0 flex justify-end">
                 <button
                   onClick={onClose}
                   className="px-5 py-2.5 text-gray-500 hover:text-gray-700 text-sm font-medium transition-colors border border-gray-200 hover:border-gray-300 rounded-xl"
