@@ -70,7 +70,7 @@ function ImageGallery({ product }: { product: Product }) {
 
   if (images.length === 0) {
     return (
-      <div className="bg-[#f7f8fa] rounded-2xl h-[180px] lg:aspect-square lg:h-auto flex items-center justify-center flex-col gap-2 text-gray-300">
+      <div className="bg-white rounded-2xl h-[180px] lg:aspect-square lg:h-auto flex items-center justify-center flex-col gap-2 text-gray-300">
         <ImageOff size={32} />
         <span className="text-xs">No image</span>
       </div>
@@ -79,7 +79,7 @@ function ImageGallery({ product }: { product: Product }) {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="relative bg-[#f7f8fa] rounded-2xl h-[180px] lg:aspect-square lg:h-auto overflow-hidden group">
+      <div className="relative bg-white rounded-2xl h-[180px] lg:aspect-square lg:h-auto overflow-hidden group">
         <AnimatePresence mode="wait" initial={false} custom={direction}>
           {isFailed ? (
             <div className="absolute inset-0 flex items-center justify-center flex-col gap-2 text-gray-300">
@@ -136,7 +136,7 @@ function ImageGallery({ product }: { product: Product }) {
               key={i}
               onClick={() => goTo(i)}
               className={cn(
-                "shrink-0 w-12 h-12 rounded-lg bg-[#f7f8fa] overflow-hidden border-2 transition-all duration-150 p-1",
+                "shrink-0 w-12 h-12 rounded-lg bg-white overflow-hidden border-2 transition-all duration-150 p-1",
                 i === selectedIndex ? "border-gray-900" : "border-transparent hover:border-gray-200"
               )}
             >

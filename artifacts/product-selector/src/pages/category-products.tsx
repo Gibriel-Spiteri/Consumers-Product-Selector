@@ -89,7 +89,7 @@ function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: P
           onClick={() => onSelect(p)}
           className="bg-white rounded-2xl overflow-hidden cursor-pointer group hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/8 transition-all duration-200 shadow-[0_1px_4px_rgba(0,0,0,0.06)]"
         >
-          <div className="bg-[#f7f8fa] h-[140px] flex items-center justify-center p-4">
+          <div className="bg-white h-[140px] flex items-center justify-center p-4">
             <ProductImage
               imageUrl={p.imageUrl}
               name={p.name}
@@ -144,7 +144,7 @@ function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: P
                 className="hover:bg-gray-50 transition-colors group cursor-pointer"
               >
                 <td className="px-5 py-3">
-                  <div className="w-11 h-11 rounded-xl bg-[#f7f8fa] flex items-center justify-center overflow-hidden shrink-0 p-1">
+                  <div className="w-11 h-11 rounded-xl bg-white flex items-center justify-center overflow-hidden shrink-0 p-1">
                     <ProductImage imageUrl={p.imageUrl} name={p.name} className="max-w-[32px] max-h-[32px]" />
                   </div>
                 </td>
