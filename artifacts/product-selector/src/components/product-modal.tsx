@@ -294,35 +294,19 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                     <div className="flex-1 lg:border-l lg:border-gray-100 lg:pl-8">
                       {/* Pricing */}
                       <div className="mb-5">
-                        {full?.ourPrice != null ? (() => {
-                          const onSale = full.price != null && full.ourPrice < full.price;
-                          const savings = onSale && full.price != null ? full.price - full.ourPrice : 0;
-                          const pctOff = onSale && full.price != null ? Math.round((savings / full.price) * 100) : 0;
-                          return (
-                            <>
-                              {onSale ? (
-                                <div className="flex items-center gap-2 mb-2">
-                                  <span className="inline-flex items-center text-[11px] font-bold uppercase tracking-wider text-white bg-red-500 px-2.5 py-0.5 rounded-full">
-                                    Sale
-                                  </span>
-                                  <span className="text-[11px] font-semibold text-red-500">
-                                    {pctOff}% off · Save ${savings.toFixed(2)}
-                                  </span>
-                                </div>
-                              ) : (
-                                <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1">Our Price</p>
-                              )}
-                              <p className={cn("text-3xl font-bold mb-2", onSale ? "text-red-600" : "text-gray-900")}>
-                                ${Number(full.ourPrice).toFixed(2)}
+                        {full?.ourPrice != null ? (
+                          <>
+                            <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1">Our Price</p>
+                            <p className="text-3xl font-bold text-gray-900 mb-2">
+                              ${Number(full.ourPrice).toFixed(2)}
+                            </p>
+                            {full.price != null && (
+                              <p className="text-sm text-gray-400">
+                                Retail <span className="line-through">${Number(full.price).toFixed(2)}</span>
                               </p>
-                              {full.price != null && (
-                                <p className="text-sm text-gray-400">
-                                  Retail <span className="line-through">${Number(full.price).toFixed(2)}</span>
-                                </p>
-                              )}
-                            </>
-                          );
-                        })() : full?.price != null ? (
+                            )}
+                          </>
+                        ) : full?.price != null ? (
                           <>
                             <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1">Price</p>
                             <p className="text-3xl font-bold text-gray-900">${Number(full.price).toFixed(2)}</p>
