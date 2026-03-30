@@ -47,7 +47,7 @@ function buildCategoryTree(flatCategories: Array<{
     }
   }
 
-  const HIDDEN_NAMES = new Set(["Home Page", "Home Page FAK", "Internal", "~Internal Items", "FAK Test1", "FAK Test2"]);
+  const HIDDEN_NAMES = new Set(["Home Page", "Home Page FAK", "~Internal Items", "FAK Test1", "FAK Test2"]);
 
   function hasOnlineDescendant(node: CategoryNode): boolean {
     if (onlineIds.has(node.id)) return true;
@@ -150,7 +150,7 @@ router.get("/categories/:categoryId/products", async (req, res) => {
   const allCategories = await db
     .select({ id: categoriesTable.id, parentId: categoriesTable.parentId, isOnline: categoriesTable.isOnline, name: categoriesTable.name })
     .from(categoriesTable);
-  const HIDDEN_CAT_NAMES = new Set(["Home Page", "Home Page FAK", "Internal", "~Internal Items", "FAK Test1", "FAK Test2"]);
+  const HIDDEN_CAT_NAMES = new Set(["Home Page", "Home Page FAK", "~Internal Items", "FAK Test1", "FAK Test2"]);
   const childMap = new Map<number, number[]>();
   for (const cat of allCategories) {
     if (cat.parentId != null && !HIDDEN_CAT_NAMES.has(cat.name)) {
