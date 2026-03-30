@@ -369,7 +369,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                       <dl className="space-y-4">
                         {full?.manufacturer && (
                           <div>
-                            <dt className="font-semibold uppercase tracking-widest text-gray-400 mb-1 text-[12px]">Manufacturer</dt>
+                            <dt className="font-semibold uppercase tracking-widest text-gray-400 mb-1 text-[11px]">Manufacturer</dt>
                             <dd className="text-sm font-medium text-gray-900">{full.manufacturer}</dd>
                           </div>
                         )}
