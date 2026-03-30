@@ -319,10 +319,6 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                         </p>
                       )}
 
-                      <span className="inline-flex items-center text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full mb-6">
-                        In Stock
-                      </span>
-
                       <hr className="border-gray-100 mb-6" />
 
                       {/* Metadata */}
