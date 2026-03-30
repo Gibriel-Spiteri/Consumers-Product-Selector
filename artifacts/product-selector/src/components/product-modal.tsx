@@ -226,8 +226,6 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
   const hasDiscount = full?.ourPrice != null && full?.price != null && full.ourPrice < full.price;
   const displayPrice = full?.ourPrice ?? full?.price ?? product?.price;
 
-  const l1 = categoryPath ? categoryPath.split(" › ")[0] : null;
-
   return createPortal(
     <AnimatePresence>
       {product && (
@@ -257,15 +255,8 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
               style={{ maxHeight: "calc(100vh - 4rem)" }}
               onClick={e => e.stopPropagation()}
             >
-              {/* Header bar */}
-              <div className="flex items-center justify-between px-8 pt-7 pb-0 shrink-0">
-                <div className="flex items-center gap-3">
-                  {l1 && (
-                    <span className="text-[11px] font-bold uppercase tracking-widest text-amber-500">{l1}</span>
-                  )}
-                  {l1 && displayProduct?.sku && <span className="text-gray-200">·</span>}
-                  {displayProduct?.sku && <CopySku sku={displayProduct.sku} />}
-                </div>
+              {/* Close button */}
+              <div className="flex justify-end px-8 pt-6 pb-0 shrink-0">
                 <button
                   onClick={onClose}
                   className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors shrink-0"
