@@ -380,7 +380,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                           </div>
                         )}
                         <div>
-                          <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1">Availability</dt>
+                          <dt className="font-semibold uppercase tracking-widest text-gray-400 mb-1 text-[11px]">Availability</dt>
                           {full?.quantityAvailable != null ? (
                             full.quantityAvailable >= 1 ? (
                               <dd><span className="inline-flex items-center font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[12px]">In Stock</span></dd>
