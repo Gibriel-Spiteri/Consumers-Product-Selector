@@ -223,8 +223,6 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
 
   const [bottomTab, setBottomTab] = useState<"more" | "related" | "specs" | "collection">("more");
 
-  const hasDiscount = full?.ourPrice != null && full?.price != null && full.ourPrice < full.price;
-  const displayPrice = full?.ourPrice ?? full?.price ?? product?.price;
 
   return createPortal(
     <AnimatePresence>
@@ -298,26 +296,28 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                     {/* Right — pricing + details */}
                     <div className="flex-1 lg:border-l lg:border-gray-100 lg:pl-8">
                       {/* Pricing */}
-                      <div className="flex items-baseline gap-3 mb-1">
-                        {displayPrice != null && (
-                          <span className="text-3xl font-bold text-gray-900">
-                            ${Number(displayPrice).toFixed(2)}
-                          </span>
-                        )}
-                        {hasDiscount && full?.price != null && (
-                          <span className="text-base text-gray-400 line-through">
-                            ${Number(full.price).toFixed(2)}
-                          </span>
-                        )}
-                        {displayPrice == null && (
-                          <span className="text-gray-400 text-xl font-normal">Call for price</span>
+                      <div className="mb-5">
+                        {full?.ourPrice != null ? (
+                          <>
+                            <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1">Our Price</p>
+                            <p className="text-3xl font-bold text-gray-900 mb-2">
+                              ${Number(full.ourPrice).toFixed(2)}
+                            </p>
+                            {full.price != null && (
+                              <p className="text-sm text-gray-400">
+                                Retail <span className="line-through">${Number(full.price).toFixed(2)}</span>
+                              </p>
+                            )}
+                          </>
+                        ) : full?.price != null ? (
+                          <>
+                            <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1">Price</p>
+                            <p className="text-3xl font-bold text-gray-900">${Number(full.price).toFixed(2)}</p>
+                          </>
+                        ) : (
+                          <p className="text-gray-400 text-xl font-normal">Call for price</p>
                         )}
                       </div>
-                      {full?.ourPrice != null && (
-                        <p className="text-[11px] text-gray-400 mb-5">
-                          Our price · Retail {full.price != null ? `$${Number(full.price).toFixed(2)}` : "—"}
-                        </p>
-                      )}
 
                       <hr className="border-gray-100 mb-6" />
 
