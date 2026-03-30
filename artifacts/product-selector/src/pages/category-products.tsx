@@ -68,14 +68,10 @@ function CopySkuButton({ sku }: { sku: string }) {
     <button
       onClick={handleCopy}
       title="Copy model number"
-      className={cn(
-        "ml-1 p-0.5 rounded transition-all shrink-0",
-        copied
-          ? "text-green-500"
-          : "text-muted-foreground/30 hover:text-muted-foreground opacity-0 group-hover:opacity-100"
-      )}
+      className="flex items-center gap-1.5 font-mono bg-gray-100 hover:bg-gray-200 hover:text-gray-700 px-2 py-0.5 rounded-full transition-all text-[12px] text-[#1f2630]"
     >
-      {copied ? <Check size={11} strokeWidth={2.5} /> : <Copy size={11} />}
+      {copied ? <Check size={10} className="text-emerald-500" /> : <Copy size={10} />}
+      {sku}
     </button>
   );
 }
@@ -101,8 +97,7 @@ function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: P
               {p.name}
             </p>
             {p.sku && (
-              <div className="flex items-center gap-0.5 mb-3">
-                <p className="font-mono text-gray-400 text-[12px]">{p.sku}</p>
+              <div className="mb-3">
                 <CopySkuButton sku={p.sku} />
               </div>
             )}
