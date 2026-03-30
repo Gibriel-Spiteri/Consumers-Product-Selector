@@ -473,7 +473,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <p className="text-gray-400 text-xs mt-0.5">© {new Date().getFullYear()} All rights reserved.</p>
           </div>
           <div className="flex items-center gap-6 text-xs text-gray-400">
-            <a href="#" className="flex items-center gap-1.5 hover:text-gray-700 transition-colors">
+            <a href="https://1212804.app.netsuite.com/app/site/hosting/scriptlet.nl?script=3701&deploy=1&script=3701&deploy=1&whence=&siaT=1774876085696&siaWhc=%2Fapp%2Fcenter%2Fcard.nl&siaNv=sc" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-gray-700 transition-colors">
               <BookOpen size={13} />
               PRD Reference
             </a>
