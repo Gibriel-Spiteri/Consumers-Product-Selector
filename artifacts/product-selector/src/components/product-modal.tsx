@@ -359,7 +359,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                       <button
                         key={tab.key}
                         onClick={() => setBottomTab(tab.key)}
-                        className="px-4 py-3 font-semibold relative transition-colors whitespace-nowrap hover:text-gray-600 text-[13px] text-[#363e4a]"
+                        className="px-4 py-3 font-semibold relative transition-colors whitespace-nowrap hover:text-gray-600 text-[13px] text-[#414a59]"
                       >
                         {tab.label}
                         {bottomTab === tab.key && (
