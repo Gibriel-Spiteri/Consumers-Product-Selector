@@ -169,6 +169,7 @@ export default function CategoryProducts() {
   const id = Number(categoryId);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [view, setView] = useState<"list" | "grid">("grid");
+  const [inStockOnly, setInStockOnly] = useState(false);
 
   const { data: productsData, isLoading: isLoadingProducts } = useQuery({
     ...getGetCategoryProductsQueryOptions(id),
@@ -179,7 +180,10 @@ export default function CategoryProducts() {
   const path = useCategoryPath(categoriesData?.categories || [], id);
   const categoryPath = path.map(c => c.name).join(" › ");
 
-  const products = productsData?.products ?? [];
+  const allProducts = productsData?.products ?? [];
+  const products = inStockOnly
+    ? allProducts.filter(p => p.quantityAvailable != null && p.quantityAvailable > 0)
+    : allProducts;
 
   return (
     <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10">
@@ -215,8 +219,25 @@ export default function CategoryProducts() {
             )}
           </div>
 
-          {/* View toggle */}
-          <div className="flex items-center bg-gray-100 rounded-lg p-0.5 shrink-0">
+          <div className="flex items-center gap-3 shrink-0">
+
+          <button
+            onClick={() => setInStockOnly(!inStockOnly)}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all border",
+              inStockOnly
+                ? "bg-emerald-50 text-emerald-600 border-emerald-200"
+                : "bg-white text-gray-400 border-gray-200 hover:text-gray-700"
+            )}
+          >
+            <span className={cn(
+              "w-2 h-2 rounded-full transition-colors",
+              inStockOnly ? "bg-emerald-500" : "bg-gray-300"
+            )} />
+            In Stock Only
+          </button>
+
+          <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
             <button
               onClick={() => setView("list")}
               title="List view"
@@ -243,6 +264,7 @@ export default function CategoryProducts() {
               <LayoutGrid size={14} />
               <span className="hidden sm:inline">Grid</span>
             </button>
+          </div>
           </div>
         </div>
       </div>
