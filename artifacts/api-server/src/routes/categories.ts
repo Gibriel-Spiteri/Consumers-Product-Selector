@@ -54,18 +54,20 @@ function buildCategoryTree(flatCategories: Array<{
     return node.children.some(c => hasOnlineDescendant(c));
   }
 
-  function pruneTree(nodes: CategoryNode[], isRoot = false): CategoryNode[] {
+  function hasProducts(node: CategoryNode): boolean {
+    if (productCounts && productCounts.has(node.id)) return true;
+    return node.children.some(c => hasProducts(c));
+  }
+
+  function pruneTree(nodes: CategoryNode[]): CategoryNode[] {
     return nodes
       .filter(n => !HIDDEN_NAMES.has(n.name) && hasOnlineDescendant(n))
       .map(n => ({ ...n, children: pruneTree(n.children) }))
-      .filter(n => {
-        if (isRoot && n.children.length === 0 && !(productCounts && productCounts.has(n.id))) return false;
-        return true;
-      })
+      .filter(n => productCounts ? hasProducts(n) : true)
       .sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  return pruneTree(roots, true);
+  return pruneTree(roots);
 }
 
 async function hasDatabaseData(): Promise<boolean> {
