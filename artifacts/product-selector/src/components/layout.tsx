@@ -477,7 +477,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <BookOpen size={13} />
               PRD Reference
             </a>
-            <a href="#" className="flex items-center gap-1.5 hover:text-gray-700 transition-colors">
+            <a href="https://www.consumerskitchens.com/photo-shoots" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-gray-700 transition-colors">
               <Camera size={13} />
               Photoshoot Showcase
             </a>
