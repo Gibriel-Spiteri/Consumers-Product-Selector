@@ -163,7 +163,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <span className="font-bold text-gray-900 tracking-tight group-hover:text-primary transition-colors text-[20px]">
               CONSUMERS
             </span>
-            <span className="font-semibold text-amber-500 tracking-widest uppercase hidden sm:block text-[14px]">
+            <span className="font-semibold text-amber-500 tracking-widest uppercase hidden sm:block text-[16px]">
               Product Selector
             </span>
           </Link>
