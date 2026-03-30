@@ -469,7 +469,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <footer className="border-t border-gray-100 bg-white mt-auto">
         <div className="max-w-screen-xl mx-auto px-6 py-8 flex flex-col sm:flex-row justify-between items-center gap-4">
           <div>
-            <p className="font-semibold text-gray-900 text-sm">Consumers Product Selector</p>
+            <p className="font-semibold text-gray-900 text-sm">CONSUMERS Product Selector</p>
             <p className="text-gray-400 text-xs mt-0.5">© {new Date().getFullYear()} All rights reserved.</p>
           </div>
           <div className="flex items-center gap-6 text-xs text-gray-400">
