@@ -137,13 +137,16 @@ function ImageGallery({ id, name }: { id: number; name: string }) {
   );
 }
 
-function RelatedMiniCard({ product }: { product: FullProduct }) {
+function RelatedMiniCard({ product, onSelect }: { product: FullProduct; onSelect: (p: FullProduct) => void }) {
   const images = useProductImages(product.id);
   const [failed, setFailed] = useState(false);
   const displayPrice = product.ourPrice ?? product.price;
 
   return (
-    <div className="shrink-0 w-44 bg-gray-50 rounded-2xl overflow-hidden">
+    <button
+      onClick={() => onSelect(product)}
+      className="shrink-0 w-44 bg-gray-50 hover:bg-gray-100 rounded-2xl overflow-hidden text-left transition-colors cursor-pointer"
+    >
       <div className="h-36 flex items-center justify-center p-4">
         {failed ? (
           <ImageOff size={20} className="text-gray-300" />
@@ -166,7 +169,7 @@ function RelatedMiniCard({ product }: { product: FullProduct }) {
           <p className="text-[12px] text-gray-300">—</p>
         )}
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -185,17 +188,26 @@ function CopySku({ sku }: { sku: string }) {
 }
 
 export default function ProductModal({ product, categoryPath, onClose }: ProductModalProps) {
+  const [activeProduct, setActiveProduct] = useState<FullProduct | null>(null);
+
+  // Reset to the outer product whenever the modal opens a new item
+  useEffect(() => {
+    setActiveProduct(null);
+  }, [product?.id]);
+
+  const resolvedId = activeProduct?.id ?? product?.id;
+
   const { data, isLoading } = useQuery<{ product: FullProduct }>({
-    queryKey: [`/api/products/${product?.id}`],
+    queryKey: [`/api/products/${resolvedId}`],
     queryFn: async () => {
-      const res = await fetch(`/api/products/${product!.id}`);
+      const res = await fetch(`/api/products/${resolvedId}`);
       if (!res.ok) throw new Error("Failed to load");
       return res.json();
     },
-    enabled: !!product,
+    enabled: !!resolvedId,
   });
 
-  const full = data?.product;
+  const full = data?.product ?? activeProduct;
   const displayProduct = full ?? product;
 
   useEffect(() => {
@@ -212,13 +224,18 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
     enabled: !!categoryId,
   });
   const relatedProducts = ((relatedData?.products ?? []) as FullProduct[])
-    .filter(p => p.id !== product?.id);
+    .filter(p => p.id !== resolvedId);
 
   const directCategoryName = categoryPath
     ? categoryPath.split(" › ").at(-1)
     : null;
 
   const [bottomTab, setBottomTab] = useState<"more" | "related" | "specs" | "collection">("more");
+
+  const handleSelectRelated = useCallback((p: FullProduct) => {
+    setActiveProduct(p);
+    setBottomTab("more");
+  }, []);
 
 
   return createPortal(
@@ -371,7 +388,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                     relatedProducts.length > 0 ? (
                       <div className="flex gap-3 overflow-x-auto pb-4">
                         {relatedProducts.map(p => (
-                          <RelatedMiniCard key={p.id} product={p} />
+                          <RelatedMiniCard key={p.id} product={p} onSelect={handleSelectRelated} />
                         ))}
                       </div>
                     ) : (
@@ -383,7 +400,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                     relatedProducts.length > 0 ? (
                       <div className="flex gap-3 overflow-x-auto pb-4">
                         {[...relatedProducts].reverse().map(p => (
-                          <RelatedMiniCard key={p.id} product={p} />
+                          <RelatedMiniCard key={p.id} product={p} onSelect={handleSelectRelated} />
                         ))}
                       </div>
                     ) : (
@@ -452,7 +469,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                             )
                             .slice(0, 12)
                             .map(p => (
-                              <RelatedMiniCard key={p.id} product={p} />
+                              <RelatedMiniCard key={p.id} product={p} onSelect={handleSelectRelated} />
                             ))}
                         </div>
                         {relatedProducts.length === 0 && (
