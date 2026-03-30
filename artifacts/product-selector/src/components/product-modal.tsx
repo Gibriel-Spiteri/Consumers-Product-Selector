@@ -98,7 +98,7 @@ function ImageGallery({ product }: { product: Product }) {
                 src={currentSrc}
                 alt={`${product.name} — view ${selectedIndex + 1}`}
                 onError={() => handleError(selectedIndex)}
-                className="w-full h-full object-contain"
+                className="max-w-[200px] max-h-[200px] object-contain"
               />
             </motion.div>
           )}

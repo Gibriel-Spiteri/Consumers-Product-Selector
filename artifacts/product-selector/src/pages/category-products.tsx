@@ -94,11 +94,11 @@ function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: P
           onClick={() => onSelect(p)}
           className="bg-white rounded-2xl overflow-hidden cursor-pointer group hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/8 transition-all duration-200 shadow-[0_1px_4px_rgba(0,0,0,0.06)]"
         >
-          <div className="bg-[#f7f8fa] aspect-[4/3] flex items-center justify-center p-8">
+          <div className="bg-[#f7f8fa] aspect-[4/3] flex items-center justify-center p-6">
             <ProductImage
               imageUrl={p.imageUrl}
               name={p.name}
-              className="w-full h-full"
+              className="max-w-[120px] max-h-[120px]"
             />
           </div>
           <div className="p-5">
@@ -149,8 +149,8 @@ function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: P
                 className="hover:bg-gray-50 transition-colors group cursor-pointer"
               >
                 <td className="px-5 py-3">
-                  <div className="w-11 h-11 rounded-xl bg-[#f7f8fa] flex items-center justify-center overflow-hidden shrink-0 p-1.5">
-                    <ProductImage imageUrl={p.imageUrl} name={p.name} className="w-full h-full" />
+                  <div className="w-11 h-11 rounded-xl bg-[#f7f8fa] flex items-center justify-center overflow-hidden shrink-0 p-1">
+                    <ProductImage imageUrl={p.imageUrl} name={p.name} className="max-w-[32px] max-h-[32px]" />
                   </div>
                 </td>
                 <td className="px-5 py-3 font-mono text-[12px] text-gray-400 group-hover:text-gray-600 transition-colors whitespace-nowrap">
