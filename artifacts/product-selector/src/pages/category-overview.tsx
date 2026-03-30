@@ -51,28 +51,30 @@ export default function CategoryOverview() {
                   key={sub.id}
                   className="bg-white rounded-2xl border border-border shadow-sm p-6 hover:shadow-md hover:border-accent/30 transition-all"
                 >
-                  <h2 className="font-display font-bold text-primary uppercase tracking-wide text-sm border-b-2 border-accent/30 pb-3 mb-4">
+                  <Link
+                    href={`/products/${sub.id}`}
+                    className="block font-display font-bold text-primary uppercase tracking-wide text-sm border-b-2 border-accent/30 pb-3 mb-4 hover:text-accent transition-colors"
+                  >
                     {sub.name}
-                  </h2>
-                  <ul className="space-y-2">
-                    {(sub.children || []).map((item) => (
-                      <li key={item.id}>
-                        <Link
-                          href={`/products/${item.id}`}
-                          className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center group py-0.5"
-                        >
-                          <ChevronRight
-                            size={13}
-                            className="opacity-0 -ml-3.5 group-hover:opacity-100 group-hover:ml-0 transition-all text-accent mr-1 shrink-0"
-                          />
-                          {item.name}
-                        </Link>
-                      </li>
-                    ))}
-                    {(sub.children || []).length === 0 && (
-                      <li className="text-xs text-muted-foreground italic">No items</li>
-                    )}
-                  </ul>
+                  </Link>
+                  {(sub.children || []).length > 0 && (
+                    <ul className="space-y-2">
+                      {(sub.children || []).map((item) => (
+                        <li key={item.id}>
+                          <Link
+                            href={`/products/${item.id}`}
+                            className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center group py-0.5"
+                          >
+                            <ChevronRight
+                              size={13}
+                              className="opacity-0 -ml-3.5 group-hover:opacity-100 group-hover:ml-0 transition-all text-accent mr-1 shrink-0"
+                            />
+                            {item.name}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               ))}
             </div>
