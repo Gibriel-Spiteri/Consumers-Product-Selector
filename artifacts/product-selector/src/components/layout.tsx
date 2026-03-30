@@ -457,10 +457,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {children}
       </main>
       {/* Footer */}
-      <footer className="border-t border-gray-100 bg-white">
+      <footer className="bg-black">
         <div className="max-w-screen-xl mx-auto px-6 py-5 flex items-center justify-between">
-          <p className="font-semibold text-gray-900 text-sm">CONSUMERS Product Selector</p>
-          <p className="text-gray-400 text-xs">© {new Date().getFullYear()} All rights reserved.</p>
+          <p className="font-semibold text-white text-sm">CONSUMERS Product Selector</p>
+          <p className="text-white/50 text-xs">© {new Date().getFullYear()} All rights reserved.</p>
         </div>
       </footer>
     </div>
