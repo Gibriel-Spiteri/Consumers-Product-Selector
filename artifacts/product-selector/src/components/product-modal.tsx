@@ -355,7 +355,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                         {displayProduct?.sku && (
                           <div>
                             <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1">SKU</dt>
-                            <dd className="font-mono text-sm text-gray-700">{displayProduct.sku}</dd>
+                            <dd><CopySku sku={displayProduct.sku} /></dd>
                           </div>
                         )}
                         <div>
