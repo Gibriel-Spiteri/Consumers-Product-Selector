@@ -102,7 +102,7 @@ function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: P
             </p>
             {p.sku && (
               <div className="flex items-center gap-0.5 mb-3">
-                <p className="font-mono text-[11px] text-gray-400">{p.sku}</p>
+                <p className="font-mono text-gray-400 text-[12px]">{p.sku}</p>
                 <CopySkuButton sku={p.sku} />
               </div>
             )}
