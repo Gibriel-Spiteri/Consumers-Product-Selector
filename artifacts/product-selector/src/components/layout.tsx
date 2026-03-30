@@ -461,12 +461,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Content */}
-      <main className="flex-1">
+      <main>
         {children}
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-gray-100 bg-white mt-auto">
+      <footer className="border-t border-gray-100 bg-white">
         <div className="max-w-screen-xl mx-auto px-6 py-8 flex flex-col sm:flex-row justify-between items-center gap-4">
           <div>
             <p className="font-semibold text-gray-900 text-sm">CONSUMERS Product Selector</p>
