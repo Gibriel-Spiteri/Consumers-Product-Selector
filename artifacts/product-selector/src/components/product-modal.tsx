@@ -13,6 +13,8 @@ interface Product {
   price: number | null;
   categoryId?: number | null;
   netsuiteId?: string | null;
+  imageUrl?: string | null;
+  fullImageUrl?: string | null;
 }
 
 interface FullProduct extends Product {
@@ -27,25 +29,20 @@ interface ProductModalProps {
   onClose: () => void;
 }
 
-const CUSTOM_PRODUCT_IDS = new Set([39, 40, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98]);
-const PICSUM_ANGLE_SEEDS = ["angle", "detail", "side", "context"];
-
-function useProductImages(id: number): string[] {
-  const isCustom = CUSTOM_PRODUCT_IDS.has(id);
-  const picsumImages = PICSUM_ANGLE_SEEDS.map(
-    s => `https://picsum.photos/seed/product-${id}-${s}/800/800`
-  );
-  if (isCustom) {
-    return [`${import.meta.env.BASE_URL}products/prod-${id}.png`, ...picsumImages];
-  }
-  return [`https://picsum.photos/seed/product-${id}/800/800`, ...picsumImages];
+function getProductImageList(product: Product): string[] {
+  const images: string[] = [];
+  if (product.fullImageUrl) images.push(product.fullImageUrl);
+  if (product.imageUrl && product.imageUrl !== product.fullImageUrl) images.push(product.imageUrl);
+  return images;
 }
 
-function ImageGallery({ id, name }: { id: number; name: string }) {
-  const images = useProductImages(id);
+function ImageGallery({ product }: { product: Product }) {
+  const images = getProductImageList(product);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [direction, setDirection] = useState(0);
   const [failedIndexes, setFailedIndexes] = useState<Set<number>>(new Set());
+
+  const visibleImages = images.map((src, i) => ({ src, i })).filter(({ i }) => !failedIndexes.has(i));
 
   const goTo = useCallback((index: number) => {
     setDirection(index > selectedIndex ? 1 : -1);
@@ -54,11 +51,29 @@ function ImageGallery({ id, name }: { id: number; name: string }) {
 
   const goPrev = () => { if (selectedIndex > 0) goTo(selectedIndex - 1); };
   const goNext = () => { if (selectedIndex < images.length - 1) goTo(selectedIndex + 1); };
-  const handleError = (index: number) => setFailedIndexes(prev => new Set([...prev, index]));
+  const handleError = useCallback((index: number) => {
+    setFailedIndexes(prev => {
+      const next = new Set([...prev, index]);
+      const remaining = images.filter((_, i) => !next.has(i));
+      if (remaining.length > 0 && next.has(selectedIndex)) {
+        const nextValid = images.findIndex((_, i) => !next.has(i));
+        if (nextValid >= 0) setSelectedIndex(nextValid);
+      }
+      return next;
+    });
+  }, [images, selectedIndex]);
 
-  const visibleImages = images.map((src, i) => ({ src, i })).filter(({ i }) => !failedIndexes.has(i));
   const currentSrc = images[selectedIndex];
-  const isFailed = failedIndexes.has(selectedIndex);
+  const isFailed = failedIndexes.has(selectedIndex) || !currentSrc;
+
+  if (images.length === 0) {
+    return (
+      <div className="bg-[#f7f8fa] rounded-2xl aspect-square flex items-center justify-center flex-col gap-2 text-gray-300">
+        <ImageOff size={32} />
+        <span className="text-xs">No image</span>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-2">
@@ -81,7 +96,7 @@ function ImageGallery({ id, name }: { id: number; name: string }) {
             >
               <img
                 src={currentSrc}
-                alt={`${name} — view ${selectedIndex + 1}`}
+                alt={`${product.name} — view ${selectedIndex + 1}`}
                 onError={() => handleError(selectedIndex)}
                 className="w-full h-full object-contain"
               />
@@ -138,9 +153,10 @@ function ImageGallery({ id, name }: { id: number; name: string }) {
 }
 
 function RelatedMiniCard({ product, onSelect }: { product: FullProduct; onSelect: (p: FullProduct) => void }) {
-  const images = useProductImages(product.id);
-  const [failed, setFailed] = useState(false);
+  const images = getProductImageList(product);
+  const [failedIndexes, setFailedIndexes] = useState<Set<number>>(new Set());
   const displayPrice = product.ourPrice ?? product.price;
+  const visibleSrc = images.find((_, i) => !failedIndexes.has(i)) ?? null;
 
   return (
     <button
@@ -148,13 +164,16 @@ function RelatedMiniCard({ product, onSelect }: { product: FullProduct; onSelect
       className="shrink-0 w-44 bg-gray-50 hover:bg-gray-100 rounded-2xl overflow-hidden text-left transition-colors cursor-pointer"
     >
       <div className="h-36 flex items-center justify-center p-4">
-        {failed ? (
+        {!visibleSrc ? (
           <ImageOff size={20} className="text-gray-300" />
         ) : (
           <img
-            src={images[0]}
+            src={visibleSrc}
             alt={product.name}
-            onError={() => setFailed(true)}
+            onError={() => {
+              const idx = images.indexOf(visibleSrc);
+              if (idx >= 0) setFailedIndexes(prev => new Set([...prev, idx]));
+            }}
             className="w-full h-full object-contain"
           />
         )}
@@ -285,7 +304,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
 
                     {/* Left — image gallery */}
                     <div className="lg:w-[30%] shrink-0">
-                      <ImageGallery id={product.id} name={product.name} />
+                      <ImageGallery product={product} />
                     </div>
 
                     {/* Middle — features */}

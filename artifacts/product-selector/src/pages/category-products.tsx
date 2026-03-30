@@ -14,6 +14,8 @@ interface Product {
   price: number | null;
   categoryId?: number | null;
   netsuiteId?: string | null;
+  imageUrl?: string | null;
+  fullImageUrl?: string | null;
   stock?: number | null;
 }
 
@@ -36,17 +38,10 @@ function StockBadge({ stock }: { stock: number | null | undefined }) {
   );
 }
 
-const CUSTOM_PRODUCT_IDS = new Set([39, 40, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98]);
-
-function ProductImage({ id, name, className }: { id: number; name: string; className?: string }) {
-  const [fallback, setFallback] = useState(false);
+function ProductImage({ imageUrl, name, className }: { imageUrl?: string | null; name: string; className?: string }) {
   const [failed, setFailed] = useState(false);
 
-  const customSrc = `${import.meta.env.BASE_URL}products/prod-${id}.png`;
-  const fallbackSrc = `https://picsum.photos/seed/product-${id}/400/400`;
-  const useCustom = CUSTOM_PRODUCT_IDS.has(id) && !fallback;
-
-  if (failed) {
+  if (!imageUrl || failed) {
     return (
       <div className={cn("flex items-center justify-center text-muted-foreground/30", className)}>
         <ImageOff size={20} />
@@ -55,9 +50,9 @@ function ProductImage({ id, name, className }: { id: number; name: string; class
   }
   return (
     <img
-      src={useCustom ? customSrc : fallbackSrc}
+      src={imageUrl}
       alt={name}
-      onError={() => useCustom ? setFallback(true) : setFailed(true)}
+      onError={() => setFailed(true)}
       className={cn("object-contain", className)}
     />
   );
@@ -101,7 +96,7 @@ function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: P
         >
           <div className="bg-[#f7f8fa] aspect-[4/3] flex items-center justify-center p-8">
             <ProductImage
-              id={p.id}
+              imageUrl={p.imageUrl}
               name={p.name}
               className="w-full h-full"
             />
@@ -155,7 +150,7 @@ function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: P
               >
                 <td className="px-5 py-3">
                   <div className="w-11 h-11 rounded-xl bg-[#f7f8fa] flex items-center justify-center overflow-hidden shrink-0 p-1.5">
-                    <ProductImage id={p.id} name={p.name} className="w-full h-full" />
+                    <ProductImage imageUrl={p.imageUrl} name={p.name} className="w-full h-full" />
                   </div>
                 </td>
                 <td className="px-5 py-3 font-mono text-[12px] text-gray-400 group-hover:text-gray-600 transition-colors whitespace-nowrap">

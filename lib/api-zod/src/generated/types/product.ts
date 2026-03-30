@@ -14,4 +14,5 @@ export interface Product {
   categoryId: number | null;
   netsuiteId: string | null;
   imageUrl: string | null;
+  fullImageUrl: string | null;
 }

@@ -89,9 +89,14 @@ openssl rsa -in private_key.pem -pubout -out public_key.pem
 
 Without the private key file or credentials, the `/api/netsuite/status` endpoint reports missing configuration and the app uses built-in sample data.
 
-**Sync flow:** POST `/api/netsuite/sync` → fetches all `SiteCategory` records via SuiteQL (with `isonline` flag) → fetches `Item` records with pricing and default site-category links → upserts into local PostgreSQL cache → removes stale categories no longer in NetSuite.
+**Sync flow:** POST `/api/netsuite/sync` → fetches all `SiteCategory` records via SuiteQL (with `isonline` flag) → fetches `Item` records with pricing, default site-category links, and image URLs → upserts into local PostgreSQL cache → removes stale categories no longer in NetSuite.
 
-**Category tree filtering:** The API builds the full category tree from all synced SiteCategory records, then prunes it to only show online categories while keeping offline intermediate parents as structural connectors. Internal categories ("Home Page", "Internal", "~Internal Items") are hidden. Empty root-level categories (no children or products) are also removed. Categories are sorted alphabetically at each level.
+**Product images:** Two image URLs are synced per product:
+- `imageUrl` — from `custitem_itemthumbnailurl` (thumbnail, used in grid/list views; 731 of 732 products have this)
+- `fullImageUrl` — from `custitem_itemimageurl` (full-size, used in product modal gallery; 65 products have this)
+The frontend uses real NetSuite image URLs from consumersintranets.com — no placeholder/filler images.
+
+**Category tree filtering:** The API builds the full category tree from all synced SiteCategory records, then prunes it to only show online categories while keeping offline intermediate parents as structural connectors. Internal/test categories ("Home Page", "Internal", "~Internal Items", "FAK Test1", "FAK Test2") are hidden. Empty root-level categories (no children or products) are also removed. Categories are sorted alphabetically at each level.
 
 ## Packages
 
