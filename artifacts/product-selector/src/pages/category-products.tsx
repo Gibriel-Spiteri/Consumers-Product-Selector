@@ -143,8 +143,8 @@ function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: P
                     <ProductImage imageUrl={p.imageUrl} name={p.name} className="max-w-[32px] max-h-[32px]" />
                   </div>
                 </td>
-                <td className="px-5 py-3 font-mono text-[12px] text-gray-400 group-hover:text-gray-600 transition-colors whitespace-nowrap">
-                  {p.sku || '—'}
+                <td className="px-5 py-3 whitespace-nowrap">
+                  {p.sku ? <CopySkuButton sku={p.sku} /> : <span className="text-gray-300">—</span>}
                 </td>
                 <td className="px-5 py-3 font-medium text-gray-900 group-hover:text-primary transition-colors">
                   {p.name}
