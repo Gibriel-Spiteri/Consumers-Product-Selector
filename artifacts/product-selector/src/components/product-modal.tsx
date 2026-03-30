@@ -19,6 +19,7 @@ interface Product {
 
 interface FullProduct extends Product {
   ourPrice: number | null;
+  description: string | null;
   manufacturer: string | null;
   features: string[] | null;
 }
@@ -309,6 +310,15 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
 
                     {/* Middle — features */}
                     <div className="lg:w-[36%] shrink-0 border-t lg:border-t-0 lg:border-l border-gray-100 pt-4 lg:pt-0 lg:pl-8">
+                      {full?.description ? (
+                        <div className="mb-5">
+                          <p className="font-semibold uppercase tracking-widest text-gray-400 mb-3 text-[12px]">Description</p>
+                          <div
+                            className="text-[13px] text-gray-600 leading-relaxed prose prose-sm max-w-none [&_br]:mb-1"
+                            dangerouslySetInnerHTML={{ __html: full.description }}
+                          />
+                        </div>
+                      ) : null}
                       {full?.features && full.features.length > 0 ? (
                         <>
                           <p className="font-semibold uppercase tracking-widest text-gray-400 mb-4 text-[12px]">Features</p>
@@ -321,9 +331,9 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                             ))}
                           </ul>
                         </>
-                      ) : (
-                        <p className="text-sm text-gray-300 italic">No features listed.</p>
-                      )}
+                      ) : !full?.description ? (
+                        <p className="text-sm text-gray-300 italic">No description available.</p>
+                      ) : null}
                     </div>
 
                     {/* Right — pricing + details */}

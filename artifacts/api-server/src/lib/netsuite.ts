@@ -253,6 +253,7 @@ export interface NetSuiteItem {
   baseprice?: number;
   imageUrl?: string | null;
   fullImageUrl?: string | null;
+  description?: string | null;
   sitecategoryid?: string | null;
 }
 
@@ -284,6 +285,7 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
     baseprice: string | null;
     imageurl: string | null;
     fullimageurl: string | null;
+    storedescription: string | null;
     sitecategoryid: string | null;
   }>(
     `SELECT
@@ -293,6 +295,7 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
       p.unitprice AS baseprice,
       item.custitem_itemthumbnailurl AS imageurl,
       item.custitem_itemimageurl AS fullimageurl,
+      item.storedescription,
       isc.category AS sitecategoryid
     FROM item
     LEFT JOIN pricing p ON p.item = item.id AND p.pricelevel = 1 AND p.quantity = 1
@@ -308,6 +311,7 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
     baseprice: row.baseprice != null ? Number(row.baseprice) : undefined,
     imageUrl: row.imageurl ?? null,
     fullImageUrl: row.fullimageurl ?? null,
+    description: row.storedescription ?? null,
     sitecategoryid: row.sitecategoryid ? String(row.sitecategoryid) : null,
   }));
 }

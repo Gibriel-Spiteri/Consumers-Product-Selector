@@ -156,6 +156,7 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
             price: item.baseprice ? String(item.baseprice) : null,
             imageUrl: item.imageUrl ?? null,
             fullImageUrl: item.fullImageUrl ?? null,
+            description: item.description ?? null,
             categoryId: categoryDbId,
             updatedAt: new Date(),
           })
@@ -168,6 +169,7 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
           price: item.baseprice ? String(item.baseprice) : null,
           imageUrl: item.imageUrl ?? null,
           fullImageUrl: item.fullImageUrl ?? null,
+          description: item.description ?? null,
           categoryId: categoryDbId,
         });
       }
