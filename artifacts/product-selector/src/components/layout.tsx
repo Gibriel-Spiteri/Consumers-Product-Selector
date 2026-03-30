@@ -1,49 +1,9 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import { Search, Loader2, RefreshCw, AlertCircle, ChevronRight, Package, Folders, Copy, Check, Database } from "lucide-react";
-import { useGetCategories, useGetNetSuiteStatus, useTriggerNetSuiteSync, getGetCategoriesQueryKey, getGetNetSuiteStatusQueryKey, useSearchProducts, getSearchProductsQueryKey } from "@workspace/api-client-react";
+import { Search, Loader2, ChevronRight, Package, Folders, Copy, Check } from "lucide-react";
+import { useGetCategories, useSearchProducts, getSearchProductsQueryKey } from "@workspace/api-client-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { useQueryClient } from "@tanstack/react-query";
-
-function SyncButton() {
-  const { data: status } = useGetNetSuiteStatus();
-  const { mutate: sync, isPending } = useTriggerNetSuiteSync();
-  const queryClient = useQueryClient();
-
-  const handleSync = () => {
-    sync(undefined, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getGetCategoriesQueryKey() });
-        queryClient.invalidateQueries({ queryKey: getGetNetSuiteStatusQueryKey() });
-      }
-    });
-  };
-
-  return (
-    <div className="flex items-center gap-2">
-      {status?.connected ? (
-        <span className="hidden sm:flex items-center gap-1 text-[11px] font-medium text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
-          <Database size={11} />
-          Connected
-        </span>
-      ) : (
-        <span className="hidden sm:flex items-center gap-1 text-[11px] font-medium text-red-500 bg-red-50 px-2.5 py-1 rounded-full">
-          <AlertCircle size={11} />
-          Not connected
-        </span>
-      )}
-      <button
-        onClick={handleSync}
-        disabled={isPending}
-        className="flex items-center gap-1.5 text-[12px] font-medium text-gray-500 hover:text-gray-900 border border-gray-200 hover:border-gray-300 px-3 py-1.5 rounded-lg transition-all disabled:opacity-50"
-      >
-        <RefreshCw size={12} className={cn(isPending && "animate-spin")} />
-        {isPending ? "Syncing…" : "Sync NetSuite"}
-      </button>
-    </div>
-  );
-}
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [, setLocation] = useLocation();
@@ -57,7 +17,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
   const { data: categoryData, isLoading: isLoadingCategories } = useGetCategories();
-  const { data: status } = useGetNetSuiteStatus();
 
   const categories = categoryData?.categories || [];
   const topLevelCategories = categories.filter(c => c.level === 1);
@@ -188,25 +147,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     setActiveTab(null);
   };
 
-  const showMockBanner = categoryData?.usingMockData || (status && !status.connected);
   const showDropdown = dropdownOpen && isSearchEnabled;
   const hasResults = productSuggestions.length > 0 || categorySuggestions.length > 0;
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      {/* Status Banner */}
-      <AnimatePresence>
-        {showMockBanner && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            className="bg-gray-50 border-b border-gray-100 text-gray-400 text-[11px] text-center py-1.5 px-4 flex items-center justify-center gap-1.5"
-          >
-            <AlertCircle size={11} className="shrink-0" />
-            Sample data — NetSuite credentials not configured
-          </motion.div>
-        )}
-      </AnimatePresence>
       {/* Unified Header */}
       <header
         className="bg-white border-b border-gray-200 sticky top-0 z-40"
@@ -378,9 +323,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </AnimatePresence>
           </div>
 
-          <div className="ml-auto">
-            <SyncButton />
-          </div>
         </div>
 
         {/* Bottom row: nav tabs (visually part of the same header) */}
