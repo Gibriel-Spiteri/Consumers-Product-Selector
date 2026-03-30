@@ -261,6 +261,7 @@ router.get("/products/:productId", async (req, res) => {
         fullImageUrl: null,
         description: null,
         manufacturer: null,
+        quantityAvailable: null,
         features: product.features ?? null,
       },
     });
@@ -282,6 +283,7 @@ router.get("/products/:productId", async (req, res) => {
       fullImageUrl: p.fullImageUrl ?? null,
       description: p.description ?? null,
       manufacturer: p.manufacturer ?? null,
+      quantityAvailable: p.quantityAvailable ?? null,
       features: null,
     },
   });

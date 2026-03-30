@@ -158,6 +158,7 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
             fullImageUrl: item.fullImageUrl ?? null,
             description: item.description ?? null,
             manufacturer: item.manufacturer ?? null,
+            quantityAvailable: item.quantityAvailable ?? null,
             categoryId: categoryDbId,
             updatedAt: new Date(),
           })
@@ -172,6 +173,7 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
           fullImageUrl: item.fullImageUrl ?? null,
           description: item.description ?? null,
           manufacturer: item.manufacturer ?? null,
+          quantityAvailable: item.quantityAvailable ?? null,
           categoryId: categoryDbId,
         });
       }

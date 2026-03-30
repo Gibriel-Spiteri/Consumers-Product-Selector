@@ -32,6 +32,7 @@ export interface Product {
   netsuiteId: string | null;
   imageUrl: string | null;
   fullImageUrl: string | null;
+  quantityAvailable: number | null;
 }
 
 export interface ProductListResponse {

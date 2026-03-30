@@ -21,6 +21,7 @@ interface FullProduct extends Product {
   ourPrice: number | null;
   description: string | null;
   manufacturer: string | null;
+  quantityAvailable: number | null;
   features: string[] | null;
 }
 
@@ -380,7 +381,15 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                         )}
                         <div>
                           <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1">Availability</dt>
-                          <dd className="text-sm font-medium text-emerald-600">In Stock</dd>
+                          {full?.quantityAvailable != null ? (
+                            full.quantityAvailable >= 1 ? (
+                              <dd className="text-sm font-medium text-emerald-600">In Stock ({full.quantityAvailable})</dd>
+                            ) : (
+                              <dd className="text-sm font-medium text-red-500">Out of Stock</dd>
+                            )
+                          ) : (
+                            <dd className="text-sm font-medium text-gray-400">—</dd>
+                          )}
                         </div>
                       </dl>
                     </div>
@@ -466,7 +475,15 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                         )}
                         <div>
                           <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Availability</dt>
-                          <dd className="text-sm text-emerald-600 font-medium">In Stock</dd>
+                          {full?.quantityAvailable != null ? (
+                            full.quantityAvailable >= 1 ? (
+                              <dd className="text-sm font-medium text-emerald-600">In Stock ({full.quantityAvailable})</dd>
+                            ) : (
+                              <dd className="text-sm font-medium text-red-500">Out of Stock</dd>
+                            )
+                          ) : (
+                            <dd className="text-sm font-medium text-gray-400">—</dd>
+                          )}
                         </div>
                         {full?.netsuiteId && (
                           <div>
