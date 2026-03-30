@@ -304,7 +304,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                               ${Number(full.ourPrice).toFixed(2)}
                             </p>
                             {full.price != null && (
-                              <p className="text-sm text-gray-400">
+                              <p className="text-gray-400 text-[16px]">
                                 Retail <span className="line-through">${Number(full.price).toFixed(2)}</span>
                               </p>
                             )}
