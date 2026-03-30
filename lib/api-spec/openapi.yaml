@@ -173,6 +173,9 @@ components:
         netsuiteId:
           type: string
           nullable: true
+        imageUrl:
+          type: string
+          nullable: true
       required:
         - id
         - name
@@ -180,6 +183,7 @@ components:
         - price
         - categoryId
         - netsuiteId
+        - imageUrl
     ProductListResponse:
       type: object
       properties:

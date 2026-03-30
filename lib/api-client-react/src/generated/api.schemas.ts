@@ -30,6 +30,7 @@ export interface Product {
   price: number | null;
   categoryId: number | null;
   netsuiteId: string | null;
+  imageUrl: string | null;
 }
 
 export interface ProductListResponse {

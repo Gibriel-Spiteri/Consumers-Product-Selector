@@ -137,6 +137,7 @@ router.get("/categories/:categoryId/products", async (req, res) => {
       price: p.price,
       categoryId: p.categoryId,
       netsuiteId: p.netsuiteId,
+      imageUrl: null,
       stock: MOCK_STOCK[p.id] ?? null,
     }));
     const response = GetCategoryProductsResponse.parse({ products: mapped, usingMockData: true });
@@ -178,6 +179,7 @@ router.get("/categories/:categoryId/products", async (req, res) => {
     price: p.price ? parseFloat(p.price) : null,
     categoryId: p.categoryId ?? null,
     netsuiteId: p.netsuiteId ?? null,
+    imageUrl: p.imageUrl ?? null,
   }));
 
   const response = GetCategoryProductsResponse.parse({ products: mapped, usingMockData: false });
@@ -206,6 +208,7 @@ router.get("/products/search", async (req, res) => {
       price: p.price,
       categoryId: p.categoryId,
       netsuiteId: p.netsuiteId,
+      imageUrl: null,
     }));
     const response = SearchProductsResponse.parse({ products: mapped, usingMockData: true });
     return res.json(response);
@@ -223,6 +226,7 @@ router.get("/products/search", async (req, res) => {
     price: p.price ? parseFloat(p.price) : null,
     categoryId: p.categoryId ?? null,
     netsuiteId: p.netsuiteId ?? null,
+    imageUrl: p.imageUrl ?? null,
   }));
 
   const response = SearchProductsResponse.parse({ products: mapped, usingMockData: false });
@@ -249,6 +253,7 @@ router.get("/products/:productId", async (req, res) => {
         ourPrice: product.ourPrice ?? null,
         categoryId: product.categoryId,
         netsuiteId: product.netsuiteId,
+        imageUrl: null,
         manufacturer: product.manufacturer ?? null,
         features: product.features ?? null,
       },
@@ -267,6 +272,7 @@ router.get("/products/:productId", async (req, res) => {
       ourPrice: null,
       categoryId: p.categoryId ?? null,
       netsuiteId: p.netsuiteId ?? null,
+      imageUrl: p.imageUrl ?? null,
       manufacturer: null,
       features: null,
     },
