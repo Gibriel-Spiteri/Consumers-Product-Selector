@@ -14,6 +14,26 @@ interface Product {
   price: number | null;
   categoryId?: number | null;
   netsuiteId?: string | null;
+  stock?: number | null;
+}
+
+function StockBadge({ stock }: { stock: number | null | undefined }) {
+  if (stock == null) return null;
+  if (stock === 0) return (
+    <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-red-50 text-red-500">
+      Out of Stock
+    </span>
+  );
+  if (stock <= 5) return (
+    <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-600">
+      Low Stock · {stock} left
+    </span>
+  );
+  return (
+    <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">
+      In Stock
+    </span>
+  );
 }
 
 const CUSTOM_PRODUCT_IDS = new Set([39, 40, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98]);
@@ -96,12 +116,15 @@ function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: P
                 <CopySkuButton sku={p.sku} />
               </div>
             )}
-            <p className="font-semibold text-gray-900">
-              {p.price
-                ? `$${Number(p.price).toFixed(2)}`
-                : <span className="text-gray-300 font-normal text-sm">—</span>
-              }
-            </p>
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <p className="font-semibold text-gray-900">
+                {p.price
+                  ? `$${Number(p.price).toFixed(2)}`
+                  : <span className="text-gray-300 font-normal text-sm">—</span>
+                }
+              </p>
+              <StockBadge stock={p.stock} />
+            </div>
           </div>
         </div>
       ))}
@@ -119,7 +142,8 @@ function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: P
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-16"></th>
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[140px]">SKU</th>
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400">Product</th>
-              <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 text-right w-[140px]">MSRP</th>
+              <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[140px]">Stock</th>
+              <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 text-right w-[120px]">MSRP</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
@@ -139,6 +163,9 @@ function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: P
                 </td>
                 <td className="px-5 py-3 font-medium text-gray-900 group-hover:text-primary transition-colors">
                   {p.name}
+                </td>
+                <td className="px-5 py-3 whitespace-nowrap">
+                  <StockBadge stock={p.stock} />
                 </td>
                 <td className="px-5 py-3 text-right whitespace-nowrap font-semibold text-gray-900">
                   {p.price ? `$${Number(p.price).toFixed(2)}` : <span className="text-gray-300 font-normal">—</span>}

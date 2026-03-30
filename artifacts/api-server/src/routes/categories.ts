@@ -7,7 +7,7 @@ import {
   GetCategoryProductsResponse,
   SearchProductsResponse,
 } from "@workspace/api-zod";
-import { MOCK_CATEGORIES, MOCK_PRODUCTS } from "../lib/mockData";
+import { MOCK_CATEGORIES, MOCK_PRODUCTS, MOCK_STOCK } from "../lib/mockData";
 
 const router: IRouter = Router();
 
@@ -103,6 +103,7 @@ router.get("/categories/:categoryId/products", async (req, res) => {
       price: p.price,
       categoryId: p.categoryId,
       netsuiteId: p.netsuiteId,
+      stock: MOCK_STOCK[p.id] ?? null,
     }));
     const response = GetCategoryProductsResponse.parse({ products: mapped, usingMockData: true });
     return res.json(response);

@@ -50,6 +50,7 @@ export const GetCategoryProductsResponse = zod.object({
       price: zod.number().nullable(),
       categoryId: zod.number().nullable(),
       netsuiteId: zod.string().nullable(),
+      stock: zod.number().nullable().optional(),
     }),
   ),
   usingMockData: zod.boolean(),
