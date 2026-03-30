@@ -218,7 +218,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="max-w-screen-xl mx-auto px-6 h-[52px] flex items-center relative">
           <Link href="/" className="flex items-baseline gap-2 shrink-0 group">
             <span className="font-bold text-gray-900 text-lg tracking-tight group-hover:text-primary transition-colors">
-              Consumers
+              CONSUMERS
             </span>
             <span className="text-[11px] font-semibold text-amber-500 tracking-widest uppercase hidden sm:block">
               Product Selector
