@@ -4,7 +4,6 @@ import Layout from "@/components/layout";
 import Home from "@/pages/home";
 import CategoryOverview from "@/pages/category-overview";
 import CategoryProducts from "@/pages/category-products";
-import ProductDetail from "@/pages/product-detail";
 import SearchPage from "@/pages/search";
 import NotFound from "@/pages/not-found";
 
@@ -28,7 +27,6 @@ function App() {
             <Route path="/" component={Home} />
             <Route path="/category/:categoryId" component={CategoryOverview} />
             <Route path="/products/:categoryId" component={CategoryProducts} />
-            <Route path="/product/:productId" component={ProductDetail} />
             <Route path="/search/:query" component={SearchPage} />
             <Route component={NotFound} />
           </Switch>

@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { getGetCategoryProductsQueryOptions } from "@workspace/api-client-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ImageOff, Copy, Check, ArrowRight, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ImageOff, Copy, Check, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Product {
@@ -138,38 +137,36 @@ function ImageGallery({ id, name }: { id: number; name: string }) {
   );
 }
 
-function RelatedMiniCard({ product, onClose }: { product: FullProduct; onClose: () => void }) {
+function RelatedMiniCard({ product }: { product: FullProduct }) {
   const images = useProductImages(product.id);
   const [failed, setFailed] = useState(false);
   const displayPrice = product.ourPrice ?? product.price;
 
   return (
-    <Link href={`/product/${product.id}`} onClick={onClose}>
-      <div className="shrink-0 w-44 bg-gray-50 rounded-2xl overflow-hidden cursor-pointer group hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
-        <div className="h-36 flex items-center justify-center p-4">
-          {failed ? (
-            <ImageOff size={20} className="text-gray-300" />
-          ) : (
-            <img
-              src={images[0]}
-              alt={product.name}
-              onError={() => setFailed(true)}
-              className="w-full h-full object-contain"
-            />
-          )}
-        </div>
-        <div className="px-3 pb-3">
-          <p className="text-[12px] font-medium text-gray-800 leading-snug line-clamp-2 group-hover:text-primary transition-colors mb-1">
-            {product.name}
-          </p>
-          {displayPrice != null ? (
-            <p className="text-[13px] font-semibold text-gray-900">${Number(displayPrice).toFixed(2)}</p>
-          ) : (
-            <p className="text-[12px] text-gray-300">—</p>
-          )}
-        </div>
+    <div className="shrink-0 w-44 bg-gray-50 rounded-2xl overflow-hidden">
+      <div className="h-36 flex items-center justify-center p-4">
+        {failed ? (
+          <ImageOff size={20} className="text-gray-300" />
+        ) : (
+          <img
+            src={images[0]}
+            alt={product.name}
+            onError={() => setFailed(true)}
+            className="w-full h-full object-contain"
+          />
+        )}
       </div>
-    </Link>
+      <div className="px-3 pb-3">
+        <p className="text-[12px] font-medium text-gray-800 leading-snug line-clamp-2 mb-1">
+          {product.name}
+        </p>
+        {displayPrice != null ? (
+          <p className="text-[13px] font-semibold text-gray-900">${Number(displayPrice).toFixed(2)}</p>
+        ) : (
+          <p className="text-[12px] text-gray-300">—</p>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -390,7 +387,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                     relatedProducts.length > 0 ? (
                       <div className="flex gap-3 overflow-x-auto pb-4">
                         {relatedProducts.map(p => (
-                          <RelatedMiniCard key={p.id} product={p} onClose={onClose} />
+                          <RelatedMiniCard key={p.id} product={p} />
                         ))}
                       </div>
                     ) : (
@@ -402,7 +399,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                     relatedProducts.length > 0 ? (
                       <div className="flex gap-3 overflow-x-auto pb-4">
                         {[...relatedProducts].reverse().map(p => (
-                          <RelatedMiniCard key={p.id} product={p} onClose={onClose} />
+                          <RelatedMiniCard key={p.id} product={p} />
                         ))}
                       </div>
                     ) : (
@@ -471,7 +468,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                             )
                             .slice(0, 12)
                             .map(p => (
-                              <RelatedMiniCard key={p.id} product={p} onClose={onClose} />
+                              <RelatedMiniCard key={p.id} product={p} />
                             ))}
                         </div>
                         {relatedProducts.length === 0 && (
@@ -486,17 +483,10 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
               </div>
 
               {/* Footer actions */}
-              <div className="px-8 py-6 border-t border-gray-100 shrink-0 flex items-center gap-3">
-                <Link
-                  href={`/product/${product.id}`}
-                  onClick={onClose}
-                  className="flex items-center justify-center gap-1.5 flex-1 py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-800 transition-colors"
-                >
-                  View Full Details <ArrowRight size={14} />
-                </Link>
+              <div className="px-8 py-5 border-t border-gray-100 shrink-0 flex justify-end">
                 <button
                   onClick={onClose}
-                  className="px-5 py-2.5 text-gray-400 hover:text-gray-600 text-sm transition-colors border border-gray-200 hover:border-gray-300 rounded-xl"
+                  className="px-5 py-2.5 text-gray-500 hover:text-gray-700 text-sm font-medium transition-colors border border-gray-200 hover:border-gray-300 rounded-xl"
                 >
                   Dismiss
                 </button>
