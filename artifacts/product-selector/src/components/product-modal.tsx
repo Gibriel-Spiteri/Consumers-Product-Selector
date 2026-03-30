@@ -383,7 +383,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                           <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1">Availability</dt>
                           {full?.quantityAvailable != null ? (
                             full.quantityAvailable >= 1 ? (
-                              <dd className="text-sm font-medium text-emerald-600">In Stock ({full.quantityAvailable})</dd>
+                              <dd className="text-sm font-medium text-emerald-600">In Stock</dd>
                             ) : (
                               <dd className="text-sm font-medium text-red-500">Out of Stock</dd>
                             )
@@ -477,7 +477,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                           <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Availability</dt>
                           {full?.quantityAvailable != null ? (
                             full.quantityAvailable >= 1 ? (
-                              <dd className="text-sm font-medium text-emerald-600">In Stock ({full.quantityAvailable})</dd>
+                              <dd className="text-sm font-medium text-emerald-600">In Stock</dd>
                             ) : (
                               <dd className="text-sm font-medium text-red-500">Out of Stock</dd>
                             )

@@ -16,24 +16,19 @@ interface Product {
   netsuiteId?: string | null;
   imageUrl?: string | null;
   fullImageUrl?: string | null;
-  stock?: number | null;
+  quantityAvailable?: number | null;
 }
 
-function StockBadge({ stock }: { stock: number | null | undefined }) {
-  if (stock == null) return null;
-  if (stock === 0) return (
-    <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-red-50 text-red-500">
-      Out of Stock
-    </span>
-  );
-  if (stock <= 5) return (
-    <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-600">
-      Low Stock · {stock} left
+function StockBadge({ qty }: { qty: number | null | undefined }) {
+  if (qty == null) return null;
+  if (qty >= 1) return (
+    <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">
+      In Stock
     </span>
   );
   return (
-    <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">
-      In Stock
+    <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-red-50 text-red-500">
+      Out of Stock
     </span>
   );
 }
@@ -118,7 +113,7 @@ function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: P
                   : <span className="text-gray-300 font-normal text-sm">—</span>
                 }
               </p>
-              <StockBadge stock={p.stock} />
+              <StockBadge qty={p.quantityAvailable} />
             </div>
           </div>
         </div>
@@ -160,7 +155,7 @@ function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: P
                   {p.name}
                 </td>
                 <td className="px-5 py-3 whitespace-nowrap">
-                  <StockBadge stock={p.stock} />
+                  <StockBadge qty={p.quantityAvailable} />
                 </td>
                 <td className="px-5 py-3 text-right whitespace-nowrap font-semibold text-gray-900">
                   {p.price ? `$${Number(p.price).toFixed(2)}` : <span className="text-gray-300 font-normal">—</span>}

@@ -182,6 +182,7 @@ router.get("/categories/:categoryId/products", async (req, res) => {
     netsuiteId: p.netsuiteId ?? null,
     imageUrl: p.imageUrl ?? null,
     fullImageUrl: p.fullImageUrl ?? null,
+    quantityAvailable: p.quantityAvailable ?? null,
   }));
 
   const response = GetCategoryProductsResponse.parse({ products: mapped, usingMockData: false });
@@ -231,6 +232,7 @@ router.get("/products/search", async (req, res) => {
     netsuiteId: p.netsuiteId ?? null,
     imageUrl: p.imageUrl ?? null,
     fullImageUrl: p.fullImageUrl ?? null,
+    quantityAvailable: p.quantityAvailable ?? null,
   }));
 
   const response = SearchProductsResponse.parse({ products: mapped, usingMockData: false });
