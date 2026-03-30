@@ -142,7 +142,7 @@ export const MOCK_PRODUCTS: MockProduct[] = [
     ],
   },
   {
-    id: 89, netsuiteId: "prod-89", name: "30\" Single Door Surface Cabinet Chrome", sku: "MC-SD-030-CHR", price: 189.99, ourPrice: 159.99, categoryId: 121,
+    id: 89, netsuiteId: "prod-89", name: "Camden Cotton 36x21 Two Door Two Drawers On Right Vanity Cabinet", sku: "MC-SD-030-CHR", price: 189.99, ourPrice: 159.99, categoryId: 121,
     manufacturer: "Kohler",
     features: [
       "Single-door surface-mount design — no wall opening required",
