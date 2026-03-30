@@ -203,10 +203,11 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
 
   useEffect(() => {
     if (!product) return;
+    setBottomTab("more");
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [product, onClose]);
+  }, [product?.id, onClose]);
 
   const categoryId = full?.categoryId ?? product?.categoryId ?? null;
   const { data: relatedData } = useQuery({
@@ -219,6 +220,8 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
   const directCategoryName = categoryPath
     ? categoryPath.split(" › ").at(-1)
     : null;
+
+  const [bottomTab, setBottomTab] = useState<"more" | "related" | "specs" | "collection">("more");
 
   const hasDiscount = full?.ourPrice != null && full?.price != null && full.ourPrice < full.price;
   const displayPrice = full?.ourPrice ?? full?.price ?? product?.price;
@@ -364,22 +367,134 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                   </div>
                 )}
 
-                {/* More from category */}
-                {relatedProducts.length > 0 && (
-                  <div className="mt-8 pt-7 border-t border-gray-100 pb-4">
-                    <div className="flex items-center gap-4 mb-4">
-                      <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 whitespace-nowrap">
-                        More from {directCategoryName ?? "this category"}
-                      </p>
-                      <div className="flex-1 h-px bg-gray-100" />
-                    </div>
-                    <div className="flex gap-3 overflow-x-auto pb-1">
-                      {relatedProducts.map(p => (
-                        <RelatedMiniCard key={p.id} product={p} onClose={onClose} />
-                      ))}
-                    </div>
+                {/* Bottom tabbed section */}
+                <div className="mt-8 pt-0 border-t border-gray-100">
+                  {/* Tab bar */}
+                  <div className="flex items-center gap-0 border-b border-gray-100 mb-5">
+                    {(
+                      [
+                        { key: "more", label: `More from ${directCategoryName ?? "Category"}` },
+                        { key: "related", label: "Related Items" },
+                        { key: "specs", label: "Specifications" },
+                        { key: "collection", label: "Collection" },
+                      ] as const
+                    ).map(tab => (
+                      <button
+                        key={tab.key}
+                        onClick={() => setBottomTab(tab.key)}
+                        className={cn(
+                          "px-4 py-3 text-[12px] font-semibold relative transition-colors whitespace-nowrap",
+                          bottomTab === tab.key
+                            ? "text-gray-900"
+                            : "text-gray-400 hover:text-gray-600"
+                        )}
+                      >
+                        {tab.label}
+                        {bottomTab === tab.key && (
+                          <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-400 rounded-full" />
+                        )}
+                      </button>
+                    ))}
                   </div>
-                )}
+
+                  {/* Tab content */}
+                  {bottomTab === "more" && (
+                    relatedProducts.length > 0 ? (
+                      <div className="flex gap-3 overflow-x-auto pb-4">
+                        {relatedProducts.map(p => (
+                          <RelatedMiniCard key={p.id} product={p} onClose={onClose} />
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-300 italic pb-4">No other products in this category.</p>
+                    )
+                  )}
+
+                  {bottomTab === "related" && (
+                    relatedProducts.length > 0 ? (
+                      <div className="flex gap-3 overflow-x-auto pb-4">
+                        {[...relatedProducts].reverse().map(p => (
+                          <RelatedMiniCard key={p.id} product={p} onClose={onClose} />
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-300 italic pb-4">No related items found.</p>
+                    )
+                  )}
+
+                  {bottomTab === "specs" && (
+                    <div className="pb-4">
+                      <dl className="grid grid-cols-2 gap-x-8 gap-y-4">
+                        {full?.manufacturer && (
+                          <div>
+                            <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Manufacturer</dt>
+                            <dd className="text-sm text-gray-800">{full.manufacturer}</dd>
+                          </div>
+                        )}
+                        {displayProduct?.sku && (
+                          <div>
+                            <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">SKU</dt>
+                            <dd className="font-mono text-sm text-gray-800">{displayProduct.sku}</dd>
+                          </div>
+                        )}
+                        {full?.price != null && (
+                          <div>
+                            <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Retail Price</dt>
+                            <dd className="text-sm text-gray-800">${Number(full.price).toFixed(2)}</dd>
+                          </div>
+                        )}
+                        {full?.ourPrice != null && (
+                          <div>
+                            <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Our Price</dt>
+                            <dd className="text-sm text-gray-800">${Number(full.ourPrice).toFixed(2)}</dd>
+                          </div>
+                        )}
+                        <div>
+                          <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Availability</dt>
+                          <dd className="text-sm text-emerald-600 font-medium">In Stock</dd>
+                        </div>
+                        {full?.netsuiteId && (
+                          <div>
+                            <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">NetSuite ID</dt>
+                            <dd className="font-mono text-sm text-gray-800">{full.netsuiteId}</dd>
+                          </div>
+                        )}
+                        {directCategoryName && (
+                          <div>
+                            <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Category</dt>
+                            <dd className="text-sm text-gray-800">{directCategoryName}</dd>
+                          </div>
+                        )}
+                      </dl>
+                    </div>
+                  )}
+
+                  {bottomTab === "collection" && (
+                    full?.manufacturer ? (
+                      <div>
+                        <p className="text-[11px] text-gray-400 mb-3">
+                          Other products by <span className="font-semibold text-gray-600">{full.manufacturer}</span>
+                        </p>
+                        <div className="flex gap-3 overflow-x-auto pb-4">
+                          {relatedProducts
+                            .filter(p => (p as FullProduct).manufacturer === full.manufacturer)
+                            .concat(
+                              relatedProducts.filter(p => (p as FullProduct).manufacturer !== full.manufacturer)
+                            )
+                            .slice(0, 12)
+                            .map(p => (
+                              <RelatedMiniCard key={p.id} product={p} onClose={onClose} />
+                            ))}
+                        </div>
+                        {relatedProducts.length === 0 && (
+                          <p className="text-sm text-gray-300 italic pb-4">No collection items found.</p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-300 italic pb-4">Collection data not available.</p>
+                    )
+                  )}
+                </div>
               </div>
 
               {/* Footer actions */}
