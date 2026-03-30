@@ -94,7 +94,7 @@ function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: P
           onClick={() => onSelect(p)}
           className="bg-white rounded-2xl overflow-hidden cursor-pointer group hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/8 transition-all duration-200 shadow-[0_1px_4px_rgba(0,0,0,0.06)]"
         >
-          <div className="bg-[#f7f8fa] aspect-[4/3] flex items-center justify-center p-6">
+          <div className="bg-[#f7f8fa] h-[140px] flex items-center justify-center p-4">
             <ProductImage
               imageUrl={p.imageUrl}
               name={p.name}
