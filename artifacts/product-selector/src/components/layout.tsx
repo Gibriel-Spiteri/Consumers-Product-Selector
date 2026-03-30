@@ -194,7 +194,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-
       {/* Status Banner */}
       <AnimatePresence>
         {showMockBanner && (
@@ -208,7 +207,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </motion.div>
         )}
       </AnimatePresence>
-
       {/* Unified Header */}
       <header
         className="bg-white border-b border-gray-200 sticky top-0 z-40"
@@ -401,12 +399,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       href={`/category/${cat.id}`}
                       onMouseEnter={() => handleMouseEnterTab(cat.id)}
                       onClick={() => { setIsHoveringNav(false); setActiveTab(null); }}
-                      className={cn(
-                        "block px-4 py-2.5 text-[12px] font-semibold uppercase tracking-widest transition-colors relative",
-                        activeTab === cat.id
-                          ? "text-gray-900"
-                          : "text-gray-400 hover:text-gray-700"
-                      )}
+                      className="block px-4 py-2.5 font-semibold uppercase tracking-widest transition-colors relative text-gray-900 text-[14px]"
                     >
                       {cat.name}
                       {activeTab === cat.id && (
@@ -459,12 +452,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </AnimatePresence>
         </div>
       </header>
-
       {/* Content */}
       <main>
         {children}
       </main>
-
       {/* Footer */}
       <footer className="border-t border-gray-100 bg-white">
         <div className="max-w-screen-xl mx-auto px-6 py-5 flex items-center justify-between">
