@@ -254,6 +254,7 @@ export interface NetSuiteItem {
   imageUrl?: string | null;
   fullImageUrl?: string | null;
   description?: string | null;
+  manufacturer?: string | null;
   sitecategoryid?: string | null;
 }
 
@@ -286,6 +287,7 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
     imageurl: string | null;
     fullimageurl: string | null;
     storedescription: string | null;
+    prodline: string | null;
     sitecategoryid: string | null;
   }>(
     `SELECT
@@ -296,6 +298,7 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
       item.custitem_itemthumbnailurl AS imageurl,
       item.custitem_itemimageurl AS fullimageurl,
       item.storedescription,
+      BUILTIN.DF(item.custitem_prodline) AS prodline,
       isc.category AS sitecategoryid
     FROM item
     LEFT JOIN pricing p ON p.item = item.id AND p.pricelevel = 1 AND p.quantity = 1
@@ -312,6 +315,7 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
     imageUrl: row.imageurl ?? null,
     fullImageUrl: row.fullimageurl ?? null,
     description: row.storedescription ?? null,
+    manufacturer: row.prodline ?? null,
     sitecategoryid: row.sitecategoryid ? String(row.sitecategoryid) : null,
   }));
 }
