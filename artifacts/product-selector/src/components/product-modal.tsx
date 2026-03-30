@@ -383,9 +383,9 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                           <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1">Availability</dt>
                           {full?.quantityAvailable != null ? (
                             full.quantityAvailable >= 1 ? (
-                              <dd><span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">In Stock</span></dd>
+                              <dd><span className="inline-flex items-center font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[12px]">In Stock</span></dd>
                             ) : (
-                              <dd><span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-red-50 text-red-500">Out of Stock</span></dd>
+                              <dd><span className="inline-flex items-center font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-red-50 text-red-500 text-[12px]">Out of Stock</span></dd>
                             )
                           ) : (
                             <dd className="text-sm font-medium text-gray-400">—</dd>
