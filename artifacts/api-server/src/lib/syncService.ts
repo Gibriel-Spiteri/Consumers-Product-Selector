@@ -139,7 +139,7 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
         ? (netsuiteIdToDbId.get(item.sitecategoryid) ?? null)
         : null;
 
-      const name = item.fullname || item.itemid;
+      const name = item.salesdescription || item.fullname || item.itemid;
 
       const existing = await db
         .select()

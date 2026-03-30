@@ -250,6 +250,7 @@ export interface NetSuiteItem {
   id: string;
   itemid: string;
   fullname?: string;
+  salesdescription?: string | null;
   baseprice?: number;
   imageUrl?: string | null;
   fullImageUrl?: string | null;
@@ -284,6 +285,7 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
     id: string;
     itemid: string;
     fullname: string | null;
+    salesdescription: string | null;
     baseprice: string | null;
     imageurl: string | null;
     fullimageurl: string | null;
@@ -296,6 +298,7 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
       item.id,
       item.itemid,
       item.fullname,
+      item.salesdescription,
       p.unitprice AS baseprice,
       item.custitem_itemthumbnailurl AS imageurl,
       item.custitem_itemimageurl AS fullimageurl,
@@ -314,6 +317,7 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
     id: String(row.id),
     itemid: row.itemid,
     fullname: row.fullname ?? undefined,
+    salesdescription: row.salesdescription ?? null,
     baseprice: row.baseprice != null ? Number(row.baseprice) : undefined,
     imageUrl: row.imageurl ?? null,
     fullImageUrl: row.fullimageurl ?? null,
