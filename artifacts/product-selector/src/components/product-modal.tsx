@@ -383,9 +383,9 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                           <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1">Availability</dt>
                           {full?.quantityAvailable != null ? (
                             full.quantityAvailable >= 1 ? (
-                              <dd className="text-sm font-medium text-emerald-600">In Stock</dd>
+                              <dd><span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">In Stock</span></dd>
                             ) : (
-                              <dd className="text-sm font-medium text-red-500">Out of Stock</dd>
+                              <dd><span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-red-50 text-red-500">Out of Stock</span></dd>
                             )
                           ) : (
                             <dd className="text-sm font-medium text-gray-400">—</dd>
@@ -477,9 +477,9 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                           <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Availability</dt>
                           {full?.quantityAvailable != null ? (
                             full.quantityAvailable >= 1 ? (
-                              <dd className="text-sm font-medium text-emerald-600">In Stock</dd>
+                              <dd><span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">In Stock</span></dd>
                             ) : (
-                              <dd className="text-sm font-medium text-red-500">Out of Stock</dd>
+                              <dd><span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-red-50 text-red-500">Out of Stock</span></dd>
                             )
                           ) : (
                             <dd className="text-sm font-medium text-gray-400">—</dd>
