@@ -368,7 +368,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <div className="flex flex-wrap gap-x-16 gap-y-10">
                     {categories.find(c => c.id === activeTab)?.children?.map(subCat => (
                       <div key={subCat.id} className="min-w-[160px] max-w-[240px] flex-1">
-                        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-amber-500 mb-4 pb-2 border-b border-gray-100">
+                        <h3 className="font-semibold uppercase tracking-widest text-amber-500 mb-4 pb-2 border-b border-gray-100 text-[12px]">
                           {subCat.name}
                         </h3>
                         <ul className="space-y-2">
