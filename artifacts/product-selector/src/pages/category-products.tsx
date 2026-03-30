@@ -96,7 +96,7 @@ function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: P
               className="max-w-[180px] max-h-[180px]"
             />
           </div>
-          <div className="px-5 pb-5 pt-[10px]">
+          <div className="px-5 pb-5 pt-0">
             <p className="text-[14px] font-medium text-gray-900 leading-snug line-clamp-2 mb-2.5 group-hover:text-primary transition-colors">
               {p.name}
             </p>
