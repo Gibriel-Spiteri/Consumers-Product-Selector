@@ -247,9 +247,8 @@ export interface NetSuiteCategory {
 export interface NetSuiteItem {
   id: string;
   itemid: string;
-  displayname?: string;
-  salesprice?: number;
-  category?: string | null;
+  fullname?: string;
+  cost?: number;
 }
 
 export async function fetchNetSuiteCategories(): Promise<NetSuiteCategory[]> {
@@ -257,7 +256,7 @@ export async function fetchNetSuiteCategories(): Promise<NetSuiteCategory[]> {
     id: string;
     name: string;
     parent: string | null;
-  }>("SELECT id, name, parent FROM ItemCategory ORDER BY name");
+  }>("SELECT id, name, parent FROM classification WHERE isinactive = 'F' ORDER BY name");
 
   return result.items.map((row) => ({
     id: String(row.id),
@@ -270,18 +269,16 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
   const result = await executeSuiteQL<{
     id: string;
     itemid: string;
-    displayname: string | null;
-    salesprice: number | null;
-    category: string | null;
+    fullname: string | null;
+    cost: string | null;
   }>(
-    "SELECT id, itemid, displayname, salesprice, category FROM Item WHERE isinactive = 'F' ORDER BY itemid LIMIT 5000"
+    "SELECT id, itemid, fullname, cost FROM item WHERE isinactive = 'F' ORDER BY itemid"
   );
 
   return result.items.map((row) => ({
     id: String(row.id),
     itemid: row.itemid,
-    displayname: row.displayname ?? undefined,
-    salesprice: row.salesprice ?? undefined,
-    category: row.category ? String(row.category) : null,
+    fullname: row.fullname ?? undefined,
+    cost: row.cost != null ? Number(row.cost) : undefined,
   }));
 }

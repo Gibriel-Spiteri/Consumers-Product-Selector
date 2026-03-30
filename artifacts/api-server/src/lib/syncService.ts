@@ -48,7 +48,7 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
     return {
       success: false,
       message:
-        "NetSuite credentials not configured. Set NETSUITE_ACCOUNT_ID, NETSUITE_CLIENT_ID, and NETSUITE_CLIENT_SECRET environment variables.",
+        "NetSuite M2M credentials not configured. Ensure NETSUITE_ACCOUNT_ID, NETSUITE_CLIENT_ID (or NETSUITE_OIDC_CLIENT_ID), NETSUITE_CERTIFICATE_ID are set, and certs/private_key.pem exists.",
       categoriesSynced: 0,
       productsSynced: 0,
     };
@@ -112,11 +112,9 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
 
     let productsSynced = 0;
     for (const item of nsItems) {
-      const categoryDbId = item.category
-        ? (netsuiteIdToDbId.get(item.category) ?? null)
-        : null;
+      const categoryDbId: number | null = null;
 
-      const name = item.displayname || item.itemid;
+      const name = item.fullname || item.itemid;
 
       const existing = await db
         .select()
@@ -130,7 +128,7 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
           .set({
             name,
             sku: item.itemid,
-            price: item.salesprice ? String(item.salesprice) : null,
+            price: item.cost ? String(item.cost) : null,
             categoryId: categoryDbId,
             updatedAt: new Date(),
           })
@@ -140,7 +138,7 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
           netsuiteId: item.id,
           name,
           sku: item.itemid,
-          price: item.salesprice ? String(item.salesprice) : null,
+          price: item.cost ? String(item.cost) : null,
           categoryId: categoryDbId,
         });
       }
