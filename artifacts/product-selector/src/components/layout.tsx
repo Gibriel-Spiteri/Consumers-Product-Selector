@@ -368,23 +368,29 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <div className="flex flex-wrap gap-x-16 gap-y-10">
                     {categories.find(c => c.id === activeTab)?.children?.map(subCat => (
                       <div key={subCat.id} className="min-w-[160px] max-w-[240px] flex-1">
-                        <h3 className="font-semibold uppercase tracking-widest text-amber-500 mb-4 pb-2 border-b border-gray-100 text-[12px]">
+                        <Link
+                          href={`/products/${subCat.id}`}
+                          onClick={() => { setIsHoveringNav(false); setActiveTab(null); }}
+                          className="block font-semibold uppercase tracking-widest text-amber-500 hover:text-amber-600 mb-4 pb-2 border-b border-gray-100 text-[12px] transition-colors"
+                        >
                           {subCat.name}
-                        </h3>
-                        <ul className="space-y-2">
-                          {subCat.children?.map(item => (
-                            <li key={item.id}>
-                              <Link
-                                href={`/products/${item.id}`}
-                                onClick={() => { setIsHoveringNav(false); setActiveTab(null); }}
-                                className="text-sm text-gray-500 hover:text-gray-900 transition-colors flex items-center group/link gap-1.5 py-0.5"
-                              >
-                                <ChevronRight size={12} className="opacity-0 -translate-x-1 group-hover/link:opacity-100 group-hover/link:translate-x-0 transition-all text-amber-400" />
-                                {item.name}
-                              </Link>
-                            </li>
-                          ))}
-                        </ul>
+                        </Link>
+                        {subCat.children && subCat.children.length > 0 && (
+                          <ul className="space-y-2">
+                            {subCat.children.map(item => (
+                              <li key={item.id}>
+                                <Link
+                                  href={`/products/${item.id}`}
+                                  onClick={() => { setIsHoveringNav(false); setActiveTab(null); }}
+                                  className="text-sm text-gray-500 hover:text-gray-900 transition-colors flex items-center group/link gap-1.5 py-0.5"
+                                >
+                                  <ChevronRight size={12} className="opacity-0 -translate-x-1 group-hover/link:opacity-100 group-hover/link:translate-x-0 transition-all text-amber-400" />
+                                  {item.name}
+                                </Link>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
                       </div>
                     ))}
                   </div>
