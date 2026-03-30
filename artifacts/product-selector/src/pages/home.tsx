@@ -29,7 +29,7 @@ export default function Home() {
           href="https://1212804.app.netsuite.com/app/site/hosting/scriptlet.nl?script=3701&deploy=1&script=3701&deploy=1&whence=&siaT=1774876085696&siaWhc=%2Fapp%2Fcenter%2Fcard.nl&siaNv=sc"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-2 text-sm hover:text-gray-700 transition-colors text-[#25272b]"
+          className="flex items-center gap-2 text-sm hover:text-gray-700 transition-colors text-[#353b42]"
         >
           <BookOpen size={15} />
           PRD Reference
@@ -39,7 +39,7 @@ export default function Home() {
           href="https://www.consumerskitchens.com/photo-shoots"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-2 text-sm hover:text-gray-700 transition-colors text-[#25272b]"
+          className="flex items-center gap-2 text-sm hover:text-gray-700 transition-colors text-[#353b42]"
         >
           <Camera size={15} />
           Photoshoot Showcase
@@ -47,7 +47,7 @@ export default function Home() {
         <span className="w-px h-4 bg-gray-200" />
         <a
           href="#"
-          className="flex items-center gap-2 text-sm hover:text-gray-700 transition-colors text-[#25272b]"
+          className="flex items-center gap-2 text-sm hover:text-gray-700 transition-colors text-[#353b42]"
         >
           <Flag size={15} />
           Report Issue
