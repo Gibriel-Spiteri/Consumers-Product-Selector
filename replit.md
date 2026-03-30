@@ -54,10 +54,10 @@ Every package extends `tsconfig.base.json` which sets `composite: true`. The roo
 
 A React + Vite web application served at `/` that implements a 3-level category mega-menu product selector.
 
-- **Level 1** — top navigation bar (Bath, Kitchen, Plumbing, Home, Displays, Clearance, Internal)
+- **Level 1** — top navigation bar tabs sourced from NetSuite `SiteCategory` (Bath, Bedroom, Clearance, Dining & Kitchen, Displays, Home, Kitchen, Living Room, Mattresses, Office, Plumbing)
 - **Level 2** — column headers in the mega-menu dropdown (e.g., Accessories, Countertops, Medicine Cabinets)
-- **Level 3** — clickable links within each column that navigate to the product list page
-- **Product List** — table with Name, SKU, Price columns at `/products/:categoryId`
+- **Level 3+** — clickable links within each column that navigate to the product list page
+- **Product List** — table with Name, SKU, Price columns at `/products/:categoryId`; endpoint fetches products from all descendant categories
 - **Search** — searches products by name or SKU at `/search/:query`
 - **NetSuite Banner** — yellow warning banner shown when NetSuite is not connected (using mock data)
 - **Sync Button** — triggers POST `/api/netsuite/sync` to pull live data from NetSuite
@@ -89,7 +89,9 @@ openssl rsa -in private_key.pem -pubout -out public_key.pem
 
 Without the private key file or credentials, the `/api/netsuite/status` endpoint reports missing configuration and the app uses built-in sample data.
 
-**Sync flow:** POST `/api/netsuite/sync` → fetches `ItemCategory` via SuiteQL → fetches `Item` records → upserts into local PostgreSQL cache.
+**Sync flow:** POST `/api/netsuite/sync` → fetches all `SiteCategory` records via SuiteQL (with `isonline` flag) → fetches `Item` records with pricing and default site-category links → upserts into local PostgreSQL cache → removes stale categories no longer in NetSuite.
+
+**Category tree filtering:** The API builds the full category tree from all synced SiteCategory records, then prunes it to only show online categories while keeping offline intermediate parents as structural connectors. Internal categories ("Home Page", "Internal", "~Internal Items") are hidden. Empty root-level categories (no children or products) are also removed. Categories are sorted alphabetically at each level.
 
 ## Packages
 

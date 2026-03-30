@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { categoriesTable, productsTable } from "@workspace/db";
-import { eq, or, ilike } from "drizzle-orm";
+import { eq, or, ilike, sql, inArray } from "drizzle-orm";
 import {
   GetCategoriesResponse,
   GetCategoryProductsResponse,
@@ -26,10 +26,13 @@ function buildCategoryTree(flatCategories: Array<{
   level: number;
   parentId: number | null;
   netsuiteId: string | null;
-}>): CategoryNode[] {
+  isOnline: boolean;
+}>, productCounts?: Map<number, number>): CategoryNode[] {
+  const onlineIds = new Set(flatCategories.filter(c => c.isOnline).map(c => c.id));
+
   const nodeMap = new Map<number, CategoryNode>();
   for (const cat of flatCategories) {
-    nodeMap.set(cat.id, { ...cat, children: [] });
+    nodeMap.set(cat.id, { id: cat.id, name: cat.name, level: cat.level, parentId: cat.parentId, netsuiteId: cat.netsuiteId, children: [] });
   }
 
   const roots: CategoryNode[] = [];
@@ -44,7 +47,25 @@ function buildCategoryTree(flatCategories: Array<{
     }
   }
 
-  return roots;
+  const HIDDEN_NAMES = new Set(["Home Page", "Home Page FAK", "Internal", "~Internal Items"]);
+
+  function hasOnlineDescendant(node: CategoryNode): boolean {
+    if (onlineIds.has(node.id)) return true;
+    return node.children.some(c => hasOnlineDescendant(c));
+  }
+
+  function pruneTree(nodes: CategoryNode[], isRoot = false): CategoryNode[] {
+    return nodes
+      .filter(n => !HIDDEN_NAMES.has(n.name) && hasOnlineDescendant(n))
+      .map(n => ({ ...n, children: pruneTree(n.children) }))
+      .filter(n => {
+        if (isRoot && n.children.length === 0 && !(productCounts && productCounts.has(n.id))) return false;
+        return true;
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  return pruneTree(roots, true);
 }
 
 async function hasDatabaseData(): Promise<boolean> {
@@ -66,6 +87,7 @@ router.get("/categories", async (_req, res) => {
       level: c.level,
       parentId: c.parentId,
       netsuiteId: c.netsuiteId,
+      isOnline: true,
     }));
     const tree = buildCategoryTree(flat);
     const response = GetCategoriesResponse.parse({ categories: tree, usingMockData: true });
@@ -73,15 +95,27 @@ router.get("/categories", async (_req, res) => {
   }
 
   const categories = await db.select().from(categoriesTable);
+
+  const productCountRows = await db
+    .select({
+      categoryId: productsTable.categoryId,
+      count: sql<number>`count(*)::int`,
+    })
+    .from(productsTable)
+    .where(sql`${productsTable.categoryId} IS NOT NULL`)
+    .groupBy(productsTable.categoryId);
+  const productCounts = new Map(productCountRows.map(r => [r.categoryId!, r.count]));
+
   const flat = categories.map((c) => ({
     id: c.id,
     name: c.name,
     level: c.level,
     parentId: c.parentId ?? null,
     netsuiteId: c.netsuiteId ?? null,
+    isOnline: c.isOnline,
   }));
 
-  const tree = buildCategoryTree(flat);
+  const tree = buildCategoryTree(flat, productCounts);
   const response = GetCategoriesResponse.parse({ categories: tree, usingMockData: false });
   return res.json(response);
 });
@@ -109,10 +143,33 @@ router.get("/categories/:categoryId/products", async (req, res) => {
     return res.json(response);
   }
 
+  const allCategories = await db
+    .select({ id: categoriesTable.id, parentId: categoriesTable.parentId, isOnline: categoriesTable.isOnline, name: categoriesTable.name })
+    .from(categoriesTable);
+  const HIDDEN_CAT_NAMES = new Set(["Home Page", "Home Page FAK", "Internal", "~Internal Items"]);
+  const childMap = new Map<number, number[]>();
+  for (const cat of allCategories) {
+    if (cat.parentId != null && !HIDDEN_CAT_NAMES.has(cat.name)) {
+      const children = childMap.get(cat.parentId) ?? [];
+      children.push(cat.id);
+      childMap.set(cat.parentId, children);
+    }
+  }
+  const descendantIds: number[] = [categoryId];
+  const queue = [categoryId];
+  while (queue.length > 0) {
+    const current = queue.pop()!;
+    const children = childMap.get(current) ?? [];
+    for (const child of children) {
+      descendantIds.push(child);
+      queue.push(child);
+    }
+  }
+
   const products = await db
     .select()
     .from(productsTable)
-    .where(eq(productsTable.categoryId, categoryId));
+    .where(inArray(productsTable.categoryId, descendantIds));
 
   const mapped = products.map((p) => ({
     id: p.id,

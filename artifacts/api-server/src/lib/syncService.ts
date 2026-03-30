@@ -1,6 +1,6 @@
 import { db } from "@workspace/db";
 import { categoriesTable, productsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, notInArray, sql } from "drizzle-orm";
 import {
   fetchNetSuiteCategories,
   fetchNetSuiteItems,
@@ -90,6 +90,7 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
             name: cat.name,
             level,
             parentId: parentDbId,
+            isOnline: cat.isOnline,
             updatedAt: new Date(),
           })
           .where(eq(categoriesTable.netsuiteId, cat.id));
@@ -102,11 +103,31 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
             name: cat.name,
             level,
             parentId: parentDbId,
+            isOnline: cat.isOnline,
           })
           .returning();
         netsuiteIdToDbId.set(cat.id, inserted.id);
       }
       categoriesSynced++;
+    }
+
+    const syncedNetsuiteIds = Array.from(netsuiteIdToDbId.keys());
+    if (syncedNetsuiteIds.length > 0) {
+      const staleCategories = await db
+        .select({ id: categoriesTable.id })
+        .from(categoriesTable)
+        .where(notInArray(categoriesTable.netsuiteId, syncedNetsuiteIds));
+      if (staleCategories.length > 0) {
+        const staleCatIds = staleCategories.map(c => c.id);
+        await db
+          .update(productsTable)
+          .set({ categoryId: null })
+          .where(sql`${productsTable.categoryId} IN (${sql.join(staleCatIds.map(id => sql`${id}`), sql`, `)})`);
+        await db
+          .delete(categoriesTable)
+          .where(notInArray(categoriesTable.netsuiteId, syncedNetsuiteIds));
+        logger.info({ count: staleCategories.length }, "Removed stale categories not in current SiteCategory sync");
+      }
     }
 
     const nsItems = await fetchNetSuiteItems();

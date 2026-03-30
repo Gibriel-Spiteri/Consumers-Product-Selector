@@ -243,6 +243,7 @@ export interface NetSuiteCategory {
   name: string;
   fullname: string;
   parent?: string | null;
+  isOnline: boolean;
 }
 
 export interface NetSuiteItem {
@@ -259,8 +260,9 @@ export async function fetchNetSuiteCategories(): Promise<NetSuiteCategory[]> {
     itemid: string;
     fullname: string;
     parentcategory: string | null;
+    isonline: string;
   }>(
-    "SELECT id, itemid, fullname, parentcategory FROM SiteCategory WHERE isinactive = 'F' ORDER BY fullname"
+    "SELECT id, itemid, fullname, parentcategory, isonline FROM SiteCategory ORDER BY fullname"
   );
 
   return result.items.map((row) => ({
@@ -268,6 +270,7 @@ export async function fetchNetSuiteCategories(): Promise<NetSuiteCategory[]> {
     name: row.itemid,
     fullname: row.fullname,
     parent: row.parentcategory ? String(row.parentcategory) : null,
+    isOnline: row.isonline === "T",
   }));
 }
 
