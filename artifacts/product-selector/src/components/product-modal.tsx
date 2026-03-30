@@ -178,7 +178,7 @@ function CopySku({ sku }: { sku: string }) {
   return (
     <button
       onClick={() => navigator.clipboard.writeText(sku).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); })}
-      className="flex items-center gap-1.5 font-mono text-[11px] text-gray-400 bg-gray-100 hover:bg-gray-200 hover:text-gray-700 px-2 py-0.5 rounded-full transition-all"
+      className="flex items-center gap-1.5 font-mono text-gray-400 bg-gray-100 hover:bg-gray-200 hover:text-gray-700 px-2 py-0.5 rounded-full transition-all text-[14px]"
       title="Copy SKU"
     >
       {copied ? <Check size={10} className="text-emerald-500" /> : <Copy size={10} />}
