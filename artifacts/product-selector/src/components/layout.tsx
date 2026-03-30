@@ -160,7 +160,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {/* Top row: logo + search (centered) + actions */}
         <div className="max-w-screen-xl mx-auto px-6 h-[65px] flex items-center relative">
           <Link href="/" className="flex items-baseline gap-2 shrink-0 group">
-            <span className="font-bold text-gray-900 text-lg tracking-tight group-hover:text-primary transition-colors">
+            <span className="font-bold text-gray-900 tracking-tight group-hover:text-primary transition-colors text-[20px]">
               CONSUMERS
             </span>
             <span className="font-semibold text-amber-500 tracking-widest uppercase hidden sm:block text-[14px]">
