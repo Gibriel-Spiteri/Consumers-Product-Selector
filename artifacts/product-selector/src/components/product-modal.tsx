@@ -281,7 +281,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                           <p className="font-semibold uppercase tracking-widest text-gray-400 mb-4 text-[12px]">Features</p>
                           <ul className="space-y-3">
                             {full.features.map((f, i) => (
-                              <li key={i} className="flex items-start gap-3 text-[13px] text-gray-600 leading-relaxed">
+                              <li key={i} className="flex items-start gap-3 text-gray-600 text-[14px]">
                                 <span className="mt-2 w-1 h-1 rounded-full bg-amber-400 shrink-0" />
                                 {f}
                               </li>
