@@ -1,8 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ImageOff, Copy, Check, ArrowRight } from "lucide-react";
+import { X, ImageOff, Copy, Check, ArrowRight, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Product {
   id: number;
@@ -13,6 +15,12 @@ interface Product {
   netsuiteId?: string | null;
 }
 
+interface FullProduct extends Product {
+  ourPrice: number | null;
+  manufacturer: string | null;
+  features: string[] | null;
+}
+
 interface ProductModalProps {
   product: Product | null;
   categoryPath?: string;
@@ -20,45 +28,142 @@ interface ProductModalProps {
 }
 
 const CUSTOM_PRODUCT_IDS = new Set([39, 40, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98]);
+const PICSUM_ANGLE_SEEDS = ["angle", "detail", "side", "context"];
 
-function ProductImage({ id, name }: { id: number; name: string }) {
-  const [fallback, setFallback] = useState(false);
-  const [failed, setFailed] = useState(false);
-  const useCustom = CUSTOM_PRODUCT_IDS.has(id) && !fallback;
-  const src = useCustom
-    ? `${import.meta.env.BASE_URL}products/prod-${id}.png`
-    : `https://picsum.photos/seed/product-${id}/600/600`;
-
-  if (failed) {
-    return (
-      <div className="w-full h-full flex flex-col items-center justify-center text-gray-300 gap-2">
-        <ImageOff size={28} />
-        <span className="text-xs">No image</span>
-      </div>
-    );
+function useProductImages(id: number): string[] {
+  const isCustom = CUSTOM_PRODUCT_IDS.has(id);
+  const picsumImages = PICSUM_ANGLE_SEEDS.map(
+    s => `https://picsum.photos/seed/product-${id}-${s}/800/800`
+  );
+  if (isCustom) {
+    return [`${import.meta.env.BASE_URL}products/prod-${id}.png`, ...picsumImages];
   }
+  return [`https://picsum.photos/seed/product-${id}/800/800`, ...picsumImages];
+}
+
+function ImageGallery({ id, name }: { id: number; name: string }) {
+  const images = useProductImages(id);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [direction, setDirection] = useState(0);
+  const [failedIndexes, setFailedIndexes] = useState<Set<number>>(new Set());
+
+  const goTo = useCallback((index: number) => {
+    setDirection(index > selectedIndex ? 1 : -1);
+    setSelectedIndex(index);
+  }, [selectedIndex]);
+
+  const goPrev = () => { if (selectedIndex > 0) goTo(selectedIndex - 1); };
+  const goNext = () => { if (selectedIndex < images.length - 1) goTo(selectedIndex + 1); };
+  const handleError = (index: number) => setFailedIndexes(prev => new Set([...prev, index]));
+
+  const visibleImages = images.map((src, i) => ({ src, i })).filter(({ i }) => !failedIndexes.has(i));
+  const currentSrc = images[selectedIndex];
+  const isFailed = failedIndexes.has(selectedIndex);
 
   return (
-    <img
-      src={src}
-      alt={name}
-      onError={() => useCustom ? setFallback(true) : setFailed(true)}
-      className="w-full h-full object-contain p-5"
-    />
+    <div className="flex flex-col gap-2">
+      <div className="relative bg-[#f7f8fa] rounded-2xl aspect-square overflow-hidden group">
+        <AnimatePresence mode="wait" initial={false} custom={direction}>
+          {isFailed ? (
+            <div className="absolute inset-0 flex items-center justify-center flex-col gap-2 text-gray-300">
+              <ImageOff size={32} />
+              <span className="text-xs">No image</span>
+            </div>
+          ) : (
+            <motion.div
+              key={selectedIndex}
+              custom={direction}
+              initial={{ opacity: 0, x: direction * 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: direction * -20 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+              className="absolute inset-0 flex items-center justify-center p-8"
+            >
+              <img
+                src={currentSrc}
+                alt={`${name} — view ${selectedIndex + 1}`}
+                onError={() => handleError(selectedIndex)}
+                className="w-full h-full object-contain"
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {visibleImages.length > 1 && (
+          <>
+            <button
+              onClick={goPrev}
+              disabled={selectedIndex === 0}
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/80 backdrop-blur-sm shadow-sm flex items-center justify-center text-gray-500 hover:text-gray-900 hover:bg-white transition-all opacity-0 group-hover:opacity-100 disabled:opacity-0"
+            >
+              <ChevronLeft size={14} />
+            </button>
+            <button
+              onClick={goNext}
+              disabled={selectedIndex === images.length - 1}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/80 backdrop-blur-sm shadow-sm flex items-center justify-center text-gray-500 hover:text-gray-900 hover:bg-white transition-all opacity-0 group-hover:opacity-100 disabled:opacity-0"
+            >
+              <ChevronRight size={14} />
+            </button>
+            <div className="absolute bottom-2 right-2 bg-black/30 backdrop-blur-sm text-white text-[10px] font-medium px-2 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+              {selectedIndex + 1} / {visibleImages.length}
+            </div>
+          </>
+        )}
+      </div>
+
+      {visibleImages.length > 1 && (
+        <div className="flex gap-1.5 overflow-x-auto pb-0.5">
+          {visibleImages.map(({ src, i }) => (
+            <button
+              key={i}
+              onClick={() => goTo(i)}
+              className={cn(
+                "shrink-0 w-12 h-12 rounded-lg bg-[#f7f8fa] overflow-hidden border-2 transition-all duration-150 p-1",
+                i === selectedIndex ? "border-gray-900" : "border-transparent hover:border-gray-200"
+              )}
+            >
+              <img
+                src={src}
+                alt={`View ${i + 1}`}
+                onError={() => handleError(i)}
+                className="w-full h-full object-contain"
+              />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CopySku({ sku }: { sku: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      onClick={() => navigator.clipboard.writeText(sku).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); })}
+      className="flex items-center gap-1.5 font-mono text-[11px] text-gray-400 bg-gray-100 hover:bg-gray-200 hover:text-gray-700 px-2 py-0.5 rounded-full transition-all"
+      title="Copy SKU"
+    >
+      {copied ? <Check size={10} className="text-emerald-500" /> : <Copy size={10} />}
+      {sku}
+    </button>
   );
 }
 
 export default function ProductModal({ product, categoryPath, onClose }: ProductModalProps) {
-  const [copiedSku, setCopiedSku] = useState(false);
+  const { data, isLoading } = useQuery<{ product: FullProduct }>({
+    queryKey: [`/api/products/${product?.id}`],
+    queryFn: async () => {
+      const res = await fetch(`/api/products/${product!.id}`);
+      if (!res.ok) throw new Error("Failed to load");
+      return res.json();
+    },
+    enabled: !!product,
+  });
 
-  const handleCopySku = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!product?.sku) return;
-    navigator.clipboard.writeText(product.sku).then(() => {
-      setCopiedSku(true);
-      setTimeout(() => setCopiedSku(false), 1500);
-    });
-  };
+  const full = data?.product;
+  const displayProduct = full ?? product;
 
   useEffect(() => {
     if (!product) return;
@@ -66,6 +171,11 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [product, onClose]);
+
+  const hasDiscount = full?.ourPrice != null && full?.price != null && full.ourPrice < full.price;
+  const displayPrice = full?.ourPrice ?? full?.price ?? product?.price;
+
+  const l1 = categoryPath ? categoryPath.split(" › ")[0] : null;
 
   return createPortal(
     <AnimatePresence>
@@ -78,95 +188,150 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-[9999]"
+            className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[9998]"
             onClick={onClose}
           />
 
           {/* Modal */}
           <motion.div
             key="modal"
-            initial={{ opacity: 0, scale: 0.97, y: 10 }}
+            initial={{ opacity: 0, scale: 0.97, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.97, y: 10 }}
-            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none"
+            exit={{ opacity: 0, scale: 0.97, y: 12 }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-8 pointer-events-none"
           >
             <div
-              className="bg-white rounded-3xl shadow-2xl shadow-black/20 w-full max-w-lg pointer-events-auto overflow-hidden flex"
+              className="bg-white rounded-3xl shadow-2xl shadow-black/25 w-full max-w-5xl pointer-events-auto overflow-hidden flex flex-col"
+              style={{ maxHeight: "calc(100vh - 4rem)" }}
               onClick={e => e.stopPropagation()}
             >
-              {/* Left — image */}
-              <div className="w-[42%] shrink-0 bg-[#f7f8fa]">
-                <ProductImage id={product.id} name={product.name} />
-              </div>
-
-              {/* Right — info */}
-              <div className="flex-1 p-6 flex flex-col relative">
-                {/* Close */}
+              {/* Header bar */}
+              <div className="flex items-center justify-between px-8 pt-7 pb-0 shrink-0">
+                <div className="flex items-center gap-3">
+                  {l1 && (
+                    <span className="text-[11px] font-bold uppercase tracking-widest text-amber-500">{l1}</span>
+                  )}
+                  {l1 && displayProduct?.sku && <span className="text-gray-200">·</span>}
+                  {displayProduct?.sku && <CopySku sku={displayProduct.sku} />}
+                </div>
                 <button
                   onClick={onClose}
-                  className="absolute top-4 right-4 w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
+                  className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors shrink-0"
                 >
-                  <X size={14} />
+                  <X size={15} />
                 </button>
+              </div>
 
-                {/* Category path */}
-                {categoryPath && (
-                  <p className="text-[11px] font-semibold uppercase tracking-widest text-amber-500 mb-2">
-                    {categoryPath.split(" › ")[0]}
-                  </p>
-                )}
-
-                {/* Product name */}
-                <h2 className="font-display font-bold text-gray-900 text-xl leading-snug mb-4 pr-8">
-                  {product.name}
+              {/* Product name */}
+              <div className="px-8 pt-4 pb-5 shrink-0">
+                <h2 className="font-display font-bold text-gray-900 text-2xl lg:text-3xl leading-tight">
+                  {displayProduct?.name}
                 </h2>
+              </div>
 
-                {/* Price */}
-                <p className="text-3xl font-bold text-gray-900 mb-1">
-                  {product.price != null
-                    ? `$${Number(product.price).toFixed(2)}`
-                    : <span className="text-gray-400 text-xl font-normal">Call for price</span>
-                  }
-                </p>
+              {/* 3-column body */}
+              <div className="flex-1 overflow-y-auto px-8 pb-0">
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-20 text-gray-300">
+                    <Loader2 size={28} className="animate-spin" />
+                  </div>
+                ) : (
+                  <div className="flex flex-col lg:flex-row gap-8 pb-2">
 
-                {/* Availability */}
-                <div className="flex items-center gap-1.5 mb-5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-                  <span className="text-xs text-emerald-600 font-medium">In Stock</span>
-                </div>
+                    {/* Left — image gallery */}
+                    <div className="lg:w-[30%] shrink-0">
+                      <ImageGallery id={product.id} name={product.name} />
+                    </div>
 
-                {/* SKU */}
-                {product.sku && (
-                  <div className="flex items-center gap-1.5 mb-5 bg-gray-50 rounded-xl px-3 py-2.5">
-                    <span className="text-[11px] text-gray-400 uppercase tracking-widest font-semibold">SKU</span>
-                    <span className="font-mono text-[12px] text-gray-600 flex-1">{product.sku}</span>
-                    <button
-                      type="button"
-                      onClick={handleCopySku}
-                      className="text-gray-300 hover:text-gray-500 transition-colors ml-auto"
-                      title="Copy SKU"
-                    >
-                      {copiedSku ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
-                    </button>
+                    {/* Middle — features */}
+                    <div className="lg:w-[36%] shrink-0 lg:border-l lg:border-gray-100 lg:pl-8">
+                      {full?.features && full.features.length > 0 ? (
+                        <>
+                          <p className="font-semibold uppercase tracking-widest text-gray-400 mb-4 text-[12px]">Features</p>
+                          <ul className="space-y-3">
+                            {full.features.map((f, i) => (
+                              <li key={i} className="flex items-start gap-3 text-[13px] text-gray-600 leading-relaxed">
+                                <span className="mt-2 w-1 h-1 rounded-full bg-amber-400 shrink-0" />
+                                {f}
+                              </li>
+                            ))}
+                          </ul>
+                        </>
+                      ) : (
+                        <p className="text-sm text-gray-300 italic">No features listed.</p>
+                      )}
+                    </div>
+
+                    {/* Right — pricing + details */}
+                    <div className="flex-1 lg:border-l lg:border-gray-100 lg:pl-8">
+                      {/* Pricing */}
+                      <div className="flex items-baseline gap-3 mb-1">
+                        {displayPrice != null && (
+                          <span className="text-3xl font-bold text-gray-900">
+                            ${Number(displayPrice).toFixed(2)}
+                          </span>
+                        )}
+                        {hasDiscount && full?.price != null && (
+                          <span className="text-base text-gray-400 line-through">
+                            ${Number(full.price).toFixed(2)}
+                          </span>
+                        )}
+                        {displayPrice == null && (
+                          <span className="text-gray-400 text-xl font-normal">Call for price</span>
+                        )}
+                      </div>
+                      {full?.ourPrice != null && (
+                        <p className="text-[11px] text-gray-400 mb-5">
+                          Our price · Retail {full.price != null ? `$${Number(full.price).toFixed(2)}` : "—"}
+                        </p>
+                      )}
+
+                      <span className="inline-flex items-center text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full mb-6">
+                        In Stock
+                      </span>
+
+                      <hr className="border-gray-100 mb-6" />
+
+                      {/* Metadata */}
+                      <dl className="space-y-4">
+                        {full?.manufacturer && (
+                          <div>
+                            <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1">Manufacturer</dt>
+                            <dd className="text-sm font-medium text-gray-900">{full.manufacturer}</dd>
+                          </div>
+                        )}
+                        {displayProduct?.sku && (
+                          <div>
+                            <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1">SKU</dt>
+                            <dd className="font-mono text-sm text-gray-700">{displayProduct.sku}</dd>
+                          </div>
+                        )}
+                        <div>
+                          <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1">Availability</dt>
+                          <dd className="text-sm font-medium text-emerald-600">In Stock</dd>
+                        </div>
+                      </dl>
+                    </div>
                   </div>
                 )}
+              </div>
 
-                <div className="mt-auto space-y-2">
-                  <Link
-                    href={`/product/${product.id}`}
-                    onClick={onClose}
-                    className="flex items-center justify-center gap-1.5 w-full py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-800 transition-colors"
-                  >
-                    View Full Details <ArrowRight size={14} />
-                  </Link>
-                  <button
-                    onClick={onClose}
-                    className="w-full py-2 text-gray-400 hover:text-gray-600 text-sm transition-colors"
-                  >
-                    Dismiss
-                  </button>
-                </div>
+              {/* Footer actions */}
+              <div className="px-8 py-6 border-t border-gray-100 shrink-0 flex items-center gap-3">
+                <Link
+                  href={`/product/${product.id}`}
+                  onClick={onClose}
+                  className="flex items-center justify-center gap-1.5 flex-1 py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-800 transition-colors"
+                >
+                  View Full Details <ArrowRight size={14} />
+                </Link>
+                <button
+                  onClick={onClose}
+                  className="px-5 py-2.5 text-gray-400 hover:text-gray-600 text-sm transition-colors border border-gray-200 hover:border-gray-300 rounded-xl"
+                >
+                  Dismiss
+                </button>
               </div>
             </div>
           </motion.div>
