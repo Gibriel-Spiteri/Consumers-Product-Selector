@@ -1,4 +1,4 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, BookOpen, Camera, Flag } from "lucide-react";
 
 export default function Home() {
   return (
@@ -21,6 +21,37 @@ export default function Home() {
             Select a category above to start browsing
           </div>
         </div>
+      </div>
+
+      {/* Quick links */}
+      <div className="py-10 flex items-center justify-center gap-8">
+        <a
+          href="https://1212804.app.netsuite.com/app/site/hosting/scriptlet.nl?script=3701&deploy=1&script=3701&deploy=1&whence=&siaT=1774876085696&siaWhc=%2Fapp%2Fcenter%2Fcard.nl&siaNv=sc"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 text-sm text-gray-400 hover:text-gray-700 transition-colors"
+        >
+          <BookOpen size={15} />
+          PRD Reference
+        </a>
+        <span className="w-px h-4 bg-gray-200" />
+        <a
+          href="https://www.consumerskitchens.com/photo-shoots"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 text-sm text-gray-400 hover:text-gray-700 transition-colors"
+        >
+          <Camera size={15} />
+          Photoshoot Showcase
+        </a>
+        <span className="w-px h-4 bg-gray-200" />
+        <a
+          href="#"
+          className="flex items-center gap-2 text-sm text-gray-400 hover:text-gray-700 transition-colors"
+        >
+          <Flag size={15} />
+          Report Issue
+        </a>
       </div>
     </div>
   );

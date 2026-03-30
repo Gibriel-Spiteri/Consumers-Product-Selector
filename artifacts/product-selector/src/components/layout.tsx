@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import { Search, Loader2, RefreshCw, AlertCircle, ChevronRight, Package, Folders, Copy, Check, BookOpen, Camera, Flag, Database } from "lucide-react";
+import { Search, Loader2, RefreshCw, AlertCircle, ChevronRight, Package, Folders, Copy, Check, Database } from "lucide-react";
 import { useGetCategories, useGetNetSuiteStatus, useTriggerNetSuiteSync, getGetCategoriesQueryKey, getGetNetSuiteStatusQueryKey, useSearchProducts, getSearchProductsQueryKey } from "@workspace/api-client-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -467,25 +467,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Footer */}
       <footer className="border-t border-gray-100 bg-white">
-        <div className="max-w-screen-xl mx-auto px-6 py-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div>
-            <p className="font-semibold text-gray-900 text-sm">CONSUMERS Product Selector</p>
-            <p className="text-gray-400 text-xs mt-0.5">© {new Date().getFullYear()} All rights reserved.</p>
-          </div>
-          <div className="flex items-center gap-6 text-xs text-gray-400">
-            <a href="https://1212804.app.netsuite.com/app/site/hosting/scriptlet.nl?script=3701&deploy=1&script=3701&deploy=1&whence=&siaT=1774876085696&siaWhc=%2Fapp%2Fcenter%2Fcard.nl&siaNv=sc" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-gray-700 transition-colors">
-              <BookOpen size={13} />
-              PRD Reference
-            </a>
-            <a href="https://www.consumerskitchens.com/photo-shoots" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-gray-700 transition-colors">
-              <Camera size={13} />
-              Photoshoot Showcase
-            </a>
-            <a href="#" className="flex items-center gap-1.5 hover:text-gray-700 transition-colors">
-              <Flag size={13} />
-              Report Issue
-            </a>
-          </div>
+        <div className="max-w-screen-xl mx-auto px-6 py-5 flex items-center justify-between">
+          <p className="font-semibold text-gray-900 text-sm">CONSUMERS Product Selector</p>
+          <p className="text-gray-400 text-xs">© {new Date().getFullYear()} All rights reserved.</p>
         </div>
       </footer>
     </div>
