@@ -102,12 +102,17 @@ function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: P
               </div>
             )}
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <p className="font-semibold text-gray-900">
-                {p.price
-                  ? `$${Number(p.price).toFixed(2)}`
-                  : <span className="text-gray-300 font-normal text-sm">—</span>
-                }
-              </p>
+              <div>
+                {p.price ? (
+                  <>
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">Our Price</p>
+                    <p className="font-semibold text-gray-900">${Number(p.price).toFixed(2)}</p>
+                    <p className="text-[11px] text-gray-400">Retail <span className="line-through">${Number(p.price).toFixed(2)}</span></p>
+                  </>
+                ) : (
+                  <span className="text-gray-300 font-normal text-sm">—</span>
+                )}
+              </div>
               <StockBadge qty={p.quantityAvailable} />
             </div>
           </div>
@@ -152,8 +157,13 @@ function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: P
                 <td className="px-5 py-3 whitespace-nowrap">
                   <StockBadge qty={p.quantityAvailable} />
                 </td>
-                <td className="px-5 py-3 text-right whitespace-nowrap font-semibold text-gray-900">
-                  {p.price ? `$${Number(p.price).toFixed(2)}` : <span className="text-gray-300 font-normal">—</span>}
+                <td className="px-5 py-3 text-right whitespace-nowrap">
+                  {p.price ? (
+                    <div>
+                      <p className="font-semibold text-gray-900">${Number(p.price).toFixed(2)}</p>
+                      <p className="text-[11px] text-gray-400">Retail <span className="line-through">${Number(p.price).toFixed(2)}</span></p>
+                    </div>
+                  ) : <span className="text-gray-300 font-normal">—</span>}
                 </td>
               </tr>
             ))}
