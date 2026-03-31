@@ -340,15 +340,15 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                     {/* Right — pricing + details */}
                     <div className="flex-1 border-t lg:border-t-0 lg:border-l border-gray-100 pt-4 lg:pt-0 lg:pl-8">
                       {/* Pricing */}
-                      <div className="mb-5 bg-gray-50 rounded-xl px-5 py-4">
+                      <div className="mb-5">
                         {full?.ourPrice != null ? (
                           <>
                             <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1">Our Price</p>
-                            <p className="text-3xl font-bold text-[#1f2630] mb-1">
+                            <p className="text-3xl font-bold text-gray-900 mb-2">
                               ${Number(full.ourPrice).toFixed(2)}
                             </p>
                             {full.price != null && (
-                              <p className="text-[13px] text-gray-400">
+                              <p className="text-sm text-gray-400">
                                 Retail <span className="line-through">${Number(full.price).toFixed(2)}</span>
                               </p>
                             )}
@@ -356,7 +356,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                         ) : full?.price != null ? (
                           <>
                             <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1">Price</p>
-                            <p className="text-3xl font-bold text-[#1f2630]">${Number(full.price).toFixed(2)}</p>
+                            <p className="text-3xl font-bold text-gray-900">${Number(full.price).toFixed(2)}</p>
                           </>
                         ) : (
                           <p className="text-gray-400 text-xl font-normal">Call for price</p>
