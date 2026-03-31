@@ -19,6 +19,7 @@ interface Product {
 
 interface FullProduct extends Product {
   ourPrice: number | null;
+  retailPrice: number | null;
   description: string | null;
   manufacturer: string | null;
   quantityAvailable: number | null;
@@ -341,22 +342,17 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                     <div className="flex-1 border-t lg:border-t-0 lg:border-l border-gray-100 pt-4 lg:pt-0 lg:pl-8">
                       {/* Pricing */}
                       <div className="mb-5">
-                        {full?.ourPrice != null ? (
+                        {full?.price != null ? (
                           <>
                             <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1">Our Price</p>
                             <p className="text-3xl font-bold text-gray-900 mb-2">
-                              ${Number(full.ourPrice).toFixed(2)}
+                              ${Number(full.price).toFixed(2)}
                             </p>
-                            {full.price != null && (
+                            {full.retailPrice != null && (
                               <p className="text-sm text-gray-400">
-                                Retail <span className="line-through">${Number(full.price).toFixed(2)}</span>
+                                Retail <span className="line-through">${Number(full.retailPrice).toFixed(2)}</span>
                               </p>
                             )}
-                          </>
-                        ) : full?.price != null ? (
-                          <>
-                            <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1">Price</p>
-                            <p className="text-3xl font-bold text-gray-900">${Number(full.price).toFixed(2)}</p>
                           </>
                         ) : (
                           <p className="text-gray-400 text-xl font-normal">Call for price</p>

@@ -12,6 +12,7 @@ interface Product {
   name: string;
   sku: string | null;
   price: number | null;
+  retailPrice?: number | null;
   categoryId?: number | null;
   netsuiteId?: string | null;
   imageUrl?: string | null;
@@ -107,7 +108,9 @@ function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: P
                   <>
                     <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">Our Price</p>
                     <p className="font-semibold text-gray-900">${Number(p.price).toFixed(2)}</p>
-                    <p className="text-[11px] text-gray-400">Retail <span className="line-through">${Number(p.price).toFixed(2)}</span></p>
+                    {p.retailPrice != null && (
+                      <p className="text-[11px] text-gray-400">Retail <span className="line-through">${Number(p.retailPrice).toFixed(2)}</span></p>
+                    )}
                   </>
                 ) : (
                   <span className="text-gray-300 font-normal text-sm">—</span>
@@ -161,7 +164,9 @@ function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: P
                   {p.price ? (
                     <div>
                       <p className="font-semibold text-gray-900">${Number(p.price).toFixed(2)}</p>
-                      <p className="text-[11px] text-gray-400">Retail <span className="line-through">${Number(p.price).toFixed(2)}</span></p>
+                      {p.retailPrice != null && (
+                        <p className="text-[11px] text-gray-400">Retail <span className="line-through">${Number(p.retailPrice).toFixed(2)}</span></p>
+                      )}
                     </div>
                   ) : <span className="text-gray-300 font-normal">—</span>}
                 </td>
