@@ -407,7 +407,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Footer */}
       <footer className="bg-black">
         <div className="max-w-screen-xl mx-auto px-6 py-5">
-          <p className="text-white/50 text-[14px]">© {new Date().getFullYear()} All rights reserved.</p>
+          <p className="text-white/50 text-[14px] text-center">© {new Date().getFullYear()} All rights reserved.</p>
         </div>
       </footer>
     </div>
