@@ -406,8 +406,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </main>
       {/* Footer */}
       <footer className="bg-black">
-        <div className="max-w-screen-xl mx-auto px-6 py-5 flex items-center justify-between">
-          <p className="font-semibold text-white text-sm">CONSUMERS Product Selector</p>
+        <div className="max-w-screen-xl mx-auto px-6 py-5">
           <p className="text-white/50 text-[14px]">© {new Date().getFullYear()} All rights reserved.</p>
         </div>
       </footer>
