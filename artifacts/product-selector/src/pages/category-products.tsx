@@ -147,8 +147,8 @@ function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: P
                 className="hover:bg-gray-50 transition-colors group cursor-pointer"
               >
                 <td className="px-5 py-3">
-                  <div className="w-11 h-11 rounded-xl bg-white flex items-center justify-center overflow-hidden shrink-0 p-1">
-                    <ProductImage imageUrl={p.imageUrl} name={p.name} className="max-w-[32px] max-h-[32px]" />
+                  <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center overflow-hidden shrink-0">
+                    <ProductImage imageUrl={p.imageUrl} name={p.name} className="max-w-[46px] max-h-[46px]" />
                   </div>
                 </td>
                 <td className="px-5 py-3 whitespace-nowrap">
