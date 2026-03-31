@@ -89,7 +89,9 @@ openssl rsa -in private_key.pem -pubout -out public_key.pem
 
 Without the private key file or credentials, the `/api/netsuite/status` endpoint reports missing configuration and the app uses built-in sample data.
 
-**Sync flow:** POST `/api/netsuite/sync` → fetches all `SiteCategory` records via SuiteQL (with `isonline` flag) → fetches `Item` records with pricing, default site-category links, and image URLs → upserts into local PostgreSQL cache → removes stale categories no longer in NetSuite.
+**Sync flow:** POST `/api/netsuite/sync` → fetches all `SiteCategory` records via SuiteQL (with `isonline` flag) → fetches `InventoryItem` records with pricing, sales description, default site-category links, and image URLs → upserts into local PostgreSQL cache → removes stale categories no longer in NetSuite.
+
+**Product naming:** The `salesdescription` field is stored separately from `name`. The `name` column holds the canonical NetSuite name (`fullname || itemid`), while `salesdescription` stores the NetSuite sales description. API responses use `salesdescription || name` as the display name, preferring the friendlier sales description when available.
 
 **Scheduled sync:** On server startup, a background scheduler (`src/lib/scheduler.ts`) runs an initial sync and then repeats every 6 hours using recursive `setTimeout`. It includes an overlap guard (skips if a previous sync is still running) and graceful shutdown hooks (SIGTERM/SIGINT).
 

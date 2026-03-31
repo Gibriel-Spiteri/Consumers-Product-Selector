@@ -139,7 +139,7 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
         ? (netsuiteIdToDbId.get(item.sitecategoryid) ?? null)
         : null;
 
-      const name = item.salesdescription || item.fullname || item.itemid;
+      const name = item.fullname || item.itemid;
 
       const existing = await db
         .select()
@@ -152,6 +152,7 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
           .update(productsTable)
           .set({
             name,
+            salesdescription: item.salesdescription ?? null,
             sku: item.itemid,
             price: item.baseprice ? String(item.baseprice) : null,
             imageUrl: item.imageUrl ?? null,
@@ -167,6 +168,7 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
         await db.insert(productsTable).values({
           netsuiteId: item.id,
           name,
+          salesdescription: item.salesdescription ?? null,
           sku: item.itemid,
           price: item.baseprice ? String(item.baseprice) : null,
           imageUrl: item.imageUrl ?? null,

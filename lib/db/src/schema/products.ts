@@ -6,6 +6,7 @@ export const productsTable = pgTable("products", {
   id: serial("id").primaryKey(),
   netsuiteId: text("netsuite_id").unique(),
   name: text("name").notNull(),
+  salesdescription: text("salesdescription"),
   sku: text("sku"),
   price: numeric("price", { precision: 10, scale: 2 }),
   imageUrl: text("image_url"),

@@ -174,7 +174,7 @@ router.get("/categories/:categoryId/products", async (req, res) => {
 
   const mapped = products.map((p) => ({
     id: p.id,
-    name: p.name,
+    name: p.salesdescription || p.name,
     sku: p.sku ?? null,
     price: p.price ? parseFloat(p.price) : null,
     categoryId: p.categoryId ?? null,
@@ -224,7 +224,7 @@ router.get("/products/search", async (req, res) => {
 
   const mapped = products.map((p) => ({
     id: p.id,
-    name: p.name,
+    name: p.salesdescription || p.name,
     sku: p.sku ?? null,
     price: p.price ? parseFloat(p.price) : null,
     categoryId: p.categoryId ?? null,
@@ -274,7 +274,7 @@ router.get("/products/:productId", async (req, res) => {
   return res.json({
     product: {
       id: p.id,
-      name: p.name,
+      name: p.salesdescription || p.name,
       sku: p.sku ?? null,
       price: p.price ? parseFloat(p.price) : null,
       ourPrice: null,

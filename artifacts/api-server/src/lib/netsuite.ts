@@ -306,7 +306,7 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
       BUILTIN.DF(item.custitem_prodline) AS prodline,
       item.quantityavailable,
       isc.category AS sitecategoryid
-    FROM item
+    FROM InventoryItem item
     LEFT JOIN pricing p ON p.item = item.id AND p.pricelevel = 1 AND p.quantity = 1
     LEFT JOIN ItemSiteCategory isc ON isc.item = item.id AND isc.isdefault = 'T'
     WHERE item.isinactive = 'F' AND item.isonline = 'T'
