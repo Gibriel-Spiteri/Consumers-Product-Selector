@@ -196,27 +196,20 @@ function ImageGallery({ product, additionalImages }: { product: Product; additio
               <X size={20} />
             </button>
 
-            {visibleImages.length > 1 && (
-              <>
-                <button
-                  onClick={(e) => { e.stopPropagation(); goPrev(); }}
-                  disabled={selectedIndex === 0}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors disabled:opacity-20 z-10"
-                >
-                  <ChevronLeft size={20} />
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); goNext(); }}
-                  disabled={selectedIndex === images.length - 1}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors disabled:opacity-20 z-10"
-                >
-                  <ChevronRight size={20} />
-                </button>
-                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-sm text-white text-sm font-medium px-4 py-1.5 rounded-full z-10">
-                  {selectedIndex + 1} / {visibleImages.length}
-                </div>
-              </>
-            )}
+            <button
+              onClick={(e) => { e.stopPropagation(); goPrev(); }}
+              disabled={selectedIndex <= 0}
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors disabled:opacity-0 disabled:pointer-events-none z-10"
+            >
+              <ChevronLeft size={24} />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); goNext(); }}
+              disabled={selectedIndex >= images.length - 1}
+              className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors disabled:opacity-0 disabled:pointer-events-none z-10"
+            >
+              <ChevronRight size={24} />
+            </button>
 
             <motion.img
               key={`lightbox-${selectedIndex}`}
@@ -226,8 +219,34 @@ function ImageGallery({ product, additionalImages }: { product: Product; additio
               src={currentSrc}
               alt={`${product.name} — full size view ${selectedIndex + 1}`}
               onClick={(e) => e.stopPropagation()}
-              className="max-w-[90vw] max-h-[90vh] object-contain cursor-default"
+              className="max-w-[85vw] max-h-[80vh] object-contain cursor-default"
             />
+
+            {visibleImages.length > 1 && (
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 z-10" onClick={(e) => e.stopPropagation()}>
+                <div className="flex gap-2 bg-black/40 backdrop-blur-sm rounded-full px-3 py-2">
+                  {visibleImages.map(({ src, i }) => (
+                    <button
+                      key={i}
+                      onClick={() => goTo(i)}
+                      className={cn(
+                        "shrink-0 w-12 h-12 rounded-lg overflow-hidden border-2 transition-all duration-150 p-0.5",
+                        i === selectedIndex ? "border-white" : "border-transparent opacity-50 hover:opacity-80"
+                      )}
+                    >
+                      <img
+                        src={src}
+                        alt={`View ${i + 1}`}
+                        className="w-full h-full object-contain"
+                      />
+                    </button>
+                  ))}
+                </div>
+                <span className="bg-white/10 backdrop-blur-sm text-white text-sm font-medium px-3 py-1.5 rounded-full">
+                  {selectedIndex + 1} / {visibleImages.length}
+                </span>
+              </div>
+            )}
           </motion.div>
         </AnimatePresence>,
         document.body
