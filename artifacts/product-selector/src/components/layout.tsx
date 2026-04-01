@@ -4,6 +4,45 @@ import { Search, Loader2, ChevronRight, Package, Folders, Copy, Check, RefreshCw
 import { useGetCategories, useSearchProducts, getSearchProductsQueryKey } from "@workspace/api-client-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useQueryClient } from "@tanstack/react-query";
+
+function SyncButton() {
+  const [syncing, setSyncing] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+  const qc = useQueryClient();
+
+  return (
+    <button
+      onClick={async () => {
+        if (syncing) return;
+        setSyncing(true);
+        setResult(null);
+        try {
+          const res = await fetch("/api/dev/sync", { method: "POST" });
+          const data = await res.json();
+          if (data.status === "complete") {
+            setResult(`Synced ${data.productsSynced} products`);
+            qc.invalidateQueries();
+          } else if (data.status === "already_running") {
+            setResult("Sync already running");
+          } else {
+            setResult("Sync failed");
+          }
+        } catch {
+          setResult("Sync failed");
+        } finally {
+          setSyncing(false);
+          setTimeout(() => setResult(null), 4000);
+        }
+      }}
+      disabled={syncing}
+      className="ml-auto mr-4 flex items-center gap-1.5 bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-medium px-3 py-1.5 rounded-md transition-colors disabled:opacity-60"
+    >
+      <RefreshCw size={12} className={syncing ? "animate-spin" : ""} />
+      {result ?? (syncing ? "Syncing…" : "Sync NetSuite")}
+    </button>
+  );
+}
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [, setLocation] = useLocation();
@@ -189,21 +228,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </span>
           </Link>
 
-          <button
-            onClick={async () => {
-              try {
-                await fetch("/api/dev/restart", { method: "POST" });
-                const el = document.getElementById("dev-restart-btn");
-                if (el) el.textContent = "Restarting…";
-                setTimeout(() => window.location.reload(), 3000);
-              } catch {}
-            }}
-            id="dev-restart-btn"
-            className="ml-auto mr-4 flex items-center gap-1.5 bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-medium px-3 py-1.5 rounded-md transition-colors"
-          >
-            <RefreshCw size={12} />
-            Sync NetSuite
-          </button>
+          <SyncButton />
 
           <div className="w-[500px]" ref={searchContainerRef}>
             <form onSubmit={handleSearch} className="relative flex items-center">

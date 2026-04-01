@@ -61,6 +61,29 @@ export function startScheduledSync() {
   runSync();
 }
 
+export async function triggerManualSync() {
+  if (isSyncing) {
+    return { status: "already_running" as const };
+  }
+  logger.info("Manual sync triggered");
+  isSyncing = true;
+  try {
+    const result = await syncFromNetSuite();
+    if (result.success) {
+      logger.info(
+        { categoriesSynced: result.categoriesSynced, productsSynced: result.productsSynced },
+        "Manual sync completed successfully",
+      );
+    }
+    return { status: "complete" as const, ...result };
+  } catch (err) {
+    logger.error({ err }, "Manual sync threw an unexpected error");
+    return { status: "error" as const, message: String(err) };
+  } finally {
+    isSyncing = false;
+  }
+}
+
 export function stopScheduledSync() {
   if (timeoutId !== null) {
     clearTimeout(timeoutId);
