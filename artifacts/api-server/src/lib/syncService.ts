@@ -184,6 +184,14 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
       productsSynced++;
     }
 
+    const syncedProductNetsuiteIds = nsItems.map((item) => item.id);
+    if (syncedProductNetsuiteIds.length > 0) {
+      const deletedProducts = await db
+        .delete(productsTable)
+        .where(notInArray(productsTable.netsuiteId!, syncedProductNetsuiteIds));
+      logger.info({ deleted: deletedProducts.rowCount ?? 0 }, "Removed stale products");
+    }
+
     logger.info({ categoriesSynced, productsSynced }, "NetSuite sync complete");
 
     return {
