@@ -125,7 +125,7 @@ function ImageGallery({ product, additionalImages }: { product: Product; additio
                 onError={() => handleError(selectedIndex)}
                 className="max-w-[200px] max-h-[200px] object-contain"
               />
-              <div className="absolute bottom-2 left-2 bg-black/30 backdrop-blur-sm text-white text-[10px] font-medium px-2 py-0.5 rounded-full flex items-center gap-1">
+              <div className="absolute bottom-2 left-2 backdrop-blur-sm font-medium px-2 py-0.5 rounded-full flex items-center gap-1 text-[#171515] bg-[#ffffff] text-[12px]">
                 <ZoomIn size={10} />
                 Click to enlarge
               </div>
@@ -155,7 +155,6 @@ function ImageGallery({ product, additionalImages }: { product: Product; additio
           </>
         )}
       </div>
-
       {visibleImages.length > 1 && (
         <div className="flex gap-1.5 overflow-x-auto pb-0.5">
           {visibleImages.map(({ src, i }) => (
@@ -177,7 +176,6 @@ function ImageGallery({ product, additionalImages }: { product: Product; additio
           ))}
         </div>
       )}
-
       {lightboxOpen && !isFailed && currentSrc && createPortal(
         <AnimatePresence>
           <motion.div
