@@ -252,6 +252,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                                       )}
                                     </span>
                                     <span className="flex items-center gap-2 flex-shrink-0">
+                                      {product.quantityAvailable != null && (
+                                        product.quantityAvailable >= 1 ? (
+                                          <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">In Stock</span>
+                                        ) : (
+                                          <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-red-50 text-red-500">Out of Stock</span>
+                                        )
+                                      )}
                                       {product.sku && (
                                         <button
                                           type="button"
