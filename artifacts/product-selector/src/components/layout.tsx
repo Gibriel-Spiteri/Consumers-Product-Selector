@@ -112,10 +112,24 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const handleCopySku = (e: React.MouseEvent, sku: string) => {
     e.stopPropagation();
     e.preventDefault();
-    navigator.clipboard.writeText(sku).then(() => {
+    try {
+      const textarea = document.createElement("textarea");
+      textarea.value = sku;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
       setCopiedSku(sku);
       setTimeout(() => setCopiedSku(null), 1500);
-    });
+    } catch {
+      navigator.clipboard.writeText(sku).then(() => {
+        setCopiedSku(sku);
+        setTimeout(() => setCopiedSku(null), 1500);
+      }).catch(() => {});
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -269,11 +283,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                                     </span>
                                     <span className="truncate">
                                       {product.sku ? (
-                                        <button
-                                          type="button"
+                                        <span
+                                          role="button"
                                           onMouseDown={e => handleCopySku(e, product.sku!)}
                                           className={cn(
-                                            "flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono border transition-all",
+                                            "inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono border transition-all cursor-pointer",
                                             copiedSku === product.sku
                                               ? "bg-emerald-50 border-emerald-200 text-emerald-700"
                                               : "bg-gray-50 border-gray-200 text-gray-400 hover:text-gray-700"
@@ -282,7 +296,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                                           {copiedSku === product.sku
                                             ? <><Check size={10} /> {product.sku}</>
                                             : <><Copy size={10} /> {product.sku}</>}
-                                        </button>
+                                        </span>
                                       ) : <span className="text-gray-300">—</span>}
                                     </span>
                                     <span className="text-right">
