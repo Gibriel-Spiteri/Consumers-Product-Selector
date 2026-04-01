@@ -169,7 +169,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </Link>
 
           {/* Search — absolutely centered in the bar */}
-          <div className="absolute left-1/2 -translate-x-1/2 w-full max-w-md" ref={searchContainerRef}>
+          <div className="absolute left-1/2 -translate-x-1/2 w-full max-w-xl lg:max-w-2xl" ref={searchContainerRef}>
             <form onSubmit={handleSearch} className="relative flex items-center">
               <Search size={14} className="absolute left-3 text-gray-400 pointer-events-none z-10" />
               <input
@@ -202,7 +202,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4 }}
                   transition={{ duration: 0.12 }}
-                  className="absolute top-full left-0 right-0 mt-1.5 bg-white rounded-xl shadow-xl shadow-black/10 border border-gray-100 overflow-hidden z-50"
+                  className="absolute top-full left-1/2 -translate-x-1/2 w-[140%] min-w-[600px] mt-1.5 bg-white rounded-xl shadow-xl shadow-black/10 border border-gray-100 overflow-hidden z-50"
                 >
                   {isSearching && !hasResults ? (
                     <div className="flex items-center gap-2 px-4 py-3.5 text-sm text-gray-400">
@@ -222,6 +222,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                             <Package size={10} className="text-gray-300" />
                             <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">Products</span>
                           </div>
+                          <div className="grid grid-cols-[auto_1fr_auto_auto_auto] items-center gap-x-3 text-[10px] uppercase tracking-widest text-gray-300 font-semibold px-4 pt-1 pb-1 border-b border-gray-50">
+                            <span></span>
+                            <span>Product</span>
+                            <span className="text-center">Stock</span>
+                            <span>SKU</span>
+                            <span className="text-right">Price</span>
+                          </div>
                           <ul>
                             {productSuggestions.map((product, idx) => {
                               const categoryName = product.categoryId
@@ -234,7 +241,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                                     onMouseDown={e => { e.preventDefault(); handleSelectProduct(product); }}
                                     onMouseEnter={() => setHighlightedIndex(idx)}
                                     className={cn(
-                                      "w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors",
+                                      "w-full grid grid-cols-[auto_1fr_auto_auto_auto] items-center gap-x-3 px-4 py-2 text-left transition-colors",
                                       highlightedIndex === idx ? "bg-gray-50" : "hover:bg-gray-50"
                                     )}
                                   >
@@ -245,13 +252,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                                         <Package size={14} className="text-gray-300" />
                                       )}
                                     </div>
-                                    <span className="flex-1 min-w-0">
+                                    <span className="min-w-0">
                                       <span className="block text-sm font-medium text-gray-900 truncate">{product.name}</span>
                                       {categoryName && (
-                                        <span className="text-[11px] text-gray-400 block">{categoryName}</span>
+                                        <span className="text-[11px] text-gray-400 block truncate">{categoryName}</span>
                                       )}
                                     </span>
-                                    <span className="flex items-center gap-2 flex-shrink-0">
+                                    <span className="flex-shrink-0 text-center w-[80px]">
                                       {product.quantityAvailable != null && (
                                         product.quantityAvailable >= 1 ? (
                                           <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">In Stock</span>
@@ -259,7 +266,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                                           <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-red-50 text-red-500">Out of Stock</span>
                                         )
                                       )}
-                                      {product.sku && (
+                                    </span>
+                                    <span className="flex-shrink-0">
+                                      {product.sku ? (
                                         <button
                                           type="button"
                                           onMouseDown={e => handleCopySku(e, product.sku!)}
@@ -274,10 +283,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                                             ? <><Check size={10} /> {product.sku}</>
                                             : <><Copy size={10} /> {product.sku}</>}
                                         </button>
-                                      )}
-                                      {product.price != null && (
+                                      ) : <span className="text-gray-300">—</span>}
+                                    </span>
+                                    <span className="flex-shrink-0 text-right w-[70px]">
+                                      {product.price != null ? (
                                         <span className="text-sm font-semibold text-gray-900">${product.price.toFixed(2)}</span>
-                                      )}
+                                      ) : <span className="text-gray-300">—</span>}
                                     </span>
                                   </button>
                                 </li>
