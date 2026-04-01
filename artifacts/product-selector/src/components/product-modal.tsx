@@ -125,7 +125,7 @@ function ImageGallery({ product, additionalImages }: { product: Product; additio
                 onError={() => handleError(selectedIndex)}
                 className="max-w-[200px] max-h-[200px] object-contain"
               />
-              <div className="absolute bottom-2 left-2 bg-black/30 backdrop-blur-sm text-white text-[10px] font-medium px-2 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+              <div className="absolute bottom-2 left-2 bg-black/30 backdrop-blur-sm text-white text-[10px] font-medium px-2 py-0.5 rounded-full flex items-center gap-1">
                 <ZoomIn size={10} />
                 Click to enlarge
               </div>
