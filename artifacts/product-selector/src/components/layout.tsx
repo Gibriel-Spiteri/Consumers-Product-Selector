@@ -168,8 +168,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </span>
           </Link>
 
-          {/* Search — absolutely centered in the bar */}
-          <div className="absolute left-1/2 -translate-x-1/2 w-full max-w-xl lg:max-w-2xl" ref={searchContainerRef}>
+          {/* Search — right-aligned */}
+          <div className="ml-auto w-full max-w-xl lg:max-w-2xl" ref={searchContainerRef}>
             <form onSubmit={handleSearch} className="relative flex items-center">
               <Search size={14} className="absolute left-3 text-gray-400 pointer-events-none z-10" />
               <input
