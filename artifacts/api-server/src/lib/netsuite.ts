@@ -281,21 +281,40 @@ export async function fetchNetSuiteCategories(): Promise<NetSuiteCategory[]> {
   }));
 }
 
+interface SuiteQLItemRow {
+  id: string;
+  itemid: string;
+  fullname: string | null;
+  salesdescription: string | null;
+  baseprice: string | null;
+  retailprice: string | null;
+  imageurl: string | null;
+  fullimageurl: string | null;
+  storedescription: string | null;
+  prodline: string | null;
+  quantityavailable: string | null;
+  sitecategoryid: string | null;
+}
+
+function mapItemRow(row: SuiteQLItemRow): NetSuiteItem {
+  return {
+    id: String(row.id),
+    itemid: row.itemid,
+    fullname: row.fullname ?? undefined,
+    salesdescription: row.salesdescription ?? null,
+    baseprice: row.baseprice != null ? Number(row.baseprice) : undefined,
+    retailPrice: row.retailprice != null ? Number(row.retailprice) : null,
+    imageUrl: row.imageurl ?? null,
+    fullImageUrl: row.fullimageurl ?? null,
+    description: row.storedescription ?? null,
+    manufacturer: row.prodline ?? null,
+    quantityAvailable: row.quantityavailable != null ? Number(row.quantityavailable) : null,
+    sitecategoryid: row.sitecategoryid ? String(row.sitecategoryid) : null,
+  };
+}
+
 export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
-  const result = await executeSuiteQL<{
-    id: string;
-    itemid: string;
-    fullname: string | null;
-    salesdescription: string | null;
-    baseprice: string | null;
-    retailprice: string | null;
-    imageurl: string | null;
-    fullimageurl: string | null;
-    storedescription: string | null;
-    prodline: string | null;
-    quantityavailable: string | null;
-    sitecategoryid: string | null;
-  }>(
+  const inventoryResult = await executeSuiteQL<SuiteQLItemRow>(
     `SELECT
       item.id,
       item.itemid,
@@ -316,20 +335,42 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
     ORDER BY item.itemid`
   );
 
-  return result.items.map((row) => ({
-    id: String(row.id),
-    itemid: row.itemid,
-    fullname: row.fullname ?? undefined,
-    salesdescription: row.salesdescription ?? null,
-    baseprice: row.baseprice != null ? Number(row.baseprice) : undefined,
-    retailPrice: row.retailprice != null ? Number(row.retailprice) : null,
-    imageUrl: row.imageurl ?? null,
-    fullImageUrl: row.fullimageurl ?? null,
-    description: row.storedescription ?? null,
-    manufacturer: row.prodline ?? null,
-    quantityAvailable: row.quantityavailable != null ? Number(row.quantityavailable) : null,
-    sitecategoryid: row.sitecategoryid ? String(row.sitecategoryid) : null,
-  }));
+  let kitItems: SuiteQLItemRow[] = [];
+  try {
+    const kitResult = await executeSuiteQL<SuiteQLItemRow>(
+      `SELECT
+        item.id,
+        item.itemid,
+        item.fullname,
+        item.displayname AS salesdescription,
+        p.unitprice AS baseprice,
+        item.custitem_normalretailprice AS retailprice,
+        item.custitem_itemthumbnailurl AS imageurl,
+        item.custitem_itemimageurl AS fullimageurl,
+        item.storedescription,
+        BUILTIN.DF(item.custitem_prodline) AS prodline,
+        NULL AS quantityavailable,
+        isc.category AS sitecategoryid
+      FROM KitItem item
+      LEFT JOIN pricing p ON p.item = item.id AND p.pricelevel = 1 AND p.quantity = 1
+      LEFT JOIN ItemSiteCategory isc ON isc.item = item.id AND isc.isdefault = 'T'
+      WHERE item.isinactive = 'F' AND item.isonline = 'T'
+      ORDER BY item.itemid`
+    );
+    kitItems = kitResult.items;
+    logger.info({ count: kitItems.length }, "Fetched kit items from NetSuite");
+  } catch (err) {
+    logger.warn({ err }, "Failed to fetch kit items, continuing with inventory items only");
+  }
+
+  const allItems = [
+    ...inventoryResult.items.map(mapItemRow),
+    ...kitItems.map(mapItemRow),
+  ];
+
+  logger.info({ inventory: inventoryResult.items.length, kits: kitItems.length, total: allItems.length }, "Fetched items from NetSuite");
+
+  return allItems;
 }
 
 export async function fetchLiveInventory(
