@@ -8,39 +8,71 @@ import { useQueryClient } from "@tanstack/react-query";
 
 function SyncButton() {
   const [syncing, setSyncing] = useState(false);
+  const [progress, setProgress] = useState<{ percent: number; detail: string } | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const qc = useQueryClient();
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const stopPolling = () => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  };
+
+  useEffect(() => () => stopPolling(), []);
 
   return (
-    <button
-      onClick={async () => {
-        if (syncing) return;
-        setSyncing(true);
-        setResult(null);
-        try {
-          const res = await fetch("/api/dev/sync", { method: "POST" });
-          const data = await res.json();
-          if (data.status === "complete") {
-            setResult(`Synced ${data.productsSynced} products`);
-            qc.invalidateQueries();
-          } else if (data.status === "already_running") {
-            setResult("Sync already running");
-          } else {
+    <div className="ml-auto mr-4 relative">
+      <button
+        onClick={async () => {
+          if (syncing) return;
+          setSyncing(true);
+          setResult(null);
+          setProgress({ percent: 2, detail: "Starting…" });
+          pollRef.current = setInterval(async () => {
+            try {
+              const r = await fetch("/api/dev/sync/progress");
+              const p = await r.json();
+              if (p.stage !== "idle") setProgress({ percent: p.percent, detail: p.detail });
+            } catch {}
+          }, 600);
+          try {
+            const res = await fetch("/api/dev/sync", { method: "POST" });
+            const data = await res.json();
+            stopPolling();
+            if (data.status === "complete") {
+              setProgress({ percent: 100, detail: "Complete!" });
+              setResult(`Synced ${data.productsSynced} products`);
+              qc.invalidateQueries();
+            } else if (data.status === "already_running") {
+              setResult("Sync already running");
+            } else {
+              setResult("Sync failed");
+            }
+          } catch {
+            stopPolling();
             setResult("Sync failed");
+          } finally {
+            setSyncing(false);
+            setTimeout(() => { setResult(null); setProgress(null); }, 4000);
           }
-        } catch {
-          setResult("Sync failed");
-        } finally {
-          setSyncing(false);
-          setTimeout(() => setResult(null), 4000);
-        }
-      }}
-      disabled={syncing}
-      className="ml-auto mr-4 flex items-center gap-1.5 bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-medium px-3 py-1.5 rounded-md transition-colors disabled:opacity-60"
-    >
-      <RefreshCw size={12} className={syncing ? "animate-spin" : ""} />
-      {result ?? (syncing ? "Syncing…" : "Sync NetSuite")}
-    </button>
+        }}
+        disabled={syncing}
+        className="flex items-center gap-1.5 bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-medium px-3 py-1.5 rounded-md transition-colors disabled:opacity-60 relative overflow-hidden"
+      >
+        {syncing && progress && (
+          <span
+            className="absolute inset-y-0 left-0 bg-amber-300/40 transition-all duration-300 ease-out"
+            style={{ width: `${progress.percent}%` }}
+          />
+        )}
+        <span className="relative flex items-center gap-1.5">
+          <RefreshCw size={12} className={syncing ? "animate-spin" : ""} />
+          {result ?? (syncing && progress ? progress.detail : "Sync NetSuite")}
+        </span>
+      </button>
+    </div>
   );
 }
 

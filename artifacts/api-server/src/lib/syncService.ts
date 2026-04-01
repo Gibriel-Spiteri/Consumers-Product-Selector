@@ -16,6 +16,22 @@ export interface SyncResult {
   productsSynced: number;
 }
 
+export interface SyncProgress {
+  stage: string;
+  percent: number;
+  detail: string;
+}
+
+let currentProgress: SyncProgress | null = null;
+
+export function getSyncProgress(): SyncProgress | null {
+  return currentProgress;
+}
+
+function setProgress(stage: string, percent: number, detail: string) {
+  currentProgress = { stage, percent, detail };
+}
+
 function topologicalSortCategories(categories: NetSuiteCategory[]): NetSuiteCategory[] {
   const idMap = new Map<string, NetSuiteCategory>();
   for (const cat of categories) {
@@ -56,9 +72,11 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
 
   try {
     logger.info("Starting NetSuite sync");
+    setProgress("categories", 5, "Fetching categories from NetSuite…");
 
     const nsCategories = await fetchNetSuiteCategories();
     logger.info({ count: nsCategories.length }, "Fetched categories from NetSuite");
+    setProgress("categories", 15, `Saving ${nsCategories.length} categories…`);
 
     const sortedCategories = topologicalSortCategories(nsCategories);
 
@@ -109,8 +127,13 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
         netsuiteIdToDbId.set(cat.id, inserted.id);
       }
       categoriesSynced++;
+      if (categoriesSynced % 100 === 0 || categoriesSynced === sortedCategories.length) {
+        const pct = 15 + Math.round((categoriesSynced / sortedCategories.length) * 25);
+        setProgress("categories", pct, `Saved ${categoriesSynced} / ${sortedCategories.length} categories`);
+      }
     }
 
+    setProgress("items", 42, "Cleaning stale categories…");
     const syncedNetsuiteIds = Array.from(netsuiteIdToDbId.keys());
     if (syncedNetsuiteIds.length > 0) {
       const staleCategories = await db
@@ -130,8 +153,10 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
       }
     }
 
+    setProgress("items", 45, "Fetching products from NetSuite…");
     const nsItems = await fetchNetSuiteItems();
     logger.info({ count: nsItems.length }, "Fetched items from NetSuite");
+    setProgress("items", 55, `Saving ${nsItems.length} products…`);
 
     let productsSynced = 0;
     for (const item of nsItems) {
@@ -182,8 +207,13 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
         });
       }
       productsSynced++;
+      if (productsSynced % 50 === 0 || productsSynced === nsItems.length) {
+        const pct = 55 + Math.round((productsSynced / nsItems.length) * 35);
+        setProgress("items", pct, `Saved ${productsSynced} / ${nsItems.length} products`);
+      }
     }
 
+    setProgress("cleanup", 92, "Cleaning stale products…");
     const syncedProductNetsuiteIds = nsItems.map((item) => item.id);
     if (syncedProductNetsuiteIds.length > 0) {
       const deletedProducts = await db
@@ -192,16 +222,21 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
       logger.info({ deleted: deletedProducts.rowCount ?? 0 }, "Removed stale products");
     }
 
+    setProgress("done", 100, "Sync complete!");
     logger.info({ categoriesSynced, productsSynced }, "NetSuite sync complete");
 
-    return {
+    const result: SyncResult = {
       success: true,
       message: "Sync completed successfully",
       categoriesSynced,
       productsSynced,
     };
+    setTimeout(() => { currentProgress = null; }, 5000);
+    return result;
   } catch (err) {
     logger.error({ err }, "NetSuite sync failed");
+    setProgress("error", 0, "Sync failed");
+    setTimeout(() => { currentProgress = null; }, 5000);
     return {
       success: false,
       message:
