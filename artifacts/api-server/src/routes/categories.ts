@@ -8,7 +8,7 @@ import {
   SearchProductsResponse,
 } from "@workspace/api-zod";
 import { MOCK_CATEGORIES, MOCK_PRODUCTS, MOCK_STOCK } from "../lib/mockData";
-import { fetchLiveInventory } from "../lib/netsuite";
+import { fetchLiveInventory, executeSuiteQL } from "../lib/netsuite";
 
 const router: IRouter = Router();
 
@@ -309,6 +309,30 @@ router.get("/products/:productId", async (req, res) => {
       features: null,
     },
   });
+});
+
+router.get("/debug/item-images/:sku", async (req, res) => {
+  const sku = req.params.sku;
+  try {
+    const idResult = await executeSuiteQL(
+      `SELECT item.id FROM InventoryItem item WHERE item.itemid = '${sku}'`
+    );
+    if (!idResult.items.length) return res.status(404).json({ error: "Item not found" });
+    const itemId = (idResult.items[0] as any).id;
+
+    const queries: Record<string, string> = {
+      allCustItemFields: `SELECT cf.scriptid, cf.fieldtype FROM customfield cf WHERE cf.scriptid LIKE 'custitem%' ORDER BY cf.scriptid`,
+    };
+    const results: Record<string, any> = { itemId };
+    for (const [key, query] of Object.entries(queries)) {
+      try {
+        results[key] = (await executeSuiteQL(query)).items;
+      } catch (e: any) { results[key] = { error: e.message.substring(0, 300) }; }
+    }
+    res.json(results);
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 export default router;
