@@ -202,7 +202,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4 }}
                   transition={{ duration: 0.12 }}
-                  className="absolute top-full right-0 w-full mt-1.5 bg-white rounded-xl shadow-xl shadow-black/10 border border-gray-100 overflow-hidden z-50"
+                  className="absolute top-full left-0 right-0 mt-1.5 bg-white rounded-xl shadow-xl shadow-black/10 border border-gray-100 overflow-hidden z-50"
                 >
                   {isSearching && !hasResults ? (
                     <div className="flex items-center gap-2 px-4 py-3.5 text-sm text-gray-400">
