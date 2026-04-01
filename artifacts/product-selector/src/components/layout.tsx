@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import { Search, Loader2, ChevronRight, Package, Folders, Copy, Check } from "lucide-react";
+import { Search, Loader2, ChevronRight, Package, Folders, Copy, Check, RefreshCw } from "lucide-react";
 import { useGetCategories, useSearchProducts, getSearchProductsQueryKey } from "@workspace/api-client-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -189,8 +189,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </span>
           </Link>
 
-          {/* Search — right-aligned */}
-          <div className="ml-auto w-[500px]" ref={searchContainerRef}>
+          <button
+            onClick={async () => {
+              try {
+                await fetch("/api/dev/restart", { method: "POST" });
+                const el = document.getElementById("dev-restart-btn");
+                if (el) el.textContent = "Restarting…";
+                setTimeout(() => window.location.reload(), 3000);
+              } catch {}
+            }}
+            id="dev-restart-btn"
+            className="ml-auto mr-4 flex items-center gap-1.5 bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-medium px-3 py-1.5 rounded-md transition-colors"
+          >
+            <RefreshCw size={12} />
+            Sync NetSuite
+          </button>
+
+          <div className="w-[500px]" ref={searchContainerRef}>
             <form onSubmit={handleSearch} className="relative flex items-center">
               <Search size={14} className="absolute left-3 text-gray-400 pointer-events-none z-10" />
               <input
