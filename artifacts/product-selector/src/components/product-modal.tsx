@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getGetCategoryProductsQueryOptions } from "@workspace/api-client-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ImageOff, Copy, Check, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ImageOff, Copy, Check, ChevronLeft, ChevronRight, Loader2, X, ZoomIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Product {
@@ -44,6 +44,7 @@ function ImageGallery({ product }: { product: Product }) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [direction, setDirection] = useState(0);
   const [failedIndexes, setFailedIndexes] = useState<Set<number>>(new Set());
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const visibleImages = images.map((src, i) => ({ src, i })).filter(({ i }) => !failedIndexes.has(i));
 
@@ -52,8 +53,19 @@ function ImageGallery({ product }: { product: Product }) {
     setSelectedIndex(index);
   }, [selectedIndex]);
 
-  const goPrev = () => { if (selectedIndex > 0) goTo(selectedIndex - 1); };
-  const goNext = () => { if (selectedIndex < images.length - 1) goTo(selectedIndex + 1); };
+  const goPrev = useCallback(() => { if (selectedIndex > 0) goTo(selectedIndex - 1); }, [selectedIndex, goTo]);
+  const goNext = useCallback(() => { if (selectedIndex < images.length - 1) goTo(selectedIndex + 1); }, [selectedIndex, images.length, goTo]);
+
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { e.stopPropagation(); setLightboxOpen(false); }
+      if (e.key === "ArrowLeft") goPrev();
+      if (e.key === "ArrowRight") goNext();
+    };
+    document.addEventListener("keydown", onKey, true);
+    return () => document.removeEventListener("keydown", onKey, true);
+  }, [lightboxOpen, goPrev, goNext]);
   const handleError = useCallback((index: number) => {
     setFailedIndexes(prev => {
       const next = new Set([...prev, index]);
@@ -95,7 +107,8 @@ function ImageGallery({ product }: { product: Product }) {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: direction * -20 }}
               transition={{ duration: 0.18, ease: "easeOut" }}
-              className="absolute inset-0 flex items-center justify-center p-8"
+              className="absolute inset-0 flex items-center justify-center p-8 cursor-zoom-in"
+              onClick={() => setLightboxOpen(true)}
             >
               <img
                 src={currentSrc}
@@ -103,6 +116,10 @@ function ImageGallery({ product }: { product: Product }) {
                 onError={() => handleError(selectedIndex)}
                 className="max-w-[200px] max-h-[200px] object-contain"
               />
+              <div className="absolute bottom-2 left-2 bg-black/30 backdrop-blur-sm text-white text-[10px] font-medium px-2 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                <ZoomIn size={10} />
+                Click to enlarge
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -150,6 +167,61 @@ function ImageGallery({ product }: { product: Product }) {
             </button>
           ))}
         </div>
+      )}
+
+      {lightboxOpen && !isFailed && currentSrc && createPortal(
+        <AnimatePresence>
+          <motion.div
+            key="lightbox-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[10000] flex items-center justify-center cursor-zoom-out"
+            onClick={() => setLightboxOpen(false)}
+          >
+            <button
+              onClick={() => setLightboxOpen(false)}
+              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors z-10"
+            >
+              <X size={20} />
+            </button>
+
+            {visibleImages.length > 1 && (
+              <>
+                <button
+                  onClick={(e) => { e.stopPropagation(); goPrev(); }}
+                  disabled={selectedIndex === 0}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors disabled:opacity-20 z-10"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); goNext(); }}
+                  disabled={selectedIndex === images.length - 1}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors disabled:opacity-20 z-10"
+                >
+                  <ChevronRight size={20} />
+                </button>
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-sm text-white text-sm font-medium px-4 py-1.5 rounded-full z-10">
+                  {selectedIndex + 1} / {visibleImages.length}
+                </div>
+              </>
+            )}
+
+            <motion.img
+              key={`lightbox-${selectedIndex}`}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              src={currentSrc}
+              alt={`${product.name} — full size view ${selectedIndex + 1}`}
+              onClick={(e) => e.stopPropagation()}
+              className="max-w-[90vw] max-h-[90vh] object-contain cursor-default"
+            />
+          </motion.div>
+        </AnimatePresence>,
+        document.body
       )}
     </div>
   );
