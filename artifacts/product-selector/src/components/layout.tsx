@@ -238,6 +238,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                                       highlightedIndex === idx ? "bg-gray-50" : "hover:bg-gray-50"
                                     )}
                                   >
+                                    <div className="w-9 h-9 rounded bg-gray-100 flex-shrink-0 overflow-hidden flex items-center justify-center">
+                                      {product.imageUrl ? (
+                                        <img src={product.imageUrl} alt="" className="w-full h-full object-contain" />
+                                      ) : (
+                                        <Package size={14} className="text-gray-300" />
+                                      )}
+                                    </div>
                                     <span className="flex-1 min-w-0">
                                       <span className="block text-sm font-medium text-gray-900 truncate">{product.name}</span>
                                       {categoryName && (
