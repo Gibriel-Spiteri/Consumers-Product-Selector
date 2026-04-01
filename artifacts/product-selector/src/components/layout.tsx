@@ -286,7 +286,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                                         <span
                                           role="button"
                                           onMouseDown={e => handleCopySku(e, product.sku!)}
-                                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded font-mono border transition-all cursor-pointer border-emerald-200 text-emerald-700 text-[12px] bg-[#e5e7eb]"
+                                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded font-mono border transition-all cursor-pointer border-emerald-200 text-emerald-700 text-[12px] bg-[#e5e7eb] border-t-[#364153] border-r-[#364153] border-b-[#364153] border-l-[#364153]"
                                         >
                                           {copiedSku === product.sku
                                             ? <><Check size={10} /> {product.sku}</>
