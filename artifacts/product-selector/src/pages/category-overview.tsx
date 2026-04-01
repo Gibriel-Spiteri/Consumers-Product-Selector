@@ -15,7 +15,18 @@ export default function CategoryOverview() {
   const { data: categoryData, isLoading } = useGetCategories();
   const categories = categoryData?.categories || [];
 
-  const category = categories.find((c) => c.id === id);
+  function findCategoryDeep(cats: typeof categories, targetId: number): (typeof categories)[0] | undefined {
+    for (const cat of cats) {
+      if (cat.id === targetId) return cat;
+      if (cat.children) {
+        const found = findCategoryDeep(cat.children as typeof categories, targetId);
+        if (found) return found;
+      }
+    }
+    return undefined;
+  }
+
+  const category = findCategoryDeep(categories, id);
   const subCategories = category?.children || [];
   const path = useCategoryPath(categories, id);
 
