@@ -342,7 +342,7 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
         item.id,
         item.itemid,
         item.fullname,
-        item.displayname AS salesdescription,
+        item.description AS salesdescription,
         p.unitprice AS baseprice,
         item.custitem_normalretailprice AS retailprice,
         item.custitem_itemthumbnailurl AS imageurl,
