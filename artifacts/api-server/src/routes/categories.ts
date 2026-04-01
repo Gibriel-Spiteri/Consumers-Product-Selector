@@ -8,6 +8,7 @@ import {
   SearchProductsResponse,
 } from "@workspace/api-zod";
 import { MOCK_CATEGORIES, MOCK_PRODUCTS, MOCK_STOCK } from "../lib/mockData";
+import { fetchLiveInventory } from "../lib/netsuite";
 
 const router: IRouter = Router();
 
@@ -172,18 +173,24 @@ router.get("/categories/:categoryId/products", async (req, res) => {
     .from(productsTable)
     .where(inArray(productsTable.categoryId, descendantIds));
 
-  const mapped = products.map((p) => ({
-    id: p.id,
-    name: p.salesdescription || p.name,
-    sku: p.sku ?? null,
-    price: p.price ? parseFloat(p.price) : null,
-    retailPrice: p.retailPrice ? parseFloat(p.retailPrice) : null,
-    categoryId: p.categoryId ?? null,
-    netsuiteId: p.netsuiteId ?? null,
-    imageUrl: p.imageUrl ?? null,
-    fullImageUrl: p.fullImageUrl ?? null,
-    quantityAvailable: p.quantityAvailable ?? null,
-  }));
+  const netsuiteIds = products.map((p) => p.netsuiteId).filter((id): id is string => id != null);
+  const liveInventory = await fetchLiveInventory(netsuiteIds);
+
+  const mapped = products.map((p) => {
+    const liveQty = p.netsuiteId ? liveInventory.get(p.netsuiteId) : undefined;
+    return {
+      id: p.id,
+      name: p.salesdescription || p.name,
+      sku: p.sku ?? null,
+      price: p.price ? parseFloat(p.price) : null,
+      retailPrice: p.retailPrice ? parseFloat(p.retailPrice) : null,
+      categoryId: p.categoryId ?? null,
+      netsuiteId: p.netsuiteId ?? null,
+      imageUrl: p.imageUrl ?? null,
+      fullImageUrl: p.fullImageUrl ?? null,
+      quantityAvailable: liveQty ?? p.quantityAvailable ?? null,
+    };
+  });
 
   const response = GetCategoryProductsResponse.parse({ products: mapped, usingMockData: false });
   return res.json(response);
@@ -221,20 +228,26 @@ router.get("/products/search", async (req, res) => {
   const products = await db
     .select()
     .from(productsTable)
-    .where(or(ilike(productsTable.name, `%${q}%`), ilike(productsTable.sku, `%${q}%`)));
+    .where(or(ilike(productsTable.name, `%${q}%`), ilike(productsTable.sku, `%${q}%`), ilike(productsTable.salesdescription, `%${q}%`)));
 
-  const mapped = products.map((p) => ({
-    id: p.id,
-    name: p.salesdescription || p.name,
-    sku: p.sku ?? null,
-    price: p.price ? parseFloat(p.price) : null,
-    retailPrice: p.retailPrice ? parseFloat(p.retailPrice) : null,
-    categoryId: p.categoryId ?? null,
-    netsuiteId: p.netsuiteId ?? null,
-    imageUrl: p.imageUrl ?? null,
-    fullImageUrl: p.fullImageUrl ?? null,
-    quantityAvailable: p.quantityAvailable ?? null,
-  }));
+  const netsuiteIds = products.map((p) => p.netsuiteId).filter((id): id is string => id != null);
+  const liveInventory = await fetchLiveInventory(netsuiteIds);
+
+  const mapped = products.map((p) => {
+    const liveQty = p.netsuiteId ? liveInventory.get(p.netsuiteId) : undefined;
+    return {
+      id: p.id,
+      name: p.salesdescription || p.name,
+      sku: p.sku ?? null,
+      price: p.price ? parseFloat(p.price) : null,
+      retailPrice: p.retailPrice ? parseFloat(p.retailPrice) : null,
+      categoryId: p.categoryId ?? null,
+      netsuiteId: p.netsuiteId ?? null,
+      imageUrl: p.imageUrl ?? null,
+      fullImageUrl: p.fullImageUrl ?? null,
+      quantityAvailable: liveQty ?? p.quantityAvailable ?? null,
+    };
+  });
 
   const response = SearchProductsResponse.parse({ products: mapped, usingMockData: false });
   return res.json(response);
@@ -273,6 +286,11 @@ router.get("/products/:productId", async (req, res) => {
   const rows = await db.select().from(productsTable).where(eq(productsTable.id, productId));
   if (rows.length === 0) return res.status(404).json({ error: "Product not found" });
   const p = rows[0];
+
+  const netsuiteIds = p.netsuiteId ? [p.netsuiteId] : [];
+  const liveInventory = await fetchLiveInventory(netsuiteIds);
+  const liveQty = p.netsuiteId ? liveInventory.get(p.netsuiteId) : undefined;
+
   return res.json({
     product: {
       id: p.id,
@@ -287,7 +305,7 @@ router.get("/products/:productId", async (req, res) => {
       fullImageUrl: p.fullImageUrl ?? null,
       description: p.description ?? null,
       manufacturer: p.manufacturer ?? null,
-      quantityAvailable: p.quantityAvailable ?? null,
+      quantityAvailable: liveQty ?? p.quantityAvailable ?? null,
       features: null,
     },
   });

@@ -331,3 +331,31 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
     sitecategoryid: row.sitecategoryid ? String(row.sitecategoryid) : null,
   }));
 }
+
+export async function fetchLiveInventory(
+  netsuiteIds: string[]
+): Promise<Map<string, number>> {
+  const inventoryMap = new Map<string, number>();
+  if (netsuiteIds.length === 0 || !isNetSuiteConfigured()) return inventoryMap;
+
+  try {
+    const idList = netsuiteIds.map((id) => `'${id}'`).join(",");
+    const result = await executeSuiteQL<{
+      id: string;
+      quantityavailable: string | null;
+    }>(
+      `SELECT id, quantityavailable FROM InventoryItem WHERE id IN (${idList})`
+    );
+
+    for (const row of result.items) {
+      inventoryMap.set(
+        String(row.id),
+        row.quantityavailable != null ? Number(row.quantityavailable) : 0
+      );
+    }
+  } catch (err) {
+    logger.warn({ err }, "Live inventory lookup failed, falling back to cached data");
+  }
+
+  return inventoryMap;
+}
