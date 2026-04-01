@@ -381,22 +381,92 @@ export async function fetchLiveInventory(
 
   try {
     const idList = netsuiteIds.map((id) => `'${id}'`).join(",");
-    const result = await executeSuiteQL<{
+
+    const invResult = await executeSuiteQL<{
       id: string;
       quantityavailable: string | null;
     }>(
       `SELECT id, quantityavailable FROM InventoryItem WHERE id IN (${idList})`
     );
 
-    for (const row of result.items) {
+    for (const row of invResult.items) {
       inventoryMap.set(
         String(row.id),
         row.quantityavailable != null ? Number(row.quantityavailable) : 0
       );
+    }
+
+    const missingIds = netsuiteIds.filter((id) => !inventoryMap.has(id));
+    if (missingIds.length > 0) {
+      const kitInventory = await fetchKitInventoryFromSearch(missingIds);
+      for (const [id, qty] of kitInventory) {
+        inventoryMap.set(id, qty);
+      }
     }
   } catch (err) {
     logger.warn({ err }, "Live inventory lookup failed, falling back to cached data");
   }
 
   return inventoryMap;
+}
+
+async function fetchKitInventoryFromSearch(
+  netsuiteIds: string[]
+): Promise<Map<string, number>> {
+  const kitMap = new Map<string, number>();
+
+  try {
+    const idList = netsuiteIds.map((id) => `'${id}'`).join(",");
+
+    const memberResult = await executeSuiteQL<{
+      kitid: string;
+      memberid: string;
+      quantity: string;
+      memberqtyavailable: string | null;
+    }>(
+      `SELECT
+        km.parentitem AS kitid,
+        km.item AS memberid,
+        km.quantity,
+        inv.quantityavailable AS memberqtyavailable
+      FROM KitItemMember km
+      JOIN InventoryItem inv ON inv.id = km.item
+      WHERE km.parentitem IN (${idList})`
+    );
+
+    logger.info({ rows: memberResult.items.length, sample: memberResult.items.slice(0, 5) }, "KitItemMember inventory query result");
+
+    const kitMembers = new Map<string, Array<{ memberQty: number; available: number }>>();
+    for (const row of memberResult.items) {
+      const kitId = String(row.kitid);
+      if (!kitMembers.has(kitId)) {
+        kitMembers.set(kitId, []);
+      }
+      kitMembers.get(kitId)!.push({
+        memberQty: Number(row.quantity) || 1,
+        available: row.memberqtyavailable != null ? Number(row.memberqtyavailable) : 0,
+      });
+    }
+
+    for (const [kitId, members] of kitMembers) {
+      if (members.length === 0) {
+        kitMap.set(kitId, 0);
+        continue;
+      }
+      const kitAvailable = Math.min(
+        ...members.map((m) => Math.floor(m.available / m.memberQty))
+      );
+      kitMap.set(kitId, Math.max(0, kitAvailable));
+    }
+
+    for (const id of netsuiteIds) {
+      if (!kitMap.has(id)) {
+        kitMap.set(id, 0);
+      }
+    }
+  } catch (err) {
+    logger.warn({ err }, "Kit inventory lookup failed");
+  }
+
+  return kitMap;
 }
