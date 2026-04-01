@@ -8,7 +8,7 @@ import {
   SearchProductsResponse,
 } from "@workspace/api-zod";
 import { MOCK_CATEGORIES, MOCK_PRODUCTS, MOCK_STOCK } from "../lib/mockData";
-import { fetchLiveInventory, executeSuiteQL } from "../lib/netsuite";
+import { fetchLiveInventory, probeAdditionalImages } from "../lib/netsuite";
 
 const router: IRouter = Router();
 
@@ -288,7 +288,10 @@ router.get("/products/:productId", async (req, res) => {
   const p = rows[0];
 
   const netsuiteIds = p.netsuiteId ? [p.netsuiteId] : [];
-  const liveInventory = await fetchLiveInventory(netsuiteIds);
+  const [liveInventory, additionalImages] = await Promise.all([
+    fetchLiveInventory(netsuiteIds),
+    probeAdditionalImages(p.imageUrl),
+  ]);
   const liveQty = p.netsuiteId ? liveInventory.get(p.netsuiteId) : undefined;
 
   return res.json({
@@ -303,36 +306,13 @@ router.get("/products/:productId", async (req, res) => {
       netsuiteId: p.netsuiteId ?? null,
       imageUrl: p.imageUrl ?? null,
       fullImageUrl: p.fullImageUrl ?? null,
+      additionalImages,
       description: p.description ?? null,
       manufacturer: p.manufacturer ?? null,
       quantityAvailable: liveQty ?? p.quantityAvailable ?? null,
       features: null,
     },
   });
-});
-
-router.get("/debug/item-images/:sku", async (req, res) => {
-  const sku = req.params.sku;
-  try {
-    const idResult = await executeSuiteQL(
-      `SELECT item.id FROM InventoryItem item WHERE item.itemid = '${sku}'`
-    );
-    if (!idResult.items.length) return res.status(404).json({ error: "Item not found" });
-    const itemId = (idResult.items[0] as any).id;
-
-    const queries: Record<string, string> = {
-      allCustItemFields: `SELECT cf.scriptid, cf.fieldtype FROM customfield cf WHERE cf.scriptid LIKE 'custitem%' ORDER BY cf.scriptid`,
-    };
-    const results: Record<string, any> = { itemId };
-    for (const [key, query] of Object.entries(queries)) {
-      try {
-        results[key] = (await executeSuiteQL(query)).items;
-      } catch (e: any) { results[key] = { error: e.message.substring(0, 300) }; }
-    }
-    res.json(results);
-  } catch (e: any) {
-    res.status(500).json({ error: e.message });
-  }
 });
 
 export default router;

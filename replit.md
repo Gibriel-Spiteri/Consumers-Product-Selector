@@ -98,7 +98,8 @@ Without the private key file or credentials, the `/api/netsuite/status` endpoint
 **Product images:** Two image URLs are synced per product:
 - `imageUrl` — from `custitem_itemthumbnailurl` (thumbnail, used in grid/list views; 731 of 732 products have this)
 - `fullImageUrl` — from `custitem_itemimageurl` (full-size, used in product modal gallery; 65 products have this)
-The frontend uses real NetSuite image URLs from consumersintranets.com — no placeholder/filler images.
+- `additionalImages` — probed at runtime from the product detail endpoint by appending `-2`, `-3`, etc. suffixes to the base `imageUrl` and checking for HTTP 200 responses (results are cached in memory)
+The frontend uses real NetSuite image URLs from consumersintranets.com — no placeholder/filler images. The product detail modal shows all discovered images in a gallery with thumbnail strip and fullscreen lightbox.
 
 **Category tree filtering:** The API builds the full category tree from all synced SiteCategory records, then prunes it to only show online categories while keeping offline intermediate parents as structural connectors. No categories are hidden by name. Empty root-level categories (no children or products) are also removed. Categories are sorted alphabetically at each level.
 

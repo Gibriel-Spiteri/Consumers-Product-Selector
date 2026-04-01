@@ -24,6 +24,7 @@ interface FullProduct extends Product {
   manufacturer: string | null;
   quantityAvailable: number | null;
   features: string[] | null;
+  additionalImages?: string[] | null;
 }
 
 interface ProductModalProps {
@@ -32,19 +33,27 @@ interface ProductModalProps {
   onClose: () => void;
 }
 
-function getProductImageList(product: Product): string[] {
+function getProductImageList(product: Product, additionalImages?: string[] | null): string[] {
+  if (additionalImages && additionalImages.length > 0) {
+    return [...new Set(additionalImages)];
+  }
   const images: string[] = [];
   if (product.fullImageUrl) images.push(product.fullImageUrl);
   if (product.imageUrl && product.imageUrl !== product.fullImageUrl) images.push(product.imageUrl);
   return images;
 }
 
-function ImageGallery({ product }: { product: Product }) {
-  const images = getProductImageList(product);
+function ImageGallery({ product, additionalImages }: { product: Product; additionalImages?: string[] | null }) {
+  const images = getProductImageList(product, additionalImages);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [direction, setDirection] = useState(0);
   const [failedIndexes, setFailedIndexes] = useState<Set<number>>(new Set());
   const [lightboxOpen, setLightboxOpen] = useState(false);
+
+  useEffect(() => {
+    setSelectedIndex(0);
+    setFailedIndexes(new Set());
+  }, [product.id, additionalImages?.length]);
 
   const visibleImages = images.map((src, i) => ({ src, i })).filter(({ i }) => !failedIndexes.has(i));
 
@@ -379,7 +388,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
 
                     {/* Left — image gallery */}
                     <div className="lg:w-[30%] shrink-0">
-                      <ImageGallery product={product} />
+                      <ImageGallery product={product} additionalImages={(full as FullProduct)?.additionalImages} />
                     </div>
 
                     {/* Middle — features */}

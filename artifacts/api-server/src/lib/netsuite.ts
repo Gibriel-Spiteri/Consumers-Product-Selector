@@ -180,6 +180,43 @@ async function netsuiteRequest<T>(
   return response.json() as Promise<T>;
 }
 
+const imageProbeCache = new Map<string, string[]>();
+const IMAGE_PROBE_MAX = 10;
+
+export async function probeAdditionalImages(baseImageUrl: string | null): Promise<string[]> {
+  if (!baseImageUrl) return [];
+
+  const cacheKey = baseImageUrl;
+  if (imageProbeCache.has(cacheKey)) return imageProbeCache.get(cacheKey)!;
+
+  const match = baseImageUrl.match(/^(.+?)(\.[a-zA-Z]+)$/);
+  if (!match) return [baseImageUrl];
+
+  const [, basePath, ext] = match;
+  const images: string[] = [baseImageUrl];
+
+  const probePromises: Promise<{ index: number; exists: boolean }>[] = [];
+  for (let i = 2; i <= IMAGE_PROBE_MAX; i++) {
+    const probeUrl = `${basePath}-${i}${ext}`;
+    probePromises.push(
+      fetch(probeUrl, { method: "HEAD", redirect: "follow", signal: AbortSignal.timeout(3000) })
+        .then(r => ({ index: i, exists: r.ok }))
+        .catch(() => ({ index: i, exists: false }))
+    );
+  }
+
+  const results = await Promise.all(probePromises);
+  for (const { index, exists } of results.sort((a, b) => a.index - b.index)) {
+    if (exists) {
+      images.push(`${basePath}-${index}${ext}`);
+    }
+  }
+
+  logger.info({ baseImageUrl, totalImages: images.length }, "Probed for additional item images");
+  imageProbeCache.set(cacheKey, images);
+  return images;
+}
+
 const SUITEQL_PAGE_SIZE = 1000;
 
 export async function executeSuiteQL<T = any>(
