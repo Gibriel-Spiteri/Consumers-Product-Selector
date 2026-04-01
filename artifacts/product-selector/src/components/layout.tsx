@@ -222,7 +222,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                             <Package size={10} className="text-gray-300" />
                             <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">Products</span>
                           </div>
-                          <div className="grid grid-cols-[auto_1fr_auto_auto_auto] items-center gap-x-3 text-[10px] uppercase tracking-widest text-gray-300 font-semibold px-4 pt-1 pb-1 border-b border-gray-50">
+                          <div className="grid grid-cols-[36px_1fr_80px_130px_70px] items-center gap-x-3 text-[10px] uppercase tracking-widest text-gray-300 font-semibold px-4 pt-1 pb-1 border-b border-gray-50">
                             <span></span>
                             <span>Product</span>
                             <span className="text-center">Stock</span>
@@ -241,7 +241,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                                     onMouseDown={e => { e.preventDefault(); handleSelectProduct(product); }}
                                     onMouseEnter={() => setHighlightedIndex(idx)}
                                     className={cn(
-                                      "w-full grid grid-cols-[auto_1fr_auto_auto_auto] items-center gap-x-3 px-4 py-2 text-left transition-colors",
+                                      "w-full grid grid-cols-[36px_1fr_80px_130px_70px] items-center gap-x-3 px-4 py-2 text-left transition-colors",
                                       highlightedIndex === idx ? "bg-gray-50" : "hover:bg-gray-50"
                                     )}
                                   >
@@ -258,7 +258,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                                         <span className="text-[11px] text-gray-400 block truncate">{categoryName}</span>
                                       )}
                                     </span>
-                                    <span className="flex-shrink-0 text-center w-[80px]">
+                                    <span className="text-center">
                                       {product.quantityAvailable != null && (
                                         product.quantityAvailable >= 1 ? (
                                           <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">In Stock</span>
@@ -267,7 +267,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                                         )
                                       )}
                                     </span>
-                                    <span className="flex-shrink-0">
+                                    <span className="truncate">
                                       {product.sku ? (
                                         <button
                                           type="button"
@@ -285,7 +285,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                                         </button>
                                       ) : <span className="text-gray-300">—</span>}
                                     </span>
-                                    <span className="flex-shrink-0 text-right w-[70px]">
+                                    <span className="text-right">
                                       {product.price != null ? (
                                         <span className="text-sm font-semibold text-gray-900">${product.price.toFixed(2)}</span>
                                       ) : <span className="text-gray-300">—</span>}
