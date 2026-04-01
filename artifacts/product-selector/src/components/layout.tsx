@@ -222,7 +222,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                             <Package size={10} className="text-gray-300" />
                             <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">Products</span>
                           </div>
-                          <div className="grid grid-cols-[36px_1fr_80px_130px_70px] items-center gap-x-3 text-[10px] uppercase tracking-widest text-gray-300 font-semibold px-4 pt-1 pb-1 border-b border-gray-50">
+                          <div className="grid grid-cols-[36px_1fr_100px_130px_70px] items-center gap-x-3 text-[10px] uppercase tracking-widest text-gray-300 font-semibold px-4 pt-1 pb-1 border-b border-gray-50">
                             <span></span>
                             <span>Product</span>
                             <span className="text-center">Stock</span>
@@ -241,7 +241,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                                     onMouseDown={e => { e.preventDefault(); handleSelectProduct(product); }}
                                     onMouseEnter={() => setHighlightedIndex(idx)}
                                     className={cn(
-                                      "w-full grid grid-cols-[36px_1fr_80px_130px_70px] items-center gap-x-3 px-4 py-2 text-left transition-colors",
+                                      "w-full grid grid-cols-[36px_1fr_100px_130px_70px] items-center gap-x-3 px-4 py-2 text-left transition-colors",
                                       highlightedIndex === idx ? "bg-gray-50" : "hover:bg-gray-50"
                                     )}
                                   >
