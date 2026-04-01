@@ -1,6 +1,12 @@
 import { useParams, Link } from "wouter";
 import { useGetCategories } from "@workspace/api-client-react";
 import { ChevronRight, Loader2, ArrowLeft } from "lucide-react";
+import { useCategoryPath } from "@/hooks/use-category-path";
+
+function linkForCategory(cat: { id: number; children?: unknown[] }) {
+  const hasChildren = cat.children && cat.children.length > 0;
+  return hasChildren ? `/category/${cat.id}` : `/products/${cat.id}`;
+}
 
 export default function CategoryOverview() {
   const { categoryId } = useParams();
@@ -11,16 +17,27 @@ export default function CategoryOverview() {
 
   const category = categories.find((c) => c.id === id);
   const subCategories = category?.children || [];
+  const path = useCategoryPath(categories, id);
+
+  const parentLink = path.length > 1 ? `/category/${path[path.length - 2].id}` : "/";
 
   return (
-    <div className="w-full px-4 lg:px-8 pt-5 pb-10">
-      <Link
-        href="/"
-        className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-accent transition-colors mb-4"
-      >
-        <ArrowLeft size={16} />
-        Back to Home
-      </Link>
+    <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10">
+      <nav className="flex items-center gap-1 text-[12px] text-gray-400 mb-4 overflow-x-auto whitespace-nowrap">
+        <Link href="/" className="hover:text-gray-600 transition-colors">Home</Link>
+        {path.map((cat, i) => (
+          <span key={cat.id} className="flex items-center gap-1">
+            <ChevronRight size={11} className="text-gray-300" />
+            {i < path.length - 1 ? (
+              <Link href={`/category/${cat.id}`} className="hover:text-gray-600 transition-colors">
+                {cat.name}
+              </Link>
+            ) : (
+              <span className="text-gray-600">{cat.name}</span>
+            )}
+          </span>
+        ))}
+      </nav>
 
       {isLoading ? (
         <div className="py-32 flex flex-col items-center justify-center bg-white rounded-2xl border border-border shadow-sm">
@@ -36,9 +53,12 @@ export default function CategoryOverview() {
         </div>
       ) : (
         <>
-          <h1 className="text-3xl font-display font-bold text-primary uppercase tracking-tight mb-5">
-            {category.name}
-          </h1>
+          <div className="mb-8">
+            <h1 className="text-2xl font-semibold text-gray-900">
+              {category.name}
+            </h1>
+            <p className="text-[13px] text-gray-400 mt-1">{subCategories.length} {subCategories.length === 1 ? "subcategory" : "subcategories"}</p>
+          </div>
 
           {subCategories.length === 0 ? (
             <div className="py-20 text-center border-2 border-dashed border-border rounded-2xl bg-white shadow-sm text-muted-foreground">
@@ -52,7 +72,7 @@ export default function CategoryOverview() {
                   className="bg-white rounded-2xl border border-border shadow-sm p-6 hover:shadow-md hover:border-accent/30 transition-all"
                 >
                   <Link
-                    href={`/products/${sub.id}`}
+                    href={linkForCategory(sub)}
                     className="block font-display font-bold text-primary uppercase tracking-wide text-sm border-b-2 border-accent/30 pb-3 mb-4 hover:text-accent transition-colors"
                   >
                     {sub.name}
@@ -62,14 +82,14 @@ export default function CategoryOverview() {
                       {(sub.children || []).map((item) => (
                         <li key={item.id}>
                           <Link
-                            href={`/products/${item.id}`}
+                            href={linkForCategory(item as { id: number; children?: unknown[] })}
                             className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center group py-0.5"
                           >
                             <ChevronRight
                               size={13}
                               className="opacity-0 -ml-3.5 group-hover:opacity-100 group-hover:ml-0 transition-all text-accent mr-1 shrink-0"
                             />
-                            {item.name}
+                            {(item as { name: string }).name}
                           </Link>
                         </li>
                       ))}

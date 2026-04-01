@@ -105,7 +105,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   };
 
   const handleSelectCategory = (cat: { id: number; level: number }) => {
-    setLocation(cat.level === 3 ? `/products/${cat.id}` : `/category/${cat.id}`);
+    const fullCat = flatCategories.find(c => c.id === cat.id);
+    const hasChildren = categories.some(top =>
+      top.children?.some(mid =>
+        mid.id === cat.id ? (mid.children?.length ?? 0) > 0 :
+        mid.children?.some(sub => sub.id === cat.id && ((sub as any).children?.length ?? 0) > 0)
+      ) || top.id === cat.id
+    );
+    setLocation(hasChildren && cat.level < 3 ? `/category/${cat.id}` : `/products/${cat.id}`);
     closeSearch();
   };
 
@@ -403,7 +410,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     {categories.find(c => c.id === activeTab)?.children?.map(subCat => (
                       <div key={subCat.id} className="min-w-[160px] max-w-[240px] flex-1">
                         <Link
-                          href={`/products/${subCat.id}`}
+                          href={subCat.children && subCat.children.length > 0 ? `/category/${subCat.id}` : `/products/${subCat.id}`}
                           onClick={() => { setIsHoveringNav(false); setActiveTab(null); }}
                           className="block font-semibold uppercase tracking-widest text-amber-500 hover:text-amber-600 mb-4 pb-2 border-b border-gray-100 text-[12px] transition-colors"
                         >
@@ -414,7 +421,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                             {subCat.children.map(item => (
                               <li key={item.id}>
                                 <Link
-                                  href={`/products/${item.id}`}
+                                  href={(item as any).children && (item as any).children.length > 0 ? `/category/${item.id}` : `/products/${item.id}`}
                                   onClick={() => { setIsHoveringNav(false); setActiveTab(null); }}
                                   className="text-sm text-gray-500 hover:text-gray-900 transition-colors flex items-center group/link gap-1.5 py-0.5"
                                 >
