@@ -306,7 +306,7 @@ export async function fetchNetSuiteCategories(): Promise<NetSuiteCategory[]> {
     parentcategory: string | null;
     isonline: string;
   }>(
-    "SELECT id, itemid, fullname, parentcategory, isonline FROM SiteCategory ORDER BY fullname"
+    "SELECT id, itemid, fullname, parentcategory, isonline FROM SiteCategory WHERE isinactive = 'F' ORDER BY fullname"
   );
 
   return result.items.map((row) => ({
