@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useParams, Link } from "wouter";
 import { useGetCategories, getGetCategoryProductsQueryOptions } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
@@ -301,6 +301,11 @@ export default function CategoryProducts() {
   const [inStockOnly, setInStockOnly] = useState(false);
   const [activeFilters, setActiveFilters] = useState<Map<string, Set<string>>>(new Map());
 
+  useEffect(() => {
+    setActiveFilters(new Map());
+    setInStockOnly(false);
+  }, [id]);
+
   const { data: productsData, isLoading: isLoadingProducts } = useQuery({
     ...getGetCategoryProductsQueryOptions(id),
     enabled: !!id,
@@ -332,11 +337,17 @@ export default function CategoryProducts() {
     let filtered = allProducts;
 
     if (activeFilters.size > 0) {
+      const filterEntries = Array.from(activeFilters.entries());
       filtered = filtered.filter(p => {
         const attrs = p.attributes ?? [];
-        for (const [facetName, requiredVals] of activeFilters) {
-          const productValsForFacet = attrs.filter(a => a.name === facetName).map(a => a.value);
-          const hasMatch = productValsForFacet.some(v => requiredVals.has(v));
+        for (const [facetName, requiredVals] of filterEntries) {
+          let hasMatch = false;
+          for (const a of attrs) {
+            if (a.name === facetName && requiredVals.has(a.value)) {
+              hasMatch = true;
+              break;
+            }
+          }
           if (!hasMatch) return false;
         }
         return true;
@@ -349,6 +360,8 @@ export default function CategoryProducts() {
 
     return filtered;
   }, [allProducts, activeFilters, inStockOnly]);
+
+  const hasActiveFilters = activeFilters.size > 0 || inStockOnly;
 
   return (
     <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10">
@@ -379,8 +392,12 @@ export default function CategoryProducts() {
             <h1 className="text-2xl font-semibold text-gray-900">
               {path.length > 0 ? path[path.length - 1].name : "Products"}
             </h1>
-            {!isLoadingProducts && products.length > 0 && (
-              <p className="text-[13px] text-gray-400 mt-1">{products.length} {products.length === 1 ? "item" : "items"}</p>
+            {!isLoadingProducts && allProducts.length > 0 && (
+              <p className="text-[13px] text-gray-400 mt-1">
+                {hasActiveFilters
+                  ? `${products.length} of ${allProducts.length} items`
+                  : `${products.length} ${products.length === 1 ? "item" : "items"}`}
+              </p>
             )}
           </div>
 
@@ -452,16 +469,33 @@ export default function CategoryProducts() {
           <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mb-5">
             <PackageX size={24} className="text-gray-300" />
           </div>
-          <h3 className="text-base font-semibold text-gray-700 mb-1">No products found</h3>
-          <p className="text-sm text-gray-400 max-w-xs mx-auto mb-6">
-            There are no items in this category yet. Try a different one.
-          </p>
-          <Link
-            href="/"
-            className="px-5 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-colors"
-          >
-            Browse Categories
-          </Link>
+          {activeFilters.size > 0 || inStockOnly ? (
+            <>
+              <h3 className="text-base font-semibold text-gray-700 mb-1">No matching products</h3>
+              <p className="text-sm text-gray-400 max-w-xs mx-auto mb-6">
+                No items match the current filters. Try adjusting or clearing them.
+              </p>
+              <button
+                onClick={() => { clearFilters(); setInStockOnly(false); }}
+                className="px-5 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-colors"
+              >
+                Clear All Filters
+              </button>
+            </>
+          ) : (
+            <>
+              <h3 className="text-base font-semibold text-gray-700 mb-1">No products found</h3>
+              <p className="text-sm text-gray-400 max-w-xs mx-auto mb-6">
+                There are no items in this category yet. Try a different one.
+              </p>
+              <Link
+                href="/"
+                className="px-5 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-colors"
+              >
+                Browse Categories
+              </Link>
+            </>
+          )}
         </div>
       ) : view === "list" ? (
         <ListView products={products} onSelect={setSelectedProduct} />
