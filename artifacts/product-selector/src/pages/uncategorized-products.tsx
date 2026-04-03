@@ -21,7 +21,7 @@ interface Product {
 function StockBadge({ qty }: { qty: number | null | undefined }) {
   if (qty == null) return null;
   if (qty >= 1) return (
-    <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">
+    <span title={`${qty} in stock`} className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 cursor-default">
       In Stock
     </span>
   );
