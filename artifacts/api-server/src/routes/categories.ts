@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { categoriesTable, productsTable, productAttributesTable } from "@workspace/db";
+import { categoriesTable, productsTable, productAttributesTable, relatedItemsTable } from "@workspace/db";
 import { eq, or, ilike, sql, inArray } from "drizzle-orm";
 import {
   GetCategoriesResponse,
@@ -357,6 +357,62 @@ router.get("/products/:productId", async (req, res) => {
       features: null,
     },
   });
+});
+
+router.get("/products/:productId/related", async (req, res) => {
+  const productId = Number(req.params.productId);
+  if (isNaN(productId)) {
+    return res.status(400).json({ error: "Invalid product ID" });
+  }
+
+  const product = await db
+    .select({ netsuiteId: productsTable.netsuiteId })
+    .from(productsTable)
+    .where(eq(productsTable.id, productId))
+    .limit(1);
+
+  if (product.length === 0 || !product[0].netsuiteId) {
+    return res.json({ relatedItems: [] });
+  }
+
+  const related = await db
+    .select()
+    .from(relatedItemsTable)
+    .where(eq(relatedItemsTable.parentNetsuiteId, product[0].netsuiteId));
+
+  if (related.length === 0) {
+    return res.json({ relatedItems: [] });
+  }
+
+  const relatedNetsuiteIds = related.map(r => r.relatedNetsuiteId);
+  const relatedProducts = await db
+    .select()
+    .from(productsTable)
+    .where(inArray(productsTable.netsuiteId!, relatedNetsuiteIds));
+
+  const productMap = new Map(relatedProducts.map(p => [p.netsuiteId, p]));
+
+  const netsuiteIds = relatedProducts.map(p => p.netsuiteId).filter((id): id is string => id != null);
+  const liveInventory = await fetchLiveInventory(netsuiteIds);
+
+  const items = related.map(r => {
+    const p = productMap.get(r.relatedNetsuiteId);
+    const liveQty = p?.netsuiteId ? liveInventory.get(p.netsuiteId) : undefined;
+    return {
+      id: p?.id ?? null,
+      netsuiteId: r.relatedNetsuiteId,
+      name: p ? (p.salesdescription || p.name) : null,
+      sku: p?.sku ?? null,
+      price: p?.price ? parseFloat(p.price) : (r.onlinePrice ? parseFloat(r.onlinePrice) : null),
+      retailPrice: p?.retailPrice ? parseFloat(p.retailPrice) : null,
+      imageUrl: p?.imageUrl ?? null,
+      fullImageUrl: p?.fullImageUrl ?? null,
+      quantityAvailable: liveQty ?? p?.quantityAvailable ?? null,
+      description: r.description ?? null,
+    };
+  }).filter(item => item.name != null);
+
+  return res.json({ relatedItems: items });
 });
 
 export default router;

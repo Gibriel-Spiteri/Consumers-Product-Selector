@@ -144,7 +144,7 @@ export function isNetSuiteConfigured(): boolean {
   return validateNetSuiteConfig().valid;
 }
 
-async function netsuiteRequest<T>(
+export async function netsuiteRequest<T>(
   urlPath: string,
   method = "GET",
   body?: unknown
@@ -452,6 +452,40 @@ export async function fetchItemAttributes(): Promise<NetSuiteItemAttribute[]> {
     attributeValue: row.valuename ?? "",
     sortOrder: row.sortorder != null ? Number(row.sortorder) : null,
     isFilter: row.isfilter === "T",
+  }));
+}
+
+export interface NetSuiteRelatedItem {
+  parentNetsuiteId: string;
+  relatedNetsuiteId: string;
+  description: string | null;
+  basePrice: string | null;
+  onlinePrice: string | null;
+}
+
+export async function fetchRelatedItems(): Promise<NetSuiteRelatedItem[]> {
+  const result = await executeSuiteQL<{
+    superitem: string;
+    presitemid: string;
+    description: string | null;
+    baseprice: string | null;
+    onlineprice: string | null;
+  }>(`
+    SELECT
+      superitem,
+      presitemid,
+      description,
+      baseprice,
+      onlineprice
+    FROM InventoryItemPresentationItem
+  `);
+
+  return result.items.map((row) => ({
+    parentNetsuiteId: String(row.superitem),
+    relatedNetsuiteId: String(row.presitemid),
+    description: row.description ?? null,
+    basePrice: row.baseprice ?? null,
+    onlinePrice: row.onlineprice ?? null,
   }));
 }
 

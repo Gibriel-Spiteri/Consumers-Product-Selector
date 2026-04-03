@@ -1,10 +1,11 @@
 import { db } from "@workspace/db";
-import { categoriesTable, productsTable, productAttributesTable } from "@workspace/db";
+import { categoriesTable, productsTable, productAttributesTable, relatedItemsTable } from "@workspace/db";
 import { eq, notInArray, sql } from "drizzle-orm";
 import {
   fetchNetSuiteCategories,
   fetchNetSuiteItems,
   fetchItemAttributes,
+  fetchRelatedItems,
   isNetSuiteConfigured,
   type NetSuiteCategory,
 } from "./netsuite";
@@ -228,7 +229,7 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
       const nsAttrs = await fetchItemAttributes();
       logger.info({ count: nsAttrs.length }, "Fetched item attributes from NetSuite");
 
-      setProgress("attributes", 88, `Saving ${nsAttrs.length} attributes…`);
+      setProgress("attributes", 86, `Saving ${nsAttrs.length} attributes…`);
       await db.delete(productAttributesTable);
 
       const BATCH_SIZE = 500;
@@ -246,13 +247,43 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
           }))
         );
         if ((i + BATCH_SIZE) % 2000 === 0 || i + BATCH_SIZE >= nsAttrs.length) {
-          const pct = 88 + Math.round(((i + BATCH_SIZE) / nsAttrs.length) * 10);
-          setProgress("attributes", Math.min(pct, 98), `Saved ${Math.min(i + BATCH_SIZE, nsAttrs.length)} / ${nsAttrs.length} attributes`);
+          const pct = 86 + Math.round(((i + BATCH_SIZE) / nsAttrs.length) * 6);
+          setProgress("attributes", Math.min(pct, 92), `Saved ${Math.min(i + BATCH_SIZE, nsAttrs.length)} / ${nsAttrs.length} attributes`);
         }
       }
       logger.info({ count: nsAttrs.length }, "Synced item attributes");
     } catch (err) {
       logger.error({ err }, "Item attribute sync failed (non-fatal)");
+    }
+
+    setProgress("related-items", 92, "Fetching related items from NetSuite…");
+    try {
+      const nsRelated = await fetchRelatedItems();
+      logger.info({ count: nsRelated.length }, "Fetched related items from NetSuite");
+
+      setProgress("related-items", 94, `Saving ${nsRelated.length} related items…`);
+      await db.delete(relatedItemsTable);
+
+      const BATCH_SIZE = 500;
+      for (let i = 0; i < nsRelated.length; i += BATCH_SIZE) {
+        const batch = nsRelated.slice(i, i + BATCH_SIZE);
+        await db.insert(relatedItemsTable).values(
+          batch.map((r) => ({
+            parentNetsuiteId: r.parentNetsuiteId,
+            relatedNetsuiteId: r.relatedNetsuiteId,
+            description: r.description,
+            basePrice: r.basePrice,
+            onlinePrice: r.onlinePrice,
+          }))
+        );
+        if ((i + BATCH_SIZE) % 1000 === 0 || i + BATCH_SIZE >= nsRelated.length) {
+          const pct = 94 + Math.round(((i + BATCH_SIZE) / nsRelated.length) * 4);
+          setProgress("related-items", Math.min(pct, 98), `Saved ${Math.min(i + BATCH_SIZE, nsRelated.length)} / ${nsRelated.length} related items`);
+        }
+      }
+      logger.info({ count: nsRelated.length }, "Synced related items");
+    } catch (err) {
+      logger.error({ err }, "Related items sync failed (non-fatal)");
     }
 
     setProgress("done", 100, "Sync complete!");

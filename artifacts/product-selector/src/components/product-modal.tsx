@@ -338,13 +338,16 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
     return () => document.removeEventListener("keydown", onKey);
   }, [product?.id, onClose]);
 
-  const categoryId = full?.categoryId ?? product?.categoryId ?? null;
   const { data: relatedData } = useQuery({
-    ...getGetCategoryProductsQueryOptions(categoryId ?? 0),
-    enabled: !!categoryId,
+    queryKey: ["relatedItems", resolvedId],
+    queryFn: async () => {
+      const res = await fetch(`/api/products/${resolvedId}/related`);
+      if (!res.ok) return { relatedItems: [] };
+      return res.json();
+    },
+    enabled: !!resolvedId,
   });
-  const relatedProducts = ((relatedData?.products ?? []) as FullProduct[])
-    .filter(p => p.id !== resolvedId);
+  const relatedProducts = ((relatedData?.relatedItems ?? []) as FullProduct[]);
 
   const directCategoryName = categoryPath
     ? categoryPath.split(" › ").at(-1)
