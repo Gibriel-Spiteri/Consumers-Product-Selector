@@ -93,7 +93,7 @@ function ProductStatsDebug() {
     <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-center gap-4 text-[11px] font-mono text-white/30">
       <span>Total Products: {data.totalProducts}</span>
       <span className="w-px h-3 bg-white/15" />
-      <span className={data.productsWithoutCategory > 0 ? "text-amber-400/60" : ""}>
+      <span className="text-[#fafafa99] text-[12px]">
         Without Category: {data.productsWithoutCategory}
       </span>
     </div>
