@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpen, Camera, Flag } from "lucide-react";
+import { ArrowRight, BookOpen, Flag } from "lucide-react";
 
 export default function Home() {
   return (
@@ -33,16 +33,6 @@ export default function Home() {
         >
           <BookOpen size={15} />
           PRD Reference
-        </a>
-        <span className="w-px h-4 bg-gray-200" />
-        <a
-          href="https://www.consumerskitchens.com/photo-shoots"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 text-sm hover:text-gray-700 transition-colors text-[#353b42]"
-        >
-          <Camera size={15} />
-          Photoshoot Showcase
         </a>
         <span className="w-px h-4 bg-gray-200" />
         <a
