@@ -364,10 +364,11 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
       item.storedescription,
       BUILTIN.DF(item.custitem_prodline) AS prodline,
       item.quantityavailable,
-      isc.category AS sitecategoryid
+      COALESCE(isc_def.category, isc_any.category) AS sitecategoryid
     FROM InventoryItem item
     LEFT JOIN pricing p ON p.item = item.id AND p.pricelevel = 1 AND p.quantity = 1
-    LEFT JOIN ItemSiteCategory isc ON isc.item = item.id AND isc.isdefault = 'T'
+    LEFT JOIN ItemSiteCategory isc_def ON isc_def.item = item.id AND isc_def.isdefault = 'T'
+    LEFT JOIN (SELECT item, MIN(category) AS category FROM ItemSiteCategory GROUP BY item) isc_any ON isc_any.item = item.id
     WHERE item.isinactive = 'F' AND item.isonline = 'T' AND UPPER(BUILTIN.DF(item.custitem_stock_code)) = 'STOCK'
     ORDER BY item.itemid`
   );
@@ -387,10 +388,11 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
         item.storedescription,
         BUILTIN.DF(item.custitem_prodline) AS prodline,
         NULL AS quantityavailable,
-        isc.category AS sitecategoryid
+        COALESCE(isc_def.category, isc_any.category) AS sitecategoryid
       FROM KitItem item
       LEFT JOIN pricing p ON p.item = item.id AND p.pricelevel = 1 AND p.quantity = 1
-      LEFT JOIN ItemSiteCategory isc ON isc.item = item.id AND isc.isdefault = 'T'
+      LEFT JOIN ItemSiteCategory isc_def ON isc_def.item = item.id AND isc_def.isdefault = 'T'
+      LEFT JOIN (SELECT item, MIN(category) AS category FROM ItemSiteCategory GROUP BY item) isc_any ON isc_any.item = item.id
       WHERE item.isinactive = 'F' AND item.isonline = 'T'
       ORDER BY item.itemid`
     );
