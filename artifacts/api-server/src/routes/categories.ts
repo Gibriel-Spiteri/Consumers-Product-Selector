@@ -297,6 +297,22 @@ router.get("/products/search", async (req, res) => {
   return res.json(response);
 });
 
+router.get("/products/stats", async (_req, res) => {
+  const totalResult = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(productsTable);
+
+  const orphanResult = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(productsTable)
+    .where(sql`${productsTable.categoryId} IS NULL`);
+
+  res.json({
+    totalProducts: Number(totalResult[0]?.count ?? 0),
+    productsWithoutCategory: Number(orphanResult[0]?.count ?? 0),
+  });
+});
+
 router.get("/products/:productId", async (req, res) => {
   const productId = parseInt(req.params.productId, 10);
   if (isNaN(productId)) {

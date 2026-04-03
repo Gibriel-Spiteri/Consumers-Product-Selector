@@ -4,7 +4,7 @@ import { Search, Loader2, ChevronRight, Package, Folders, Copy, Check, RefreshCw
 import { useGetCategories, useSearchProducts, getSearchProductsQueryKey } from "@workspace/api-client-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 
 function SyncButton() {
   const [syncing, setSyncing] = useState(false);
@@ -72,6 +72,30 @@ function SyncButton() {
           {result ?? (syncing && progress ? progress.detail : "Sync NetSuite")}
         </span>
       </button>
+    </div>
+  );
+}
+
+function ProductStatsDebug() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["productStats"],
+    queryFn: async () => {
+      const res = await fetch("/api/products/stats");
+      if (!res.ok) return null;
+      return res.json() as Promise<{ totalProducts: number; productsWithoutCategory: number }>;
+    },
+    staleTime: 60000,
+  });
+
+  if (isLoading || !data) return null;
+
+  return (
+    <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-center gap-4 text-[11px] font-mono text-white/30">
+      <span>Total Products: {data.totalProducts}</span>
+      <span className="w-px h-3 bg-white/15" />
+      <span className={data.productsWithoutCategory > 0 ? "text-amber-400/60" : ""}>
+        Without Category: {data.productsWithoutCategory}
+      </span>
     </div>
   );
 }
@@ -521,6 +545,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <footer className="bg-black">
         <div className="max-w-screen-xl mx-auto px-6 py-5">
           <p className="text-white/50 text-[14px] text-center">© {new Date().getFullYear()} All rights reserved.</p>
+          <ProductStatsDebug />
         </div>
       </footer>
     </div>
