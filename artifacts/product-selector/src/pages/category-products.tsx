@@ -331,7 +331,10 @@ export default function CategoryProducts() {
 
   const clearFilters = () => setActiveFilters(new Map());
 
-  const allProducts: Product[] = productsData?.products ?? [];
+  const allProducts: Product[] = useMemo(() => {
+    const items: Product[] = productsData?.products ?? [];
+    return [...items].sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
+  }, [productsData]);
 
   const products = useMemo(() => {
     let filtered = allProducts;
