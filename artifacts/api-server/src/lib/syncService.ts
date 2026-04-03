@@ -1,9 +1,10 @@
 import { db } from "@workspace/db";
-import { categoriesTable, productsTable } from "@workspace/db";
+import { categoriesTable, productsTable, productAttributesTable } from "@workspace/db";
 import { eq, notInArray, sql } from "drizzle-orm";
 import {
   fetchNetSuiteCategories,
   fetchNetSuiteItems,
+  fetchItemAttributes,
   isNetSuiteConfigured,
   type NetSuiteCategory,
 } from "./netsuite";
@@ -213,13 +214,45 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
       }
     }
 
-    setProgress("cleanup", 92, "Cleaning stale products…");
+    setProgress("cleanup", 82, "Cleaning stale products…");
     const syncedProductNetsuiteIds = nsItems.map((item) => item.id);
     if (syncedProductNetsuiteIds.length > 0) {
       const deletedProducts = await db
         .delete(productsTable)
         .where(notInArray(productsTable.netsuiteId!, syncedProductNetsuiteIds));
       logger.info({ deleted: deletedProducts.rowCount ?? 0 }, "Removed stale products");
+    }
+
+    setProgress("attributes", 84, "Fetching item attributes from NetSuite…");
+    try {
+      const nsAttrs = await fetchItemAttributes();
+      logger.info({ count: nsAttrs.length }, "Fetched item attributes from NetSuite");
+
+      setProgress("attributes", 88, `Saving ${nsAttrs.length} attributes…`);
+      await db.delete(productAttributesTable);
+
+      const BATCH_SIZE = 500;
+      for (let i = 0; i < nsAttrs.length; i += BATCH_SIZE) {
+        const batch = nsAttrs.slice(i, i + BATCH_SIZE);
+        await db.insert(productAttributesTable).values(
+          batch.map((a) => ({
+            netsuiteId: a.id,
+            productNetsuiteId: a.itemNetsuiteId,
+            attributeName: a.attributeName,
+            attributeValueId: a.attributeValueId,
+            attributeValue: a.attributeValue,
+            sortOrder: a.sortOrder,
+            isFilter: a.isFilter,
+          }))
+        );
+        if ((i + BATCH_SIZE) % 2000 === 0 || i + BATCH_SIZE >= nsAttrs.length) {
+          const pct = 88 + Math.round(((i + BATCH_SIZE) / nsAttrs.length) * 10);
+          setProgress("attributes", Math.min(pct, 98), `Saved ${Math.min(i + BATCH_SIZE, nsAttrs.length)} / ${nsAttrs.length} attributes`);
+        }
+      }
+      logger.info({ count: nsAttrs.length }, "Synced item attributes");
+    } catch (err) {
+      logger.error({ err }, "Item attribute sync failed (non-fatal)");
     }
 
     setProgress("done", 100, "Sync complete!");

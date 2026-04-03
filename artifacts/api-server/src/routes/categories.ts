@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { categoriesTable, productsTable } from "@workspace/db";
+import { categoriesTable, productsTable, productAttributesTable } from "@workspace/db";
 import { eq, or, ilike, sql, inArray } from "drizzle-orm";
 import {
   GetCategoriesResponse,
@@ -192,8 +192,52 @@ router.get("/categories/:categoryId/products", async (req, res) => {
     };
   });
 
-  const response = GetCategoryProductsResponse.parse({ products: mapped, usingMockData: false });
-  return res.json(response);
+  const productNetsuiteIds = products
+    .map((p) => p.netsuiteId)
+    .filter((id): id is string => id != null);
+
+  let facets: Array<{ name: string; values: Array<{ value: string; count: number }> }> = [];
+  const productAttrsMap = new Map<string, Array<{ name: string; value: string }>>();
+
+  if (productNetsuiteIds.length > 0) {
+    const attrRows = await db
+      .select({
+        productNetsuiteId: productAttributesTable.productNetsuiteId,
+        attributeName: productAttributesTable.attributeName,
+        attributeValue: productAttributesTable.attributeValue,
+      })
+      .from(productAttributesTable)
+      .where(
+        sql`${productAttributesTable.productNetsuiteId} IN (${sql.join(productNetsuiteIds.map(id => sql`${id}`), sql`, `)}) AND ${productAttributesTable.isFilter} = true`
+      );
+
+    const facetMap = new Map<string, Map<string, number>>();
+    for (const row of attrRows) {
+      if (!row.attributeName || !row.attributeValue) continue;
+      if (!facetMap.has(row.attributeName)) facetMap.set(row.attributeName, new Map());
+      const valMap = facetMap.get(row.attributeName)!;
+      valMap.set(row.attributeValue, (valMap.get(row.attributeValue) ?? 0) + 1);
+
+      if (!productAttrsMap.has(row.productNetsuiteId)) productAttrsMap.set(row.productNetsuiteId, []);
+      productAttrsMap.get(row.productNetsuiteId)!.push({ name: row.attributeName, value: row.attributeValue });
+    }
+
+    facets = Array.from(facetMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([name, valMap]) => ({
+        name,
+        values: Array.from(valMap.entries())
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([value, count]) => ({ value, count })),
+      }));
+  }
+
+  const mappedWithAttrs = mapped.map(p => ({
+    ...p,
+    attributes: p.netsuiteId ? (productAttrsMap.get(p.netsuiteId) ?? []) : [],
+  }));
+
+  return res.json({ products: mappedWithAttrs, facets, usingMockData: false });
 });
 
 router.get("/products/search", async (req, res) => {

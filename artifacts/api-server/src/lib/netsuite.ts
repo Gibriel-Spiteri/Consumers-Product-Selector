@@ -410,6 +410,51 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
   return allItems;
 }
 
+export interface NetSuiteItemAttribute {
+  id: string;
+  itemNetsuiteId: string;
+  attributeName: string;
+  attributeValueId: string;
+  attributeValue: string;
+  sortOrder: number | null;
+  isFilter: boolean;
+}
+
+export async function fetchItemAttributes(): Promise<NetSuiteItemAttribute[]> {
+  const query = `
+    SELECT
+      iav.id,
+      iav.custrecord_itematrbval_item AS itemid,
+      iav.custrecord_itematrbval_displayname AS attributename,
+      iav.custrecord_itematrbval_val AS valueid,
+      BUILTIN.DF(iav.custrecord_itematrbval_val) AS valuename,
+      iav.custrecord_itematrbval_sortorder AS sortorder,
+      iav.custrecord_itematrbval_filter AS isfilter
+    FROM CUSTOMRECORD_ITEMATRBVAL iav
+    WHERE iav.isinactive = 'F'
+  `;
+
+  const result = await executeSuiteQL<{
+    id: string;
+    itemid: string;
+    attributename: string;
+    valueid: string;
+    valuename: string;
+    sortorder: string | null;
+    isfilter: string;
+  }>(query);
+
+  return result.items.map((row) => ({
+    id: String(row.id),
+    itemNetsuiteId: String(row.itemid),
+    attributeName: row.attributename ?? "",
+    attributeValueId: String(row.valueid),
+    attributeValue: row.valuename ?? "",
+    sortOrder: row.sortorder != null ? Number(row.sortorder) : null,
+    isFilter: row.isfilter === "T",
+  }));
+}
+
 export async function fetchLiveInventory(
   netsuiteIds: string[]
 ): Promise<Map<string, number>> {

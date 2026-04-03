@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams, Link } from "wouter";
 import { useGetCategories, getGetCategoryProductsQueryOptions } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, PackageX, Loader2, ImageOff, LayoutList, LayoutGrid, Copy, Check } from "lucide-react";
+import { ChevronRight, PackageX, Loader2, ImageOff, LayoutList, LayoutGrid, Copy, Check, X, Filter, ChevronDown } from "lucide-react";
 import { useCategoryPath } from "@/hooks/use-category-path";
 import ProductModal from "@/components/product-modal";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,7 @@ interface Product {
   imageUrl?: string | null;
   fullImageUrl?: string | null;
   quantityAvailable?: number | null;
+  attributes?: Array<{ name: string; value: string }>;
 }
 
 function StockBadge({ qty }: { qty: number | null | undefined }) {
@@ -179,12 +180,126 @@ function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: P
   );
 }
 
+interface Facet {
+  name: string;
+  values: Array<{ value: string; count: number }>;
+}
+
+function FacetBar({ facets, activeFilters, onToggle, onClear }: {
+  facets: Facet[];
+  activeFilters: Map<string, Set<string>>;
+  onToggle: (facetName: string, value: string) => void;
+  onClear: () => void;
+}) {
+  const [expandedFacet, setExpandedFacet] = useState<string | null>(null);
+  const totalActive = Array.from(activeFilters.values()).reduce((sum, s) => sum + s.size, 0);
+
+  if (facets.length === 0) return null;
+
+  return (
+    <div className="mb-6">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-1.5 text-[12px] font-medium text-gray-500 mr-1">
+          <Filter size={13} />
+          Filters
+        </div>
+        {facets.map((facet) => {
+          const activeVals = activeFilters.get(facet.name);
+          const isActive = activeVals && activeVals.size > 0;
+          const isExpanded = expandedFacet === facet.name;
+
+          return (
+            <div key={facet.name} className="relative">
+              <button
+                onClick={() => setExpandedFacet(isExpanded ? null : facet.name)}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all border",
+                  isActive
+                    ? "bg-gray-900 text-white border-gray-900"
+                    : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
+                )}
+              >
+                {facet.name}
+                {isActive && (
+                  <span className="bg-white/20 text-white text-[10px] px-1.5 py-0.5 rounded-full ml-0.5">
+                    {activeVals!.size}
+                  </span>
+                )}
+                <ChevronDown size={12} className={cn("transition-transform", isExpanded && "rotate-180")} />
+              </button>
+
+              {isExpanded && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setExpandedFacet(null)}
+                  />
+                  <div className="absolute top-full left-0 mt-1 z-50 bg-white rounded-xl shadow-xl shadow-black/10 border border-gray-100 py-2 min-w-[200px] max-h-[300px] overflow-y-auto">
+                    {facet.values.map(({ value, count }) => {
+                      const isChecked = activeVals?.has(value) ?? false;
+                      return (
+                        <button
+                          key={value}
+                          onClick={() => onToggle(facet.name, value)}
+                          className="w-full flex items-center gap-2.5 px-3 py-1.5 hover:bg-gray-50 transition-colors text-left"
+                        >
+                          <span className={cn(
+                            "w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors",
+                            isChecked ? "bg-gray-900 border-gray-900" : "border-gray-300"
+                          )}>
+                            {isChecked && <Check size={10} className="text-white" />}
+                          </span>
+                          <span className="text-[13px] text-gray-700 flex-1">{value}</span>
+                          <span className="text-[11px] text-gray-400">{count}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })}
+
+        {totalActive > 0 && (
+          <button
+            onClick={onClear}
+            className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            <X size={12} />
+            Clear all
+          </button>
+        )}
+      </div>
+
+      {totalActive > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
+          {Array.from(activeFilters.entries()).map(([facetName, vals]) =>
+            Array.from(vals).map((val) => (
+              <button
+                key={`${facetName}:${val}`}
+                onClick={() => onToggle(facetName, val)}
+                className="flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-[11px] font-medium pl-2.5 pr-1.5 py-1 rounded-full transition-colors"
+              >
+                <span className="text-gray-400 mr-0.5">{facetName}:</span>
+                {val}
+                <X size={10} className="text-gray-400" />
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function CategoryProducts() {
   const { categoryId } = useParams();
   const id = Number(categoryId);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [view, setView] = useState<"list" | "grid">("grid");
   const [inStockOnly, setInStockOnly] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<Map<string, Set<string>>>(new Map());
 
   const { data: productsData, isLoading: isLoadingProducts } = useQuery({
     ...getGetCategoryProductsQueryOptions(id),
@@ -195,10 +310,45 @@ export default function CategoryProducts() {
   const path = useCategoryPath(categoriesData?.categories || [], id);
   const categoryPath = path.map(c => c.name).join(" › ");
 
-  const allProducts = productsData?.products ?? [];
-  const products = inStockOnly
-    ? allProducts.filter(p => p.quantityAvailable != null && p.quantityAvailable > 0)
-    : allProducts;
+  const facets: Facet[] = (productsData as any)?.facets ?? [];
+
+  const toggleFilter = (facetName: string, value: string) => {
+    setActiveFilters(prev => {
+      const next = new Map(prev);
+      const vals = new Set(next.get(facetName) ?? []);
+      if (vals.has(value)) vals.delete(value);
+      else vals.add(value);
+      if (vals.size === 0) next.delete(facetName);
+      else next.set(facetName, vals);
+      return next;
+    });
+  };
+
+  const clearFilters = () => setActiveFilters(new Map());
+
+  const allProducts: Product[] = productsData?.products ?? [];
+
+  const products = useMemo(() => {
+    let filtered = allProducts;
+
+    if (activeFilters.size > 0) {
+      filtered = filtered.filter(p => {
+        const attrs = p.attributes ?? [];
+        for (const [facetName, requiredVals] of activeFilters) {
+          const productValsForFacet = attrs.filter(a => a.name === facetName).map(a => a.value);
+          const hasMatch = productValsForFacet.some(v => requiredVals.has(v));
+          if (!hasMatch) return false;
+        }
+        return true;
+      });
+    }
+
+    if (inStockOnly) {
+      filtered = filtered.filter(p => p.quantityAvailable != null && p.quantityAvailable > 0);
+    }
+
+    return filtered;
+  }, [allProducts, activeFilters, inStockOnly]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10">
@@ -283,6 +433,13 @@ export default function CategoryProducts() {
           </div>
         </div>
       </div>
+
+      <FacetBar
+        facets={facets}
+        activeFilters={activeFilters}
+        onToggle={toggleFilter}
+        onClear={clearFilters}
+      />
 
       {/* Product List / Grid */}
       {isLoadingProducts ? (
