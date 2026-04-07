@@ -25,13 +25,16 @@ function ProductImage({ src, name }: { src: string | null; name: string }) {
   return <img src={src} alt={name} onError={() => setFailed(true)} className="w-full h-full object-contain" />;
 }
 
-function EstimateSearch({ onPush }: { onPush: (estimateId: number, tranId: string) => Promise<void> }) {
+function EstimateSearch({ onPush, pushResult, setPushResult }: {
+  onPush: (estimateId: number, tranId: string) => Promise<void>;
+  pushResult: { success: boolean; message: string } | null;
+  setPushResult: (r: { success: boolean; message: string } | null) => void;
+}) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Estimate[]>([]);
   const [searching, setSearching] = useState(false);
   const [selected, setSelected] = useState<Estimate | null>(null);
   const [pushing, setPushing] = useState(false);
-  const [pushResult, setPushResult] = useState<{ success: boolean; message: string } | null>(null);
 
   const handleSearch = async () => {
     if (!query.trim()) return;
@@ -59,9 +62,8 @@ function EstimateSearch({ onPush }: { onPush: (estimateId: number, tranId: strin
     setPushResult(null);
     try {
       await onPush(selected.id, selected.tranId);
-      setPushResult({ success: true, message: `Items added to estimate ${selected.tranId}` });
     } catch (err: any) {
-      setPushResult({ success: false, message: err?.message ?? "Failed to push items" });
+      setPushResult({ success: false, message: err?.message ?? "Failed to add items to estimate" });
     } finally {
       setPushing(false);
     }
@@ -181,15 +183,6 @@ function EstimateSearch({ onPush }: { onPush: (estimateId: number, tranId: strin
           </div>
         )}
 
-        {pushResult && (
-          <div className={cn(
-            "mt-3 flex items-center gap-2 px-4 py-3 rounded-xl text-sm",
-            pushResult.success ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"
-          )}>
-            {pushResult.success ? <Check size={14} /> : <AlertCircle size={14} />}
-            {pushResult.message}
-          </div>
-        )}
       </div>
     </div>
   );
@@ -197,10 +190,11 @@ function EstimateSearch({ onPush }: { onPush: (estimateId: number, tranId: strin
 
 export default function QuoteListPage() {
   const { items, removeItem, updateQuantity, clearList, totalItems, totalLineItems, grandTotal } = useQuoteList();
+  const [pushResult, setPushResult] = useState<{ success: boolean; message: string } | null>(null);
 
   const itemsMissingNsId = items.filter(i => !i.netsuiteId);
 
-  const handlePushToEstimate = async (estimateId: number, _tranId: string) => {
+  const handlePushToEstimate = async (estimateId: number, tranId: string) => {
     const pushableItems = items.filter(i => i.netsuiteId);
     if (pushableItems.length === 0) {
       throw new Error("No items with valid NetSuite IDs to push");
@@ -220,9 +214,10 @@ export default function QuoteListPage() {
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      throw new Error(data.error ?? "Failed to push items");
+      throw new Error(data.error ?? "Failed to add items to estimate");
     }
 
+    setPushResult({ success: true, message: `Successfully added ${pushableItems.length} item${pushableItems.length === 1 ? "" : "s"} to estimate ${tranId}` });
     clearList();
   };
 
@@ -258,20 +253,42 @@ export default function QuoteListPage() {
       </div>
 
       {items.length === 0 ? (
-        <div className="py-32 text-center bg-white rounded-2xl shadow-sm flex flex-col items-center">
-          <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mb-5">
-            <ClipboardList size={24} className="text-gray-300" />
+        <div className="space-y-6">
+          {pushResult && (
+            <div className={cn(
+              "flex items-center gap-2 px-5 py-4 rounded-2xl text-sm font-medium",
+              pushResult.success ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-red-50 text-red-700 border border-red-200"
+            )}>
+              {pushResult.success ? <Check size={16} /> : <AlertCircle size={16} />}
+              <span>{pushResult.message}</span>
+              <button onClick={() => setPushResult(null)} className="ml-auto p-1 hover:opacity-70 transition-opacity">
+                <X size={14} />
+              </button>
+            </div>
+          )}
+          <div className="py-32 text-center bg-white rounded-2xl shadow-sm flex flex-col items-center">
+            <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mb-5">
+              {pushResult?.success ? (
+                <Check size={24} className="text-emerald-400" />
+              ) : (
+                <ClipboardList size={24} className="text-gray-300" />
+              )}
+            </div>
+            <h3 className="text-base font-semibold text-gray-700 mb-1">
+              {pushResult?.success ? "Items submitted successfully" : "Your quote list is empty"}
+            </h3>
+            <p className="text-sm text-gray-400 max-w-xs mx-auto mb-6">
+              {pushResult?.success
+                ? "Your items have been added to the estimate. Start a new list or continue browsing."
+                : "Browse products and add them to your list to create a quote."}
+            </p>
+            <Link
+              href="/"
+              className="px-5 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-colors"
+            >
+              Browse Products
+            </Link>
           </div>
-          <h3 className="text-base font-semibold text-gray-700 mb-1">Your quote list is empty</h3>
-          <p className="text-sm text-gray-400 max-w-xs mx-auto mb-6">
-            Browse products and add them to your list to create a quote.
-          </p>
-          <Link
-            href="/"
-            className="px-5 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-colors"
-          >
-            Browse Products
-          </Link>
         </div>
       ) : (
         <div className="space-y-6">
@@ -379,6 +396,16 @@ export default function QuoteListPage() {
             </div>
           </div>
 
+          {pushResult && !pushResult.success && (
+            <div className="flex items-center gap-2 px-5 py-4 rounded-2xl text-sm font-medium bg-red-50 text-red-700 border border-red-200">
+              <AlertCircle size={16} />
+              <span>{pushResult.message}</span>
+              <button onClick={() => setPushResult(null)} className="ml-auto p-1 hover:opacity-70 transition-opacity">
+                <X size={14} />
+              </button>
+            </div>
+          )}
+
           {itemsMissingNsId.length > 0 && (
             <div className="flex items-center gap-2 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700">
               <AlertCircle size={14} className="shrink-0" />
@@ -386,7 +413,7 @@ export default function QuoteListPage() {
             </div>
           )}
 
-          <EstimateSearch onPush={handlePushToEstimate} />
+          <EstimateSearch onPush={handlePushToEstimate} pushResult={pushResult} setPushResult={setPushResult} />
         </div>
       )}
     </div>
