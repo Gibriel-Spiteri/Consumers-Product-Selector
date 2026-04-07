@@ -209,6 +209,8 @@ export default function QuoteListPage() {
       const data = await res.json().catch(() => ({}));
       throw new Error(data.error ?? "Failed to push items");
     }
+
+    clearList();
   };
 
   return (
