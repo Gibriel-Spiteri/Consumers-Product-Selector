@@ -92,7 +92,7 @@ function ProductStatsDebug() {
 
   return (
     <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-center gap-4 text-[11px] font-mono text-white/30">
-      <span className="text-[14px]">Total Products: {data.totalProducts}</span>
+      <span className="text-[14px] text-[#02f549]">Total Products: {data.totalProducts}</span>
       <span className="w-px h-3 bg-white/15" />
       <Link href="/uncategorized" className="hover:text-amber-400 transition-colors cursor-pointer underline underline-offset-2 text-[#ffff00] text-[14px]">
         Without Category: {data.productsWithoutCategory}
