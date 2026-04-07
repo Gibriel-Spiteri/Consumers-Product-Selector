@@ -15,7 +15,19 @@ router.get("/estimates/search", async (req, res) => {
   }
 
   try {
-    const sanitized = q.replace(/'/g, "''").replace(/[%_\\]/g, "\\$&");
+    const stripped = q.replace(/^es/i, "");
+    const searchVariants = [q];
+    if (stripped !== q) {
+      searchVariants.push(stripped);
+    }
+    if (/^\d+$/.test(stripped)) {
+      searchVariants.push(`ES${stripped}`);
+    }
+
+    const uniqueVariants = [...new Set(searchVariants.map(v => v.replace(/'/g, "''").replace(/[%_\\]/g, "\\$&")))];
+    const tranIdConditions = uniqueVariants.map(v => `t.tranid LIKE '%${v}%'`).join(" OR ");
+    const entityConditions = uniqueVariants.map(v => `BUILTIN.DF(t.entity) LIKE '%${v}%'`).join(" OR ");
+
     const result = await executeSuiteQL<{
       id: string;
       tranid: string;
@@ -32,8 +44,8 @@ router.get("/estimates/search", async (req, res) => {
         t.trandate,
         t.foreigntotal AS total
       FROM Estimate t
-      WHERE (t.tranid LIKE '%${sanitized}%'
-        OR BUILTIN.DF(t.entity) LIKE '%${sanitized}%')
+      WHERE (${tranIdConditions}
+        OR ${entityConditions})
       AND t.status != 'Estimate : Closed'
       ORDER BY t.trandate DESC
     `);
