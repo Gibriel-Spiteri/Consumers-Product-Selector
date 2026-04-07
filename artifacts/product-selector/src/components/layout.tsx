@@ -83,12 +83,23 @@ function ProductStatsDebug() {
     queryFn: async () => {
       const res = await fetch("/api/products/stats");
       if (!res.ok) return null;
-      return res.json() as Promise<{ totalProducts: number; productsWithoutCategory: number }>;
+      return res.json() as Promise<{ totalProducts: number; productsWithoutCategory: number; lastUpdated: string | null }>;
     },
     staleTime: 60000,
   });
 
   if (isLoading || !data) return null;
+
+  const formattedDate = data.lastUpdated
+    ? new Date(data.lastUpdated).toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      })
+    : null;
 
   return (
     <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-center gap-4 text-[11px] font-mono text-white/30">
@@ -97,6 +108,12 @@ function ProductStatsDebug() {
       <Link href="/uncategorized" className="hover:text-amber-400 transition-colors cursor-pointer underline underline-offset-2 text-[#ffff00] text-[14px]">
         Without Category: {data.productsWithoutCategory}
       </Link>
+      {formattedDate && (
+        <>
+          <span className="w-px h-3 bg-white/15" />
+          <span className="text-[14px] text-white/40">Last Updated: {formattedDate}</span>
+        </>
+      )}
     </div>
   );
 }

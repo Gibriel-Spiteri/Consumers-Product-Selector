@@ -337,9 +337,14 @@ router.get("/products/stats", async (_req, res) => {
     .from(productsTable)
     .where(sql`${productsTable.categoryId} IS NULL`);
 
+  const lastUpdatedResult = await db
+    .select({ maxUpdated: sql<string>`max(${productsTable.updatedAt})` })
+    .from(productsTable);
+
   res.json({
     totalProducts: Number(totalResult[0]?.count ?? 0),
     productsWithoutCategory: Number(orphanResult[0]?.count ?? 0),
+    lastUpdated: lastUpdatedResult[0]?.maxUpdated ?? null,
   });
 });
 
