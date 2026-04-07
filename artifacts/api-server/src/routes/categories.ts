@@ -341,10 +341,13 @@ router.get("/products/stats", async (_req, res) => {
     .select({ maxUpdated: sql<string>`max(${productsTable.updatedAt})` })
     .from(productsTable);
 
+  const rawTimestamp = lastUpdatedResult[0]?.maxUpdated ?? null;
+  const lastUpdated = rawTimestamp && !rawTimestamp.endsWith("Z") ? rawTimestamp + "Z" : rawTimestamp;
+
   res.json({
     totalProducts: Number(totalResult[0]?.count ?? 0),
     productsWithoutCategory: Number(orphanResult[0]?.count ?? 0),
-    lastUpdated: lastUpdatedResult[0]?.maxUpdated ?? null,
+    lastUpdated,
   });
 });
 
