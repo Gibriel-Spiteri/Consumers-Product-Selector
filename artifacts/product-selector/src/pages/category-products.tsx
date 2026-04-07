@@ -2,10 +2,11 @@ import { useState, useMemo, useEffect } from "react";
 import { useParams, Link } from "wouter";
 import { useGetCategories, getGetCategoryProductsQueryOptions } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, PackageX, Loader2, ImageOff, LayoutList, LayoutGrid, Copy, Check, X, Filter, ChevronDown } from "lucide-react";
+import { ChevronRight, PackageX, Loader2, ImageOff, LayoutList, LayoutGrid, Copy, Check, X, Filter, ChevronDown, Plus } from "lucide-react";
 import { useCategoryPath } from "@/hooks/use-category-path";
 import ProductModal from "@/components/product-modal";
 import { cn } from "@/lib/utils";
+import { useQuoteList } from "@/context/quote-list-context";
 
 interface Product {
   id: number;
@@ -78,6 +79,49 @@ function CopySkuButton({ sku }: { sku: string }) {
   );
 }
 
+function AddToListButton({ product }: { product: Product }) {
+  const { addItem, isInList } = useQuoteList();
+  const [justAdded, setJustAdded] = useState(false);
+  const inList = isInList(product.id);
+
+  const handleAdd = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (inList) return;
+    addItem({
+      productId: product.id,
+      netsuiteId: product.netsuiteId ?? "",
+      name: product.name,
+      sku: product.sku,
+      price: product.price ? Number(product.price) : null,
+      imageUrl: product.imageUrl ?? null,
+    });
+    setJustAdded(true);
+    setTimeout(() => setJustAdded(false), 1200);
+  };
+
+  if (inList) {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-600">
+        <Check size={10} /> On List
+      </span>
+    );
+  }
+
+  return (
+    <button
+      onClick={handleAdd}
+      className={cn(
+        "inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide px-2 py-1 rounded-full transition-all",
+        justAdded
+          ? "bg-emerald-50 text-emerald-600"
+          : "bg-gray-100 text-gray-500 hover:bg-amber-50 hover:text-amber-600"
+      )}
+    >
+      {justAdded ? <><Check size={10} /> Added</> : <><Plus size={10} /> Add</>}
+    </button>
+  );
+}
+
 function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: Product) => void }) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -117,7 +161,10 @@ function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: P
                   <span className="text-gray-300 font-normal text-sm">—</span>
                 )}
               </div>
-              <StockBadge qty={p.quantityAvailable} />
+              <div className="flex flex-col items-end gap-1">
+                <StockBadge qty={p.quantityAvailable} />
+                <AddToListButton product={p} />
+              </div>
             </div>
           </div>
         </div>
@@ -138,6 +185,7 @@ function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: P
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400">Product</th>
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[140px]">Stock</th>
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 text-right w-[120px]">MSRP</th>
+              <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[80px]"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
@@ -170,6 +218,9 @@ function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: P
                       )}
                     </div>
                   ) : <span className="text-gray-300 font-normal">—</span>}
+                </td>
+                <td className="px-5 py-3 whitespace-nowrap">
+                  <AddToListButton product={p} />
                 </td>
               </tr>
             ))}

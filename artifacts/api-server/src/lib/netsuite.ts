@@ -177,6 +177,10 @@ export async function netsuiteRequest<T>(
     throw new Error(`NetSuite API request failed: ${response.status} ${text}`);
   }
 
+  if (response.status === 204 || response.headers.get("content-length") === "0") {
+    return {} as T;
+  }
+
   return response.json() as Promise<T>;
 }
 

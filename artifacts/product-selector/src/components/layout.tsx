@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import { Search, Loader2, ChevronRight, Package, Folders, Copy, Check, RefreshCw } from "lucide-react";
+import { Search, Loader2, ChevronRight, Package, Folders, Copy, Check, RefreshCw, ClipboardList } from "lucide-react";
+import { useQuoteList } from "@/context/quote-list-context";
 import { useGetCategories, useSearchProducts, getSearchProductsQueryKey } from "@workspace/api-client-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -97,6 +98,20 @@ function ProductStatsDebug() {
         Without Category: {data.productsWithoutCategory}
       </Link>
     </div>
+  );
+}
+
+function QuoteListBadge() {
+  const { totalLineItems } = useQuoteList();
+  return (
+    <Link href="/list" className="relative flex items-center justify-center w-9 h-9 rounded-lg hover:bg-gray-100 transition-colors mr-3 group" title="Quote List">
+      <ClipboardList size={18} className="text-gray-500 group-hover:text-gray-700 transition-colors" />
+      {totalLineItems > 0 && (
+        <span className="absolute -top-0.5 -right-0.5 bg-amber-500 text-white text-[10px] font-bold min-w-[18px] h-[18px] flex items-center justify-center rounded-full px-1">
+          {totalLineItems > 99 ? "99+" : totalLineItems}
+        </span>
+      )}
+    </Link>
   );
 }
 
@@ -285,6 +300,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </Link>
 
           <SyncButton />
+
+          <QuoteListBadge />
 
           <div className="w-[500px]" ref={searchContainerRef}>
             <form onSubmit={handleSearch} className="relative flex items-center">

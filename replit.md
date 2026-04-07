@@ -146,6 +146,19 @@ Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used b
 
 Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
 
+### Quote List Feature
+
+Browser-based quote list with NetSuite estimate push capability:
+
+- **Context/State**: `artifacts/product-selector/src/context/quote-list-context.tsx` — React context + localStorage persistence
+- **Quote list page**: `/list` route (`src/pages/quote-list.tsx`) — editable table with quantities, totals, remove, clear
+- **Add to list UI**: "Add" button on product grid/list cards (`category-products.tsx`) and "Add to List" with qty picker in product modal footer (`product-modal.tsx`)
+- **Header badge**: Clipboard icon in header with item count badge, links to `/list`
+- **Estimate search**: SuiteQL search by estimate number or customer name (`/api/estimates/search`)
+- **Push to estimate**: Adds quote list items to existing NetSuite estimate via REST Record API PATCH (`/api/estimates/:id/add-items`)
+- **Input validation**: netsuiteId must be positive numeric, quantity must be positive integer; SuiteQL wildcards escaped
+- **204 handling**: `netsuiteRequest()` handles 204 No Content responses from NetSuite PATCH operations
+
 ### `scripts` (`@workspace/scripts`)
 
 Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
