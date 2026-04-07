@@ -185,9 +185,15 @@ function EstimateSearch({ onPush }: { onPush: (estimateId: number, tranId: strin
 export default function QuoteListPage() {
   const { items, removeItem, updateQuantity, clearList, totalItems, totalLineItems, grandTotal } = useQuoteList();
 
+  const itemsMissingNsId = items.filter(i => !i.netsuiteId);
+
   const handlePushToEstimate = async (estimateId: number, _tranId: string) => {
+    const pushableItems = items.filter(i => i.netsuiteId);
+    if (pushableItems.length === 0) {
+      throw new Error("No items with valid NetSuite IDs to push");
+    }
     const payload = {
-      items: items.map(i => ({
+      items: pushableItems.map(i => ({
         netsuiteId: i.netsuiteId,
         quantity: i.quantity,
       })),
@@ -357,6 +363,13 @@ export default function QuoteListPage() {
               </table>
             </div>
           </div>
+
+          {itemsMissingNsId.length > 0 && (
+            <div className="flex items-center gap-2 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700">
+              <AlertCircle size={14} className="shrink-0" />
+              {itemsMissingNsId.length} {itemsMissingNsId.length === 1 ? "item" : "items"} missing NetSuite ID and will be skipped when pushing to an estimate.
+            </div>
+          )}
 
           <EstimateSearch onPush={handlePushToEstimate} />
         </div>
