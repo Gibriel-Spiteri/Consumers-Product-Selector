@@ -90,16 +90,12 @@ function ProductStatsDebug() {
 
   if (isLoading || !data) return null;
 
-  const formattedDate = data.lastUpdated
+  const formattedTime = data.lastUpdated
     ? new Date(data.lastUpdated).toLocaleString("en-US", {
         timeZone: "America/New_York",
-        month: "short",
-        day: "numeric",
-        year: "numeric",
         hour: "numeric",
         minute: "2-digit",
         hour12: true,
-        timeZoneName: "short",
       })
     : null;
 
@@ -110,10 +106,12 @@ function ProductStatsDebug() {
       <Link href="/uncategorized" className="hover:text-amber-400 transition-colors cursor-pointer underline underline-offset-2 text-[#ffff00] text-[14px]">
         Without Category: {data.productsWithoutCategory}
       </Link>
-      {formattedDate && (
+      {formattedTime && (
         <>
           <span className="w-px h-3 bg-white/15" />
-          <span className="text-[14px] text-white/40">Last Updated: {formattedDate}</span>
+          <span className="text-[14px] text-white/40">Data Updated: {formattedTime}</span>
+          <span className="w-px h-3 bg-white/15" />
+          <span className="text-[14px] text-[#02f549]">Inventory Levels are Live</span>
         </>
       )}
     </div>
