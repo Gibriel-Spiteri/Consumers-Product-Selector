@@ -111,36 +111,49 @@ function EstimateSearch({ onPush }: { onPush: (estimateId: number, tranId: strin
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {results.map(est => (
-                  <tr
-                    key={est.id}
-                    onClick={() => setSelected(est)}
-                    className={cn(
-                      "cursor-pointer transition-colors",
-                      selected?.id === est.id ? "bg-amber-50" : "hover:bg-gray-50"
-                    )}
-                  >
-                    <td className="px-4 py-2.5">
-                      <span className={cn(
-                        "w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors",
-                        selected?.id === est.id ? "bg-amber-500 border-amber-500" : "border-gray-300"
-                      )}>
-                        {selected?.id === est.id && <Check size={10} className="text-white" />}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2.5 font-mono font-medium text-gray-900">{est.tranId}</td>
-                    <td className="px-4 py-2.5 text-gray-700">{est.customerName}</td>
-                    <td className="px-4 py-2.5">
-                      <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
-                        {est.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2.5 text-gray-500">{est.date}</td>
-                    <td className="px-4 py-2.5 text-right font-medium text-gray-900">
-                      {est.total != null ? `$${est.total.toFixed(2)}` : "—"}
-                    </td>
-                  </tr>
-                ))}
+                {results.map(est => {
+                  const isOpen = est.status.toLowerCase().includes("open");
+                  const isSelected = selected?.id === est.id;
+                  return (
+                    <tr
+                      key={est.id}
+                      onClick={() => isOpen && setSelected(est)}
+                      className={cn(
+                        "transition-colors",
+                        isOpen ? "cursor-pointer" : "cursor-not-allowed opacity-60",
+                        isSelected ? "bg-amber-50" : isOpen ? "hover:bg-gray-50" : ""
+                      )}
+                      title={isOpen ? undefined : "Only open estimates can receive items"}
+                    >
+                      <td className="px-4 py-2.5">
+                        {isOpen ? (
+                          <span className={cn(
+                            "w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors",
+                            isSelected ? "bg-amber-500 border-amber-500" : "border-gray-300"
+                          )}>
+                            {isSelected && <Check size={10} className="text-white" />}
+                          </span>
+                        ) : (
+                          <span className="w-4 h-4 rounded-full border-2 border-gray-200 bg-gray-100 flex items-center justify-center shrink-0" />
+                        )}
+                      </td>
+                      <td className="px-4 py-2.5 font-mono font-medium text-gray-900">{est.tranId}</td>
+                      <td className="px-4 py-2.5 text-gray-700">{est.customerName}</td>
+                      <td className="px-4 py-2.5">
+                        <span className={cn(
+                          "text-[11px] font-medium px-2 py-0.5 rounded-full",
+                          isOpen ? "bg-emerald-50 text-emerald-600" : "bg-gray-100 text-gray-500"
+                        )}>
+                          {est.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5 text-gray-500">{est.date}</td>
+                      <td className="px-4 py-2.5 text-right font-medium text-gray-900">
+                        {est.total != null ? `$${est.total.toFixed(2)}` : "—"}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

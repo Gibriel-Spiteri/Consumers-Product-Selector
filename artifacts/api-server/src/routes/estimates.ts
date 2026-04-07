@@ -46,7 +46,7 @@ router.get("/estimates/search", async (req, res) => {
       FROM Estimate t
       WHERE (${tranIdConditions}
         OR ${entityConditions})
-      AND t.status != 'Estimate : Closed'
+      AND t.status NOT IN ('Estimate : Voided', 'Estimate : Declined')
       ORDER BY t.trandate DESC
     `);
 
