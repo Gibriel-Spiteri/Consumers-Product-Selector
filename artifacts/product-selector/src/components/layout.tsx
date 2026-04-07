@@ -109,7 +109,7 @@ function ProductStatsDebug() {
       {formattedTime && (
         <>
           <span className="w-px h-3 bg-white/15" />
-          <span className="text-[14px] text-white/40">Data Updated: {formattedTime}</span>
+          <span className="text-[14px] text-[#b0b0b0] bg-[transparent]">Data Updated: {formattedTime}</span>
           <span className="w-px h-3 bg-white/15" />
           <span className="text-[14px] text-[#02f549]">Inventory Levels are Live</span>
         </>
