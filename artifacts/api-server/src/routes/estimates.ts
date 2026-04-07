@@ -42,7 +42,7 @@ router.get("/estimates/search", async (req, res) => {
         BUILTIN.DF(t.entity) AS entityname,
         BUILTIN.DF(t.status) AS status,
         t.trandate,
-        t.foreigntotal AS total
+        t.total
       FROM Estimate t
       WHERE (${tranIdConditions}
         OR ${entityConditions})
