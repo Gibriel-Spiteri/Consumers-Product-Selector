@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { HealthCheckResponse } from "@workspace/api-zod";
-import { triggerManualSync, getScheduleInterval, setScheduleInterval, type ScheduleInterval } from "../lib/scheduler";
+import { triggerManualSync, getScheduleInterval, setScheduleInterval, getTimeWindow, setTimeWindow, type ScheduleInterval, type TimeWindow } from "../lib/scheduler";
 import { getSyncProgress, getLastSyncResult } from "../lib/syncService";
 
 const router: IRouter = Router();
@@ -27,20 +27,36 @@ router.get("/dev/sync/last", (_req, res) => {
 });
 
 router.get("/dev/sync/schedule", (_req, res) => {
-  res.json({ interval: getScheduleInterval() });
+  res.json({ interval: getScheduleInterval(), timeWindow: getTimeWindow() });
 });
 
 router.post("/dev/sync/schedule", (req, res) => {
   const interval = req.body?.interval as ScheduleInterval | undefined;
-  if (!interval) {
-    return res.status(400).json({ error: "interval is required" });
+  const tw = req.body?.timeWindow as TimeWindow | null | undefined;
+
+  if (interval) {
+    try {
+      setScheduleInterval(interval);
+    } catch {
+      return res.status(400).json({ error: "Invalid interval" });
+    }
   }
-  try {
-    setScheduleInterval(interval);
-    res.json({ interval: getScheduleInterval() });
-  } catch {
-    res.status(400).json({ error: "Invalid interval" });
+
+  if (tw !== undefined) {
+    if (tw === null) {
+      setTimeWindow(null);
+    } else if (
+      typeof tw.startHour === "number" && typeof tw.endHour === "number" &&
+      tw.startHour >= 0 && tw.startHour <= 23 &&
+      tw.endHour >= 0 && tw.endHour <= 23
+    ) {
+      setTimeWindow({ startHour: tw.startHour, endHour: tw.endHour });
+    } else {
+      return res.status(400).json({ error: "Invalid time window" });
+    }
   }
+
+  res.json({ interval: getScheduleInterval(), timeWindow: getTimeWindow() });
 });
 
 export default router;

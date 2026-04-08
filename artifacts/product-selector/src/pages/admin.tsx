@@ -6,6 +6,11 @@ import { Link } from "wouter";
 
 type ScheduleInterval = "off" | "1h" | "2h" | "4h" | "6h" | "12h" | "24h";
 
+interface TimeWindow {
+  startHour: number;
+  endHour: number;
+}
+
 const SCHEDULE_OPTIONS: { value: ScheduleInterval; label: string }[] = [
   { value: "off", label: "Off" },
   { value: "1h", label: "Every 1 hour" },
@@ -15,6 +20,12 @@ const SCHEDULE_OPTIONS: { value: ScheduleInterval; label: string }[] = [
   { value: "12h", label: "Every 12 hours" },
   { value: "24h", label: "Every 24 hours" },
 ];
+
+const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => {
+  const suffix = i < 12 ? "AM" : "PM";
+  const display = i === 0 ? 12 : i > 12 ? i - 12 : i;
+  return { value: i, label: `${display}:00 ${suffix}` };
+});
 
 interface SyncStats {
   categoriesSynced: number;
@@ -66,6 +77,9 @@ function SyncSection({ employeeName }: { employeeName: string }) {
   const [result, setResult] = useState<string | null>(null);
   const [lastSync, setLastSync] = useState<SyncStats | null>(null);
   const [schedule, setSchedule] = useState<ScheduleInterval>("6h");
+  const [windowEnabled, setWindowEnabled] = useState(false);
+  const [windowStart, setWindowStart] = useState(0);
+  const [windowEnd, setWindowEnd] = useState(6);
   const [savingSchedule, setSavingSchedule] = useState(false);
   const qc = useQueryClient();
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -86,7 +100,14 @@ function SyncSection({ employeeName }: { employeeName: string }) {
       .catch(() => {});
     fetch("/api/dev/sync/schedule")
       .then(r => r.json())
-      .then(data => { if (data?.interval) setSchedule(data.interval); })
+      .then(data => {
+        if (data?.interval) setSchedule(data.interval);
+        if (data?.timeWindow) {
+          setWindowEnabled(true);
+          setWindowStart(data.timeWindow.startHour);
+          setWindowEnd(data.timeWindow.endHour);
+        }
+      })
       .catch(() => {});
   }, []);
 
@@ -227,11 +248,14 @@ function SyncSection({ employeeName }: { employeeName: string }) {
       </div>
 
       <div className="mt-4 pt-4 border-t border-gray-200">
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-center gap-2 mb-3">
           <Clock size={14} className="text-gray-400" />
           <span className="text-sm font-medium text-gray-700">Automatic Sync Schedule</span>
+          {savingSchedule && <span className="text-xs text-gray-400">Saving…</span>}
         </div>
-        <div className="flex items-center gap-3">
+
+        <div className="flex items-center gap-3 mb-3">
+          <label className="text-sm text-gray-500 w-20">Frequency</label>
           <select
             value={schedule}
             onChange={async (e) => {
@@ -254,11 +278,96 @@ function SyncSection({ employeeName }: { employeeName: string }) {
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
-          {savingSchedule && <span className="text-xs text-gray-400">Saving…</span>}
           {schedule === "off" && (
             <span className="text-xs text-amber-600">Sync will only run when triggered manually</span>
           )}
         </div>
+
+        {schedule !== "off" && (
+          <div className="flex items-start gap-3">
+            <label className="text-sm text-gray-500 w-20 pt-2">Window</label>
+            <div>
+              <label className="flex items-center gap-2 mb-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={windowEnabled}
+                  onChange={async (e) => {
+                    const enabled = e.target.checked;
+                    setWindowEnabled(enabled);
+                    setSavingSchedule(true);
+                    try {
+                      await fetch("/api/dev/sync/schedule", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          timeWindow: enabled ? { startHour: windowStart, endHour: windowEnd } : null,
+                        }),
+                      });
+                    } catch {}
+                    setSavingSchedule(false);
+                  }}
+                  disabled={savingSchedule}
+                  className="rounded border-gray-300 text-amber-500 focus:ring-amber-500"
+                />
+                <span className="text-sm text-gray-600">Only sync during specific hours (ET)</span>
+              </label>
+
+              {windowEnabled && (
+                <div className="flex items-center gap-2 ml-6">
+                  <select
+                    value={windowStart}
+                    onChange={async (e) => {
+                      const newStart = Number(e.target.value);
+                      setWindowStart(newStart);
+                      setSavingSchedule(true);
+                      try {
+                        await fetch("/api/dev/sync/schedule", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            timeWindow: { startHour: newStart, endHour: windowEnd },
+                          }),
+                        });
+                      } catch {}
+                      setSavingSchedule(false);
+                    }}
+                    disabled={savingSchedule}
+                    className="text-sm border border-gray-300 rounded-lg px-2 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 disabled:opacity-60"
+                  >
+                    {HOUR_OPTIONS.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                  <span className="text-sm text-gray-400">to</span>
+                  <select
+                    value={windowEnd}
+                    onChange={async (e) => {
+                      const newEnd = Number(e.target.value);
+                      setWindowEnd(newEnd);
+                      setSavingSchedule(true);
+                      try {
+                        await fetch("/api/dev/sync/schedule", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            timeWindow: { startHour: windowStart, endHour: newEnd },
+                          }),
+                        });
+                      } catch {}
+                      setSavingSchedule(false);
+                    }}
+                    disabled={savingSchedule}
+                    className="text-sm border border-gray-300 rounded-lg px-2 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 disabled:opacity-60"
+                  >
+                    {HOUR_OPTIONS.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

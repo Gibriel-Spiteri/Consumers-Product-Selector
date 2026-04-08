@@ -4,6 +4,11 @@ import { logger } from "./logger";
 
 export type ScheduleInterval = "off" | "1h" | "2h" | "4h" | "6h" | "12h" | "24h";
 
+export interface TimeWindow {
+  startHour: number;
+  endHour: number;
+}
+
 const INTERVAL_MS: Record<ScheduleInterval, number> = {
   off: 0,
   "1h": 1 * 60 * 60 * 1000,
@@ -14,9 +19,28 @@ const INTERVAL_MS: Record<ScheduleInterval, number> = {
   "24h": 24 * 60 * 60 * 1000,
 };
 
+const CHECK_INTERVAL_MS = 5 * 60 * 1000;
+
 let timeoutId: ReturnType<typeof setTimeout> | null = null;
 let isSyncing = false;
 let currentInterval: ScheduleInterval = "6h";
+let timeWindow: TimeWindow | null = null;
+let lastScheduledSyncTime: number = 0;
+
+function getCurrentEasternHour(): number {
+  const now = new Date();
+  const eastern = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+  return eastern.getHours();
+}
+
+function isWithinTimeWindow(): boolean {
+  if (!timeWindow) return true;
+  const hour = getCurrentEasternHour();
+  if (timeWindow.startHour <= timeWindow.endHour) {
+    return hour >= timeWindow.startHour && hour < timeWindow.endHour;
+  }
+  return hour >= timeWindow.startHour || hour < timeWindow.endHour;
+}
 
 async function runSync() {
   if (isSyncing) {
@@ -25,7 +49,24 @@ async function runSync() {
     return;
   }
 
+  if (!isWithinTimeWindow()) {
+    logger.info(
+      { currentHour: getCurrentEasternHour(), window: timeWindow },
+      "Outside sync time window — skipping, will check again in 5 min",
+    );
+    scheduleNext();
+    return;
+  }
+
+  const now = Date.now();
+  const intervalMs = INTERVAL_MS[currentInterval];
+  if (intervalMs > 0 && lastScheduledSyncTime > 0 && (now - lastScheduledSyncTime) < intervalMs * 0.9) {
+    scheduleNext();
+    return;
+  }
+
   isSyncing = true;
+  lastScheduledSyncTime = now;
   try {
     logger.info("Running scheduled NetSuite sync");
     const result = await syncFromNetSuite("Scheduled");
@@ -50,16 +91,28 @@ function scheduleNext() {
     clearTimeout(timeoutId);
     timeoutId = null;
   }
-  const ms = INTERVAL_MS[currentInterval];
-  if (ms <= 0) return;
+  const intervalMs = INTERVAL_MS[currentInterval];
+  if (intervalMs <= 0) return;
+
+  let delayMs: number;
+  if (timeWindow && !isWithinTimeWindow()) {
+    delayMs = CHECK_INTERVAL_MS;
+  } else {
+    delayMs = intervalMs;
+  }
+
   timeoutId = setTimeout(() => {
     timeoutId = null;
     runSync();
-  }, ms);
+  }, delayMs);
 }
 
 export function getScheduleInterval(): ScheduleInterval {
   return currentInterval;
+}
+
+export function getTimeWindow(): TimeWindow | null {
+  return timeWindow;
 }
 
 export function setScheduleInterval(interval: ScheduleInterval) {
@@ -75,8 +128,20 @@ export function setScheduleInterval(interval: ScheduleInterval) {
     logger.info("Scheduled sync disabled");
     return;
   }
-  logger.info({ interval }, "Sync schedule updated");
+  logger.info({ interval, timeWindow }, "Sync schedule updated");
   scheduleNext();
+}
+
+export function setTimeWindow(window: TimeWindow | null) {
+  timeWindow = window;
+  if (timeoutId !== null) {
+    clearTimeout(timeoutId);
+    timeoutId = null;
+  }
+  logger.info({ timeWindow: window }, "Sync time window updated");
+  if (currentInterval !== "off") {
+    scheduleNext();
+  }
 }
 
 export function startScheduledSync() {
@@ -91,7 +156,7 @@ export function startScheduledSync() {
   }
 
   logger.info(
-    { interval: currentInterval },
+    { interval: currentInterval, timeWindow },
     `Starting scheduled NetSuite sync (every ${currentInterval})`,
   );
 
