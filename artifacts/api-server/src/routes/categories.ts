@@ -191,6 +191,7 @@ router.get("/categories/:categoryId/products", async (req, res) => {
       imageUrl: p.imageUrl ?? null,
       fullImageUrl: p.fullImageUrl ?? null,
       quantityAvailable: liveQty ?? p.quantityAvailable ?? null,
+      hasActivePpr: p.hasActivePpr ?? false,
     };
   });
 
@@ -292,6 +293,7 @@ router.get("/products/search", async (req, res) => {
       imageUrl: p.imageUrl ?? null,
       fullImageUrl: p.fullImageUrl ?? null,
       quantityAvailable: liveQty ?? p.quantityAvailable ?? null,
+      hasActivePpr: p.hasActivePpr ?? false,
     };
   });
 
@@ -321,6 +323,7 @@ router.get("/products/uncategorized", async (_req, res) => {
       imageUrl: p.imageUrl ?? null,
       fullImageUrl: p.fullImageUrl ?? null,
       quantityAvailable: liveQty ?? p.quantityAvailable ?? null,
+      hasActivePpr: p.hasActivePpr ?? false,
     };
   });
 
@@ -411,6 +414,7 @@ router.get("/products/:productId", async (req, res) => {
       description: p.description ?? null,
       manufacturer: p.manufacturer ?? null,
       quantityAvailable: liveQty ?? p.quantityAvailable ?? null,
+      hasActivePpr: p.hasActivePpr ?? false,
       features: null,
     },
   });
@@ -465,6 +469,7 @@ router.get("/products/:productId/related", async (req, res) => {
       imageUrl: p?.imageUrl ?? null,
       fullImageUrl: p?.fullImageUrl ?? null,
       quantityAvailable: liveQty ?? p?.quantityAvailable ?? null,
+      hasActivePpr: p?.hasActivePpr ?? false,
       description: r.description ?? null,
     };
   }).filter(item => item.name != null);

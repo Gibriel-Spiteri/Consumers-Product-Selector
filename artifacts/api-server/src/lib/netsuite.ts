@@ -357,6 +357,24 @@ function mapItemRow(row: SuiteQLItemRow): NetSuiteItem {
   };
 }
 
+export async function fetchActivePprItemIds(): Promise<Set<string>> {
+  try {
+    const result = await executeSuiteQL<{ custrecord_ppritem_item: string }>(
+      `SELECT DISTINCT pi.custrecord_ppritem_item
+       FROM customrecord_ppritem pi
+       INNER JOIN customrecord_ppr ppr ON ppr.id = pi.custrecord_ppritem_ppr
+       WHERE BUILTIN.DF(ppr.custrecord_ppr_status) = 'Active'
+         AND pi.isinactive = 'F'`
+    );
+    const ids = new Set(result.items.map(r => String(r.custrecord_ppritem_item)));
+    logger.info({ count: ids.size }, "Fetched active PPR item IDs from NetSuite");
+    return ids;
+  } catch (err) {
+    logger.warn({ err }, "Failed to fetch PPR data — skipping PPR flags");
+    return new Set();
+  }
+}
+
 export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
   const inventoryResult = await executeSuiteQL<SuiteQLItemRow>(
     `SELECT

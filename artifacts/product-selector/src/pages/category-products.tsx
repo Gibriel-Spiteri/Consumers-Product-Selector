@@ -19,6 +19,7 @@ interface Product {
   imageUrl?: string | null;
   fullImageUrl?: string | null;
   quantityAvailable?: number | null;
+  hasActivePpr?: boolean;
   attributes?: Array<{ name: string; value: string }>;
 }
 
@@ -152,7 +153,7 @@ function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: P
                 {p.price ? (
                   <>
                     <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">Our Price</p>
-                    <p className="font-semibold text-gray-900">${Number(p.price).toFixed(2)}</p>
+                    <p className={cn("font-semibold", p.hasActivePpr ? "text-emerald-600" : "text-gray-900")}>${Number(p.price).toFixed(2)}</p>
                     {p.retailPrice != null && (
                       <p className="text-[11px] text-gray-400">Retail <span className="line-through">${Number(p.retailPrice).toFixed(2)}</span></p>
                     )}
@@ -212,7 +213,7 @@ function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: P
                 <td className="px-5 py-3 text-right whitespace-nowrap">
                   {p.price ? (
                     <div>
-                      <p className="font-semibold text-gray-900">${Number(p.price).toFixed(2)}</p>
+                      <p className={cn("font-semibold", p.hasActivePpr ? "text-emerald-600" : "text-gray-900")}>${Number(p.price).toFixed(2)}</p>
                       {p.retailPrice != null && (
                         <p className="text-[11px] text-gray-400">Retail <span className="line-through">${Number(p.retailPrice).toFixed(2)}</span></p>
                       )}

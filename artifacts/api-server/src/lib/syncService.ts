@@ -6,6 +6,7 @@ import {
   fetchNetSuiteItems,
   fetchItemAttributes,
   fetchRelatedItems,
+  fetchActivePprItemIds,
   isNetSuiteConfigured,
   type NetSuiteCategory,
 } from "./netsuite";
@@ -170,7 +171,10 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
     }
 
     setProgress("items", 45, "Fetching products from NetSuite…");
-    const nsItems = await fetchNetSuiteItems();
+    const [nsItems, activePprItemIds] = await Promise.all([
+      fetchNetSuiteItems(),
+      fetchActivePprItemIds(),
+    ]);
     logger.info({ count: nsItems.length }, "Fetched items from NetSuite");
     setProgress("items", 55, `Saving ${nsItems.length} products…`);
 
@@ -181,6 +185,7 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
         : null;
 
       const name = item.fullname || item.itemid;
+      const hasActivePpr = activePprItemIds.has(item.id);
 
       const existing = await db
         .select()
@@ -203,6 +208,7 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
             manufacturer: item.manufacturer ?? null,
             quantityAvailable: item.quantityAvailable ?? null,
             noReorder: item.noReorder ? 1 : 0,
+            hasActivePpr: hasActivePpr,
             categoryId: categoryDbId,
             updatedAt: new Date(),
           })
@@ -221,6 +227,7 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
           manufacturer: item.manufacturer ?? null,
           quantityAvailable: item.quantityAvailable ?? null,
           noReorder: item.noReorder ? 1 : 0,
+          hasActivePpr: hasActivePpr,
           categoryId: categoryDbId,
         });
       }

@@ -24,6 +24,7 @@ interface FullProduct extends Product {
   description: string | null;
   manufacturer: string | null;
   quantityAvailable: number | null;
+  hasActivePpr?: boolean;
   features: string[] | null;
   additionalImages?: string[] | null;
 }
@@ -285,7 +286,7 @@ function RelatedMiniCard({ product, onSelect }: { product: FullProduct; onSelect
           {product.name}
         </p>
         {displayPrice != null ? (
-          <p className="text-[13px] font-semibold text-gray-900">${Number(displayPrice).toFixed(2)}</p>
+          <p className={cn("text-[13px] font-semibold", product.hasActivePpr ? "text-emerald-600" : "text-gray-900")}>${Number(displayPrice).toFixed(2)}</p>
         ) : (
           <p className="text-[12px] text-gray-300">—</p>
         )}
@@ -553,7 +554,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                         {full?.price != null ? (
                           <>
                             <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1">Our Price</p>
-                            <p className="text-3xl font-bold text-gray-900 mb-2">
+                            <p className={cn("text-3xl font-bold mb-2", full.hasActivePpr ? "text-emerald-600" : "text-gray-900")}>
                               ${Number(full.price).toFixed(2)}
                             </p>
                             {full.retailPrice != null && (
