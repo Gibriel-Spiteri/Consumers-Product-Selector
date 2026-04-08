@@ -61,14 +61,14 @@ export function startScheduledSync() {
   runSync();
 }
 
-export async function triggerManualSync() {
+export async function triggerManualSync(syncedBy?: string) {
   if (isSyncing) {
     return { status: "already_running" as const };
   }
   logger.info("Manual sync triggered");
   isSyncing = true;
   try {
-    const result = await syncFromNetSuite();
+    const result = await syncFromNetSuite(syncedBy ?? "Manual");
     if (result.success) {
       logger.info(
         { categoriesSynced: result.categoriesSynced, productsSynced: result.productsSynced },

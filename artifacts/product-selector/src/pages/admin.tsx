@@ -10,6 +10,7 @@ interface SyncStats {
   pprItemsSynced: number;
   attributesSynced: number;
   relatedItemsSynced: number;
+  syncedBy: string;
   completedAt: string;
   success: boolean;
 }
@@ -29,7 +30,7 @@ function formatSyncTime(iso: string) {
   });
 }
 
-function SyncSection({ employeeId }: { employeeId: string }) {
+function SyncSection({ employeeName }: { employeeName: string }) {
   const [syncing, setSyncing] = useState(false);
   const [progress, setProgress] = useState<{ percent: number; detail: string } | null>(null);
   const [result, setResult] = useState<string | null>(null);
@@ -63,8 +64,11 @@ function SyncSection({ employeeId }: { employeeId: string }) {
       {lastSync && lastSync.completedAt && (
         <div className="mb-4 bg-gray-50 rounded-lg p-4">
           <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Last Sync</div>
-          <div className="text-sm text-gray-700 font-medium mb-2">
-            {formatSyncTime(lastSync.completedAt)}
+          <div className="flex items-center gap-2 text-sm text-gray-700 font-medium mb-2">
+            <span>{formatSyncTime(lastSync.completedAt)}</span>
+            {lastSync.syncedBy && (
+              <span className="text-xs text-gray-400 font-normal">by {lastSync.syncedBy}</span>
+            )}
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
             <div className="bg-white rounded-md border border-gray-200 px-3 py-2 text-center">
@@ -127,7 +131,11 @@ function SyncSection({ employeeId }: { employeeId: string }) {
               } catch {}
             }, 600);
             try {
-              const res = await fetch("/api/dev/sync", { method: "POST" });
+              const res = await fetch("/api/dev/sync", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ syncedBy: employeeName }),
+              });
               const data = await res.json();
               stopPolling();
               if (data.status === "complete") {
@@ -139,6 +147,7 @@ function SyncSection({ employeeId }: { employeeId: string }) {
                   pprItemsSynced: data.pprItemsSynced ?? 0,
                   attributesSynced: data.attributesSynced ?? 0,
                   relatedItemsSynced: data.relatedItemsSynced ?? 0,
+                  syncedBy: data.syncedBy ?? "",
                   completedAt: data.completedAt ?? new Date().toISOString(),
                   success: true,
                 });
@@ -287,7 +296,7 @@ export default function AdminPage() {
       </div>
 
       <div className="space-y-6">
-        <SyncSection employeeId={employee.id} />
+        <SyncSection employeeName={`${employee.firstName} ${employee.lastName}`} />
         <HeroImageSection employeeId={employee.id} />
       </div>
     </div>

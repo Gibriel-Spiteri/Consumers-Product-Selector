@@ -20,6 +20,7 @@ export interface SyncResult {
   pprItemsSynced: number;
   attributesSynced: number;
   relatedItemsSynced: number;
+  syncedBy: string;
   completedAt: string;
 }
 
@@ -72,7 +73,7 @@ function topologicalSortCategories(categories: NetSuiteCategory[]): NetSuiteCate
   return sorted;
 }
 
-export async function syncFromNetSuite(): Promise<SyncResult> {
+export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<SyncResult> {
   if (!isNetSuiteConfigured()) {
     return {
       success: false,
@@ -83,6 +84,7 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
       pprItemsSynced: 0,
       attributesSynced: 0,
       relatedItemsSynced: 0,
+      syncedBy,
       completedAt: "",
     };
   }
@@ -328,6 +330,7 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
       pprItemsSynced,
       attributesSynced,
       relatedItemsSynced,
+      syncedBy,
       completedAt: new Date().toISOString(),
     };
     lastSyncResult = result;
@@ -346,6 +349,7 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
       pprItemsSynced: 0,
       attributesSynced: 0,
       relatedItemsSynced: 0,
+      syncedBy,
       completedAt: new Date().toISOString(),
     };
   }

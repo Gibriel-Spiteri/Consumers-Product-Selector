@@ -10,8 +10,9 @@ router.get("/healthz", (_req, res) => {
   res.json(data);
 });
 
-router.post("/dev/sync", async (_req, res) => {
-  const result = await triggerManualSync();
+router.post("/dev/sync", async (req, res) => {
+  const syncedBy = req.body?.syncedBy as string | undefined;
+  const result = await triggerManualSync(syncedBy);
   res.json(result);
 });
 
