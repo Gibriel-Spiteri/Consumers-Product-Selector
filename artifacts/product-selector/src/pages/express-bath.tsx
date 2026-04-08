@@ -350,44 +350,43 @@ export default function ExpressBathPage() {
         </div>
       </div>
 
-      {parentCategories.length > 1 && (
-        <div className="flex items-center gap-2 mb-6 overflow-x-auto">
-          <button
-            onClick={() => setActiveCategoryId(null)}
-            className={cn(
-              "flex items-center gap-1.5 text-[13px] font-medium px-4 py-2 rounded-full transition-all border whitespace-nowrap",
-              activeCategoryId === null
-                ? "bg-blue-600 border-blue-600 text-white"
-                : "bg-white border-gray-200 text-gray-600 hover:border-blue-300 hover:text-blue-600"
-            )}
-          >
-            All
-            <span className={cn("text-[11px] font-semibold rounded-full px-1.5 py-0.5", activeCategoryId === null ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-400")}>
-              {products.length}
-            </span>
-          </button>
-          {parentCategories.map(cat => (
+      <div className="flex items-center gap-2 mb-6">
+        {parentCategories.length > 1 && (
+          <>
             <button
-              key={cat.id}
-              onClick={() => setActiveCategoryId(activeCategoryId === cat.id ? null : cat.id)}
+              onClick={() => setActiveCategoryId(null)}
               className={cn(
                 "flex items-center gap-1.5 text-[13px] font-medium px-4 py-2 rounded-full transition-all border whitespace-nowrap",
-                activeCategoryId === cat.id
+                activeCategoryId === null
                   ? "bg-blue-600 border-blue-600 text-white"
                   : "bg-white border-gray-200 text-gray-600 hover:border-blue-300 hover:text-blue-600"
               )}
             >
-              {cat.name}
-              <span className={cn("text-[11px] font-semibold rounded-full px-1.5 py-0.5", activeCategoryId === cat.id ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-400")}>
-                {cat.count}
+              All
+              <span className={cn("text-[11px] font-semibold rounded-full px-1.5 py-0.5", activeCategoryId === null ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-400")}>
+                {products.length}
               </span>
             </button>
-          ))}
-        </div>
-      )}
-
-      <div className="flex items-center gap-3 mb-6">
-        <div className="relative w-64">
+            {parentCategories.map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => setActiveCategoryId(activeCategoryId === cat.id ? null : cat.id)}
+                className={cn(
+                  "flex items-center gap-1.5 text-[13px] font-medium px-4 py-2 rounded-full transition-all border whitespace-nowrap",
+                  activeCategoryId === cat.id
+                    ? "bg-blue-600 border-blue-600 text-white"
+                    : "bg-white border-gray-200 text-gray-600 hover:border-blue-300 hover:text-blue-600"
+                )}
+              >
+                {cat.name}
+                <span className={cn("text-[11px] font-semibold rounded-full px-1.5 py-0.5", activeCategoryId === cat.id ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-400")}>
+                  {cat.count}
+                </span>
+              </button>
+            ))}
+          </>
+        )}
+        <div className="relative w-64 ml-auto shrink-0">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
