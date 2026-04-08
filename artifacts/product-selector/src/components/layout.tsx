@@ -1,82 +1,13 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import { Search, Loader2, ChevronRight, ChevronDown, Package, Folders, Copy, Check, RefreshCw, ClipboardList, LogOut, Settings } from "lucide-react";
+import { Search, Loader2, ChevronRight, ChevronDown, Package, Folders, Copy, Check, ClipboardList, LogOut, Settings } from "lucide-react";
 import { useQuoteList } from "@/context/quote-list-context";
 import { useAuth } from "@/context/auth-context";
 import { useGetCategories, useSearchProducts, getSearchProductsQueryKey } from "@workspace/api-client-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
-function SyncButton() {
-  const [syncing, setSyncing] = useState(false);
-  const [progress, setProgress] = useState<{ percent: number; detail: string } | null>(null);
-  const [result, setResult] = useState<string | null>(null);
-  const qc = useQueryClient();
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const stopPolling = () => {
-    if (pollRef.current) {
-      clearInterval(pollRef.current);
-      pollRef.current = null;
-    }
-  };
-
-  useEffect(() => () => stopPolling(), []);
-
-  return (
-    <div className="relative">
-      <button
-        onClick={async () => {
-          if (syncing) return;
-          setSyncing(true);
-          setResult(null);
-          setProgress({ percent: 2, detail: "Starting…" });
-          pollRef.current = setInterval(async () => {
-            try {
-              const r = await fetch("/api/dev/sync/progress");
-              const p = await r.json();
-              if (p.stage !== "idle") setProgress({ percent: p.percent, detail: p.detail });
-            } catch {}
-          }, 600);
-          try {
-            const res = await fetch("/api/dev/sync", { method: "POST" });
-            const data = await res.json();
-            stopPolling();
-            if (data.status === "complete") {
-              setProgress({ percent: 100, detail: "Complete!" });
-              setResult(`Synced ${data.productsSynced} products`);
-              qc.invalidateQueries();
-            } else if (data.status === "already_running") {
-              setResult("Sync already running");
-            } else {
-              setResult("Sync failed");
-            }
-          } catch {
-            stopPolling();
-            setResult("Sync failed");
-          } finally {
-            setSyncing(false);
-            setTimeout(() => { setResult(null); setProgress(null); }, 4000);
-          }
-        }}
-        disabled={syncing}
-        className="flex items-center gap-1.5 bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-medium px-3 py-1.5 rounded-md transition-colors disabled:opacity-60 relative overflow-hidden"
-      >
-        {syncing && progress && (
-          <span
-            className="absolute inset-y-0 left-0 bg-amber-300/40 transition-all duration-300 ease-out"
-            style={{ width: `${progress.percent}%` }}
-          />
-        )}
-        <span className="relative flex items-center gap-1.5">
-          <RefreshCw size={12} className={syncing ? "animate-spin" : ""} />
-          {result ?? (syncing && progress ? progress.detail : "Sync NetSuite")}
-        </span>
-      </button>
-    </div>
-  );
-}
 
 function ProductStatsDebug() {
   const { data, isLoading } = useQuery({
@@ -116,10 +47,6 @@ function ProductStatsDebug() {
 
   return (
     <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-center gap-4 text-[11px] font-mono text-white/30">
-      <SyncButton />
-      <span className="w-px h-3 bg-white/15" />
-      <span className="text-[14px] text-[#02f549]">Total Products: {data.totalProducts}</span>
-      <span className="w-px h-3 bg-white/15" />
       <Link href="/uncategorized" className="hover:text-amber-400 transition-colors cursor-pointer underline underline-offset-2 text-[#ffff00] text-[14px]">
         Without Category: {data.productsWithoutCategory}
       </Link>
