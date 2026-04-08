@@ -6,7 +6,7 @@ import {
   fetchNetSuiteItems,
   fetchItemAttributes,
   fetchRelatedItems,
-  fetchActivePprItemIds,
+  fetchActivePprItems,
   isNetSuiteConfigured,
   type NetSuiteCategory,
 } from "./netsuite";
@@ -178,9 +178,9 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
     }
 
     setProgress("items", 45, "Fetching products from NetSuite…");
-    const [nsItems, activePprItemIds] = await Promise.all([
+    const [nsItems, activePprItemsMap] = await Promise.all([
       fetchNetSuiteItems(),
-      fetchActivePprItemIds(),
+      fetchActivePprItems(),
     ]);
     logger.info({ count: nsItems.length }, "Fetched items from NetSuite");
     setProgress("items", 55, `Saving ${nsItems.length} products…`);
@@ -192,7 +192,9 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
         : null;
 
       const name = item.fullname || item.itemid;
-      const hasActivePpr = activePprItemIds.has(item.id);
+      const pprData = activePprItemsMap.get(item.id);
+      const hasActivePpr = !!pprData;
+      const pprPriceReductionRetail = pprData?.priceReductionRetail ?? null;
 
       const existing = await db
         .select()
@@ -216,6 +218,7 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
             quantityAvailable: item.quantityAvailable ?? null,
             noReorder: item.noReorder ? 1 : 0,
             hasActivePpr: hasActivePpr,
+            pprPriceReductionRetail: pprPriceReductionRetail != null ? String(pprPriceReductionRetail) : null,
             isExpressBath: item.isExpressBath ?? false,
             isSpecialOrderStock: item.isSpecialOrderStock ?? false,
             categoryId: categoryDbId,
@@ -237,6 +240,7 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
           quantityAvailable: item.quantityAvailable ?? null,
           noReorder: item.noReorder ? 1 : 0,
           hasActivePpr: hasActivePpr,
+          pprPriceReductionRetail: pprPriceReductionRetail != null ? String(pprPriceReductionRetail) : null,
           isExpressBath: item.isExpressBath ?? false,
           isSpecialOrderStock: item.isSpecialOrderStock ?? false,
           categoryId: categoryDbId,
@@ -325,7 +329,7 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
     setProgress("done", 100, "Sync complete!");
     logger.info({ categoriesSynced, productsSynced }, "NetSuite sync complete");
 
-    const pprItemsSynced = activePprItemIds.size;
+    const pprItemsSynced = activePprItemsMap.size;
 
     const result: SyncResult = {
       success: true,

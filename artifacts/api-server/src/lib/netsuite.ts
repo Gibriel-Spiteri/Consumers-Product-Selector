@@ -363,21 +363,37 @@ function mapItemRow(row: SuiteQLItemRow): NetSuiteItem {
   };
 }
 
-export async function fetchActivePprItemIds(): Promise<Set<string>> {
+export interface PprItemData {
+  priceReductionRetail: number | null;
+}
+
+export async function fetchActivePprItems(): Promise<Map<string, PprItemData>> {
   try {
-    const result = await executeSuiteQL<{ custrecord_ppritem_item: string }>(
-      `SELECT DISTINCT pi.custrecord_ppritem_item
+    const result = await executeSuiteQL<{
+      custrecord_ppritem_item: string;
+      custrecord_ppr_pricereddisplay_ret: string | null;
+    }>(
+      `SELECT pi.custrecord_ppritem_item,
+              ppr.custrecord_ppr_pricereddisplay_ret
        FROM customrecord_ppritem pi
        INNER JOIN customrecord_ppr ppr ON ppr.id = pi.custrecord_ppritem_ppr
        WHERE BUILTIN.DF(ppr.custrecord_ppr_status) = 'Active'
          AND pi.isinactive = 'F'`
     );
-    const ids = new Set(result.items.map(r => String(r.custrecord_ppritem_item)));
-    logger.info({ count: ids.size }, "Fetched active PPR item IDs from NetSuite");
-    return ids;
+    const map = new Map<string, PprItemData>();
+    for (const r of result.items) {
+      const id = String(r.custrecord_ppritem_item);
+      const raw = r.custrecord_ppr_pricereddisplay_ret;
+      const priceReductionRetail = raw != null ? Math.abs(parseFloat(raw)) : null;
+      if (!map.has(id)) {
+        map.set(id, { priceReductionRetail });
+      }
+    }
+    logger.info({ count: map.size }, "Fetched active PPR items from NetSuite");
+    return map;
   } catch (err) {
     logger.warn({ err }, "Failed to fetch PPR data — skipping PPR flags");
-    return new Set();
+    return new Map();
   }
 }
 

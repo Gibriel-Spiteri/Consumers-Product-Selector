@@ -7,6 +7,7 @@ import { useCategoryPath } from "@/hooks/use-category-path";
 import ProductModal from "@/components/product-modal";
 import { cn } from "@/lib/utils";
 import { useQuoteList } from "@/context/quote-list-context";
+import { PprPriceTooltip } from "@/components/ppr-price-tooltip";
 
 interface Product {
   id: number;
@@ -20,6 +21,7 @@ interface Product {
   fullImageUrl?: string | null;
   quantityAvailable?: number | null;
   hasActivePpr?: boolean;
+  pprPriceReductionRetail?: number | null;
   isSpecialOrderStock?: boolean;
   attributes?: Array<{ name: string; value: string }>;
 }
@@ -157,13 +159,13 @@ function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: P
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div>
                 {p.price ? (
-                  <>
+                  <PprPriceTooltip price={Number(p.price)} pprPriceReductionRetail={p.pprPriceReductionRetail} hasActivePpr={p.hasActivePpr}>
                     <p className={cn("text-[10px] font-semibold uppercase tracking-widest", p.hasActivePpr ? "text-emerald-600" : "text-gray-400")}>{p.hasActivePpr ? "Clearance" : "Our Price"}</p>
                     <p className={cn("font-semibold", p.hasActivePpr ? "text-emerald-600" : "text-gray-900")}>${Number(p.price).toFixed(2)}</p>
                     {p.retailPrice != null && (
                       <p className="text-[11px] text-gray-400">Retail <span className="line-through">${Number(p.retailPrice).toFixed(2)}</span></p>
                     )}
-                  </>
+                  </PprPriceTooltip>
                 ) : (
                   <span className="text-gray-300 font-normal text-sm">—</span>
                 )}
@@ -218,12 +220,12 @@ function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: P
                 </td>
                 <td className="px-5 py-3 text-right whitespace-nowrap">
                   {p.price ? (
-                    <div>
+                    <PprPriceTooltip price={Number(p.price)} pprPriceReductionRetail={p.pprPriceReductionRetail} hasActivePpr={!!p.hasActivePpr}>
                       <p className={cn("font-semibold", p.hasActivePpr ? "text-emerald-600" : "text-gray-900")}>${Number(p.price).toFixed(2)}</p>
                       {p.retailPrice != null && (
                         <p className="text-[11px] text-gray-400">Retail <span className="line-through">${Number(p.retailPrice).toFixed(2)}</span></p>
                       )}
-                    </div>
+                    </PprPriceTooltip>
                   ) : <span className="text-gray-300 font-normal">—</span>}
                 </td>
                 <td className="px-5 py-3 whitespace-nowrap">

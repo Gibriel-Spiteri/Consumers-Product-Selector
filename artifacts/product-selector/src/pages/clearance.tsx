@@ -5,6 +5,7 @@ import { ChevronRight, Loader2, ImageOff, LayoutList, LayoutGrid, Copy, Check, P
 import ProductModal from "@/components/product-modal";
 import { cn } from "@/lib/utils";
 import { useQuoteList } from "@/context/quote-list-context";
+import { PprPriceTooltip } from "@/components/ppr-price-tooltip";
 
 interface Product {
   id: number;
@@ -18,6 +19,7 @@ interface Product {
   fullImageUrl?: string | null;
   quantityAvailable?: number | null;
   hasActivePpr?: boolean;
+  pprPriceReductionRetail?: number | null;
   isSpecialOrderStock?: boolean;
 }
 
@@ -147,13 +149,13 @@ function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: P
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div>
                 {p.price ? (
-                  <>
+                  <PprPriceTooltip price={Number(p.price)} pprPriceReductionRetail={p.pprPriceReductionRetail} hasActivePpr={true}>
                     <p className="text-[10px] font-semibold uppercase tracking-widest text-emerald-600">Clearance</p>
                     <p className="font-semibold text-emerald-600">${Number(p.price).toFixed(2)}</p>
                     {p.retailPrice != null && (
                       <p className="text-[11px] text-gray-400">Retail <span className="line-through">${Number(p.retailPrice).toFixed(2)}</span></p>
                     )}
-                  </>
+                  </PprPriceTooltip>
                 ) : (
                   <span className="text-gray-300 font-normal text-sm">—</span>
                 )}
@@ -208,12 +210,12 @@ function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: P
                 </td>
                 <td className="px-5 py-3 text-right whitespace-nowrap">
                   {p.price ? (
-                    <div>
+                    <PprPriceTooltip price={Number(p.price)} pprPriceReductionRetail={p.pprPriceReductionRetail} hasActivePpr={true}>
                       <p className="font-semibold text-emerald-600">${Number(p.price).toFixed(2)}</p>
                       {p.retailPrice != null && (
                         <p className="text-[11px] text-gray-400">Retail <span className="line-through">${Number(p.retailPrice).toFixed(2)}</span></p>
                       )}
-                    </div>
+                    </PprPriceTooltip>
                   ) : <span className="text-gray-300 font-normal">—</span>}
                 </td>
                 <td className="px-5 py-3 whitespace-nowrap">

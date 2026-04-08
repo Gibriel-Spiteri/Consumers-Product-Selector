@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ImageOff, Copy, Check, ChevronLeft, ChevronRight, Loader2, X, ZoomIn, Plus, Minus, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuoteList } from "@/context/quote-list-context";
+import { PprPriceTooltip } from "@/components/ppr-price-tooltip";
 
 interface Product {
   id: number;
@@ -25,6 +26,7 @@ interface FullProduct extends Product {
   manufacturer: string | null;
   quantityAvailable: number | null;
   hasActivePpr?: boolean;
+  pprPriceReductionRetail?: number | null;
   features: string[] | null;
   additionalImages?: string[] | null;
 }
@@ -286,7 +288,9 @@ function RelatedMiniCard({ product, onSelect }: { product: FullProduct; onSelect
           {product.name}
         </p>
         {displayPrice != null ? (
-          <p className={cn("text-[13px] font-semibold", product.hasActivePpr ? "text-emerald-600" : "text-gray-900")}>${Number(displayPrice).toFixed(2)}</p>
+          <PprPriceTooltip price={Number(displayPrice)} pprPriceReductionRetail={product.pprPriceReductionRetail} hasActivePpr={!!product.hasActivePpr}>
+            <p className={cn("text-[13px] font-semibold", product.hasActivePpr ? "text-emerald-600" : "text-gray-900")}>${Number(displayPrice).toFixed(2)}</p>
+          </PprPriceTooltip>
         ) : (
           <p className="text-[12px] text-gray-300">—</p>
         )}
@@ -552,7 +556,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                       {/* Pricing */}
                       <div className="mb-5">
                         {full?.price != null ? (
-                          <>
+                          <PprPriceTooltip price={Number(full.price)} pprPriceReductionRetail={full.pprPriceReductionRetail} hasActivePpr={!!full.hasActivePpr}>
                             <p className={cn("text-[10px] font-semibold uppercase tracking-widest mb-1", full.hasActivePpr ? "text-emerald-600" : "text-gray-400")}>{full.hasActivePpr ? "Clearance" : "Our Price"}</p>
                             <p className={cn("text-3xl font-bold mb-2", full.hasActivePpr ? "text-emerald-600" : "text-gray-900")}>
                               ${Number(full.price).toFixed(2)}
@@ -562,7 +566,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                                 Retail <span className="line-through">${Number(full.retailPrice).toFixed(2)}</span>
                               </p>
                             )}
-                          </>
+                          </PprPriceTooltip>
                         ) : (
                           <p className="text-gray-400 text-xl font-normal">Call for price</p>
                         )}
