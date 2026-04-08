@@ -124,7 +124,7 @@ function ProductStatsDebug() {
 function QuoteListBadge() {
   const { totalLineItems } = useQuoteList();
   return (
-    <Link href="/list" className="relative flex items-center justify-center w-9 h-9 rounded-lg hover:bg-gray-100 transition-colors mr-3 group" title="Quote List">
+    <Link href="/list" className="relative flex items-center justify-center w-9 h-9 rounded-lg hover:bg-gray-100 transition-colors group" title="Quote List">
       <ClipboardList size={18} className="text-gray-500 group-hover:text-gray-700 transition-colors" />
       {totalLineItems > 0 && (
         <span className="absolute -top-0.5 -right-0.5 bg-amber-500 text-white text-[10px] font-bold min-w-[18px] h-[18px] flex items-center justify-center rounded-full px-1">
@@ -140,7 +140,7 @@ function EmployeeBadge() {
   if (!employee) return null;
 
   return (
-    <div className="flex items-center gap-2 mr-3">
+    <div className="flex items-center gap-2">
       <span className="text-[12px] text-gray-500 hidden lg:inline">
         {employee.firstName} {employee.lastName}
       </span>
@@ -328,8 +328,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         className="bg-white border-b border-gray-200 sticky top-0 z-40"
         onMouseLeave={handleMouseLeaveNav}
       >
-        {/* Top row: logo + search (centered) + actions */}
-        <div className="max-w-screen-xl mx-auto px-6 h-[65px] flex items-center relative">
+        {/* Top row: logo | search | actions */}
+        <div className="max-w-screen-xl mx-auto px-6 h-[65px] flex items-center gap-4 relative">
           <Link href="/" className="flex items-baseline gap-2 shrink-0 group">
             <span className="font-bold text-gray-900 tracking-tight group-hover:text-primary transition-colors text-[20px]">
               CONSUMERS
@@ -339,11 +339,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </span>
           </Link>
 
-          <QuoteListBadge />
-
-          <EmployeeBadge />
-
-          <div className="w-[500px]" ref={searchContainerRef}>
+          <div className="flex-1 max-w-[500px] mx-auto" ref={searchContainerRef}>
             <form onSubmit={handleSearch} className="relative flex items-center">
               <Search size={14} className="absolute left-3 text-gray-400 pointer-events-none z-10" />
               <input
@@ -517,6 +513,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </AnimatePresence>
           </div>
 
+          <div className="flex items-center gap-1 shrink-0">
+            <QuoteListBadge />
+            <EmployeeBadge />
+          </div>
         </div>
 
         {/* Bottom row: nav tabs (visually part of the same header) */}
