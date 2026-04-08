@@ -591,6 +591,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   ))}
                 </ul>
                 <Link
+                  href="/express-bath"
+                  onClick={() => { setIsHoveringNav(false); setActiveTab(null); }}
+                  className="flex-shrink-0 flex items-center h-[50px] px-4 font-semibold uppercase tracking-widest text-blue-600 hover:text-blue-700 transition-colors text-[13px]"
+                >
+                  Express Bath
+                </Link>
+                <Link
                   href="/clearance"
                   onClick={() => { setIsHoveringNav(false); setActiveTab(null); }}
                   className="flex-shrink-0 flex items-center h-[50px] px-4 font-semibold uppercase tracking-widest text-emerald-600 hover:text-emerald-700 transition-colors text-[13px]"

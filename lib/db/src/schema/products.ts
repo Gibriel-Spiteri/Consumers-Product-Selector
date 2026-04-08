@@ -17,6 +17,7 @@ export const productsTable = pgTable("products", {
   quantityAvailable: integer("quantity_available"),
   noReorder: integer("no_reorder").default(0),
   hasActivePpr: boolean("has_active_ppr").default(false),
+  isExpressBath: boolean("is_express_bath").default(false),
   categoryId: integer("category_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

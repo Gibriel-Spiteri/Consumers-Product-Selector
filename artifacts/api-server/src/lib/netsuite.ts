@@ -300,6 +300,7 @@ export interface NetSuiteItem {
   manufacturer?: string | null;
   quantityAvailable?: number | null;
   noReorder?: boolean;
+  isExpressBath?: boolean;
   sitecategoryid?: string | null;
 }
 
@@ -336,6 +337,7 @@ interface SuiteQLItemRow {
   prodline: string | null;
   quantityavailable: string | null;
   isnoreorder: string | null;
+  isexpressbath: string | null;
   sitecategoryid: string | null;
 }
 
@@ -353,6 +355,7 @@ function mapItemRow(row: SuiteQLItemRow): NetSuiteItem {
     manufacturer: row.prodline ?? null,
     quantityAvailable: row.quantityavailable != null ? Number(row.quantityavailable) : null,
     noReorder: row.isnoreorder === "T",
+    isExpressBath: row.isexpressbath === "T",
     sitecategoryid: row.sitecategoryid ? String(row.sitecategoryid) : null,
   };
 }
@@ -390,6 +393,7 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
       BUILTIN.DF(item.custitem_prodline) AS prodline,
       item.quantityavailable,
       item.custitem_noreorders AS isnoreorder,
+      item.custitem_expressbath AS isexpressbath,
       COALESCE(isc_def.category, isc_any.category) AS sitecategoryid
     FROM InventoryItem item
     LEFT JOIN pricing p ON p.item = item.id AND p.pricelevel = 1 AND p.quantity = 1
@@ -415,6 +419,7 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
         BUILTIN.DF(item.custitem_prodline) AS prodline,
         NULL AS quantityavailable,
         NULL AS isnoreorder,
+        item.custitem_expressbath AS isexpressbath,
         COALESCE(isc_def.category, isc_any.category) AS sitecategoryid
       FROM KitItem item
       LEFT JOIN pricing p ON p.item = item.id AND p.pricelevel = 1 AND p.quantity = 1

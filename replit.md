@@ -161,6 +161,16 @@ Login system using NetSuite employee records:
 - **Admin check**: `custentity_webstore_admin = 'T'` on Employee record
 - **Admin page**: `/admin` route with NetSuite sync controls and homepage hero image management
 
+### Express Bath Program
+
+Virtual category page for items flagged with `custitem_expressbath = 'T'` in NetSuite:
+
+- **Schema**: `is_express_bath` boolean column on `products` table (default false)
+- **Sync**: Field fetched from both InventoryItem and KitItem SuiteQL queries during sync
+- **API endpoint**: `GET /api/products/express-bath` — returns only Express Bath-flagged products
+- **Frontend page**: `/express-bath` route with grid/list views, stock filter, Add to List
+- **Nav link**: "Express Bath" in blue, right-justified in category nav bar (left of Clearance)
+
 ### Quote List Feature
 
 Browser-based quote list with NetSuite estimate push capability:

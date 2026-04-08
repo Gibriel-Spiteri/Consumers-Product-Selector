@@ -363,6 +363,37 @@ router.get("/products/clearance", async (_req, res) => {
   res.json({ products: mapped, usingMockData: false });
 });
 
+router.get("/products/express-bath", async (_req, res) => {
+  const products = await db
+    .select()
+    .from(productsTable)
+    .where(and(sql`${productsTable.isExpressBath} = true`, notDiscontinued));
+
+  const netsuiteIds = products.map((p) => p.netsuiteId).filter((id): id is string => id != null);
+  const liveInventory = await fetchLiveInventory(netsuiteIds);
+
+  const mapped = products.map((p) => {
+    const liveQty = p.netsuiteId ? liveInventory.get(p.netsuiteId) : undefined;
+    return {
+      id: p.id,
+      name: p.salesdescription || p.name,
+      sku: p.sku ?? null,
+      price: p.price ? parseFloat(p.price) : null,
+      retailPrice: p.retailPrice ? parseFloat(p.retailPrice) : null,
+      categoryId: p.categoryId ?? null,
+      netsuiteId: p.netsuiteId ?? null,
+      imageUrl: p.imageUrl ?? null,
+      fullImageUrl: p.fullImageUrl ?? null,
+      quantityAvailable: liveQty ?? p.quantityAvailable ?? null,
+      hasActivePpr: p.hasActivePpr ?? false,
+    };
+  });
+
+  mapped.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
+
+  res.json({ products: mapped, usingMockData: false });
+});
+
 router.get("/products/stats", async (_req, res) => {
   const totalResult = await db
     .select({ count: sql<number>`count(*)` })

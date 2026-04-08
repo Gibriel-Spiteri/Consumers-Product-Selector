@@ -209,6 +209,7 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
             quantityAvailable: item.quantityAvailable ?? null,
             noReorder: item.noReorder ? 1 : 0,
             hasActivePpr: hasActivePpr,
+            isExpressBath: item.isExpressBath ?? false,
             categoryId: categoryDbId,
             updatedAt: new Date(),
           })
@@ -228,6 +229,7 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
           quantityAvailable: item.quantityAvailable ?? null,
           noReorder: item.noReorder ? 1 : 0,
           hasActivePpr: hasActivePpr,
+          isExpressBath: item.isExpressBath ?? false,
           categoryId: categoryDbId,
         });
       }
