@@ -261,6 +261,10 @@ export default function ExpressBathPage() {
   const products = data?.products ?? [];
 
   const parentCategories = useMemo(() => {
+    const displayNames: Record<string, string> = {
+      "Bathroom Sinks": "Sinks",
+      "Toilets": "Fixtures",
+    };
     const map = new Map<number, { id: number; name: string; count: number }>();
     for (const p of products) {
       if (p.categoryParentId && p.categoryParentName) {
@@ -268,7 +272,8 @@ export default function ExpressBathPage() {
         if (existing) {
           existing.count++;
         } else {
-          map.set(p.categoryParentId, { id: p.categoryParentId, name: p.categoryParentName, count: 1 });
+          const label = displayNames[p.categoryParentName] ?? p.categoryParentName;
+          map.set(p.categoryParentId, { id: p.categoryParentId, name: label, count: 1 });
         }
       }
     }
