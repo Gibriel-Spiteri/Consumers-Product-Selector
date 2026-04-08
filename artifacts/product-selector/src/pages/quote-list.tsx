@@ -239,11 +239,6 @@ export default function QuoteListPage() {
             <ClipboardList size={24} className="text-amber-500" />
             Quote List
           </h1>
-          {items.length > 0 && (
-            <p className="text-[13px] text-gray-400 mt-1">
-              {totalLineItems} {totalLineItems === 1 ? "item" : "items"} · {totalItems} total units · ${fmtPrice(grandTotal)}
-            </p>
-          )}
         </div>
         {items.length > 0 && (
           <button
