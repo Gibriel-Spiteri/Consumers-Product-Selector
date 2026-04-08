@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useParams, Link } from "wouter";
 import { useGetCategories, getGetCategoryProductsQueryOptions } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, PackageX, Loader2, ImageOff, LayoutList, LayoutGrid, Copy, Check, X, Filter, ChevronDown, Plus } from "lucide-react";
+import { ChevronRight, PackageX, Loader2, ImageOff, LayoutList, LayoutGrid, Copy, Check, X, Filter, ChevronDown, Plus, Search } from "lucide-react";
 import { useCategoryPath } from "@/hooks/use-category-path";
 import ProductModal from "@/components/product-modal";
 import { cn } from "@/lib/utils";
@@ -351,10 +351,12 @@ export default function CategoryProducts() {
   const [view, setView] = useState<"list" | "grid">("grid");
   const [inStockOnly, setInStockOnly] = useState(false);
   const [activeFilters, setActiveFilters] = useState<Map<string, Set<string>>>(new Map());
+  const [refineQuery, setRefineQuery] = useState("");
 
   useEffect(() => {
     setActiveFilters(new Map());
     setInStockOnly(false);
+    setRefineQuery("");
   }, [id]);
 
   const { data: productsData, isLoading: isLoadingProducts } = useQuery({
@@ -412,10 +414,18 @@ export default function CategoryProducts() {
       filtered = filtered.filter(p => p.quantityAvailable != null && p.quantityAvailable > 0);
     }
 
-    return filtered;
-  }, [allProducts, activeFilters, inStockOnly]);
+    if (refineQuery.trim()) {
+      const q = refineQuery.trim().toLowerCase();
+      filtered = filtered.filter(p =>
+        p.name.toLowerCase().includes(q) ||
+        (p.sku && p.sku.toLowerCase().includes(q))
+      );
+    }
 
-  const hasActiveFilters = activeFilters.size > 0 || inStockOnly;
+    return filtered;
+  }, [allProducts, activeFilters, inStockOnly, refineQuery]);
+
+  const hasActiveFilters = activeFilters.size > 0 || inStockOnly || refineQuery.trim().length > 0;
 
   return (
     <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10">
@@ -505,12 +515,34 @@ export default function CategoryProducts() {
         </div>
       </div>
 
-      <FacetBar
-        facets={facets}
-        activeFilters={activeFilters}
-        onToggle={toggleFilter}
-        onClear={clearFilters}
-      />
+      <div className="flex items-center gap-3 flex-wrap mb-1">
+        <div className="flex-1 min-w-0">
+          <FacetBar
+            facets={facets}
+            activeFilters={activeFilters}
+            onToggle={toggleFilter}
+            onClear={clearFilters}
+          />
+        </div>
+        <div className="relative w-64 shrink-0">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Refine results..."
+            value={refineQuery}
+            onChange={e => setRefineQuery(e.target.value)}
+            className="w-full pl-9 pr-8 py-2 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400 transition-all placeholder:text-gray-300"
+          />
+          {refineQuery && (
+            <button
+              onClick={() => setRefineQuery("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 transition-colors"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* Product List / Grid */}
       {isLoadingProducts ? (
@@ -530,7 +562,7 @@ export default function CategoryProducts() {
                 No items match the current filters. Try adjusting or clearing them.
               </p>
               <button
-                onClick={() => { clearFilters(); setInStockOnly(false); }}
+                onClick={() => { clearFilters(); setInStockOnly(false); setRefineQuery(""); }}
                 className="px-5 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-colors"
               >
                 Clear All Filters
