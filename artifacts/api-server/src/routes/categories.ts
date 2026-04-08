@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { categoriesTable, productsTable, productAttributesTable, relatedItemsTable } from "@workspace/db";
-import { eq, or, ilike, sql, inArray } from "drizzle-orm";
+import { eq, or, and, ilike, sql, inArray } from "drizzle-orm";
 import {
   GetCategoriesResponse,
   GetCategoryProductsResponse,
@@ -11,6 +11,8 @@ import { MOCK_CATEGORIES, MOCK_PRODUCTS, MOCK_STOCK } from "../lib/mockData";
 import { fetchLiveInventory, probeAdditionalImages } from "../lib/netsuite";
 
 const router: IRouter = Router();
+
+const notDiscontinued = sql`NOT (${productsTable.noReorder} = 1 AND (${productsTable.quantityAvailable} IS NULL OR ${productsTable.quantityAvailable} <= 0))`;
 
 interface CategoryNode {
   id: number;
@@ -103,7 +105,7 @@ router.get("/categories", async (_req, res) => {
       count: sql<number>`count(*)::int`,
     })
     .from(productsTable)
-    .where(sql`${productsTable.categoryId} IS NOT NULL`)
+    .where(sql`${productsTable.categoryId} IS NOT NULL AND ${notDiscontinued}`)
     .groupBy(productsTable.categoryId);
   const productCounts = new Map(productCountRows.map(r => [r.categoryId!, r.count]));
 
@@ -171,7 +173,7 @@ router.get("/categories/:categoryId/products", async (req, res) => {
   const products = await db
     .select()
     .from(productsTable)
-    .where(inArray(productsTable.categoryId, descendantIds));
+    .where(and(inArray(productsTable.categoryId, descendantIds), notDiscontinued));
 
   const netsuiteIds = products.map((p) => p.netsuiteId).filter((id): id is string => id != null);
   const liveInventory = await fetchLiveInventory(netsuiteIds);
@@ -272,7 +274,7 @@ router.get("/products/search", async (req, res) => {
   const products = await db
     .select()
     .from(productsTable)
-    .where(or(ilike(productsTable.name, `%${q}%`), ilike(productsTable.sku, `%${q}%`), ilike(productsTable.salesdescription, `%${q}%`)));
+    .where(and(or(ilike(productsTable.name, `%${q}%`), ilike(productsTable.sku, `%${q}%`), ilike(productsTable.salesdescription, `%${q}%`)), notDiscontinued));
 
   const netsuiteIds = products.map((p) => p.netsuiteId).filter((id): id is string => id != null);
   const liveInventory = await fetchLiveInventory(netsuiteIds);
@@ -301,7 +303,7 @@ router.get("/products/uncategorized", async (_req, res) => {
   const products = await db
     .select()
     .from(productsTable)
-    .where(sql`${productsTable.categoryId} IS NULL`);
+    .where(and(sql`${productsTable.categoryId} IS NULL`, notDiscontinued));
 
   const netsuiteIds = products.map((p) => p.netsuiteId).filter((id): id is string => id != null);
   const liveInventory = await fetchLiveInventory(netsuiteIds);
@@ -330,12 +332,13 @@ router.get("/products/uncategorized", async (_req, res) => {
 router.get("/products/stats", async (_req, res) => {
   const totalResult = await db
     .select({ count: sql<number>`count(*)` })
-    .from(productsTable);
+    .from(productsTable)
+    .where(notDiscontinued);
 
   const orphanResult = await db
     .select({ count: sql<number>`count(*)` })
     .from(productsTable)
-    .where(sql`${productsTable.categoryId} IS NULL`);
+    .where(and(sql`${productsTable.categoryId} IS NULL`, notDiscontinued));
 
   const lastUpdatedResult = await db
     .select({ maxUpdated: sql<string>`max(${productsTable.updatedAt})` })
@@ -442,7 +445,7 @@ router.get("/products/:productId/related", async (req, res) => {
   const relatedProducts = await db
     .select()
     .from(productsTable)
-    .where(inArray(productsTable.netsuiteId!, relatedNetsuiteIds));
+    .where(and(inArray(productsTable.netsuiteId!, relatedNetsuiteIds), notDiscontinued));
 
   const productMap = new Map(relatedProducts.map(p => [p.netsuiteId, p]));
 

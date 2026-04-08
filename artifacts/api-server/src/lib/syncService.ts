@@ -188,6 +188,7 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
             description: item.description ?? null,
             manufacturer: item.manufacturer ?? null,
             quantityAvailable: item.quantityAvailable ?? null,
+            noReorder: item.noReorder ? 1 : 0,
             categoryId: categoryDbId,
             updatedAt: new Date(),
           })
@@ -205,6 +206,7 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
           description: item.description ?? null,
           manufacturer: item.manufacturer ?? null,
           quantityAvailable: item.quantityAvailable ?? null,
+          noReorder: item.noReorder ? 1 : 0,
           categoryId: categoryDbId,
         });
       }

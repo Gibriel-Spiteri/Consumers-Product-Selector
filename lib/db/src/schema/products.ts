@@ -15,6 +15,7 @@ export const productsTable = pgTable("products", {
   description: text("description"),
   manufacturer: text("manufacturer"),
   quantityAvailable: integer("quantity_available"),
+  noReorder: integer("no_reorder").default(0),
   categoryId: integer("category_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
