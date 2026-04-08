@@ -157,7 +157,8 @@ function EmployeeBadge() {
         className="flex items-center gap-1.5 text-[12px] text-gray-500 hover:text-gray-700 px-2 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
       >
         <ChevronDown size={12} className={cn("transition-transform", open && "rotate-180")} />
-        {employee.firstName} {employee.lastName}
+        {employee.firstName.charAt(0).toUpperCase() + employee.firstName.slice(1).toLowerCase()}{" "}
+        {employee.lastName.charAt(0).toUpperCase() + employee.lastName.slice(1).toLowerCase()}
       </button>
       {open && (
         <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
