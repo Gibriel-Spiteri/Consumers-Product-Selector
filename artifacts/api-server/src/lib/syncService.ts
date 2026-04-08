@@ -16,6 +16,15 @@ export interface SyncResult {
   message: string;
   categoriesSynced: number;
   productsSynced: number;
+  attributesSynced: number;
+  relatedItemsSynced: number;
+  completedAt: string;
+}
+
+let lastSyncResult: SyncResult | null = null;
+
+export function getLastSyncResult(): SyncResult | null {
+  return lastSyncResult;
 }
 
 export interface SyncProgress {
@@ -69,6 +78,9 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
         "NetSuite M2M credentials not configured. Ensure NETSUITE_ACCOUNT_ID, NETSUITE_CLIENT_ID (or NETSUITE_OIDC_CLIENT_ID), NETSUITE_CERTIFICATE_ID are set, and certs/private_key.pem exists.",
       categoriesSynced: 0,
       productsSynced: 0,
+      attributesSynced: 0,
+      relatedItemsSynced: 0,
+      completedAt: "",
     };
   }
 
@@ -85,6 +97,8 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
     const netsuiteIdToDbId = new Map<string, number>();
 
     let categoriesSynced = 0;
+    let attributesSynced = 0;
+    let relatedItemsSynced = 0;
     for (const cat of sortedCategories) {
       const parentNetsuiteId = cat.parent ?? null;
 
@@ -253,6 +267,7 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
           setProgress("attributes", Math.min(pct, 92), `Saved ${Math.min(i + BATCH_SIZE, nsAttrs.length)} / ${nsAttrs.length} attributes`);
         }
       }
+      attributesSynced = nsAttrs.length;
       logger.info({ count: nsAttrs.length }, "Synced item attributes");
     } catch (err) {
       logger.error({ err }, "Item attribute sync failed (non-fatal)");
@@ -283,6 +298,7 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
           setProgress("related-items", Math.min(pct, 98), `Saved ${Math.min(i + BATCH_SIZE, nsRelated.length)} / ${nsRelated.length} related items`);
         }
       }
+      relatedItemsSynced = nsRelated.length;
       logger.info({ count: nsRelated.length }, "Synced related items");
     } catch (err) {
       logger.error({ err }, "Related items sync failed (non-fatal)");
@@ -296,7 +312,11 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
       message: "Sync completed successfully",
       categoriesSynced,
       productsSynced,
+      attributesSynced,
+      relatedItemsSynced,
+      completedAt: new Date().toISOString(),
     };
+    lastSyncResult = result;
     setTimeout(() => { currentProgress = null; }, 5000);
     return result;
   } catch (err) {
@@ -309,6 +329,9 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
         err instanceof Error ? err.message : "Unknown error during sync",
       categoriesSynced: 0,
       productsSynced: 0,
+      attributesSynced: 0,
+      relatedItemsSynced: 0,
+      completedAt: new Date().toISOString(),
     };
   }
 }

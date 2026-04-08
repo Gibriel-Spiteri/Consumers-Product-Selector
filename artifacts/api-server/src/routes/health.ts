@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { HealthCheckResponse } from "@workspace/api-zod";
 import { triggerManualSync } from "../lib/scheduler";
-import { getSyncProgress } from "../lib/syncService";
+import { getSyncProgress, getLastSyncResult } from "../lib/syncService";
 
 const router: IRouter = Router();
 
@@ -18,6 +18,11 @@ router.post("/dev/sync", async (_req, res) => {
 router.get("/dev/sync/progress", (_req, res) => {
   const progress = getSyncProgress();
   res.json(progress ?? { stage: "idle", percent: 0, detail: "" });
+});
+
+router.get("/dev/sync/last", (_req, res) => {
+  const result = getLastSyncResult();
+  res.json(result ?? null);
 });
 
 export default router;

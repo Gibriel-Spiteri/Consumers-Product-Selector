@@ -4,10 +4,35 @@ import { useQueryClient } from "@tanstack/react-query";
 import { RefreshCw, Upload, ImageIcon, Shield, ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 
+interface SyncStats {
+  categoriesSynced: number;
+  productsSynced: number;
+  attributesSynced: number;
+  relatedItemsSynced: number;
+  completedAt: string;
+  success: boolean;
+}
+
+function formatSyncTime(iso: string) {
+  if (!iso) return null;
+  const ts = iso.endsWith("Z") ? iso : iso + "Z";
+  return new Date(ts).toLocaleString("en-US", {
+    timeZone: "America/New_York",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
+}
+
 function SyncSection({ employeeId }: { employeeId: string }) {
   const [syncing, setSyncing] = useState(false);
   const [progress, setProgress] = useState<{ percent: number; detail: string } | null>(null);
   const [result, setResult] = useState<string | null>(null);
+  const [lastSync, setLastSync] = useState<SyncStats | null>(null);
   const qc = useQueryClient();
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -20,12 +45,46 @@ function SyncSection({ employeeId }: { employeeId: string }) {
 
   useEffect(() => () => stopPolling(), []);
 
+  useEffect(() => {
+    fetch("/api/dev/sync/last")
+      .then(r => r.json())
+      .then(data => { if (data) setLastSync(data); })
+      .catch(() => {});
+  }, []);
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-1">NetSuite Sync</h3>
       <p className="text-sm text-gray-500 mb-4">
         Pull the latest products, categories, and pricing from NetSuite into the local database.
       </p>
+
+      {lastSync && lastSync.completedAt && (
+        <div className="mb-4 bg-gray-50 rounded-lg p-4">
+          <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Last Sync</div>
+          <div className="text-sm text-gray-700 font-medium mb-2">
+            {formatSyncTime(lastSync.completedAt)}
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="bg-white rounded-md border border-gray-200 px-3 py-2 text-center">
+              <div className="text-lg font-bold text-gray-900">{lastSync.categoriesSynced.toLocaleString()}</div>
+              <div className="text-[11px] text-gray-400 uppercase tracking-wide">Categories</div>
+            </div>
+            <div className="bg-white rounded-md border border-gray-200 px-3 py-2 text-center">
+              <div className="text-lg font-bold text-gray-900">{lastSync.productsSynced.toLocaleString()}</div>
+              <div className="text-[11px] text-gray-400 uppercase tracking-wide">Products</div>
+            </div>
+            <div className="bg-white rounded-md border border-gray-200 px-3 py-2 text-center">
+              <div className="text-lg font-bold text-gray-900">{lastSync.attributesSynced.toLocaleString()}</div>
+              <div className="text-[11px] text-gray-400 uppercase tracking-wide">Attributes</div>
+            </div>
+            <div className="bg-white rounded-md border border-gray-200 px-3 py-2 text-center">
+              <div className="text-lg font-bold text-gray-900">{lastSync.relatedItemsSynced.toLocaleString()}</div>
+              <div className="text-[11px] text-gray-400 uppercase tracking-wide">Related Items</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="relative">
         {syncing && progress && (
@@ -69,6 +128,14 @@ function SyncSection({ employeeId }: { employeeId: string }) {
               if (data.status === "complete") {
                 setProgress({ percent: 100, detail: "Complete!" });
                 setResult(`Successfully synced ${data.productsSynced} products`);
+                setLastSync({
+                  categoriesSynced: data.categoriesSynced ?? 0,
+                  productsSynced: data.productsSynced ?? 0,
+                  attributesSynced: data.attributesSynced ?? 0,
+                  relatedItemsSynced: data.relatedItemsSynced ?? 0,
+                  completedAt: data.completedAt ?? new Date().toISOString(),
+                  success: true,
+                });
                 qc.invalidateQueries();
               } else if (data.status === "already_running") {
                 setResult("Sync is already running");
