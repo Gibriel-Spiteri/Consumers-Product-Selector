@@ -572,23 +572,32 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 Loading…
               </div>
             ) : (
-              <ul className="flex items-center overflow-x-auto">
-                {topLevelCategories.map(cat => (
-                  <li key={cat.id} className="flex-shrink-0 relative">
-                    <Link
-                      href={`/category/${cat.id}`}
-                      onMouseEnter={() => handleMouseEnterTab(cat.id)}
-                      onClick={() => { setIsHoveringNav(false); setActiveTab(null); }}
-                      className="flex items-center h-[50px] px-4 font-semibold uppercase tracking-widest transition-colors relative text-gray-900 text-[13px]"
-                    >
-                      {cat.name}
-                      {activeTab === cat.id && (
-                        <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-amber-400 rounded-full" />
-                      )}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+              <div className="flex items-center">
+                <ul className="flex items-center overflow-x-auto flex-1">
+                  {topLevelCategories.map(cat => (
+                    <li key={cat.id} className="flex-shrink-0 relative">
+                      <Link
+                        href={`/category/${cat.id}`}
+                        onMouseEnter={() => handleMouseEnterTab(cat.id)}
+                        onClick={() => { setIsHoveringNav(false); setActiveTab(null); }}
+                        className="flex items-center h-[50px] px-4 font-semibold uppercase tracking-widest transition-colors relative text-gray-900 text-[13px]"
+                      >
+                        {cat.name}
+                        {activeTab === cat.id && (
+                          <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-amber-400 rounded-full" />
+                        )}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href="/clearance"
+                  onClick={() => { setIsHoveringNav(false); setActiveTab(null); }}
+                  className="flex-shrink-0 flex items-center h-[50px] px-4 font-semibold uppercase tracking-widest text-emerald-600 hover:text-emerald-700 transition-colors text-[13px]"
+                >
+                  Clearance
+                </Link>
+              </div>
             )}
           </div>
 
