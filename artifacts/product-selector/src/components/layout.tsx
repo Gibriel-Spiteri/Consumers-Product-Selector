@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import { Search, Loader2, ChevronRight, Package, Folders, Copy, Check, RefreshCw, ClipboardList } from "lucide-react";
+import { Search, Loader2, ChevronRight, Package, Folders, Copy, Check, RefreshCw, ClipboardList, LogOut } from "lucide-react";
 import { useQuoteList } from "@/context/quote-list-context";
+import { useAuth } from "@/context/auth-context";
 import { useGetCategories, useSearchProducts, getSearchProductsQueryKey } from "@workspace/api-client-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -129,6 +130,26 @@ function QuoteListBadge() {
         </span>
       )}
     </Link>
+  );
+}
+
+function EmployeeBadge() {
+  const { employee, logout } = useAuth();
+  if (!employee) return null;
+
+  return (
+    <div className="flex items-center gap-2 mr-3">
+      <span className="text-[12px] text-gray-500 hidden lg:inline">
+        {employee.firstName} {employee.lastName}
+      </span>
+      <button
+        onClick={logout}
+        title="Sign out"
+        className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-all"
+      >
+        <LogOut size={16} />
+      </button>
+    </div>
   );
 }
 
@@ -319,6 +340,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <SyncButton />
 
           <QuoteListBadge />
+
+          <EmployeeBadge />
 
           <div className="w-[500px]" ref={searchContainerRef}>
             <form onSubmit={handleSearch} className="relative flex items-center">

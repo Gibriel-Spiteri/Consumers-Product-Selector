@@ -7,8 +7,11 @@ import CategoryProducts from "@/pages/category-products";
 import SearchPage from "@/pages/search";
 import UncategorizedProducts from "@/pages/uncategorized-products";
 import QuoteListPage from "@/pages/quote-list";
+import LoginPage from "@/pages/login";
 import NotFound from "@/pages/not-found";
 import { QuoteListProvider } from "@/context/quote-list-context";
+import { AuthProvider, useAuth } from "@/context/auth-context";
+import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -20,24 +23,46 @@ const queryClient = new QueryClient({
   },
 });
 
+function AuthGate({ children }: { children: React.ReactNode }) {
+  const { employee, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Loader2 className="animate-spin text-gray-300" size={32} />
+      </div>
+    );
+  }
+
+  if (!employee) {
+    return <LoginPage />;
+  }
+
+  return <>{children}</>;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <QuoteListProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Layout>
-            <Switch>
-              <Route path="/" component={Home} />
-              <Route path="/category/:categoryId" component={CategoryOverview} />
-              <Route path="/products/:categoryId" component={CategoryProducts} />
-              <Route path="/search/:query" component={SearchPage} />
-              <Route path="/uncategorized" component={UncategorizedProducts} />
-              <Route path="/list" component={QuoteListPage} />
-              <Route component={NotFound} />
-            </Switch>
-          </Layout>
-        </WouterRouter>
-      </QuoteListProvider>
+      <AuthProvider>
+        <AuthGate>
+          <QuoteListProvider>
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <Layout>
+                <Switch>
+                  <Route path="/" component={Home} />
+                  <Route path="/category/:categoryId" component={CategoryOverview} />
+                  <Route path="/products/:categoryId" component={CategoryProducts} />
+                  <Route path="/search/:query" component={SearchPage} />
+                  <Route path="/uncategorized" component={UncategorizedProducts} />
+                  <Route path="/list" component={QuoteListPage} />
+                  <Route component={NotFound} />
+                </Switch>
+              </Layout>
+            </WouterRouter>
+          </QuoteListProvider>
+        </AuthGate>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

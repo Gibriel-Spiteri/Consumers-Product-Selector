@@ -146,6 +146,19 @@ Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used b
 
 Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
 
+### Employee Authentication
+
+Login system using NetSuite employee records:
+
+- **Login endpoint**: `POST /api/auth/login` — validates email + password against NetSuite Employee records via SuiteQL
+- **Verify endpoint**: `POST /api/auth/verify` — checks if a stored session is still valid (employee still has access)
+- **Auth context**: `artifacts/product-selector/src/context/auth-context.tsx` — React context with localStorage session persistence
+- **Login page**: `artifacts/product-selector/src/pages/login.tsx` — email + password form
+- **Access control**: Checks `giveaccess = 'T'` (system access) and `custentity_webstore_access = 'T'` (product selector access)
+- **Password field**: `custentity_webstorepassword` on Employee record
+- **Session**: Stored in localStorage, verified against NetSuite on page load
+- **Header**: Shows employee name + logout button when authenticated
+
 ### Quote List Feature
 
 Browser-based quote list with NetSuite estimate push capability:
