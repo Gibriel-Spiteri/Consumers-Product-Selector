@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, Loader2, ImageOff, LayoutList, LayoutGrid, Copy, Check, PackageX, Plus } from "lucide-react";
+import { ChevronRight, Loader2, ImageOff, LayoutList, LayoutGrid, Copy, Check, PackageX, Plus, Search, X } from "lucide-react";
 import ProductModal from "@/components/product-modal";
 import { cn } from "@/lib/utils";
 import { useQuoteList } from "@/context/quote-list-context";
@@ -248,6 +248,7 @@ export default function ExpressBathPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [inStockOnly, setInStockOnly] = useState(false);
   const [activeCategoryId, setActiveCategoryId] = useState<number | null>(null);
+  const [refineQuery, setRefineQuery] = useState("");
 
   const { data, isLoading } = useQuery({
     queryKey: ["expressBathProducts"],
@@ -283,6 +284,13 @@ export default function ExpressBathPage() {
   let filtered = products;
   if (activeCategoryId) filtered = filtered.filter(p => p.categoryParentId === activeCategoryId);
   if (inStockOnly) filtered = filtered.filter(p => (p.quantityAvailable ?? 0) >= 1);
+  if (refineQuery.trim()) {
+    const q = refineQuery.trim().toLowerCase();
+    filtered = filtered.filter(p =>
+      p.name.toLowerCase().includes(q) ||
+      (p.sku && p.sku.toLowerCase().includes(q))
+    );
+  }
 
   if (isLoading) {
     return (
@@ -377,6 +385,27 @@ export default function ExpressBathPage() {
           ))}
         </div>
       )}
+
+      <div className="flex items-center gap-3 mb-6">
+        <div className="relative w-64">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Refine results..."
+            value={refineQuery}
+            onChange={e => setRefineQuery(e.target.value)}
+            className="w-full pl-9 pr-8 py-2 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-400/40 focus:border-blue-400 transition-all placeholder:text-gray-300"
+          />
+          {refineQuery && (
+            <button
+              onClick={() => setRefineQuery("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 transition-colors"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+      </div>
 
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-gray-400">
