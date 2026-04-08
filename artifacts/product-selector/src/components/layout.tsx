@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import { Search, Loader2, ChevronRight, Package, Folders, Copy, Check, RefreshCw, ClipboardList, LogOut, User } from "lucide-react";
+import { Search, Loader2, ChevronRight, Package, Folders, Copy, Check, RefreshCw, ClipboardList } from "lucide-react";
 import { useQuoteList } from "@/context/quote-list-context";
-import { useAuth } from "@/context/auth-context";
 import { useGetCategories, useSearchProducts, getSearchProductsQueryKey } from "@workspace/api-client-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -115,26 +114,6 @@ function ProductStatsDebug() {
           <span className="text-[14px] text-[#b0b0b0] bg-[transparent]">Inventory Levels are Live</span>
         </>
       )}
-    </div>
-  );
-}
-
-function EmployeeBadge() {
-  const { employee, logout } = useAuth();
-  if (!employee) return null;
-  return (
-    <div className="flex items-center gap-2 mr-3">
-      <div className="flex items-center gap-1.5 text-sm text-gray-600">
-        <User size={14} className="text-gray-400" />
-        <span className="font-medium max-w-[150px] truncate">{employee.name}</span>
-      </div>
-      <button
-        onClick={logout}
-        className="flex items-center gap-1 text-xs text-gray-400 hover:text-red-500 transition-colors px-1.5 py-1 rounded hover:bg-red-50"
-        title="Sign out"
-      >
-        <LogOut size={13} />
-      </button>
     </div>
   );
 }
@@ -338,8 +317,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </Link>
 
           <SyncButton />
-
-          <EmployeeBadge />
 
           <QuoteListBadge />
 
