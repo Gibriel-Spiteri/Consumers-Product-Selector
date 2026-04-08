@@ -20,18 +20,4 @@ router.get("/dev/sync/progress", (_req, res) => {
   res.json(progress ?? { stage: "idle", percent: 0, detail: "" });
 });
 
-import { executeSuiteQL } from "../lib/netsuite";
-router.get("/dev/check-admin/:name", async (req, res) => {
-  try {
-    const name = (req.params.name as string).replace(/'/g, "''");
-    const result = await executeSuiteQL<Record<string, unknown>>(
-      `SELECT id, firstname, lastname, custentity_webstorepassword, custentity_webstore_access
-       FROM Employee WHERE id = -5`
-    );
-    res.json(result.items);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 export default router;
