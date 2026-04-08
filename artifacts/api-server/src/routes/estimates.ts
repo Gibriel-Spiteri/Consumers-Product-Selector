@@ -26,7 +26,6 @@ router.get("/estimates/search", async (req, res) => {
 
     const uniqueVariants = [...new Set(searchVariants.map(v => v.replace(/'/g, "''").replace(/[%_\\]/g, "\\$&")))];
     const tranIdConditions = uniqueVariants.map(v => `t.tranid LIKE '%${v}%'`).join(" OR ");
-    const entityConditions = uniqueVariants.map(v => `BUILTIN.DF(t.entity) LIKE '%${v}%'`).join(" OR ");
 
     const result = await executeSuiteQL<{
       id: string;
@@ -44,10 +43,10 @@ router.get("/estimates/search", async (req, res) => {
         t.trandate,
         t.total
       FROM Estimate t
-      WHERE (${tranIdConditions}
-        OR ${entityConditions})
+      WHERE (${tranIdConditions})
       AND t.status NOT IN ('Estimate : Voided', 'Estimate : Declined')
       ORDER BY t.trandate DESC
+      FETCH FIRST 20 ROWS ONLY
     `);
 
     const estimates = result.items.slice(0, 20).map(row => ({
