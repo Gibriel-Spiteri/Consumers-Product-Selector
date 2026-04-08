@@ -8,7 +8,9 @@ import SearchPage from "@/pages/search";
 import UncategorizedProducts from "@/pages/uncategorized-products";
 import QuoteListPage from "@/pages/quote-list";
 import NotFound from "@/pages/not-found";
+import LoginPage from "@/pages/login";
 import { QuoteListProvider } from "@/context/quote-list-context";
+import { AuthProvider, useAuth } from "@/context/auth-context";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -20,24 +22,38 @@ const queryClient = new QueryClient({
   },
 });
 
+function AuthenticatedApp() {
+  const { isAuthenticated } = useAuth();
+
+  if (!isAuthenticated) {
+    return <LoginPage />;
+  }
+
+  return (
+    <QuoteListProvider>
+      <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+        <Layout>
+          <Switch>
+            <Route path="/" component={Home} />
+            <Route path="/category/:categoryId" component={CategoryOverview} />
+            <Route path="/products/:categoryId" component={CategoryProducts} />
+            <Route path="/search/:query" component={SearchPage} />
+            <Route path="/uncategorized" component={UncategorizedProducts} />
+            <Route path="/list" component={QuoteListPage} />
+            <Route component={NotFound} />
+          </Switch>
+        </Layout>
+      </WouterRouter>
+    </QuoteListProvider>
+  );
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <QuoteListProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Layout>
-            <Switch>
-              <Route path="/" component={Home} />
-              <Route path="/category/:categoryId" component={CategoryOverview} />
-              <Route path="/products/:categoryId" component={CategoryProducts} />
-              <Route path="/search/:query" component={SearchPage} />
-              <Route path="/uncategorized" component={UncategorizedProducts} />
-              <Route path="/list" component={QuoteListPage} />
-              <Route component={NotFound} />
-            </Switch>
-          </Layout>
-        </WouterRouter>
-      </QuoteListProvider>
+      <AuthProvider>
+        <AuthenticatedApp />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

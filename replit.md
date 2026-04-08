@@ -146,6 +146,17 @@ Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used b
 
 Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
 
+### Employee Login
+
+Employee authentication gated via NetSuite suitelet (`/app/site/hosting/scriptlet.nl?script=659&deploy=1`):
+
+- **Backend route**: `artifacts/api-server/src/routes/auth.ts` — `POST /api/auth/login` proxies email/password to the NetSuite suitelet, returns employee ID + name on success
+- **Auth context**: `artifacts/product-selector/src/context/auth-context.tsx` — React context with `sessionStorage` persistence
+- **Login page**: `artifacts/product-selector/src/pages/login.tsx` — shown when not authenticated
+- **App gating**: `App.tsx` wraps the app in `AuthProvider`; unauthenticated users see the login page
+- **Header badge**: Employee name + logout button in the layout header (`EmployeeBadge` component in `layout.tsx`)
+- **Suitelet responses**: `logged##<id>` = success, `PNM` = wrong password, `NEA` = no access
+
 ### Quote List Feature
 
 Browser-based quote list with NetSuite estimate push capability:
