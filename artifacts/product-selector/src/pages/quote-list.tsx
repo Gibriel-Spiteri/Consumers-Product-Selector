@@ -4,6 +4,10 @@ import { ChevronRight, Trash2, Minus, Plus, ClipboardList, Search, Loader2, Send
 import { useQuoteList } from "@/context/quote-list-context";
 import { cn } from "@/lib/utils";
 
+function fmtPrice(n: number) {
+  return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 interface Estimate {
   id: number;
   tranId: string;
@@ -151,7 +155,7 @@ function EstimateSearch({ onPush, pushResult, setPushResult }: {
                       </td>
                       <td className="px-4 py-2.5 text-gray-500">{est.date}</td>
                       <td className="px-4 py-2.5 text-right font-medium text-gray-900">
-                        {est.total != null ? `$${est.total.toFixed(2)}` : "—"}
+                        {est.total != null ? `$${fmtPrice(est.total)}` : "—"}
                       </td>
                     </tr>
                   );
@@ -237,7 +241,7 @@ export default function QuoteListPage() {
           </h1>
           {items.length > 0 && (
             <p className="text-[13px] text-gray-400 mt-1">
-              {totalLineItems} {totalLineItems === 1 ? "item" : "items"} · {totalItems} total units · ${grandTotal.toFixed(2)}
+              {totalLineItems} {totalLineItems === 1 ? "item" : "items"} · {totalItems} total units · ${fmtPrice(grandTotal)}
             </p>
           )}
         </div>
@@ -326,7 +330,7 @@ export default function QuoteListPage() {
                       </td>
                       <td className="px-5 py-3 text-right whitespace-nowrap">
                         {item.price != null ? (
-                          <span className="font-medium text-gray-900">${item.price.toFixed(2)}</span>
+                          <span className="font-medium text-gray-900">${fmtPrice(item.price)}</span>
                         ) : (
                           <span className="text-gray-300">—</span>
                         )}
@@ -361,7 +365,7 @@ export default function QuoteListPage() {
                       </td>
                       <td className="px-5 py-3 text-right whitespace-nowrap">
                         {item.price != null ? (
-                          <span className="font-semibold text-gray-900">${(item.price * item.quantity).toFixed(2)}</span>
+                          <span className="font-semibold text-gray-900">${fmtPrice(item.price * item.quantity)}</span>
                         ) : (
                           <span className="text-gray-300">—</span>
                         )}
@@ -387,7 +391,7 @@ export default function QuoteListPage() {
                       <span className="text-sm font-semibold text-gray-900">{totalItems} units</span>
                     </td>
                     <td className="px-5 py-4 text-right">
-                      <span className="text-lg font-bold text-gray-900">${grandTotal.toFixed(2)}</span>
+                      <span className="text-lg font-bold text-gray-900">${fmtPrice(grandTotal)}</span>
                     </td>
                     <td></td>
                   </tr>
