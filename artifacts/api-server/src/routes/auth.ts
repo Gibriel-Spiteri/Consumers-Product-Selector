@@ -21,10 +21,12 @@ router.post("/auth/login", async (req, res) => {
       giveaccess: string;
       custentity_webstorepassword: string;
       custentity_webstore_access: string;
+      custentity_webstore_admin: string;
     }>(
       `SELECT
         id, entityid, email, firstname, lastname,
-        giveaccess, custentity_webstorepassword, custentity_webstore_access
+        giveaccess, custentity_webstorepassword, custentity_webstore_access,
+        custentity_webstore_admin
       FROM Employee
       WHERE LOWER(email) = LOWER('${email.replace(/'/g, "''")}')`
     );
@@ -60,6 +62,7 @@ router.post("/auth/login", async (req, res) => {
         email: emp.email,
         firstName: emp.firstname,
         lastName: emp.lastname,
+        isAdmin: emp.custentity_webstore_admin === "T",
       },
     });
   } catch (err: any) {
@@ -79,13 +82,14 @@ router.post("/auth/verify", async (req, res) => {
     const result = await executeSuiteQL<{
       id: string;
       custentity_webstore_access: string;
+      custentity_webstore_admin: string;
       giveaccess: string;
       firstname: string;
       lastname: string;
       email: string;
       entityid: string;
     }>(
-      `SELECT id, custentity_webstore_access, giveaccess, firstname, lastname, email, entityid
+      `SELECT id, custentity_webstore_access, custentity_webstore_admin, giveaccess, firstname, lastname, email, entityid
        FROM Employee WHERE id = ${Number(employeeId)}`
     );
 
@@ -105,6 +109,7 @@ router.post("/auth/verify", async (req, res) => {
             email: emp.email,
             firstName: emp.firstname,
             lastName: emp.lastname,
+            isAdmin: emp.custentity_webstore_admin === "T",
           }
         : undefined,
     });

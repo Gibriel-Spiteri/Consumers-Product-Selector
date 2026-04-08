@@ -157,7 +157,9 @@ Login system using NetSuite employee records:
 - **Access control**: Checks `giveaccess = 'T'` (system access) and `custentity_webstore_access = 'T'` (product selector access)
 - **Password field**: `custentity_webstorepassword` on Employee record
 - **Session**: Stored in localStorage, verified against NetSuite on page load
-- **Header**: Shows employee name + logout button when authenticated
+- **Header**: Shows employee name dropdown; admin users see "Admin" link
+- **Admin check**: `custentity_webstore_admin = 'T'` on Employee record
+- **Admin page**: `/admin` route with NetSuite sync controls and homepage hero image management
 
 ### Quote List Feature
 

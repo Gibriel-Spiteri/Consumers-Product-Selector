@@ -7,6 +7,7 @@ import CategoryProducts from "@/pages/category-products";
 import SearchPage from "@/pages/search";
 import UncategorizedProducts from "@/pages/uncategorized-products";
 import QuoteListPage from "@/pages/quote-list";
+import AdminPage from "@/pages/admin";
 import LoginPage from "@/pages/login";
 import NotFound from "@/pages/not-found";
 import { QuoteListProvider } from "@/context/quote-list-context";
@@ -56,6 +57,7 @@ function App() {
                   <Route path="/search/:query" component={SearchPage} />
                   <Route path="/uncategorized" component={UncategorizedProducts} />
                   <Route path="/list" component={QuoteListPage} />
+                  <Route path="/admin" component={AdminPage} />
                   <Route component={NotFound} />
                 </Switch>
               </Layout>
