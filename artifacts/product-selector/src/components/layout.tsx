@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import { Search, Loader2, ChevronRight, Package, Folders, Copy, Check, RefreshCw, ClipboardList, LogOut } from "lucide-react";
+import { Search, Loader2, ChevronRight, ChevronDown, Package, Folders, Copy, Check, RefreshCw, ClipboardList, LogOut } from "lucide-react";
 import { useQuoteList } from "@/context/quote-list-context";
 import { useAuth } from "@/context/auth-context";
 import { useGetCategories, useSearchProducts, getSearchProductsQueryKey } from "@workspace/api-client-react";
@@ -137,20 +137,39 @@ function QuoteListBadge() {
 
 function EmployeeBadge() {
   const { employee, logout } = useAuth();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
   if (!employee) return null;
 
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-[12px] text-gray-500 hidden lg:inline">
-        {employee.firstName} {employee.lastName}
-      </span>
+    <div className="relative" ref={ref}>
       <button
-        onClick={logout}
-        title="Sign out"
-        className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-all"
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-1.5 text-[12px] text-gray-500 hover:text-gray-700 px-2 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
       >
-        <LogOut size={16} />
+        <ChevronDown size={12} className={cn("transition-transform", open && "rotate-180")} />
+        {employee.firstName} {employee.lastName}
       </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+          <button
+            onClick={() => { setOpen(false); logout(); }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors"
+          >
+            <LogOut size={14} />
+            Sign Out
+          </button>
+        </div>
+      )}
     </div>
   );
 }
