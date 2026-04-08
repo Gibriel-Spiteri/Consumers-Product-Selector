@@ -89,13 +89,27 @@ function ProductStatsDebug() {
     staleTime: 60000,
   });
 
+  const { data: lastSync } = useQuery({
+    queryKey: ["lastSyncResult"],
+    queryFn: async () => {
+      const res = await fetch("/api/dev/sync/last");
+      if (!res.ok) return null;
+      return res.json() as Promise<{ completedAt: string } | null>;
+    },
+    staleTime: 60000,
+  });
+
   if (isLoading || !data) return null;
 
-  const formattedTime = data.lastUpdated
-    ? new Date(data.lastUpdated).toLocaleString("en-US", {
+  const formattedTime = lastSync?.completedAt
+    ? new Date(lastSync.completedAt.endsWith("Z") ? lastSync.completedAt : lastSync.completedAt + "Z").toLocaleString("en-US", {
         timeZone: "America/New_York",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
         hour: "numeric",
         minute: "2-digit",
+        second: "2-digit",
         hour12: true,
       })
     : null;
@@ -112,7 +126,7 @@ function ProductStatsDebug() {
       {formattedTime && (
         <>
           <span className="w-px h-3 bg-white/15" />
-          <span className="text-[14px] text-[#b0b0b0] bg-[transparent]">Data Updated: {formattedTime}</span>
+          <span className="text-[14px] text-[#b0b0b0] bg-[transparent]">Data Synced: {formattedTime}</span>
           <span className="w-px h-3 bg-white/15" />
           <span className="text-[14px] text-[#b0b0b0] bg-[transparent]">Inventory Levels are Live</span>
         </>
