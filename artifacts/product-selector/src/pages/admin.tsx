@@ -7,6 +7,7 @@ import { Link } from "wouter";
 interface SyncStats {
   categoriesSynced: number;
   productsSynced: number;
+  pprItemsSynced: number;
   attributesSynced: number;
   relatedItemsSynced: number;
   completedAt: string;
@@ -65,7 +66,7 @@ function SyncSection({ employeeId }: { employeeId: string }) {
           <div className="text-sm text-gray-700 font-medium mb-2">
             {formatSyncTime(lastSync.completedAt)}
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
             <div className="bg-white rounded-md border border-gray-200 px-3 py-2 text-center">
               <div className="text-lg font-bold text-gray-900">{lastSync.categoriesSynced.toLocaleString()}</div>
               <div className="text-[11px] text-gray-400 uppercase tracking-wide">Categories</div>
@@ -73,6 +74,10 @@ function SyncSection({ employeeId }: { employeeId: string }) {
             <div className="bg-white rounded-md border border-gray-200 px-3 py-2 text-center">
               <div className="text-lg font-bold text-gray-900">{lastSync.productsSynced.toLocaleString()}</div>
               <div className="text-[11px] text-gray-400 uppercase tracking-wide">Products</div>
+            </div>
+            <div className="bg-white rounded-md border border-gray-200 px-3 py-2 text-center">
+              <div className="text-lg font-bold text-gray-900">{lastSync.pprItemsSynced.toLocaleString()}</div>
+              <div className="text-[11px] text-gray-400 uppercase tracking-wide">PPRs</div>
             </div>
             <div className="bg-white rounded-md border border-gray-200 px-3 py-2 text-center">
               <div className="text-lg font-bold text-gray-900">{lastSync.attributesSynced.toLocaleString()}</div>
@@ -131,6 +136,7 @@ function SyncSection({ employeeId }: { employeeId: string }) {
                 setLastSync({
                   categoriesSynced: data.categoriesSynced ?? 0,
                   productsSynced: data.productsSynced ?? 0,
+                  pprItemsSynced: data.pprItemsSynced ?? 0,
                   attributesSynced: data.attributesSynced ?? 0,
                   relatedItemsSynced: data.relatedItemsSynced ?? 0,
                   completedAt: data.completedAt ?? new Date().toISOString(),

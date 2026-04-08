@@ -17,6 +17,7 @@ export interface SyncResult {
   message: string;
   categoriesSynced: number;
   productsSynced: number;
+  pprItemsSynced: number;
   attributesSynced: number;
   relatedItemsSynced: number;
   completedAt: string;
@@ -79,6 +80,7 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
         "NetSuite M2M credentials not configured. Ensure NETSUITE_ACCOUNT_ID, NETSUITE_CLIENT_ID (or NETSUITE_OIDC_CLIENT_ID), NETSUITE_CERTIFICATE_ID are set, and certs/private_key.pem exists.",
       categoriesSynced: 0,
       productsSynced: 0,
+      pprItemsSynced: 0,
       attributesSynced: 0,
       relatedItemsSynced: 0,
       completedAt: "",
@@ -316,11 +318,14 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
     setProgress("done", 100, "Sync complete!");
     logger.info({ categoriesSynced, productsSynced }, "NetSuite sync complete");
 
+    const pprItemsSynced = activePprItemIds.size;
+
     const result: SyncResult = {
       success: true,
       message: "Sync completed successfully",
       categoriesSynced,
       productsSynced,
+      pprItemsSynced,
       attributesSynced,
       relatedItemsSynced,
       completedAt: new Date().toISOString(),
@@ -338,6 +343,7 @@ export async function syncFromNetSuite(): Promise<SyncResult> {
         err instanceof Error ? err.message : "Unknown error during sync",
       categoriesSynced: 0,
       productsSynced: 0,
+      pprItemsSynced: 0,
       attributesSynced: 0,
       relatedItemsSynced: 0,
       completedAt: new Date().toISOString(),
