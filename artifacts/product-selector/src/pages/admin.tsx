@@ -11,6 +11,7 @@ interface SyncStats {
   attributesSynced: number;
   relatedItemsSynced: number;
   syncedBy: string;
+  durationMs: number;
   completedAt: string;
   success: boolean;
 }
@@ -28,6 +29,15 @@ function formatSyncTime(iso: string) {
     second: "2-digit",
     hour12: true,
   });
+}
+
+function formatDuration(ms: number) {
+  if (ms < 1000) return `${ms}ms`;
+  const totalSec = Math.round(ms / 1000);
+  const min = Math.floor(totalSec / 60);
+  const sec = totalSec % 60;
+  if (min === 0) return `${sec}s`;
+  return `${min}m ${sec}s`;
 }
 
 function SyncSection({ employeeName }: { employeeName: string }) {
@@ -68,6 +78,9 @@ function SyncSection({ employeeName }: { employeeName: string }) {
             <span>{formatSyncTime(lastSync.completedAt)}</span>
             {lastSync.syncedBy && (
               <span className="text-xs text-gray-400 font-normal">by {lastSync.syncedBy}</span>
+            )}
+            {lastSync.durationMs > 0 && (
+              <span className="text-xs text-gray-400 font-normal">({formatDuration(lastSync.durationMs)})</span>
             )}
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
@@ -148,6 +161,7 @@ function SyncSection({ employeeName }: { employeeName: string }) {
                   attributesSynced: data.attributesSynced ?? 0,
                   relatedItemsSynced: data.relatedItemsSynced ?? 0,
                   syncedBy: data.syncedBy ?? "",
+                  durationMs: data.durationMs ?? 0,
                   completedAt: data.completedAt ?? new Date().toISOString(),
                   success: true,
                 });

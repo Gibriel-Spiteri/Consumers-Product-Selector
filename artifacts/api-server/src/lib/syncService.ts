@@ -21,6 +21,7 @@ export interface SyncResult {
   attributesSynced: number;
   relatedItemsSynced: number;
   syncedBy: string;
+  durationMs: number;
   completedAt: string;
 }
 
@@ -85,10 +86,12 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
       attributesSynced: 0,
       relatedItemsSynced: 0,
       syncedBy,
+      durationMs: 0,
       completedAt: "",
     };
   }
 
+  const syncStart = Date.now();
   try {
     logger.info("Starting NetSuite sync");
     setProgress("categories", 5, "Fetching categories from NetSuite…");
@@ -331,6 +334,7 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
       attributesSynced,
       relatedItemsSynced,
       syncedBy,
+      durationMs: Date.now() - syncStart,
       completedAt: new Date().toISOString(),
     };
     lastSyncResult = result;
@@ -350,6 +354,7 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
       attributesSynced: 0,
       relatedItemsSynced: 0,
       syncedBy,
+      durationMs: Date.now() - syncStart,
       completedAt: new Date().toISOString(),
     };
   }
