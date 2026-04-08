@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { HealthCheckResponse } from "@workspace/api-zod";
-import { triggerManualSync, getScheduleInterval, setScheduleInterval, getTimeWindow, setTimeWindow, type ScheduleInterval, type TimeWindow } from "../lib/scheduler";
+import { triggerManualSync, getScheduleInterval, setScheduleInterval, getTimeWindow, setTimeWindow, getScheduledTimes, type ScheduleInterval, type TimeWindow } from "../lib/scheduler";
 import { getSyncProgress, getLastSyncResult } from "../lib/syncService";
 
 const router: IRouter = Router();
@@ -27,7 +27,7 @@ router.get("/dev/sync/last", (_req, res) => {
 });
 
 router.get("/dev/sync/schedule", (_req, res) => {
-  res.json({ interval: getScheduleInterval(), timeWindow: getTimeWindow() });
+  res.json({ interval: getScheduleInterval(), timeWindow: getTimeWindow(), syncTimes: getScheduledTimes() });
 });
 
 router.post("/dev/sync/schedule", (req, res) => {
@@ -56,7 +56,7 @@ router.post("/dev/sync/schedule", (req, res) => {
     }
   }
 
-  res.json({ interval: getScheduleInterval(), timeWindow: getTimeWindow() });
+  res.json({ interval: getScheduleInterval(), timeWindow: getTimeWindow(), syncTimes: getScheduledTimes() });
 });
 
 export default router;
