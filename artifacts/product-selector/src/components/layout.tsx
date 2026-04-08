@@ -514,8 +514,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-1 shrink-0">
-            <QuoteListBadge />
             <EmployeeBadge />
+            <QuoteListBadge />
           </div>
         </div>
 
