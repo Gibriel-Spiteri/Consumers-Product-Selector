@@ -553,7 +553,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                       <div className="mb-5">
                         {full?.price != null ? (
                           <>
-                            <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1">Our Price</p>
+                            <p className={cn("text-[10px] font-semibold uppercase tracking-widest mb-1", full.hasActivePpr ? "text-emerald-600" : "text-gray-400")}>{full.hasActivePpr ? "Clearance" : "Our Price"}</p>
                             <p className={cn("text-3xl font-bold mb-2", full.hasActivePpr ? "text-emerald-600" : "text-gray-900")}>
                               ${Number(full.price).toFixed(2)}
                             </p>

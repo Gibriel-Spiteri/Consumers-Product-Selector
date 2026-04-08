@@ -152,7 +152,7 @@ function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: P
               <div>
                 {p.price ? (
                   <>
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">Our Price</p>
+                    <p className={cn("text-[10px] font-semibold uppercase tracking-widest", p.hasActivePpr ? "text-emerald-600" : "text-gray-400")}>{p.hasActivePpr ? "Clearance" : "Our Price"}</p>
                     <p className={cn("font-semibold", p.hasActivePpr ? "text-emerald-600" : "text-gray-900")}>${Number(p.price).toFixed(2)}</p>
                     {p.retailPrice != null && (
                       <p className="text-[11px] text-gray-400">Retail <span className="line-through">${Number(p.retailPrice).toFixed(2)}</span></p>
