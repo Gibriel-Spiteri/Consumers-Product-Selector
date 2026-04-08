@@ -16,14 +16,22 @@ interface SyncStats {
   success: boolean;
 }
 
-function formatSyncTime(iso: string) {
+function formatSyncDate(iso: string) {
   if (!iso) return null;
   const ts = iso.endsWith("Z") ? iso : iso + "Z";
-  return new Date(ts).toLocaleString("en-US", {
+  return new Date(ts).toLocaleDateString("en-US", {
     timeZone: "America/New_York",
     month: "short",
     day: "numeric",
     year: "numeric",
+  });
+}
+
+function formatSyncTimeOfDay(iso: string) {
+  if (!iso) return null;
+  const ts = iso.endsWith("Z") ? iso : iso + "Z";
+  return new Date(ts).toLocaleTimeString("en-US", {
+    timeZone: "America/New_York",
     hour: "numeric",
     minute: "2-digit",
     second: "2-digit",
@@ -74,13 +82,26 @@ function SyncSection({ employeeName }: { employeeName: string }) {
       {lastSync && lastSync.completedAt && (
         <div className="mb-4 bg-gray-50 rounded-lg p-4">
           <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Last Sync</div>
-          <div className="flex items-center gap-2 text-sm text-gray-700 font-medium mb-2">
-            <span>{formatSyncTime(lastSync.completedAt)}</span>
+          <div className="flex items-center gap-4 text-sm mb-3 flex-wrap">
+            <div>
+              <span className="text-[11px] text-gray-400 uppercase tracking-wide font-semibold">Date </span>
+              <span className="text-gray-700 font-medium">{formatSyncDate(lastSync.completedAt)}</span>
+            </div>
+            <div>
+              <span className="text-[11px] text-gray-400 uppercase tracking-wide font-semibold">Time </span>
+              <span className="text-gray-700 font-medium">{formatSyncTimeOfDay(lastSync.completedAt)}</span>
+            </div>
             {lastSync.syncedBy && (
-              <span className="text-xs text-gray-400 font-normal">by {lastSync.syncedBy}</span>
+              <div>
+                <span className="text-[11px] text-gray-400 uppercase tracking-wide font-semibold">By </span>
+                <span className="text-gray-700 font-medium">{lastSync.syncedBy}</span>
+              </div>
             )}
             {lastSync.durationMs > 0 && (
-              <span className="text-xs text-gray-400 font-normal">({formatDuration(lastSync.durationMs)})</span>
+              <div>
+                <span className="text-[11px] text-gray-400 uppercase tracking-wide font-semibold">Duration </span>
+                <span className="text-gray-700 font-medium">{formatDuration(lastSync.durationMs)}</span>
+              </div>
             )}
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
