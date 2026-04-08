@@ -322,7 +322,7 @@ function SyncSection({ employeeName }: { employeeName: string }) {
                 {windowEnabled && (
                   <div className="flex items-center gap-2 ml-6">
                     <div className="flex flex-col items-center">
-                      <span className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">First Sync</span>
+                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">First Sync</span>
                       <select
                         value={windowStart}
                         onChange={async (e) => {
@@ -352,7 +352,7 @@ function SyncSection({ employeeName }: { employeeName: string }) {
                     </div>
                     <span className="text-sm text-gray-400 mt-4">to</span>
                     <div className="flex flex-col items-center">
-                      <span className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Last Sync</span>
+                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Last Sync</span>
                       <select
                         value={windowEnd}
                         onChange={async (e) => {
