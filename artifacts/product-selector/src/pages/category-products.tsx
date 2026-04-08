@@ -20,14 +20,20 @@ interface Product {
   fullImageUrl?: string | null;
   quantityAvailable?: number | null;
   hasActivePpr?: boolean;
+  isSpecialOrderStock?: boolean;
   attributes?: Array<{ name: string; value: string }>;
 }
 
-function StockBadge({ qty }: { qty: number | null | undefined }) {
+function StockBadge({ qty, isSpecialOrderStock }: { qty: number | null | undefined; isSpecialOrderStock?: boolean }) {
   if (qty == null) return null;
   if (qty >= 1) return (
     <span title={`${qty} in stock`} className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 cursor-default">
       In Stock
+    </span>
+  );
+  if (isSpecialOrderStock) return (
+    <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-600">
+      Non-Stock
     </span>
   );
   return (
@@ -163,7 +169,7 @@ function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: P
                 )}
               </div>
               <div className="flex flex-col items-end gap-1">
-                <StockBadge qty={p.quantityAvailable} />
+                <StockBadge qty={p.quantityAvailable} isSpecialOrderStock={p.isSpecialOrderStock} />
                 <AddToListButton product={p} />
               </div>
             </div>
@@ -208,7 +214,7 @@ function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: P
                   {p.name}
                 </td>
                 <td className="px-5 py-3 whitespace-nowrap">
-                  <StockBadge qty={p.quantityAvailable} />
+                  <StockBadge qty={p.quantityAvailable} isSpecialOrderStock={p.isSpecialOrderStock} />
                 </td>
                 <td className="px-5 py-3 text-right whitespace-nowrap">
                   {p.price ? (

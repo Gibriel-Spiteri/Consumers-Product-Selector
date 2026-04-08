@@ -192,6 +192,7 @@ router.get("/categories/:categoryId/products", async (req, res) => {
       fullImageUrl: p.fullImageUrl ?? null,
       quantityAvailable: liveQty ?? p.quantityAvailable ?? null,
       hasActivePpr: p.hasActivePpr ?? false,
+      isSpecialOrderStock: p.isSpecialOrderStock ?? false,
     };
   });
 
@@ -294,11 +295,11 @@ router.get("/products/search", async (req, res) => {
       fullImageUrl: p.fullImageUrl ?? null,
       quantityAvailable: liveQty ?? p.quantityAvailable ?? null,
       hasActivePpr: p.hasActivePpr ?? false,
+      isSpecialOrderStock: p.isSpecialOrderStock ?? false,
     };
   });
 
-  const response = SearchProductsResponse.parse({ products: mapped, usingMockData: false });
-  return res.json(response);
+  return res.json({ products: mapped, usingMockData: false });
 });
 
 router.get("/products/uncategorized", async (_req, res) => {
@@ -324,6 +325,7 @@ router.get("/products/uncategorized", async (_req, res) => {
       fullImageUrl: p.fullImageUrl ?? null,
       quantityAvailable: liveQty ?? p.quantityAvailable ?? null,
       hasActivePpr: p.hasActivePpr ?? false,
+      isSpecialOrderStock: p.isSpecialOrderStock ?? false,
     };
   });
 
@@ -355,6 +357,7 @@ router.get("/products/clearance", async (_req, res) => {
       fullImageUrl: p.fullImageUrl ?? null,
       quantityAvailable: liveQty ?? p.quantityAvailable ?? null,
       hasActivePpr: true,
+      isSpecialOrderStock: p.isSpecialOrderStock ?? false,
     };
   });
 
@@ -386,6 +389,7 @@ router.get("/products/express-bath", async (_req, res) => {
       fullImageUrl: p.fullImageUrl ?? null,
       quantityAvailable: liveQty ?? p.quantityAvailable ?? null,
       hasActivePpr: p.hasActivePpr ?? false,
+      isSpecialOrderStock: p.isSpecialOrderStock ?? false,
     };
   });
 
@@ -477,6 +481,7 @@ router.get("/products/:productId", async (req, res) => {
       manufacturer: p.manufacturer ?? null,
       quantityAvailable: liveQty ?? p.quantityAvailable ?? null,
       hasActivePpr: p.hasActivePpr ?? false,
+      isSpecialOrderStock: p.isSpecialOrderStock ?? false,
       features: null,
     },
   });
@@ -532,6 +537,7 @@ router.get("/products/:productId/related", async (req, res) => {
       fullImageUrl: p?.fullImageUrl ?? null,
       quantityAvailable: liveQty ?? p?.quantityAvailable ?? null,
       hasActivePpr: p?.hasActivePpr ?? false,
+      isSpecialOrderStock: p?.isSpecialOrderStock ?? false,
       description: r.description ?? null,
     };
   }).filter(item => item.name != null);

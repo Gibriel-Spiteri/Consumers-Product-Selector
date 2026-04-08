@@ -589,6 +589,8 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                           {full?.quantityAvailable != null ? (
                             full.quantityAvailable >= 1 ? (
                               <dd><span className="inline-flex items-center font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[11px]">In Stock ({full.quantityAvailable})</span></dd>
+                            ) : full.isSpecialOrderStock ? (
+                              <dd><span className="inline-flex items-center font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 text-[11px]">Non-Stock</span></dd>
                             ) : (
                               <dd><span className="inline-flex items-center font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-red-50 text-red-500 text-[11px]">Out of Stock</span></dd>
                             )
@@ -683,6 +685,8 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                           {full?.quantityAvailable != null ? (
                             full.quantityAvailable >= 1 ? (
                               <dd><span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">In Stock ({full.quantityAvailable})</span></dd>
+                            ) : full.isSpecialOrderStock ? (
+                              <dd><span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-600">Non-Stock</span></dd>
                             ) : (
                               <dd><span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-red-50 text-red-500">Out of Stock</span></dd>
                             )

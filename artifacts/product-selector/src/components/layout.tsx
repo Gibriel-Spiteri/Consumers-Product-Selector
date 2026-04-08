@@ -476,6 +476,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                                       {product.quantityAvailable != null && (
                                         product.quantityAvailable >= 1 ? (
                                           <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">In Stock</span>
+                                        ) : product.isSpecialOrderStock ? (
+                                          <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-600">Non-Stock</span>
                                         ) : (
                                           <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-red-50 text-red-500">Out of Stock</span>
                                         )

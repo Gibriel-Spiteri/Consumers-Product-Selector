@@ -217,6 +217,7 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
             noReorder: item.noReorder ? 1 : 0,
             hasActivePpr: hasActivePpr,
             isExpressBath: item.isExpressBath ?? false,
+            isSpecialOrderStock: item.isSpecialOrderStock ?? false,
             categoryId: categoryDbId,
             updatedAt: new Date(),
           })
@@ -237,6 +238,7 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
           noReorder: item.noReorder ? 1 : 0,
           hasActivePpr: hasActivePpr,
           isExpressBath: item.isExpressBath ?? false,
+          isSpecialOrderStock: item.isSpecialOrderStock ?? false,
           categoryId: categoryDbId,
         });
       }
