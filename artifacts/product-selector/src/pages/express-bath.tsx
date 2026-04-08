@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, Loader2, ImageOff, LayoutList, LayoutGrid, Copy, Check, PackageX, Plus } from "lucide-react";
@@ -14,6 +14,8 @@ interface Product {
   price: number | null;
   retailPrice?: number | null;
   categoryId?: number | null;
+  categoryParentId?: number | null;
+  categoryParentName?: string | null;
   netsuiteId?: string | null;
   imageUrl?: string | null;
   fullImageUrl?: string | null;
@@ -245,6 +247,7 @@ export default function ExpressBathPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [inStockOnly, setInStockOnly] = useState(false);
+  const [activeCategoryId, setActiveCategoryId] = useState<number | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["expressBathProducts"],
@@ -256,7 +259,25 @@ export default function ExpressBathPage() {
   });
 
   const products = data?.products ?? [];
-  const filtered = inStockOnly ? products.filter(p => (p.quantityAvailable ?? 0) >= 1) : products;
+
+  const parentCategories = useMemo(() => {
+    const map = new Map<number, { id: number; name: string; count: number }>();
+    for (const p of products) {
+      if (p.categoryParentId && p.categoryParentName) {
+        const existing = map.get(p.categoryParentId);
+        if (existing) {
+          existing.count++;
+        } else {
+          map.set(p.categoryParentId, { id: p.categoryParentId, name: p.categoryParentName, count: 1 });
+        }
+      }
+    }
+    return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }, [products]);
+
+  let filtered = products;
+  if (activeCategoryId) filtered = filtered.filter(p => p.categoryParentId === activeCategoryId);
+  if (inStockOnly) filtered = filtered.filter(p => (p.quantityAvailable ?? 0) >= 1);
 
   if (isLoading) {
     return (
@@ -315,6 +336,42 @@ export default function ExpressBathPage() {
           </div>
         </div>
       </div>
+
+      {parentCategories.length > 1 && (
+        <div className="flex items-center gap-2 mb-6 overflow-x-auto">
+          <button
+            onClick={() => setActiveCategoryId(null)}
+            className={cn(
+              "flex items-center gap-1.5 text-[13px] font-medium px-4 py-2 rounded-full transition-all border whitespace-nowrap",
+              activeCategoryId === null
+                ? "bg-blue-600 border-blue-600 text-white"
+                : "bg-white border-gray-200 text-gray-600 hover:border-blue-300 hover:text-blue-600"
+            )}
+          >
+            All
+            <span className={cn("text-[11px] font-semibold rounded-full px-1.5 py-0.5", activeCategoryId === null ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-400")}>
+              {products.length}
+            </span>
+          </button>
+          {parentCategories.map(cat => (
+            <button
+              key={cat.id}
+              onClick={() => setActiveCategoryId(activeCategoryId === cat.id ? null : cat.id)}
+              className={cn(
+                "flex items-center gap-1.5 text-[13px] font-medium px-4 py-2 rounded-full transition-all border whitespace-nowrap",
+                activeCategoryId === cat.id
+                  ? "bg-blue-600 border-blue-600 text-white"
+                  : "bg-white border-gray-200 text-gray-600 hover:border-blue-300 hover:text-blue-600"
+              )}
+            >
+              {cat.name}
+              <span className={cn("text-[11px] font-semibold rounded-full px-1.5 py-0.5", activeCategoryId === cat.id ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-400")}>
+                {cat.count}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-gray-400">

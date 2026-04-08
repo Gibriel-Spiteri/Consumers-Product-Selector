@@ -379,8 +379,27 @@ router.get("/products/express-bath", async (_req, res) => {
   const netsuiteIds = products.map((p) => p.netsuiteId).filter((id): id is string => id != null);
   const liveInventory = await fetchLiveInventory(netsuiteIds);
 
+  const categoryIds = [...new Set(products.map(p => p.categoryId).filter((id): id is number => id != null))];
+  const categoryRows = categoryIds.length > 0
+    ? await db.select({ id: categoriesTable.id, name: categoriesTable.name, parentId: categoriesTable.parentId }).from(categoriesTable).where(inArray(categoriesTable.id, categoryIds))
+    : [];
+
+  const parentIds = [...new Set(categoryRows.map(c => c.parentId).filter((id): id is number => id != null))];
+  const parentRows = parentIds.length > 0
+    ? await db.select({ id: categoriesTable.id, name: categoriesTable.name }).from(categoriesTable).where(inArray(categoriesTable.id, parentIds))
+    : [];
+  const parentMap = new Map(parentRows.map(p => [p.id, p.name]));
+
+  const catToParent = new Map<number, { parentId: number; parentName: string }>();
+  for (const c of categoryRows) {
+    if (c.parentId && parentMap.has(c.parentId)) {
+      catToParent.set(c.id, { parentId: c.parentId, parentName: parentMap.get(c.parentId)! });
+    }
+  }
+
   const mapped = products.map((p) => {
     const liveQty = p.netsuiteId ? liveInventory.get(p.netsuiteId) : undefined;
+    const parent = p.categoryId ? catToParent.get(p.categoryId) : undefined;
     return {
       id: p.id,
       name: p.salesdescription || p.name,
@@ -388,6 +407,8 @@ router.get("/products/express-bath", async (_req, res) => {
       price: p.price ? parseFloat(p.price) : null,
       retailPrice: p.retailPrice ? parseFloat(p.retailPrice) : null,
       categoryId: p.categoryId ?? null,
+      categoryParentId: parent?.parentId ?? null,
+      categoryParentName: parent?.parentName ?? null,
       netsuiteId: p.netsuiteId ?? null,
       imageUrl: p.imageUrl ?? null,
       fullImageUrl: p.fullImageUrl ?? null,
