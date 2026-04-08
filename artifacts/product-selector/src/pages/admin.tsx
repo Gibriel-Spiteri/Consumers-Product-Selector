@@ -80,16 +80,16 @@ function SyncSection({ employeeName }: { employeeName: string }) {
               <div className="text-[11px] text-gray-400 uppercase tracking-wide">Products</div>
             </div>
             <div className="bg-white rounded-md border border-gray-200 px-3 py-2 text-center">
+              <div className="text-lg font-bold text-gray-900">{lastSync.relatedItemsSynced.toLocaleString()}</div>
+              <div className="text-[11px] text-gray-400 uppercase tracking-wide">Related Items</div>
+            </div>
+            <div className="bg-white rounded-md border border-gray-200 px-3 py-2 text-center">
               <div className="text-lg font-bold text-gray-900">{lastSync.pprItemsSynced.toLocaleString()}</div>
               <div className="text-[11px] text-gray-400 uppercase tracking-wide">PPRs</div>
             </div>
             <div className="bg-white rounded-md border border-gray-200 px-3 py-2 text-center">
               <div className="text-lg font-bold text-gray-900">{lastSync.attributesSynced.toLocaleString()}</div>
               <div className="text-[11px] text-gray-400 uppercase tracking-wide">Attributes</div>
-            </div>
-            <div className="bg-white rounded-md border border-gray-200 px-3 py-2 text-center">
-              <div className="text-lg font-bold text-gray-900">{lastSync.relatedItemsSynced.toLocaleString()}</div>
-              <div className="text-[11px] text-gray-400 uppercase tracking-wide">Related Items</div>
             </div>
           </div>
         </div>
