@@ -140,7 +140,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { data: categoryData, isLoading: isLoadingCategories } = useGetCategories();
 
   const categories = categoryData?.categories || [];
-  const topLevelCategories = categories.filter(c => c.level === 1);
+  const internalCategory = categories.find(c => c.level === 1 && c.name.toLowerCase() === "internal");
+  const topLevelCategories = categories.filter(c => c.level === 1 && c.name.toLowerCase() !== "internal");
 
   const flatCategories = useMemo(() => {
     const result: Array<{ id: number; name: string; level: number; parentId: number | null }> = [];
@@ -533,6 +534,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 >
                   Clearance
                 </Link>
+                {internalCategory && (
+                  <Link
+                    href={`/category/${internalCategory.id}`}
+                    onClick={() => { setIsHoveringNav(false); setActiveTab(null); }}
+                    className="flex-shrink-0 flex items-center h-[50px] px-4 font-semibold uppercase tracking-widest text-gray-500 hover:text-gray-700 transition-colors text-[13px]"
+                  >
+                    Internal
+                  </Link>
+                )}
               </div>
             )}
           </div>
