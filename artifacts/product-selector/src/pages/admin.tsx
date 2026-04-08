@@ -1,8 +1,20 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/context/auth-context";
 import { useQueryClient } from "@tanstack/react-query";
-import { RefreshCw, Upload, ImageIcon, Shield, ArrowLeft } from "lucide-react";
+import { RefreshCw, Upload, ImageIcon, Shield, ArrowLeft, Clock } from "lucide-react";
 import { Link } from "wouter";
+
+type ScheduleInterval = "off" | "1h" | "2h" | "4h" | "6h" | "12h" | "24h";
+
+const SCHEDULE_OPTIONS: { value: ScheduleInterval; label: string }[] = [
+  { value: "off", label: "Off" },
+  { value: "1h", label: "Every 1 hour" },
+  { value: "2h", label: "Every 2 hours" },
+  { value: "4h", label: "Every 4 hours" },
+  { value: "6h", label: "Every 6 hours" },
+  { value: "12h", label: "Every 12 hours" },
+  { value: "24h", label: "Every 24 hours" },
+];
 
 interface SyncStats {
   categoriesSynced: number;
@@ -53,6 +65,8 @@ function SyncSection({ employeeName }: { employeeName: string }) {
   const [progress, setProgress] = useState<{ percent: number; detail: string } | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const [lastSync, setLastSync] = useState<SyncStats | null>(null);
+  const [schedule, setSchedule] = useState<ScheduleInterval>("6h");
+  const [savingSchedule, setSavingSchedule] = useState(false);
   const qc = useQueryClient();
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -69,6 +83,10 @@ function SyncSection({ employeeName }: { employeeName: string }) {
     fetch("/api/dev/sync/last")
       .then(r => r.json())
       .then(data => { if (data) setLastSync(data); })
+      .catch(() => {});
+    fetch("/api/dev/sync/schedule")
+      .then(r => r.json())
+      .then(data => { if (data?.interval) setSchedule(data.interval); })
       .catch(() => {});
   }, []);
 
@@ -206,6 +224,41 @@ function SyncSection({ employeeName }: { employeeName: string }) {
           <RefreshCw size={14} className={syncing ? "animate-spin" : ""} />
           {syncing ? "Syncing…" : "Run Sync Now"}
         </button>
+      </div>
+
+      <div className="mt-4 pt-4 border-t border-gray-200">
+        <div className="flex items-center gap-2 mb-2">
+          <Clock size={14} className="text-gray-400" />
+          <span className="text-sm font-medium text-gray-700">Automatic Sync Schedule</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <select
+            value={schedule}
+            onChange={async (e) => {
+              const newInterval = e.target.value as ScheduleInterval;
+              setSchedule(newInterval);
+              setSavingSchedule(true);
+              try {
+                await fetch("/api/dev/sync/schedule", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ interval: newInterval }),
+                });
+              } catch {}
+              setSavingSchedule(false);
+            }}
+            disabled={savingSchedule}
+            className="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 disabled:opacity-60"
+          >
+            {SCHEDULE_OPTIONS.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+          {savingSchedule && <span className="text-xs text-gray-400">Saving…</span>}
+          {schedule === "off" && (
+            <span className="text-xs text-amber-600">Sync will only run when triggered manually</span>
+          )}
+        </div>
       </div>
     </div>
   );

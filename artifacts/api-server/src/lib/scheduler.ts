@@ -2,10 +2,21 @@ import { syncFromNetSuite } from "./syncService";
 import { isNetSuiteConfigured } from "./netsuite";
 import { logger } from "./logger";
 
-const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
+export type ScheduleInterval = "off" | "1h" | "2h" | "4h" | "6h" | "12h" | "24h";
+
+const INTERVAL_MS: Record<ScheduleInterval, number> = {
+  off: 0,
+  "1h": 1 * 60 * 60 * 1000,
+  "2h": 2 * 60 * 60 * 1000,
+  "4h": 4 * 60 * 60 * 1000,
+  "6h": 6 * 60 * 60 * 1000,
+  "12h": 12 * 60 * 60 * 1000,
+  "24h": 24 * 60 * 60 * 1000,
+};
 
 let timeoutId: ReturnType<typeof setTimeout> | null = null;
 let isSyncing = false;
+let currentInterval: ScheduleInterval = "6h";
 
 async function runSync() {
   if (isSyncing) {
@@ -17,7 +28,7 @@ async function runSync() {
   isSyncing = true;
   try {
     logger.info("Running scheduled NetSuite sync");
-    const result = await syncFromNetSuite();
+    const result = await syncFromNetSuite("Scheduled");
     if (result.success) {
       logger.info(
         { categoriesSynced: result.categoriesSynced, productsSynced: result.productsSynced },
@@ -35,11 +46,37 @@ async function runSync() {
 }
 
 function scheduleNext() {
-  if (timeoutId !== null) return;
+  if (timeoutId !== null) {
+    clearTimeout(timeoutId);
+    timeoutId = null;
+  }
+  const ms = INTERVAL_MS[currentInterval];
+  if (ms <= 0) return;
   timeoutId = setTimeout(() => {
     timeoutId = null;
     runSync();
-  }, SIX_HOURS_MS);
+  }, ms);
+}
+
+export function getScheduleInterval(): ScheduleInterval {
+  return currentInterval;
+}
+
+export function setScheduleInterval(interval: ScheduleInterval) {
+  if (!(interval in INTERVAL_MS)) {
+    throw new Error(`Invalid schedule interval: ${interval}`);
+  }
+  currentInterval = interval;
+  if (timeoutId !== null) {
+    clearTimeout(timeoutId);
+    timeoutId = null;
+  }
+  if (interval === "off") {
+    logger.info("Scheduled sync disabled");
+    return;
+  }
+  logger.info({ interval }, "Sync schedule updated");
+  scheduleNext();
 }
 
 export function startScheduledSync() {
@@ -54,8 +91,8 @@ export function startScheduledSync() {
   }
 
   logger.info(
-    { intervalHours: 6 },
-    "Starting scheduled NetSuite sync (every 6 hours)",
+    { interval: currentInterval },
+    `Starting scheduled NetSuite sync (every ${currentInterval})`,
   );
 
   runSync();
