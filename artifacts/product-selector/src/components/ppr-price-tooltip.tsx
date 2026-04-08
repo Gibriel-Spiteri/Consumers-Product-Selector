@@ -51,12 +51,12 @@ export function PprPriceTooltip({ price, pprPriceReductionRetail, hasActivePpr, 
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between gap-4">
                 <span className="text-gray-400 text-xs uppercase tracking-wider font-semibold">Consumers Price</span>
-                <span className="font-semibold">${consumersPrice.toFixed(2)}</span>
+                <span className="font-semibold">${consumersPrice.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
               <div className="border-t border-gray-700" />
               <div className="flex items-center justify-between gap-4">
                 <span className="text-emerald-400 text-xs uppercase tracking-wider font-semibold">You Save</span>
-                <span className="font-semibold text-emerald-400">${youSave.toFixed(2)}</span>
+                <span className="font-semibold text-emerald-400">${youSave.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
             </div>
           </div>
