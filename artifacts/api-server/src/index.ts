@@ -1,6 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
-import { startScheduledSync, stopScheduledSync } from "./lib/scheduler";
+import { startScheduledSync, stopScheduledSync, loadPersistedSchedule } from "./lib/scheduler";
 
 const rawPort = process.env["PORT"];
 
@@ -23,7 +23,9 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
-  startScheduledSync();
+  loadPersistedSchedule().then(() => {
+    startScheduledSync();
+  });
 
   const shutdown = () => {
     logger.info("Shutting down gracefully");

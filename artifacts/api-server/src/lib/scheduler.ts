@@ -1,6 +1,8 @@
 import { syncFromNetSuite } from "./syncService";
 import { isNetSuiteConfigured } from "./netsuite";
 import { logger } from "./logger";
+import { db, appSettingsTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 
 export type ScheduleInterval = "off" | "1h" | "2h" | "4h" | "6h" | "12h" | "24h";
 
@@ -33,6 +35,49 @@ let timeoutId: ReturnType<typeof setTimeout> | null = null;
 let isSyncing = false;
 let currentInterval: ScheduleInterval = "6h";
 let timeWindow: TimeWindow | null = null;
+
+async function saveSetting(key: string, value: string) {
+  try {
+    await db
+      .insert(appSettingsTable)
+      .values({ key, value })
+      .onConflictDoUpdate({ target: appSettingsTable.key, set: { value } });
+  } catch (err) {
+    logger.error({ err, key }, "Failed to save setting");
+  }
+}
+
+async function loadSetting(key: string): Promise<string | null> {
+  try {
+    const rows = await db.select().from(appSettingsTable).where(eq(appSettingsTable.key, key));
+    return rows.length > 0 ? rows[0].value : null;
+  } catch (err) {
+    logger.error({ err, key }, "Failed to load setting");
+    return null;
+  }
+}
+
+export async function loadPersistedSchedule() {
+  const savedInterval = await loadSetting("sync_interval");
+  if (savedInterval && savedInterval in INTERVAL_MS) {
+    currentInterval = savedInterval as ScheduleInterval;
+    logger.info({ interval: currentInterval }, "Loaded persisted sync interval");
+  }
+  const savedWindow = await loadSetting("sync_time_window");
+  if (savedWindow) {
+    try {
+      const parsed = JSON.parse(savedWindow);
+      if (parsed === null) {
+        timeWindow = null;
+      } else if (typeof parsed.startHour === "number" && typeof parsed.endHour === "number") {
+        timeWindow = parsed;
+      }
+      logger.info({ timeWindow }, "Loaded persisted sync time window");
+    } catch {
+      logger.warn("Failed to parse persisted sync time window");
+    }
+  }
+}
 
 function getNowEastern(): Date {
   return new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" }));
@@ -158,11 +203,12 @@ export function getScheduledTimes(): string[] {
   return getScheduledSyncTimes();
 }
 
-export function setScheduleInterval(interval: ScheduleInterval) {
+export async function setScheduleInterval(interval: ScheduleInterval) {
   if (!(interval in INTERVAL_MS)) {
     throw new Error(`Invalid schedule interval: ${interval}`);
   }
   currentInterval = interval;
+  await saveSetting("sync_interval", interval);
   if (timeoutId !== null) {
     clearTimeout(timeoutId);
     timeoutId = null;
@@ -175,11 +221,12 @@ export function setScheduleInterval(interval: ScheduleInterval) {
   scheduleNext();
 }
 
-export function setTimeWindow(window: TimeWindow | null) {
+export async function setTimeWindow(window: TimeWindow | null) {
   if (window && window.startHour > window.endHour) {
     throw new Error("First sync hour must be before last sync hour");
   }
   timeWindow = window;
+  await saveSetting("sync_time_window", JSON.stringify(window));
   if (timeoutId !== null) {
     clearTimeout(timeoutId);
     timeoutId = null;

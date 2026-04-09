@@ -30,13 +30,13 @@ router.get("/dev/sync/schedule", (_req, res) => {
   res.json({ interval: getScheduleInterval(), timeWindow: getTimeWindow(), syncTimes: getScheduledTimes() });
 });
 
-router.post("/dev/sync/schedule", (req, res) => {
+router.post("/dev/sync/schedule", async (req, res) => {
   const interval = req.body?.interval as ScheduleInterval | undefined;
   const tw = req.body?.timeWindow as TimeWindow | null | undefined;
 
   if (interval) {
     try {
-      setScheduleInterval(interval);
+      await setScheduleInterval(interval);
     } catch {
       return res.status(400).json({ error: "Invalid interval" });
     }
@@ -44,13 +44,13 @@ router.post("/dev/sync/schedule", (req, res) => {
 
   if (tw !== undefined) {
     if (tw === null) {
-      setTimeWindow(null);
+      await setTimeWindow(null);
     } else if (
       typeof tw.startHour === "number" && typeof tw.endHour === "number" &&
       tw.startHour >= 0 && tw.startHour <= 23 &&
       tw.endHour >= 0 && tw.endHour <= 23
     ) {
-      setTimeWindow({ startHour: tw.startHour, endHour: tw.endHour });
+      await setTimeWindow({ startHour: tw.startHour, endHour: tw.endHour });
     } else {
       return res.status(400).json({ error: "Invalid time window" });
     }
