@@ -473,13 +473,13 @@ export default function CategoryProducts() {
               </p>
             )}
           </div>
+          <div className="flex items-center gap-3 ml-auto shrink-0">
           <FacetBar
             facets={facets}
             activeFilters={activeFilters}
             onToggle={toggleFilter}
             onClear={clearFilters}
           />
-          <div className="flex items-center gap-3 ml-auto shrink-0">
             <div className="relative w-48">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
