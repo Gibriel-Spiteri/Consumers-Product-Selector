@@ -1,80 +1,11 @@
-import { useState } from "react";
 import { useParams, Link } from "wouter";
 import { useGetCategories } from "@workspace/api-client-react";
-import { ChevronRight, ChevronDown, Loader2, ArrowLeft } from "lucide-react";
+import { ChevronRight, Loader2, ArrowLeft } from "lucide-react";
 import { useCategoryPath } from "@/hooks/use-category-path";
 
 function linkForCategory(cat: { id: number; children?: unknown[] }) {
   const hasChildren = cat.children && cat.children.length > 0;
   return hasChildren ? `/category/${cat.id}` : `/products/${cat.id}`;
-}
-
-function CollapsibleCard({ sub, children }: { sub: { id: number; name: string; children?: unknown[] }; children: { id: number; name: string; children?: unknown[] }[] }) {
-  const [expanded, setExpanded] = useState(false);
-  const hasChildren = children.length > 0;
-
-  return (
-    <div
-      className="bg-white rounded-2xl border border-border shadow-sm p-6 hover:shadow-md hover:border-accent/30 transition-all relative"
-      onMouseEnter={() => setExpanded(true)}
-      onMouseLeave={() => setExpanded(false)}
-    >
-      <div className="flex items-center justify-between">
-        <Link
-          href={linkForCategory(sub)}
-          className="block font-display font-bold text-primary uppercase tracking-wide text-sm border-b-2 border-accent/30 pb-3 mb-1 hover:text-accent transition-colors flex-1"
-        >
-          {sub.name}
-        </Link>
-        {hasChildren && (
-          <button
-            onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-            className="ml-2 p-1 -mr-1 mb-2 text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <ChevronDown
-              size={16}
-              className={`transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
-            />
-          </button>
-        )}
-      </div>
-      {hasChildren && (
-        <>
-          <div aria-hidden="true" className="invisible">
-            <ul className="space-y-2 pt-3">
-              {children.map((item) => (
-                <li key={item.id} className="py-0.5 text-sm">&nbsp;</li>
-              ))}
-            </ul>
-          </div>
-          <div
-            className="absolute left-6 right-6 transition-opacity duration-200 ease-in-out"
-            style={{ top: "calc(3.5rem + 12px)", opacity: expanded ? 1 : 0, pointerEvents: expanded ? "auto" : "none" }}
-          >
-            <ul className="space-y-2 pt-3">
-              {children.map((item) => (
-                <li key={item.id}>
-                  <Link
-                    href={linkForCategory(item as { id: number; children?: unknown[] })}
-                    className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center group py-0.5"
-                  >
-                    <ChevronRight
-                      size={13}
-                      className="opacity-0 -ml-3.5 group-hover:opacity-100 group-hover:ml-0 transition-all text-accent mr-1 shrink-0"
-                    />
-                    {item.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </>
-      )}
-      {!hasChildren && (
-        <p className="text-xs text-gray-300 mt-2">No subcategories</p>
-      )}
-    </div>
-  );
 }
 
 export default function CategoryOverview() {
@@ -146,12 +77,37 @@ export default function CategoryOverview() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-              {subCategories.map((sub) => {
-                const children = sub.children || [];
-                return (
-                  <CollapsibleCard key={sub.id} sub={sub} children={children} />
-                );
-              })}
+              {subCategories.map((sub) => (
+                <div
+                  key={sub.id}
+                  className="bg-white rounded-2xl border border-border shadow-sm p-6 hover:shadow-md hover:border-accent/30 transition-all"
+                >
+                  <Link
+                    href={linkForCategory(sub)}
+                    className="block font-display font-bold text-primary uppercase tracking-wide text-sm border-b-2 border-accent/30 pb-3 mb-4 hover:text-accent transition-colors"
+                  >
+                    {sub.name}
+                  </Link>
+                  {(sub.children || []).length > 0 && (
+                    <ul className="space-y-2">
+                      {(sub.children || []).map((item) => (
+                        <li key={item.id}>
+                          <Link
+                            href={linkForCategory(item as { id: number; children?: unknown[] })}
+                            className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center group py-0.5"
+                          >
+                            <ChevronRight
+                              size={13}
+                              className="opacity-0 -ml-3.5 group-hover:opacity-100 group-hover:ml-0 transition-all text-accent mr-1 shrink-0"
+                            />
+                            {(item as { name: string }).name}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ))}
             </div>
           )}
         </>
