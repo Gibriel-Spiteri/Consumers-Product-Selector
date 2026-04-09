@@ -461,6 +461,20 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
   });
   const relatedProducts = ((relatedData?.relatedItems ?? []) as FullProduct[]);
 
+  const categoryId = full?.categoryId ?? product?.categoryId;
+  const { data: categoryData } = useQuery({
+    queryKey: ["categoryProducts", categoryId],
+    queryFn: async () => {
+      const res = await fetch(`/api/categories/${categoryId}/products`);
+      if (!res.ok) return { products: [] };
+      return res.json();
+    },
+    enabled: !!categoryId,
+  });
+  const categoryProducts = ((categoryData?.products ?? []) as FullProduct[]).filter(
+    (p) => p.id !== resolvedId
+  );
+
   const directCategoryName = categoryPath
     ? categoryPath.split(" › ").at(-1)
     : null;
@@ -634,9 +648,9 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
 
                   {/* Tab content */}
                   {bottomTab === "more" && (
-                    relatedProducts.length > 0 ? (
+                    categoryProducts.length > 0 ? (
                       <div className="flex gap-3 overflow-x-auto pb-4">
-                        {relatedProducts.map(p => (
+                        {categoryProducts.slice(0, 20).map(p => (
                           <RelatedMiniCard key={p.id} product={p} onSelect={handleSelectRelated} />
                         ))}
                       </div>
