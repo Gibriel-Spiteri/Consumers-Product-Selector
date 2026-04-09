@@ -580,7 +580,7 @@ export default function AdminPage() {
 
       <div className="flex gap-8">
         <nav className="w-48 shrink-0 hidden lg:block">
-          <div className="sticky top-8 space-y-1">
+          <div className="sticky top-[140px] space-y-1">
             {sections.map((s) => {
               const Icon = s.icon;
               return (
