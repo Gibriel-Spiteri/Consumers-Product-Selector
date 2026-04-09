@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useAuth } from "@/context/auth-context";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { RefreshCw, Upload, ImageIcon, Shield, ArrowLeft, Clock, PackageX } from "lucide-react";
@@ -26,6 +26,24 @@ const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => {
   const display = i === 0 ? 12 : i > 12 ? i - 12 : i;
   return { value: i, label: `${display}:00 ${suffix}` };
 });
+
+const INTERVAL_HOURS: Record<ScheduleInterval, number> = {
+  off: 0, "1h": 1, "2h": 2, "4h": 4, "6h": 6, "12h": 12, "24h": 24,
+};
+
+function computeSyncTimes(interval: ScheduleInterval, windowEnabled: boolean, startHour: number, endHour: number): string[] {
+  if (interval === "off") return [];
+  const step = INTERVAL_HOURS[interval];
+  const from = windowEnabled ? startHour : 0;
+  const to = windowEnabled ? endHour : 23;
+  const times: string[] = [];
+  for (let h = from; h <= to; h += step) {
+    const suffix = h < 12 ? "AM" : "PM";
+    const display = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    times.push(`${display}:00 ${suffix}`);
+  }
+  return times;
+}
 
 interface SyncStats {
   categoriesSynced: number;
@@ -80,9 +98,9 @@ function SyncSection({ employeeName }: { employeeName: string }) {
   const [windowEnabled, setWindowEnabled] = useState(false);
   const [windowStart, setWindowStart] = useState(9);
   const [windowEnd, setWindowEnd] = useState(17);
-  const [syncTimes, setSyncTimes] = useState<string[]>([]);
   const [savingSchedule, setSavingSchedule] = useState(false);
   const [scheduleSaved, setScheduleSaved] = useState(false);
+  const syncTimes = useMemo(() => computeSyncTimes(schedule, windowEnabled, windowStart, windowEnd), [schedule, windowEnabled, windowStart, windowEnd]);
   const qc = useQueryClient();
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -109,7 +127,6 @@ function SyncSection({ employeeName }: { employeeName: string }) {
           setWindowStart(data.timeWindow.startHour);
           setWindowEnd(data.timeWindow.endHour);
         }
-        if (data?.syncTimes) setSyncTimes(data.syncTimes);
       })
       .catch(() => {});
   }, []);
@@ -334,7 +351,6 @@ function SyncSection({ employeeName }: { employeeName: string }) {
                   body: JSON.stringify(body),
                 });
                 const data = await res.json();
-                if (data?.syncTimes) setSyncTimes(data.syncTimes);
                 if (data?.interval) setSchedule(data.interval);
                 if (data?.timeWindow) {
                   setWindowEnabled(true);
