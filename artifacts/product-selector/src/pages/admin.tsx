@@ -581,8 +581,8 @@ export default function AdminPage() {
       </div>
 
       <div className="flex gap-8">
-        <nav className="w-48 shrink-0 hidden lg:block self-start" style={{ position: "sticky", top: 185 }}>
-          <div className="space-y-1">
+        <div className="w-48 shrink-0 hidden lg:block">
+          <nav className="fixed top-[180px] w-48 space-y-1">
             {sections.map((s) => {
               const Icon = s.icon;
               return (
@@ -604,8 +604,8 @@ export default function AdminPage() {
                 </a>
               );
             })}
-          </div>
-        </nav>
+          </nav>
+        </div>
 
         <div className="flex-1 min-w-0 space-y-6">
           <div id="sync">
