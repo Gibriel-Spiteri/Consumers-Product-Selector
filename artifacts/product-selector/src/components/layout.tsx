@@ -47,12 +47,8 @@ function ProductStatsDebug() {
 
   return (
     <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-center gap-4 text-[11px] font-mono text-white/30">
-      <Link href="/uncategorized" className="hover:text-amber-400 transition-colors cursor-pointer underline underline-offset-2 text-[#ffff00] text-[14px]">
-        Without Category: {data.productsWithoutCategory}
-      </Link>
       {formattedTime && (
         <>
-          <span className="w-px h-3 bg-white/15" />
           <span className="text-[14px] text-[#b0b0b0] bg-[transparent]">Data Synced: {formattedTime}</span>
           <span className="w-px h-3 bg-white/15" />
           <span className="text-[14px] text-[#b0b0b0] bg-[transparent]">Inventory Levels are Live</span>

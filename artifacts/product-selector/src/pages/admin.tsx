@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/context/auth-context";
-import { useQueryClient } from "@tanstack/react-query";
-import { RefreshCw, Upload, ImageIcon, Shield, ArrowLeft, Clock } from "lucide-react";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { RefreshCw, Upload, ImageIcon, Shield, ArrowLeft, Clock, PackageX } from "lucide-react";
 import { Link } from "wouter";
 
 type ScheduleInterval = "off" | "1h" | "2h" | "4h" | "6h" | "12h" | "24h";
@@ -484,6 +484,46 @@ function HeroImageSection({ employeeId }: { employeeId: string }) {
   );
 }
 
+function UncategorizedSection() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["productStats"],
+    queryFn: async () => {
+      const res = await fetch("/api/products/stats");
+      if (!res.ok) throw new Error("Failed to fetch stats");
+      return res.json() as Promise<{ productsWithoutCategory: number }>;
+    },
+    staleTime: 60000,
+  });
+
+  const count = data?.productsWithoutCategory ?? 0;
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center">
+            <PackageX size={20} className="text-amber-500" />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-gray-900">Without Category</h2>
+            <p className="text-sm text-gray-500">
+              {isLoading ? "Loading…" : `${count} product${count !== 1 ? "s" : ""} without a category`}
+            </p>
+          </div>
+        </div>
+        {count > 0 && (
+          <Link
+            href="/uncategorized"
+            className="text-sm font-medium text-amber-600 hover:text-amber-700 transition-colors"
+          >
+            View Products →
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const { employee } = useAuth();
 
@@ -514,6 +554,7 @@ export default function AdminPage() {
 
       <div className="space-y-6">
         <SyncSection employeeName={`${employee.firstName} ${employee.lastName}`} />
+        <UncategorizedSection />
         <HeroImageSection employeeId={employee.id} />
       </div>
     </div>
