@@ -524,7 +524,7 @@ export default function CategoryProducts() {
         </div>
       </div>
 
-      <div className="flex items-center gap-3 flex-wrap mb-1">
+      <div className="flex items-center gap-3 flex-wrap mb-4">
         <div className="flex-1 min-w-0">
           <FacetBar
             facets={facets}
@@ -533,14 +533,14 @@ export default function CategoryProducts() {
             onClear={clearFilters}
           />
         </div>
-        <div className="relative w-64 shrink-0">
+        <div className="relative w-52 shrink-0 ml-auto">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
             placeholder="Refine results..."
             value={refineQuery}
             onChange={e => setRefineQuery(e.target.value)}
-            className="w-full pl-9 pr-8 py-2 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400 transition-all placeholder:text-gray-300"
+            className="w-full pl-9 pr-8 py-1.5 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400 transition-all placeholder:text-gray-300"
           />
           {refineQuery && (
             <button
