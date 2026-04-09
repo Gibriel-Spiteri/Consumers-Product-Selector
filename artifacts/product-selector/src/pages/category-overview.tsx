@@ -15,7 +15,7 @@ function CollapsibleCard({ sub, children }: { sub: { id: number; name: string; c
 
   return (
     <div
-      className="bg-white rounded-2xl border border-border shadow-sm p-6 hover:shadow-md hover:border-accent/30 transition-all"
+      className="bg-white rounded-2xl border border-border shadow-sm p-6 hover:shadow-md hover:border-accent/30 transition-all relative"
       onMouseEnter={() => setExpanded(true)}
       onMouseLeave={() => setExpanded(false)}
     >
@@ -39,27 +39,36 @@ function CollapsibleCard({ sub, children }: { sub: { id: number; name: string; c
         )}
       </div>
       {hasChildren && (
-        <div
-          className="overflow-hidden transition-all duration-300 ease-in-out"
-          style={{ maxHeight: expanded ? `${children.length * 36 + 16}px` : "0px", opacity: expanded ? 1 : 0 }}
-        >
-          <ul className="space-y-2 pt-3">
-            {children.map((item) => (
-              <li key={item.id}>
-                <Link
-                  href={linkForCategory(item as { id: number; children?: unknown[] })}
-                  className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center group py-0.5"
-                >
-                  <ChevronRight
-                    size={13}
-                    className="opacity-0 -ml-3.5 group-hover:opacity-100 group-hover:ml-0 transition-all text-accent mr-1 shrink-0"
-                  />
-                  {item.name}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <>
+          <div aria-hidden="true" className="invisible">
+            <ul className="space-y-2 pt-3">
+              {children.map((item) => (
+                <li key={item.id} className="py-0.5 text-sm">&nbsp;</li>
+              ))}
+            </ul>
+          </div>
+          <div
+            className="absolute left-6 right-6 transition-opacity duration-200 ease-in-out"
+            style={{ top: "calc(3.5rem + 12px)", opacity: expanded ? 1 : 0, pointerEvents: expanded ? "auto" : "none" }}
+          >
+            <ul className="space-y-2 pt-3">
+              {children.map((item) => (
+                <li key={item.id}>
+                  <Link
+                    href={linkForCategory(item as { id: number; children?: unknown[] })}
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center group py-0.5"
+                  >
+                    <ChevronRight
+                      size={13}
+                      className="opacity-0 -ml-3.5 group-hover:opacity-100 group-hover:ml-0 transition-all text-accent mr-1 shrink-0"
+                    />
+                    {item.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </>
       )}
       {!hasChildren && (
         <p className="text-xs text-gray-300 mt-2">No subcategories</p>
