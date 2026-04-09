@@ -568,21 +568,19 @@ export default function AdminPage() {
 
   return (
     <div className="max-w-5xl mx-auto py-8 px-6">
-      <div className="sticky top-[115px] z-30 bg-white border-b border-gray-200 -mx-6 px-6 py-4 mb-8">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="text-gray-400 hover:text-gray-600 transition-colors">
-            <ArrowLeft size={18} />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Admin</h1>
-            <p className="text-sm text-gray-500">Manage application settings</p>
-          </div>
+      <div className="flex items-center gap-3 mb-8">
+        <Link href="/" className="text-gray-400 hover:text-gray-600 transition-colors">
+          <ArrowLeft size={18} />
+        </Link>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Admin</h1>
+          <p className="text-sm text-gray-500">Manage application settings</p>
         </div>
       </div>
 
       <div className="flex gap-8">
-        <nav className="w-48 shrink-0 hidden lg:block">
-          <div className="sticky top-[190px] space-y-1">
+        <nav className="w-48 shrink-0 hidden lg:block self-start" style={{ position: "sticky", top: 130 }}>
+          <div className="space-y-1">
             {sections.map((s) => {
               const Icon = s.icon;
               return (
