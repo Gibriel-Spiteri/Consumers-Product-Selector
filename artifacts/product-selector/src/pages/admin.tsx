@@ -540,84 +540,22 @@ export default function AdminPage() {
     );
   }
 
-  const sections = [
-    { id: "sync", label: "NetSuite Sync", icon: RefreshCw },
-    { id: "uncategorized", label: "Without Category", icon: PackageX },
-    { id: "hero", label: "Hero Image", icon: ImageIcon },
-  ];
-
-  const [activeSection, setActiveSection] = useState("sync");
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            setActiveSection(entry.target.id);
-          }
-        }
-      },
-      { rootMargin: "-20% 0px -60% 0px" }
-    );
-    for (const s of sections) {
-      const el = document.getElementById(s.id);
-      if (el) observer.observe(el);
-    }
-    return () => observer.disconnect();
-  }, []);
-
   return (
-    <div className="max-w-5xl mx-auto px-6">
-      <div className="sticky top-[115px] z-30 bg-white py-4 mb-4">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="text-gray-400 hover:text-gray-600 transition-colors">
-            <ArrowLeft size={18} />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Admin</h1>
-            <p className="text-sm text-gray-500">Manage application settings</p>
-          </div>
+    <div className="max-w-3xl mx-auto py-8 px-6">
+      <div className="flex items-center gap-3 mb-6">
+        <Link href="/" className="text-gray-400 hover:text-gray-600 transition-colors">
+          <ArrowLeft size={18} />
+        </Link>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Admin</h1>
+          <p className="text-sm text-gray-500">Manage application settings</p>
         </div>
       </div>
 
-      <div className="lg:grid lg:grid-cols-[180px_1fr] gap-8">
-        <aside className="hidden lg:block">
-          <nav className="sticky top-[180px] space-y-1">
-            {sections.map((s) => {
-              const Icon = s.icon;
-              return (
-                <a
-                  key={s.id}
-                  href={`#${s.id}`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    document.getElementById(s.id)?.scrollIntoView({ behavior: "smooth" });
-                  }}
-                  className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all ${
-                    activeSection === s.id
-                      ? "bg-gray-900 text-white"
-                      : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-                  }`}
-                >
-                  <Icon size={14} />
-                  {s.label}
-                </a>
-              );
-            })}
-          </nav>
-        </aside>
-
-        <div className="space-y-6">
-          <div id="sync">
-            <SyncSection employeeName={`${employee.firstName} ${employee.lastName}`} />
-          </div>
-          <div id="uncategorized">
-            <UncategorizedSection />
-          </div>
-          <div id="hero">
-            <HeroImageSection employeeId={employee.id} />
-          </div>
-        </div>
+      <div className="space-y-6">
+        <SyncSection employeeName={`${employee.firstName} ${employee.lastName}`} />
+        <UncategorizedSection />
+        <HeroImageSection employeeId={employee.id} />
       </div>
     </div>
   );
