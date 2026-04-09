@@ -11,6 +11,7 @@ import ExpressBathPage from "@/pages/express-bath";
 import QuoteListPage from "@/pages/quote-list";
 import AdminPage from "@/pages/admin";
 import HowToUsePage from "@/pages/how-to-use";
+import HowToUse2Page from "@/pages/how-to-use-2";
 import LoginPage from "@/pages/login";
 import NotFound from "@/pages/not-found";
 import { QuoteListProvider } from "@/context/quote-list-context";
@@ -64,6 +65,7 @@ function App() {
                   <Route path="/list" component={QuoteListPage} />
                   <Route path="/admin" component={AdminPage} />
                   <Route path="/how-to-use" component={HowToUsePage} />
+                  <Route path="/how-to-use-2" component={HowToUse2Page} />
                   <Route component={NotFound} />
                 </Switch>
               </Layout>
