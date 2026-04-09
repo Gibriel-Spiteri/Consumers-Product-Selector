@@ -460,7 +460,7 @@ export default function CategoryProducts() {
           ))}
         </nav>
 
-        <div className="flex items-end justify-between gap-4">
+        <div className="flex items-end justify-between gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-semibold text-gray-900">
               {path.length > 0 ? path[path.length - 1].name : "Products"}
@@ -472,54 +472,6 @@ export default function CategoryProducts() {
                   : `${products.length} ${products.length === 1 ? "item" : "items"}`}
               </p>
             )}
-          </div>
-
-          <div className="flex items-center gap-3 shrink-0">
-
-          <button
-            onClick={() => setInStockOnly(!inStockOnly)}
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all border",
-              inStockOnly
-                ? "bg-emerald-50 text-emerald-600 border-emerald-200"
-                : "bg-white text-gray-400 border-gray-200 hover:text-gray-700"
-            )}
-          >
-            <span className={cn(
-              "w-2 h-2 rounded-full transition-colors",
-              inStockOnly ? "bg-emerald-500" : "bg-gray-300"
-            )} />
-            In Stock Only
-          </button>
-
-          <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
-            <button
-              onClick={() => setView("list")}
-              title="List view"
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] font-medium transition-all",
-                view === "list"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-400 hover:text-gray-700"
-              )}
-            >
-              <LayoutList size={14} />
-              <span className="hidden sm:inline">List</span>
-            </button>
-            <button
-              onClick={() => setView("grid")}
-              title="Grid view"
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] font-medium transition-all",
-                view === "grid"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-400 hover:text-gray-700"
-              )}
-            >
-              <LayoutGrid size={14} />
-              <span className="hidden sm:inline">Grid</span>
-            </button>
-          </div>
           </div>
         </div>
       </div>
@@ -533,7 +485,7 @@ export default function CategoryProducts() {
             onClear={clearFilters}
           />
         </div>
-        <div className="relative w-52 shrink-0 ml-auto">
+        <div className="relative w-52 shrink-0">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
@@ -550,6 +502,49 @@ export default function CategoryProducts() {
               <X size={14} />
             </button>
           )}
+        </div>
+        <button
+          onClick={() => setInStockOnly(!inStockOnly)}
+          className={cn(
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all border shrink-0",
+            inStockOnly
+              ? "bg-emerald-50 text-emerald-600 border-emerald-200"
+              : "bg-white text-gray-400 border-gray-200 hover:text-gray-700"
+          )}
+        >
+          <span className={cn(
+            "w-2 h-2 rounded-full transition-colors",
+            inStockOnly ? "bg-emerald-500" : "bg-gray-300"
+          )} />
+          In Stock Only
+        </button>
+        <div className="flex items-center bg-gray-100 rounded-lg p-0.5 shrink-0">
+          <button
+            onClick={() => setView("list")}
+            title="List view"
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] font-medium transition-all",
+              view === "list"
+                ? "bg-white text-gray-900 shadow-sm"
+                : "text-gray-400 hover:text-gray-700"
+            )}
+          >
+            <LayoutList size={14} />
+            <span className="hidden sm:inline">List</span>
+          </button>
+          <button
+            onClick={() => setView("grid")}
+            title="Grid view"
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] font-medium transition-all",
+              view === "grid"
+                ? "bg-white text-gray-900 shadow-sm"
+                : "text-gray-400 hover:text-gray-700"
+            )}
+          >
+            <LayoutGrid size={14} />
+            <span className="hidden sm:inline">Grid</span>
+          </button>
         </div>
       </div>
 
