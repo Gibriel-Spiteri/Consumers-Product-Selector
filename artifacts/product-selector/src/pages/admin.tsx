@@ -82,6 +82,7 @@ function SyncSection({ employeeName }: { employeeName: string }) {
   const [windowEnd, setWindowEnd] = useState(17);
   const [syncTimes, setSyncTimes] = useState<string[]>([]);
   const [savingSchedule, setSavingSchedule] = useState(false);
+  const [scheduleSaved, setScheduleSaved] = useState(false);
   const qc = useQueryClient();
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -253,7 +254,6 @@ function SyncSection({ employeeName }: { employeeName: string }) {
         <div className="flex items-center gap-2 mb-4">
           <Clock size={14} className="text-gray-400" />
           <span className="text-sm font-medium text-gray-700">Automatic Sync Schedule</span>
-          {savingSchedule && <span className="text-xs text-gray-400 ml-1">Saving…</span>}
         </div>
 
         <div className="bg-gray-50 rounded-lg p-4 space-y-4">
@@ -261,21 +261,7 @@ function SyncSection({ employeeName }: { employeeName: string }) {
             <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Frequency</span>
             <select
               value={schedule}
-              onChange={async (e) => {
-                const newInterval = e.target.value as ScheduleInterval;
-                setSchedule(newInterval);
-                setSavingSchedule(true);
-                try {
-                  const res = await fetch("/api/dev/sync/schedule", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ interval: newInterval }),
-                  });
-                  const data = await res.json();
-                  if (data?.syncTimes) setSyncTimes(data.syncTimes);
-                } catch {}
-                setSavingSchedule(false);
-              }}
+              onChange={(e) => setSchedule(e.target.value as ScheduleInterval)}
               disabled={savingSchedule}
               className="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 disabled:opacity-60 w-fit"
             >
@@ -289,26 +275,9 @@ function SyncSection({ employeeName }: { employeeName: string }) {
                 <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">First Sync</span>
                 <select
                   value={windowEnabled ? windowStart : ""}
-                  onChange={async (e) => {
-                    const newStart = Number(e.target.value);
-                    setWindowStart(newStart);
+                  onChange={(e) => {
+                    setWindowStart(Number(e.target.value));
                     if (!windowEnabled) setWindowEnabled(true);
-                    setSavingSchedule(true);
-                    try {
-                      const res = await fetch("/api/dev/sync/schedule", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          timeWindow: { startHour: newStart, endHour: windowEnabled ? windowEnd : 23 },
-                        }),
-                      });
-                      const data = await res.json();
-                      if (data?.syncTimes) setSyncTimes(data.syncTimes);
-                      if (data?.timeWindow) {
-                        setWindowEnd(data.timeWindow.endHour);
-                      }
-                    } catch {}
-                    setSavingSchedule(false);
                   }}
                   disabled={savingSchedule}
                   className="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 disabled:opacity-60 w-fit"
@@ -322,26 +291,9 @@ function SyncSection({ employeeName }: { employeeName: string }) {
                 <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Last Sync</span>
                 <select
                   value={windowEnabled ? windowEnd : ""}
-                  onChange={async (e) => {
-                    const newEnd = Number(e.target.value);
-                    setWindowEnd(newEnd);
+                  onChange={(e) => {
+                    setWindowEnd(Number(e.target.value));
                     if (!windowEnabled) setWindowEnabled(true);
-                    setSavingSchedule(true);
-                    try {
-                      const res = await fetch("/api/dev/sync/schedule", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          timeWindow: { startHour: windowEnabled ? windowStart : 0, endHour: newEnd },
-                        }),
-                      });
-                      const data = await res.json();
-                      if (data?.syncTimes) setSyncTimes(data.syncTimes);
-                      if (data?.timeWindow) {
-                        setWindowStart(data.timeWindow.startHour);
-                      }
-                    } catch {}
-                    setSavingSchedule(false);
                   }}
                   disabled={savingSchedule}
                   className="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 disabled:opacity-60 w-fit"
@@ -361,25 +313,46 @@ function SyncSection({ employeeName }: { employeeName: string }) {
 
           {schedule !== "off" && windowEnabled && (
             <button
-              onClick={async () => {
-                setWindowEnabled(false);
-                setSavingSchedule(true);
-                try {
-                  const res = await fetch("/api/dev/sync/schedule", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ timeWindow: null }),
-                  });
-                  const data = await res.json();
-                  if (data?.syncTimes) setSyncTimes(data.syncTimes);
-                } catch {}
-                setSavingSchedule(false);
-              }}
+              onClick={() => setWindowEnabled(false)}
               className="text-xs text-gray-400 hover:text-gray-600 underline underline-offset-2 transition-colors"
             >
               Reset to all day
             </button>
           )}
+
+          <button
+            onClick={async () => {
+              setSavingSchedule(true);
+              try {
+                const body: Record<string, unknown> = { interval: schedule };
+                if (schedule !== "off") {
+                  body.timeWindow = windowEnabled ? { startHour: windowStart, endHour: windowEnd } : null;
+                }
+                const res = await fetch("/api/dev/sync/schedule", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(body),
+                });
+                const data = await res.json();
+                if (data?.syncTimes) setSyncTimes(data.syncTimes);
+                if (data?.interval) setSchedule(data.interval);
+                if (data?.timeWindow) {
+                  setWindowEnabled(true);
+                  setWindowStart(data.timeWindow.startHour);
+                  setWindowEnd(data.timeWindow.endHour);
+                } else if (data && !data.timeWindow) {
+                  setWindowEnabled(false);
+                }
+                setScheduleSaved(true);
+                setTimeout(() => setScheduleSaved(false), 2000);
+              } catch {}
+              setSavingSchedule(false);
+            }}
+            disabled={savingSchedule}
+            className="flex items-center gap-1.5 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-60"
+          >
+            {savingSchedule ? "Saving…" : scheduleSaved ? "Saved!" : "Save Schedule"}
+          </button>
 
           {schedule !== "off" && syncTimes.length > 0 && (
             <div className="pt-3 border-t border-gray-200">
