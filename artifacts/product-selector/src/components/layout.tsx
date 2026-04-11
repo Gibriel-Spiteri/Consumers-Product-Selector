@@ -30,8 +30,6 @@ function ProductStatsDebug() {
     staleTime: 60000,
   });
 
-  if (isLoading || !data) return null;
-
   const formattedTime = lastSync?.completedAt
     ? new Date(lastSync.completedAt.endsWith("Z") ? lastSync.completedAt : lastSync.completedAt + "Z").toLocaleString("en-US", {
         timeZone: "America/New_York",
@@ -45,14 +43,14 @@ function ProductStatsDebug() {
     : null;
 
   return (
-    <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-center gap-4 text-[11px] font-mono text-white/30">
+    <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-center gap-4 text-[14px] text-[#b0b0b0]">
       {formattedTime && (
         <>
-          <span className="text-[14px] text-[#b0b0b0] bg-[transparent]">Data Synced: {formattedTime}</span>
+          <span>Data Synced: {formattedTime}</span>
           <span className="w-px h-3 bg-white/15" />
-          <span className="text-[14px] text-[#b0b0b0] bg-[transparent]">Inventory Levels are Live</span>
         </>
       )}
+      <span>Inventory Levels are Live</span>
     </div>
   );
 }
