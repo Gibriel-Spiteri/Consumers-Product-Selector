@@ -32,7 +32,8 @@ const INTERVAL_HOURS: Record<ScheduleInterval, number> = {
 };
 
 let timeoutId: ReturnType<typeof setTimeout> | null = null;
-let isSyncing = false;
+let isScheduledSyncing = false;
+let isManualSyncing = false;
 let currentInterval: ScheduleInterval = "6h";
 let timeWindow: TimeWindow | null = null;
 
@@ -140,8 +141,8 @@ function msUntilNextSyncSlot(): number {
 }
 
 async function runSync() {
-  if (isSyncing) {
-    logger.warn("Skipping scheduled sync — previous sync still in progress");
+  if (isScheduledSyncing) {
+    logger.warn("Skipping scheduled sync — previous scheduled sync still in progress");
     scheduleNext();
     return;
   }
@@ -155,7 +156,21 @@ async function runSync() {
     return;
   }
 
-  isSyncing = true;
+  if (isManualSyncing) {
+    logger.info("Manual sync in progress — waiting for it to finish before scheduled sync");
+    const waitForManual = () =>
+      new Promise<void>((resolve) => {
+        const check = setInterval(() => {
+          if (!isManualSyncing) {
+            clearInterval(check);
+            resolve();
+          }
+        }, 5000);
+      });
+    await waitForManual();
+  }
+
+  isScheduledSyncing = true;
   try {
     logger.info("Running scheduled NetSuite sync");
     const result = await syncFromNetSuite("Scheduled");
@@ -170,7 +185,7 @@ async function runSync() {
   } catch (err) {
     logger.error({ err }, "Scheduled sync threw an unexpected error");
   } finally {
-    isSyncing = false;
+    isScheduledSyncing = false;
     scheduleNext();
   }
 }
@@ -243,7 +258,7 @@ export function startScheduledSync() {
     return;
   }
 
-  if (timeoutId !== null || isSyncing) {
+  if (timeoutId !== null || isScheduledSyncing) {
     logger.warn("Scheduled sync already running — skipping duplicate start");
     return;
   }
@@ -257,11 +272,11 @@ export function startScheduledSync() {
 }
 
 export async function triggerManualSync(syncedBy?: string) {
-  if (isSyncing) {
+  if (isManualSyncing || isScheduledSyncing) {
     return { status: "already_running" as const };
   }
   logger.info("Manual sync triggered");
-  isSyncing = true;
+  isManualSyncing = true;
   try {
     const result = await syncFromNetSuite(syncedBy ?? "Manual");
     if (result.success) {
@@ -275,7 +290,7 @@ export async function triggerManualSync(syncedBy?: string) {
     logger.error({ err }, "Manual sync threw an unexpected error");
     return { status: "error" as const, message: String(err) };
   } finally {
-    isSyncing = false;
+    isManualSyncing = false;
   }
 }
 
