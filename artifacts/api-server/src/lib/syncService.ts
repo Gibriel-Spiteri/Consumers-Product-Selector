@@ -1,4 +1,4 @@
-import { db } from "@workspace/db";
+import { db, appSettingsTable } from "@workspace/db";
 import { categoriesTable, productsTable, productAttributesTable, relatedItemsTable } from "@workspace/db";
 import { eq, notInArray, sql } from "drizzle-orm";
 import {
@@ -29,6 +29,29 @@ let lastSyncResult: SyncResult | null = null;
 
 export function getLastSyncResult(): SyncResult | null {
   return lastSyncResult;
+}
+
+export async function loadPersistedSyncResult() {
+  try {
+    const rows = await db.select().from(appSettingsTable).where(eq(appSettingsTable.key, "last_sync_result"));
+    if (rows.length > 0) {
+      lastSyncResult = JSON.parse(rows[0].value);
+      logger.info({ completedAt: lastSyncResult?.completedAt }, "Loaded persisted last sync result");
+    }
+  } catch (err) {
+    logger.error({ err }, "Failed to load persisted sync result");
+  }
+}
+
+async function persistSyncResult(result: SyncResult) {
+  try {
+    await db
+      .insert(appSettingsTable)
+      .values({ key: "last_sync_result", value: JSON.stringify(result) })
+      .onConflictDoUpdate({ target: appSettingsTable.key, set: { value: JSON.stringify(result) } });
+  } catch (err) {
+    logger.error({ err }, "Failed to persist sync result");
+  }
 }
 
 export interface SyncProgress {
@@ -344,6 +367,7 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
       completedAt: new Date().toISOString(),
     };
     lastSyncResult = result;
+    persistSyncResult(result);
     setTimeout(() => { currentProgress = null; }, 5000);
     return result;
   } catch (err) {

@@ -30,8 +30,9 @@ function ProductStatsDebug() {
     staleTime: 60000,
   });
 
-  const formattedTime = lastSync?.completedAt
-    ? new Date(lastSync.completedAt.endsWith("Z") ? lastSync.completedAt : lastSync.completedAt + "Z").toLocaleString("en-US", {
+  const syncTimestamp = lastSync?.completedAt || data?.lastUpdated;
+  const formattedTime = syncTimestamp
+    ? new Date(syncTimestamp.endsWith("Z") ? syncTimestamp : syncTimestamp + "Z").toLocaleString("en-US", {
         timeZone: "America/New_York",
         month: "short",
         day: "numeric",
