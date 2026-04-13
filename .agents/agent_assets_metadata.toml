@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "tw4pM5Lbltytdrx159aPQ"
+uri = "file://netsuite-web-categories-guide.md"
+type = "text"
+title = "NetSuite Web Categories Build Guide"
