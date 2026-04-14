@@ -6,42 +6,46 @@ This guide covers how to replace NetSuite's SiteBuilder category system with cus
 
 ## Overview
 
-The SiteBuilder integration provides three tables we need to replace:
+The SiteBuilder integration provides tables we need to replace:
 
-| SiteBuilder Table | Purpose | Custom Replacement |
-|---|---|---|
-| `SiteCategory` | Category tree (name, parent, hierarchy, online flag) | `customrecord_web_category` |
-| `ItemSiteCategory` | Links items to categories (many-to-many) | `customrecord_web_category_item` |
-| `InventoryItemPresentationItem` | Related/cross-sell item relationships | `customrecord_web_related_item` |
+| SiteBuilder Table | Purpose | Custom Replacement | Status |
+|---|---|---|---|
+| `SiteCategory` | Category tree (name, parent, hierarchy) | `customrecord_cps_site_category` (CPS Site Category List) | Built |
+| `ItemSiteCategory` | Links items to categories | `customrecord_cps_item_category` (CPS Item Category Prodline Matrix) | Built |
+| `InventoryItemPresentationItem` | Related/cross-sell item relationships | TBD | Not yet started |
 
 ---
 
-## Custom Record 1: Web Category
+## Custom Record 1: CPS Site Category List
 
-**Record ID:** `customrecord_web_category`
+**Record Name:** CPS Site Category List
+**Record ID:** `customrecord_cps_site_category`
+**Internal ID:** 1141
 
 This stores the category hierarchy (replaces `SiteCategory`).
 
 ### Fields
 
-| Field ID | Label | Type | Required | Notes |
-|---|---|---|---|---|
-| `name` (built-in) | Name | Text | Yes | Short display name (e.g., "23\" to 28\" Wide") |
-| `custrecord_webcat_fullname` | Full Name | Text | No | Auto-generated full path (e.g., "Bath : Cabinetry : 23\" to 28\" Wide"). Used by the app to determine hierarchy depth. |
-| `custrecord_webcat_parent` | Parent Category | List/Record (self-reference) | No | Points to the parent `customrecord_web_category` record. Leave blank for top-level categories. |
-| `custrecord_webcat_sort_order` | Sort Order | Integer | No | Controls display ordering within a level |
-| `custrecord_webcat_is_online` | Is Online | Checkbox | No | Controls whether the category is visible in the app |
+| Field ID | Label | Type | Notes |
+|---|---|---|---|
+| `name` (built-in) | Name | Text | Auto-generated full path (e.g., "Bath : Cabinetry : 23\" to 28\" Wide"). Written by the User Event script. Used as the display value in dropdowns so users see the full hierarchy. |
+| `custrecord_cps_shortname` | Short Name | Free-Form Text | The leaf/display name entered by the user (e.g., "23\" to 28\" Wide"). This is what the app uses as the category display name. |
+| `custrecord_cps_sub_category_of` | Sub-Category of | List/Record → `customrecord_cps_site_category` | Self-referencing parent pointer. Leave blank for top-level categories. |
+| `custrecord_cps_category_level` | Category Level | Integer Number | Hierarchy depth (1 = root, 2 = second level, etc.). |
+| `custrecord_cps_site` | Site | Free-Form Text | The site this category belongs to (e.g., "CPS"). |
 
 ### Configuration
 
-- **Record Name:** CPS Web Category
 - **Include Name Field:** Yes
-- **Allow Inline Editing:** Yes (recommended for easier management)
-- **Show ID:** Yes (helpful for debugging)
+- **Allow Attachments:** Yes
+- **Show Notes:** Yes
+- **Show Remove Link:** Yes
+- **Allow Child Record Editing:** Yes
+- **Access Type:** Require Custom Record Entries Permission
 
-### Full Name Auto-Generation (User Event Script)
+### Full Path Auto-Generation (User Event Script)
 
-Deploy a **User Event Script** (Before Submit) on `customrecord_web_category` to automatically build the `custrecord_webcat_fullname` field. This replicates the behavior of SiteBuilder's built-in `fullname` field.
+Deploy a **User Event Script** (Before Submit) on `customrecord_cps_site_category` to automatically build the `name` field from the short name plus the parent chain. This replicates the behavior of SiteBuilder's built-in `fullname` field and ensures the Site Category dropdown on the CPS Item Category Prodline Matrix record shows the full hierarchical path.
 
 **Script Logic:**
 
@@ -55,26 +59,26 @@ define(['N/record', 'N/search'], function (record, search) {
 
     function beforeSubmit(context) {
         var rec = context.newRecord;
-        var name = rec.getValue({ fieldId: 'name' });
-        var parentId = rec.getValue({ fieldId: 'custrecord_webcat_parent' });
+        var shortName = rec.getValue({ fieldId: 'custrecord_cps_shortname' });
+        var parentId = rec.getValue({ fieldId: 'custrecord_cps_sub_category_of' });
 
-        var fullName = buildFullName(name, parentId);
-        rec.setValue({ fieldId: 'custrecord_webcat_fullname', value: fullName });
+        var fullName = buildFullName(shortName, parentId);
+        rec.setValue({ fieldId: 'name', value: fullName });
     }
 
-    function buildFullName(name, parentId) {
-        var parts = [name];
+    function buildFullName(shortName, parentId) {
+        var parts = [shortName];
 
         while (parentId) {
             var parentLookup = search.lookupFields({
-                type: 'customrecord_web_category',
+                type: 'customrecord_cps_site_category',
                 id: parentId,
-                columns: ['name', 'custrecord_webcat_parent']
+                columns: ['custrecord_cps_shortname', 'custrecord_cps_sub_category_of']
             });
 
-            parts.unshift(parentLookup.name);
+            parts.unshift(parentLookup.custrecord_cps_shortname);
 
-            var parentRefs = parentLookup.custrecord_webcat_parent;
+            var parentRefs = parentLookup.custrecord_cps_sub_category_of;
             parentId = (parentRefs && parentRefs.length > 0) ? parentRefs[0].value : null;
         }
 
@@ -88,7 +92,7 @@ define(['N/record', 'N/search'], function (record, search) {
 ```
 
 **Deployment:**
-- **Applied To:** `customrecord_web_category`
+- **Applied To:** `customrecord_cps_site_category`
 - **Event Type:** Before Submit (Create & Edit)
 - **Status:** Released
 
@@ -96,67 +100,54 @@ define(['N/record', 'N/search'], function (record, search) {
 
 ---
 
-## Custom Record 2: Web Category Item
+## Custom Record 2: CPS Item Category Prodline Matrix
 
-**Record ID:** `customrecord_web_category_item`
+**Record Name:** CPS Item Category Prodline Matrix
+**Record ID:** `customrecord_cps_item_category`
+**Internal ID:** 1142
 
-This is the junction record linking items to categories (replaces `ItemSiteCategory`).
+This is the junction record linking items (or product lines) to site categories (replaces `ItemSiteCategory`).
 
 ### Fields
 
-| Field ID | Label | Type | Required | Notes |
-|---|---|---|---|---|
-| `custrecord_webci_category` | Web Category | List/Record → `customrecord_web_category` | Yes | The category this item belongs to |
-| `custrecord_webci_item` | Item | List/Record → Item | Yes | The inventory item or kit item |
-| `custrecord_webci_is_default` | Is Default | Checkbox | No | Marks the primary category for items in multiple categories. The app uses this to determine which category an item "belongs to." |
-| `custrecord_webci_sort_order` | Sort Order | Integer | No | Controls item ordering within the category |
+| Field ID | Label | Type | Notes |
+|---|---|---|---|
+| `custrecord_cps_product_line` | Product Line | List/Record → Product Line | The product line classification. If set **without** an Item, the record is reserved for future product-line-level functionality and is **ignored** by the app during sync. |
+| `custrecord_cps_ic_item` | Item | List/Record → Item | The inventory item or kit item. **When this field has a value, the item is displayed in the Product Selector app.** |
+| `custrecord_cps_ic_site` | Site | Free-Form Text | The site this assignment applies to (e.g., "CPS"). |
+| `custrecord_cps_ic_category` | Site Category | List/Record → `customrecord_cps_site_category` | The CPS Site Category this item is assigned to. Dropdown displays the full hierarchical path from the `name` field. |
+| `custrecord_cps_ic_preferred` | Preferred | Check Box | Marks the primary category for items assigned to multiple categories. The app uses this to determine the default category for breadcrumbs and navigation. |
+| `custrecord_cps_ic_description` | Description | Free-Form Text | Optional notes for this category assignment. |
 
 ### Configuration
 
-- **Record Name:** CPS Web Category Item
-- **Include Name Field:** Optional (can auto-generate from category + item)
-- **Allow Inline Editing:** Yes
+- **Include Name Field:** Yes
+- **Allow Attachments:** Yes
+- **Show Notes:** Yes
+- **Show Remove Link:** Yes
+- **Allow Child Record Editing:** Yes
+- **Access Type:** Require Custom Record Entries Permission
+
+### Sync Behavior
+
+The app sync service should filter this record based on whether an Item is present:
+
+| Scenario | App Behavior |
+|---|---|
+| **Item is set** (with or without Product Line) | Item is synced and displayed in the Product Selector under the assigned Site Category |
+| **Only Product Line is set** (no Item) | Record is **skipped** during sync — reserved for future product-line-level features |
 
 ### Important Notes
 
-- Each item should have **exactly one** record marked as "Is Default"
-- An item can have multiple category assignments (appear in multiple categories), but the default determines where it shows up in breadcrumbs and primary navigation
-- If no default is set, the app will fall back to the first category assignment found
+- Each item should have **exactly one** record marked as "Preferred"
+- An item can have multiple category assignments (appear in multiple categories), but the preferred flag determines where it shows up in breadcrumbs and primary navigation
+- If no preferred is set, the app will fall back to the first category assignment found
 
 ---
 
-## Custom Record 3: Web Related Item
+## Custom Record 3: Web Related Item (Not Yet Built)
 
-**Record ID:** `customrecord_web_related_item`
-
-This stores cross-sell and upsell relationships between products (replaces `InventoryItemPresentationItem`).
-
-### Fields
-
-| Field ID | Label | Type | Required | Notes |
-|---|---|---|---|---|
-| `custrecord_webri_parent_item` | Parent Item | List/Record → Item | Yes | The main product |
-| `custrecord_webri_related_item` | Related Item | List/Record → Item | Yes | The cross-sell/upsell product |
-| `custrecord_webri_sort_order` | Sort Order | Integer | No | Controls display ordering of related items |
-
-### Configuration
-
-- **Record Name:** CPS Web Related Item
-- **Include Name Field:** Optional
-
----
-
-## Migrating Existing Data
-
-To migrate your current SiteBuilder data into the new custom records, run a **Map/Reduce Script** in NetSuite that:
-
-1. **Categories:** Queries `SiteCategory` and creates corresponding `customrecord_web_category` records, preserving the parent-child relationships and online flags.
-
-2. **Item Assignments:** Queries `ItemSiteCategory` and creates corresponding `customrecord_web_category_item` records, mapping old category IDs to new custom record IDs.
-
-3. **Related Items:** Queries `InventoryItemPresentationItem` and creates corresponding `customrecord_web_related_item` records.
-
-> **Tip:** Migrate in order — categories first (parents before children), then item assignments, then related items.
+This record will store cross-sell and upsell relationships between products (replaces `InventoryItemPresentationItem`). To be defined in a future phase.
 
 ---
 
@@ -174,15 +165,19 @@ WHERE isinactive = 'F'
 ORDER BY fullname
 ```
 
-**After (Custom Record):**
+**After (CPS Site Category List):**
 ```sql
-SELECT id, name AS itemid, custrecord_webcat_fullname AS fullname,
-       custrecord_webcat_parent AS parentcategory,
-       custrecord_webcat_is_online AS isonline
-FROM customrecord_web_category
+SELECT id,
+       custrecord_cps_shortname AS itemid,
+       name AS fullname,
+       custrecord_cps_sub_category_of AS parentcategory,
+       custrecord_cps_category_level AS level
+FROM customrecord_cps_site_category
 WHERE isinactive = 'F'
-ORDER BY custrecord_webcat_fullname
+ORDER BY name
 ```
+
+> **Note:** The CPS Site Category List does not have an `isonline` field like SiteBuilder did. Categories are considered online if they are active (not inactive). If online/offline control is needed in the future, a checkbox field can be added.
 
 ### Item-Category Join (in InventoryItem and KitItem queries)
 
@@ -196,39 +191,47 @@ LEFT JOIN (
 ) isc_any ON isc_any.item = item.id
 ```
 
-**After (Custom Record):**
+**After (CPS Item Category Prodline Matrix):**
 ```sql
-LEFT JOIN customrecord_web_category_item wci_def
-  ON wci_def.custrecord_webci_item = item.id
-  AND wci_def.custrecord_webci_is_default = 'T'
+LEFT JOIN customrecord_cps_item_category cic_def
+  ON cic_def.custrecord_cps_ic_item = item.id
+  AND cic_def.custrecord_cps_ic_preferred = 'T'
+  AND cic_def.isinactive = 'F'
 LEFT JOIN (
-  SELECT custrecord_webci_item AS item, MIN(custrecord_webci_category) AS category
-  FROM customrecord_web_category_item GROUP BY custrecord_webci_item
-) wci_any ON wci_any.item = item.id
+  SELECT custrecord_cps_ic_item AS item, MIN(custrecord_cps_ic_category) AS category
+  FROM customrecord_cps_item_category
+  WHERE custrecord_cps_ic_item IS NOT NULL AND isinactive = 'F'
+  GROUP BY custrecord_cps_ic_item
+) cic_any ON cic_any.item = item.id
 ```
 
 And update the SELECT clause:
 ```sql
-COALESCE(wci_def.custrecord_webci_category, wci_any.category) AS sitecategoryid
+COALESCE(cic_def.custrecord_cps_ic_category, cic_any.category) AS sitecategoryid
 ```
+
+> **Key filter:** The `WHERE custrecord_cps_ic_item IS NOT NULL` clause ensures that product-line-only records (no item specified) are excluded from the sync. These records are reserved for future functionality.
 
 ### Related Items Query
 
-**Before (SiteBuilder):**
+Related items will continue using the existing SiteBuilder table (`InventoryItemPresentationItem`) until the replacement custom record is built:
+
 ```sql
 SELECT superitem, presitemid, description, baseprice, onlineprice
 FROM InventoryItemPresentationItem
 ```
 
-**After (Custom Record):**
-```sql
-SELECT custrecord_webri_parent_item AS superitem,
-       custrecord_webri_related_item AS presitemid
-FROM customrecord_web_related_item
-WHERE isinactive = 'F'
-```
+---
 
-> **Note:** The `description`, `baseprice`, and `onlineprice` fields from the old related items table were sourced from the item record itself — these are still available by joining the item table if needed, but the current app fetches product details separately.
+## Migration Approach
+
+To migrate existing SiteBuilder data into the new custom records:
+
+1. **Categories:** Run a Map/Reduce script that queries `SiteCategory` and creates corresponding `customrecord_cps_site_category` records, preserving parent-child relationships. Migrate parents before children (topological sort).
+
+2. **Item Assignments:** Run a Map/Reduce script that queries `ItemSiteCategory` and creates corresponding `customrecord_cps_item_category` records, mapping old SiteBuilder category IDs to the new CPS Site Category List IDs.
+
+> **Tip:** Migrate in order — categories first (parents before children), then item assignments.
 
 ---
 
@@ -236,14 +239,14 @@ WHERE isinactive = 'F'
 
 After setting up the custom records and updating the queries:
 
-- [ ] Create a few test categories with parent-child relationships
-- [ ] Verify the `fullname` field auto-populates correctly on save
-- [ ] Assign items to categories with the "Is Default" flag
+- [ ] Create test categories with parent-child relationships
+- [ ] Verify the `name` field auto-populates with the full path on save (e.g., "Bath : Cabinetry : 23\" to 28\" Wide")
+- [ ] Verify the Site Category dropdown on the CPS Item Category Prodline Matrix shows the full path
+- [ ] Assign items to categories with the "Preferred" flag
+- [ ] Create a product-line-only record (no item) and confirm it is skipped during sync
 - [ ] Run a sync in the app and verify categories appear correctly
 - [ ] Verify items show under the correct categories
-- [ ] Verify related items display on product detail views
 - [ ] Test renaming a parent category and re-saving children to update full names
-- [ ] Confirm the category dropdown on the CPS Item Category record shows full paths
 
 ---
 
@@ -251,8 +254,10 @@ After setting up the custom records and updating the queries:
 
 | Step | Where | What |
 |---|---|---|
-| 1 | NetSuite | Create the 3 custom records |
-| 2 | NetSuite | Deploy the User Event script for full name generation |
+| 1 | NetSuite | Custom records are built (CPS Site Category List + CPS Item Category Prodline Matrix) |
+| 2 | NetSuite | Deploy the User Event script for full name generation on CPS Site Category List |
 | 3 | NetSuite | Migrate existing SiteBuilder data to the new records |
-| 4 | Application | Update SuiteQL queries in `netsuite.ts` |
+| 4 | Application | Update SuiteQL queries in `netsuite.ts` to point at the new custom records |
 | 5 | Both | Test end-to-end sync and verify data integrity |
+| 6 | Future | Build related items custom record to replace `InventoryItemPresentationItem` |
+| 7 | Future | Implement product-line-level functionality for records without a specific item |
