@@ -196,7 +196,7 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
         await db
           .delete(categoriesTable)
           .where(notInArray(categoriesTable.netsuiteId, syncedNetsuiteIds));
-        logger.info({ count: staleCategories.length }, "Removed stale categories not in current SiteCategory sync");
+        logger.info({ count: staleCategories.length }, "Removed stale categories not in current CPS Site Category sync");
       }
     }
 

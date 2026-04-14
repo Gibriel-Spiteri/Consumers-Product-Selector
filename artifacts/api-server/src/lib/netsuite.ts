@@ -311,9 +311,14 @@ export async function fetchNetSuiteCategories(): Promise<NetSuiteCategory[]> {
     itemid: string;
     fullname: string;
     parentcategory: string | null;
-    isonline: string;
   }>(
-    "SELECT id, itemid, fullname, parentcategory, isonline FROM SiteCategory WHERE isinactive = 'F' ORDER BY fullname"
+    `SELECT id,
+            custrecord_cps_shortname AS itemid,
+            name AS fullname,
+            custrecord_cps_sub_category_of AS parentcategory
+     FROM customrecord_cps_site_category
+     WHERE isinactive = 'F'
+     ORDER BY name`
   );
 
   return result.items.map((row) => ({
@@ -321,7 +326,7 @@ export async function fetchNetSuiteCategories(): Promise<NetSuiteCategory[]> {
     name: row.itemid,
     fullname: row.fullname,
     parent: row.parentcategory ? String(row.parentcategory) : null,
-    isOnline: row.isonline === "T",
+    isOnline: true,
   }));
 }
 
@@ -414,11 +419,11 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
       item.custitem_noreorders AS isnoreorder,
       item.custitem_expressbath AS isexpressbath,
       item.custitem_specord_stock AS isspecialorderstock,
-      COALESCE(isc_def.category, isc_any.category) AS sitecategoryid
+      COALESCE(cic_def.custrecord_cps_ic_category, cic_any.category) AS sitecategoryid
     FROM InventoryItem item
     LEFT JOIN pricing p ON p.item = item.id AND p.pricelevel = 1 AND p.quantity = 1
-    LEFT JOIN ItemSiteCategory isc_def ON isc_def.item = item.id AND isc_def.isdefault = 'T'
-    LEFT JOIN (SELECT item, MIN(category) AS category FROM ItemSiteCategory GROUP BY item) isc_any ON isc_any.item = item.id
+    LEFT JOIN customrecord_cps_item_category cic_def ON cic_def.custrecord_cps_ic_item = item.id AND cic_def.custrecord_cps_ic_preferred = 'T' AND cic_def.isinactive = 'F'
+    LEFT JOIN (SELECT custrecord_cps_ic_item AS item, MIN(custrecord_cps_ic_category) AS category FROM customrecord_cps_item_category WHERE custrecord_cps_ic_item IS NOT NULL AND isinactive = 'F' GROUP BY custrecord_cps_ic_item) cic_any ON cic_any.item = item.id
     WHERE item.isinactive = 'F' AND item.isonline = 'T' AND UPPER(BUILTIN.DF(item.custitem_stock_code)) = 'STOCK'
     ORDER BY item.itemid`
   );
@@ -441,11 +446,11 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
         NULL AS isnoreorder,
         item.custitem_expressbath AS isexpressbath,
         NULL AS isspecialorderstock,
-        COALESCE(isc_def.category, isc_any.category) AS sitecategoryid
+        COALESCE(cic_def.custrecord_cps_ic_category, cic_any.category) AS sitecategoryid
       FROM KitItem item
       LEFT JOIN pricing p ON p.item = item.id AND p.pricelevel = 1 AND p.quantity = 1
-      LEFT JOIN ItemSiteCategory isc_def ON isc_def.item = item.id AND isc_def.isdefault = 'T'
-      LEFT JOIN (SELECT item, MIN(category) AS category FROM ItemSiteCategory GROUP BY item) isc_any ON isc_any.item = item.id
+      LEFT JOIN customrecord_cps_item_category cic_def ON cic_def.custrecord_cps_ic_item = item.id AND cic_def.custrecord_cps_ic_preferred = 'T' AND cic_def.isinactive = 'F'
+      LEFT JOIN (SELECT custrecord_cps_ic_item AS item, MIN(custrecord_cps_ic_category) AS category FROM customrecord_cps_item_category WHERE custrecord_cps_ic_item IS NOT NULL AND isinactive = 'F' GROUP BY custrecord_cps_ic_item) cic_any ON cic_any.item = item.id
       WHERE item.isinactive = 'F' AND item.isonline = 'T'
       ORDER BY item.itemid`
     );
