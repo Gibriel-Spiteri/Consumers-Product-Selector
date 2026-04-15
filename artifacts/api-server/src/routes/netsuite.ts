@@ -50,13 +50,29 @@ router.get("/netsuite/diag/:itemid", async (req, res) => {
        FROM item
        WHERE item.itemid = '${itemid}'`
     );
-    const matrix = await executeSuiteQL<any>(
-      `SELECT cic.id, cic.custrecord_cps_ic_item, cic.custrecord_cps_ic_category,
-              cic.custrecord_cps_ic_preferred, cic.isinactive
-       FROM customrecord_cps_item_category cic
-       INNER JOIN item ON item.id = cic.custrecord_cps_ic_item
-       WHERE item.itemid = '${itemid}'`
-    );
+    const approaches = [
+      {
+        name: "builtinCF",
+        query: `SELECT BUILTIN.CF(item.custitem_cps_category) AS categoryid FROM InventoryItem item WHERE item.itemid = '${itemid}'`
+      },
+      {
+        name: "anyOf",
+        query: `SELECT item.id, cat.id AS categoryid, cat.name AS categoryname FROM InventoryItem item, customrecord_cps_site_category cat WHERE item.itemid = '${itemid}' AND item.custitem_cps_category ANYOF (cat.id)`
+      },
+      {
+        name: "multiselectDf",
+        query: `SELECT item.id, BUILTIN.DF(item.custitem_cps_category) AS cpscategory FROM InventoryItem item WHERE item.itemid = '${itemid}'`
+      }
+    ];
+    const categoryResults: any = {};
+    for (const approach of approaches) {
+      try {
+        const r = await executeSuiteQL<any>(approach.query);
+        categoryResults[approach.name] = r.items;
+      } catch (err: any) {
+        categoryResults[approach.name] = { error: err.message?.substring(0, 200) };
+      }
+    }
     const ppr = await executeSuiteQL<any>(
       `SELECT pi.id, pi.custrecord_ppritem_item, BUILTIN.DF(ppr.custrecord_ppr_status) AS status
        FROM customrecord_ppritem pi
@@ -64,7 +80,7 @@ router.get("/netsuite/diag/:itemid", async (req, res) => {
        INNER JOIN item ON item.id = pi.custrecord_ppritem_item
        WHERE item.itemid = '${itemid}'`
     );
-    return res.json({ item: result.items, matrix: matrix.items, ppr: ppr.items });
+    return res.json({ item: result.items, categoryApproaches: categoryResults, ppr: ppr.items });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }
