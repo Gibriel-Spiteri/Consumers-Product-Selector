@@ -89,7 +89,20 @@ openssl rsa -in private_key.pem -pubout -out public_key.pem
 
 Without the private key file or credentials, the `/api/netsuite/status` endpoint reports missing configuration and the app uses built-in sample data.
 
-**Sync flow:** POST `/api/netsuite/sync` → fetches all `SiteCategory` records via SuiteQL (with `isonline` flag) → fetches `InventoryItem` records with pricing, sales description, default site-category links, and image URLs → upserts into local PostgreSQL cache → removes stale categories no longer in NetSuite.
+**Sync flow:** POST `/api/netsuite/sync` →
+1. Fetches CPS Site Category records (`customrecord_cps_site_category`) via SuiteQL
+2. Fetches active PPR items from `customrecord_ppritem` / `customrecord_ppr`
+3. Fetches ALL active stock InventoryItem + KitItem records via SuiteQL
+4. Resolves category assignments via REST Record API (`/record/v1/inventoryitem/{id}/custitem_cps_category`) — the multiselect field can't be read through SuiteQL, so we use the REST API in batches of 5 with 200ms delays to stay within rate limits
+5. Filters items to only those that qualify: has category assignment OR Express Bath flag OR active PPR
+6. Upserts qualified items into local PostgreSQL cache → removes stale records
+
+**Item inclusion criteria (three independent paths):**
+- `custitem_cps_category` multiselect field has at least one category selected (resolved via REST API)
+- `custitem_expressbath = 'T'` on the item record
+- Item ID appears in an active PPR (`customrecord_ppritem` linked to active `customrecord_ppr`)
+
+**Diagnostic endpoint:** `GET /api/netsuite/diag/:itemid` — checks item's NetSuite status, category assignments (via REST), and PPR associations to debug inclusion issues.
 
 **Product naming:** The `salesdescription` field is stored separately from `name`. The `name` column holds the canonical NetSuite name (`fullname || itemid`), while `salesdescription` stores the NetSuite sales description. API responses use `salesdescription || name` as the display name, preferring the friendlier sales description when available.
 

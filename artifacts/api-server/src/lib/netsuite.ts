@@ -303,17 +303,16 @@ export interface NetSuiteItem {
   isExpressBath?: boolean;
   isSpecialOrderStock?: boolean;
   sitecategoryid?: string | null;
+  hasCpsCategory?: boolean;
 }
 
 export async function fetchNetSuiteCategories(): Promise<NetSuiteCategory[]> {
   const result = await executeSuiteQL<{
     id: string;
-    itemid: string;
     fullname: string;
     parentcategory: string | null;
   }>(
     `SELECT id,
-            custrecord_cps_shortname AS itemid,
             name AS fullname,
             custrecord_cps_sub_category_of AS parentcategory
      FROM customrecord_cps_site_category
@@ -321,13 +320,17 @@ export async function fetchNetSuiteCategories(): Promise<NetSuiteCategory[]> {
      ORDER BY name`
   );
 
-  return result.items.map((row) => ({
-    id: String(row.id),
-    name: row.itemid,
-    fullname: row.fullname,
-    parent: row.parentcategory ? String(row.parentcategory) : null,
-    isOnline: true,
-  }));
+  return result.items.map((row) => {
+    const parts = row.fullname.split(" : ");
+    const shortname = parts[parts.length - 1];
+    return {
+      id: String(row.id),
+      name: shortname,
+      fullname: row.fullname,
+      parent: row.parentcategory ? String(row.parentcategory) : null,
+      isOnline: true,
+    };
+  });
 }
 
 interface SuiteQLItemRow {
@@ -345,7 +348,7 @@ interface SuiteQLItemRow {
   isnoreorder: string | null;
   isexpressbath: string | null;
   isspecialorderstock: string | null;
-  sitecategoryid: string | null;
+  hascpscategory: string | null;
 }
 
 function mapItemRow(row: SuiteQLItemRow): NetSuiteItem {
@@ -364,7 +367,7 @@ function mapItemRow(row: SuiteQLItemRow): NetSuiteItem {
     noReorder: row.isnoreorder === "T",
     isExpressBath: row.isexpressbath === "T",
     isSpecialOrderStock: row.isspecialorderstock === "T",
-    sitecategoryid: row.sitecategoryid ? String(row.sitecategoryid) : null,
+    hasCpsCategory: row.hascpscategory === "1",
   };
 }
 
@@ -402,12 +405,7 @@ export async function fetchActivePprItems(): Promise<Map<string, PprItemData>> {
   }
 }
 
-export async function fetchNetSuiteItems(pprItemIds: string[] = []): Promise<NetSuiteItem[]> {
-  const safeIds = pprItemIds.filter(id => /^\d+$/.test(id));
-  const pprInClause = safeIds.length > 0
-    ? `OR item.id IN (${safeIds.join(",")})`
-    : "";
-
+export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
   const inventoryResult = await executeSuiteQL<SuiteQLItemRow>(
     `SELECT
       item.id,
@@ -424,13 +422,10 @@ export async function fetchNetSuiteItems(pprItemIds: string[] = []): Promise<Net
       item.custitem_noreorders AS isnoreorder,
       item.custitem_expressbath AS isexpressbath,
       item.custitem_specord_stock AS isspecialorderstock,
-      COALESCE(cic_def.custrecord_cps_ic_category, cic_any.category) AS sitecategoryid
+      NULL AS hascpscategory
     FROM InventoryItem item
-    LEFT JOIN (SELECT custrecord_cps_ic_item AS item, MIN(custrecord_cps_ic_category) AS category FROM customrecord_cps_item_category WHERE custrecord_cps_ic_item IS NOT NULL AND isinactive = 'F' GROUP BY custrecord_cps_ic_item) cic_any ON cic_any.item = item.id
     LEFT JOIN pricing p ON p.item = item.id AND p.pricelevel = 1 AND p.quantity = 1
-    LEFT JOIN customrecord_cps_item_category cic_def ON cic_def.custrecord_cps_ic_item = item.id AND cic_def.custrecord_cps_ic_preferred = 'T' AND cic_def.isinactive = 'F'
     WHERE item.isinactive = 'F' AND UPPER(BUILTIN.DF(item.custitem_stock_code)) = 'STOCK'
-      AND (cic_any.item IS NOT NULL OR item.custitem_expressbath = 'T' ${pprInClause})
     ORDER BY item.itemid`
   );
 
@@ -452,13 +447,10 @@ export async function fetchNetSuiteItems(pprItemIds: string[] = []): Promise<Net
         NULL AS isnoreorder,
         item.custitem_expressbath AS isexpressbath,
         NULL AS isspecialorderstock,
-        COALESCE(cic_def.custrecord_cps_ic_category, cic_any.category) AS sitecategoryid
+        NULL AS hascpscategory
       FROM KitItem item
-      LEFT JOIN (SELECT custrecord_cps_ic_item AS item, MIN(custrecord_cps_ic_category) AS category FROM customrecord_cps_item_category WHERE custrecord_cps_ic_item IS NOT NULL AND isinactive = 'F' GROUP BY custrecord_cps_ic_item) cic_any ON cic_any.item = item.id
       LEFT JOIN pricing p ON p.item = item.id AND p.pricelevel = 1 AND p.quantity = 1
-      LEFT JOIN customrecord_cps_item_category cic_def ON cic_def.custrecord_cps_ic_item = item.id AND cic_def.custrecord_cps_ic_preferred = 'T' AND cic_def.isinactive = 'F'
       WHERE item.isinactive = 'F'
-        AND (cic_any.item IS NOT NULL OR item.custitem_expressbath = 'T' ${pprInClause})
       ORDER BY item.itemid`
     );
     kitItems = kitResult.items;
@@ -475,6 +467,74 @@ export async function fetchNetSuiteItems(pprItemIds: string[] = []): Promise<Net
   logger.info({ inventory: inventoryResult.items.length, kits: kitItems.length, total: allItems.length }, "Fetched items from NetSuite");
 
   return allItems;
+}
+
+export async function fetchItemCategoryAssignments(itemIds: string[]): Promise<Map<string, string>> {
+  const itemToCategoryMap = new Map<string, string>();
+  if (itemIds.length === 0) return itemToCategoryMap;
+
+  const token = await getAccessToken();
+  const baseUrl = getBaseUrl();
+  const headers = { Authorization: `Bearer ${token}`, Accept: "application/json" };
+  const batchSize = 5;
+
+  let failureCount = 0;
+
+  async function fetchCategoryForItem(itemId: string, retries = 2): Promise<{ itemId: string; categories: Array<{ id: string }> }> {
+    const recordTypes = ["inventoryitem", "kititem"];
+    for (const recordType of recordTypes) {
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+          const res = await fetch(
+            `${baseUrl}/services/rest/record/v1/${recordType}/${itemId}/custitem_cps_category`,
+            { headers }
+          );
+          if (res.ok) {
+            const data = await res.json() as { items?: Array<{ id: string }> };
+            if (data.items && data.items.length > 0) {
+              return { itemId, categories: data.items };
+            }
+            break;
+          }
+          if (res.status === 404) break;
+          if (res.status === 429 || res.status >= 500) {
+            if (attempt < retries) {
+              const delay = Math.min(1000 * Math.pow(2, attempt), 5000) + Math.random() * 500;
+              await new Promise(resolve => setTimeout(resolve, delay));
+              continue;
+            }
+            failureCount++;
+            break;
+          }
+          break;
+        } catch {
+          if (attempt === retries) failureCount++;
+        }
+      }
+    }
+    return { itemId, categories: [] };
+  }
+
+  const totalBatches = Math.ceil(itemIds.length / batchSize);
+  for (let i = 0; i < itemIds.length; i += batchSize) {
+    const batch = itemIds.slice(i, i + batchSize);
+    const batchNum = Math.floor(i / batchSize) + 1;
+    const results = await Promise.all(batch.map(fetchCategoryForItem));
+    for (const { itemId, categories } of results) {
+      if (categories.length > 0) {
+        itemToCategoryMap.set(itemId, String(categories[0].id));
+      }
+    }
+    if (batchNum % 20 === 0 || batchNum === totalBatches) {
+      logger.info({ batch: batchNum, totalBatches, categoriesFound: itemToCategoryMap.size }, "Category assignment REST progress");
+    }
+    if (i + batchSize < itemIds.length) {
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+  }
+
+  logger.info({ itemsWithCategories: itemToCategoryMap.size, totalChecked: itemIds.length, restFailures: failureCount }, "Fetched item category assignments via REST API");
+  return { map: itemToCategoryMap, failureCount };
 }
 
 export interface NetSuiteItemAttribute {
