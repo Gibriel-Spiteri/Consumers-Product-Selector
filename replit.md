@@ -93,7 +93,7 @@ Without the private key file or credentials, the `/api/netsuite/status` endpoint
 1. Fetches CPS Site Category records (`customrecord_cps_site_category`) via SuiteQL
 2. Fetches active PPR items from `customrecord_ppritem` / `customrecord_ppr`
 3. Fetches ALL active stock InventoryItem + KitItem records via SuiteQL
-4. Resolves category assignments via REST Record API (`/record/v1/inventoryitem/{id}/custitem_cps_category`) — the multiselect field can't be read through SuiteQL, so we use the REST API in batches of 5 with 200ms delays to stay within rate limits
+4. Filters to `isonline = 'T'` items, then resolves category assignments only for those via REST Record API (`/record/v1/inventoryitem/{id}/custitem_cps_category`) — the multiselect field can't be read through SuiteQL, so we use the REST API in batches of 5 with 200ms delays to stay within rate limits. This reduces REST calls from ~999 to ~550.
 5. Filters items to only those that qualify: has category assignment OR Express Bath flag OR active PPR
 6. Upserts qualified items into local PostgreSQL cache → removes stale records
 

@@ -302,6 +302,7 @@ export interface NetSuiteItem {
   noReorder?: boolean;
   isExpressBath?: boolean;
   isSpecialOrderStock?: boolean;
+  isOnline?: boolean;
   sitecategoryid?: string | null;
   hasCpsCategory?: boolean;
 }
@@ -348,6 +349,7 @@ interface SuiteQLItemRow {
   isnoreorder: string | null;
   isexpressbath: string | null;
   isspecialorderstock: string | null;
+  isonline: string | null;
   hascpscategory: string | null;
 }
 
@@ -367,6 +369,7 @@ function mapItemRow(row: SuiteQLItemRow): NetSuiteItem {
     noReorder: row.isnoreorder === "T",
     isExpressBath: row.isexpressbath === "T",
     isSpecialOrderStock: row.isspecialorderstock === "T",
+    isOnline: row.isonline === "T",
     hasCpsCategory: row.hascpscategory === "1",
   };
 }
@@ -422,6 +425,7 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
       item.custitem_noreorders AS isnoreorder,
       item.custitem_expressbath AS isexpressbath,
       item.custitem_specord_stock AS isspecialorderstock,
+      item.isonline,
       NULL AS hascpscategory
     FROM InventoryItem item
     LEFT JOIN pricing p ON p.item = item.id AND p.pricelevel = 1 AND p.quantity = 1
@@ -447,6 +451,7 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
         NULL AS isnoreorder,
         item.custitem_expressbath AS isexpressbath,
         NULL AS isspecialorderstock,
+        item.isonline,
         NULL AS hascpscategory
       FROM KitItem item
       LEFT JOIN pricing p ON p.item = item.id AND p.pricelevel = 1 AND p.quantity = 1
@@ -469,9 +474,9 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
   return allItems;
 }
 
-export async function fetchItemCategoryAssignments(itemIds: string[]): Promise<Map<string, string>> {
+export async function fetchItemCategoryAssignments(itemIds: string[]): Promise<{ map: Map<string, string>; failureCount: number }> {
   const itemToCategoryMap = new Map<string, string>();
-  if (itemIds.length === 0) return itemToCategoryMap;
+  if (itemIds.length === 0) return { map: itemToCategoryMap, failureCount: 0 };
 
   const token = await getAccessToken();
   const baseUrl = getBaseUrl();
