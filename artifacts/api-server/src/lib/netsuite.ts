@@ -421,10 +421,11 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
       item.custitem_specord_stock AS isspecialorderstock,
       COALESCE(cic_def.custrecord_cps_ic_category, cic_any.category) AS sitecategoryid
     FROM InventoryItem item
-    INNER JOIN (SELECT custrecord_cps_ic_item AS item, MIN(custrecord_cps_ic_category) AS category FROM customrecord_cps_item_category WHERE custrecord_cps_ic_item IS NOT NULL AND isinactive = 'F' GROUP BY custrecord_cps_ic_item) cic_any ON cic_any.item = item.id
+    LEFT JOIN (SELECT custrecord_cps_ic_item AS item, MIN(custrecord_cps_ic_category) AS category FROM customrecord_cps_item_category WHERE custrecord_cps_ic_item IS NOT NULL AND isinactive = 'F' GROUP BY custrecord_cps_ic_item) cic_any ON cic_any.item = item.id
     LEFT JOIN pricing p ON p.item = item.id AND p.pricelevel = 1 AND p.quantity = 1
     LEFT JOIN customrecord_cps_item_category cic_def ON cic_def.custrecord_cps_ic_item = item.id AND cic_def.custrecord_cps_ic_preferred = 'T' AND cic_def.isinactive = 'F'
     WHERE item.isinactive = 'F' AND UPPER(BUILTIN.DF(item.custitem_stock_code)) = 'STOCK'
+      AND (cic_any.item IS NOT NULL OR item.custitem_expressbath = 'T')
     ORDER BY item.itemid`
   );
 
@@ -448,10 +449,11 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
         NULL AS isspecialorderstock,
         COALESCE(cic_def.custrecord_cps_ic_category, cic_any.category) AS sitecategoryid
       FROM KitItem item
-      INNER JOIN (SELECT custrecord_cps_ic_item AS item, MIN(custrecord_cps_ic_category) AS category FROM customrecord_cps_item_category WHERE custrecord_cps_ic_item IS NOT NULL AND isinactive = 'F' GROUP BY custrecord_cps_ic_item) cic_any ON cic_any.item = item.id
+      LEFT JOIN (SELECT custrecord_cps_ic_item AS item, MIN(custrecord_cps_ic_category) AS category FROM customrecord_cps_item_category WHERE custrecord_cps_ic_item IS NOT NULL AND isinactive = 'F' GROUP BY custrecord_cps_ic_item) cic_any ON cic_any.item = item.id
       LEFT JOIN pricing p ON p.item = item.id AND p.pricelevel = 1 AND p.quantity = 1
       LEFT JOIN customrecord_cps_item_category cic_def ON cic_def.custrecord_cps_ic_item = item.id AND cic_def.custrecord_cps_ic_preferred = 'T' AND cic_def.isinactive = 'F'
       WHERE item.isinactive = 'F'
+        AND (cic_any.item IS NOT NULL OR item.custitem_expressbath = 'T')
       ORDER BY item.itemid`
     );
     kitItems = kitResult.items;
