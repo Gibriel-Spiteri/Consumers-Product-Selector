@@ -7,6 +7,7 @@ import { useGetCategories, useSearchProducts, getSearchProductsQueryKey } from "
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
+import ProductModal from "@/components/product-modal";
 
 
 function ProductStatsDebug() {
@@ -215,8 +216,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const handleSelectProduct = (product: { categoryId: number | null }) => {
-    setLocation(`/products/${product.categoryId}`);
+  const [modalProduct, setModalProduct] = useState<any>(null);
+
+  const handleSelectProduct = (product: any) => {
+    setModalProduct(product);
     closeSearch();
   };
 
@@ -598,6 +601,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <ProductStatsDebug />
         </div>
       </footer>
+      <ProductModal product={modalProduct} onClose={() => setModalProduct(null)} />
     </div>
   );
 }

@@ -1,11 +1,14 @@
+import { useState } from "react";
 import { useParams, Link } from "wouter";
 import { getSearchProductsQueryOptions } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Loader2, ArrowLeft, PackageX } from "lucide-react";
+import ProductModal from "@/components/product-modal";
 
 export default function SearchPage() {
   const { query } = useParams();
   const q = decodeURIComponent(query || '');
+  const [modalProduct, setModalProduct] = useState<any>(null);
 
   const { data: productsData, isLoading } = useQuery({
     ...getSearchProductsQueryOptions({ q }),
@@ -61,7 +64,11 @@ export default function SearchPage() {
                </thead>
                <tbody className="divide-y divide-border">
                  {productsData.products.map(p => (
-                   <tr key={p.id} className="hover:bg-blue-50/50 transition-colors group">
+                   <tr
+                     key={p.id}
+                     className="hover:bg-blue-50/50 transition-colors group cursor-pointer"
+                     onClick={() => setModalProduct(p)}
+                   >
                      <td className="px-6 lg:px-8 py-5 font-mono text-muted-foreground font-medium group-hover:text-primary transition-colors">
                        {p.sku || 'N/A'}
                      </td>
@@ -80,6 +87,7 @@ export default function SearchPage() {
            </div>
          </div>
       )}
+      <ProductModal product={modalProduct} onClose={() => setModalProduct(null)} />
     </div>
   );
 }
