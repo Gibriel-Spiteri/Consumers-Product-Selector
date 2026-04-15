@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { syncFromNetSuite } from "../lib/syncService";
-import { isNetSuiteConfigured } from "../lib/netsuite";
+import { isNetSuiteConfigured, executeSuiteQL } from "../lib/netsuite";
 import { db } from "@workspace/db";
 import { categoriesTable } from "@workspace/db";
 import { TriggerNetSuiteSyncResponse, GetNetSuiteStatusResponse } from "@workspace/api-zod";
@@ -38,6 +38,36 @@ router.get("/netsuite/status", async (req, res) => {
   });
 
   return res.json(response);
+});
+
+router.get("/netsuite/diag/:itemid", async (req, res) => {
+  try {
+    const itemid = req.params.itemid.replace(/'/g, "''");
+    const result = await executeSuiteQL<any>(
+      `SELECT item.id, item.itemid, item.isinactive,
+              BUILTIN.DF(item.custitem_stock_code) AS stockcode,
+              item.custitem_expressbath AS isexpressbath
+       FROM item
+       WHERE item.itemid = '${itemid}'`
+    );
+    const matrix = await executeSuiteQL<any>(
+      `SELECT cic.id, cic.custrecord_cps_ic_item, cic.custrecord_cps_ic_category,
+              cic.custrecord_cps_ic_preferred, cic.isinactive
+       FROM customrecord_cps_item_category cic
+       INNER JOIN item ON item.id = cic.custrecord_cps_ic_item
+       WHERE item.itemid = '${itemid}'`
+    );
+    const ppr = await executeSuiteQL<any>(
+      `SELECT pi.id, pi.custrecord_ppritem_item, BUILTIN.DF(ppr.custrecord_ppr_status) AS status
+       FROM customrecord_ppritem pi
+       INNER JOIN customrecord_ppr ppr ON ppr.id = pi.custrecord_ppritem_ppr
+       INNER JOIN item ON item.id = pi.custrecord_ppritem_item
+       WHERE item.itemid = '${itemid}'`
+    );
+    return res.json({ item: result.items, matrix: matrix.items, ppr: ppr.items });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
 });
 
 export default router;

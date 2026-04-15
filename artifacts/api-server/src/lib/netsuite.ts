@@ -403,8 +403,9 @@ export async function fetchActivePprItems(): Promise<Map<string, PprItemData>> {
 }
 
 export async function fetchNetSuiteItems(pprItemIds: string[] = []): Promise<NetSuiteItem[]> {
-  const pprInClause = pprItemIds.length > 0
-    ? `OR item.id IN (${pprItemIds.map(id => `'${id}'`).join(",")})`
+  const safeIds = pprItemIds.filter(id => /^\d+$/.test(id));
+  const pprInClause = safeIds.length > 0
+    ? `OR item.id IN (${safeIds.join(",")})`
     : "";
 
   const inventoryResult = await executeSuiteQL<SuiteQLItemRow>(
