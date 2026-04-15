@@ -402,7 +402,11 @@ export async function fetchActivePprItems(): Promise<Map<string, PprItemData>> {
   }
 }
 
-export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
+export async function fetchNetSuiteItems(pprItemIds: string[] = []): Promise<NetSuiteItem[]> {
+  const pprInClause = pprItemIds.length > 0
+    ? `OR item.id IN (${pprItemIds.map(id => `'${id}'`).join(",")})`
+    : "";
+
   const inventoryResult = await executeSuiteQL<SuiteQLItemRow>(
     `SELECT
       item.id,
@@ -425,7 +429,7 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
     LEFT JOIN pricing p ON p.item = item.id AND p.pricelevel = 1 AND p.quantity = 1
     LEFT JOIN customrecord_cps_item_category cic_def ON cic_def.custrecord_cps_ic_item = item.id AND cic_def.custrecord_cps_ic_preferred = 'T' AND cic_def.isinactive = 'F'
     WHERE item.isinactive = 'F' AND UPPER(BUILTIN.DF(item.custitem_stock_code)) = 'STOCK'
-      AND (cic_any.item IS NOT NULL OR item.custitem_expressbath = 'T')
+      AND (cic_any.item IS NOT NULL OR item.custitem_expressbath = 'T' ${pprInClause})
     ORDER BY item.itemid`
   );
 
@@ -453,7 +457,7 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
       LEFT JOIN pricing p ON p.item = item.id AND p.pricelevel = 1 AND p.quantity = 1
       LEFT JOIN customrecord_cps_item_category cic_def ON cic_def.custrecord_cps_ic_item = item.id AND cic_def.custrecord_cps_ic_preferred = 'T' AND cic_def.isinactive = 'F'
       WHERE item.isinactive = 'F'
-        AND (cic_any.item IS NOT NULL OR item.custitem_expressbath = 'T')
+        AND (cic_any.item IS NOT NULL OR item.custitem_expressbath = 'T' ${pprInClause})
       ORDER BY item.itemid`
     );
     kitItems = kitResult.items;

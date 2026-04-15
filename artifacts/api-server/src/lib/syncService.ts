@@ -201,10 +201,9 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
     }
 
     setProgress("items", 45, "Fetching products from NetSuite…");
-    const [nsItems, activePprItemsMap] = await Promise.all([
-      fetchNetSuiteItems(),
-      fetchActivePprItems(),
-    ]);
+    const activePprItemsMap = await fetchActivePprItems();
+    const pprItemIds = Array.from(activePprItemsMap.keys());
+    const nsItems = await fetchNetSuiteItems(pprItemIds);
     logger.info({ count: nsItems.length }, "Fetched items from NetSuite");
     setProgress("items", 55, `Saving ${nsItems.length} products…`);
 
