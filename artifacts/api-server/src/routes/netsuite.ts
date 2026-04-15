@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { syncFromNetSuite } from "../lib/syncService";
-import { isNetSuiteConfigured, executeSuiteQL } from "../lib/netsuite";
+import { isNetSuiteConfigured, executeSuiteQL, getAccessToken, getBaseUrl } from "../lib/netsuite";
 import { db } from "@workspace/db";
 import { categoriesTable } from "@workspace/db";
 import { TriggerNetSuiteSyncResponse, GetNetSuiteStatusResponse } from "@workspace/api-zod";
@@ -50,29 +50,25 @@ router.get("/netsuite/diag/:itemid", async (req, res) => {
        FROM item
        WHERE item.itemid = '${itemid}'`
     );
-    const approaches = [
-      {
-        name: "builtinCF",
-        query: `SELECT BUILTIN.CF(item.custitem_cps_category) AS categoryid FROM InventoryItem item WHERE item.itemid = '${itemid}'`
-      },
-      {
-        name: "anyOf",
-        query: `SELECT item.id, cat.id AS categoryid, cat.name AS categoryname FROM InventoryItem item, customrecord_cps_site_category cat WHERE item.itemid = '${itemid}' AND item.custitem_cps_category ANYOF (cat.id)`
-      },
-      {
-        name: "multiselectDf",
-        query: `SELECT item.id, BUILTIN.DF(item.custitem_cps_category) AS cpscategory FROM InventoryItem item WHERE item.itemid = '${itemid}'`
-      }
-    ];
-    const categoryResults: any = {};
-    for (const approach of approaches) {
-      try {
-        const r = await executeSuiteQL<any>(approach.query);
-        categoryResults[approach.name] = r.items;
-      } catch (err: any) {
-        categoryResults[approach.name] = { error: err.message?.substring(0, 200) };
-      }
+    const allCatIds = await executeSuiteQL<any>(
+      `SELECT id, name FROM customrecord_cps_site_category WHERE isinactive = 'F' ORDER BY id`
+    );
+    const catIds = allCatIds.items.map((c: any) => String(c.id));
+
+    const token = await getAccessToken();
+    const baseUrl = getBaseUrl();
+    const itemId = result.items[0]?.id;
+
+    let categoryData: any = null;
+    if (itemId) {
+      const subRes = await fetch(
+        `${baseUrl}/services/rest/record/v1/inventoryitem/${itemId}/custitem_cps_category`,
+        { headers: { Authorization: `Bearer ${token}`, Accept: "application/json" } }
+      );
+      categoryData = await subRes.json();
     }
+
+    const categoryResults: any = { categories: categoryData?.items || [], totalCategories: catIds.length };
     const ppr = await executeSuiteQL<any>(
       `SELECT pi.id, pi.custrecord_ppritem_item, BUILTIN.DF(ppr.custrecord_ppr_status) AS status
        FROM customrecord_ppritem pi

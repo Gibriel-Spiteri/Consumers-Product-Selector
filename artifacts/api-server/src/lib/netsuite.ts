@@ -22,7 +22,7 @@ function extractAccountId(): string {
   return raw;
 }
 
-function getBaseUrl(): string {
+export function getBaseUrl(): string {
   const accountId = extractAccountId().toLowerCase().replace(/_/g, "-");
   return `https://${accountId}.suitetalk.api.netsuite.com`;
 }
@@ -70,7 +70,7 @@ function createClientAssertion(): string {
   return token;
 }
 
-async function getAccessToken(): Promise<string> {
+export async function getAccessToken(): Promise<string> {
   if (cachedToken && Date.now() < cachedToken.expiresAt - 60_000) {
     return cachedToken.accessToken;
   }
