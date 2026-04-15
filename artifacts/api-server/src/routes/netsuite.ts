@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { syncFromNetSuite } from "../lib/syncService";
-import { isNetSuiteConfigured, executeSuiteQL, getAccessToken, getBaseUrl } from "../lib/netsuite";
+import { isNetSuiteConfigured, executeSuiteQL } from "../lib/netsuite";
 import { db } from "@workspace/db";
 import { categoriesTable } from "@workspace/db";
 import { TriggerNetSuiteSyncResponse, GetNetSuiteStatusResponse } from "@workspace/api-zod";
@@ -44,36 +44,14 @@ router.get("/netsuite/diag/:itemid", async (req, res) => {
   try {
     const itemid = req.params.itemid.replace(/'/g, "''");
     const result = await executeSuiteQL<any>(
-      `SELECT item.id, item.itemid, item.isinactive,
+      `SELECT item.id, item.itemid, item.isinactive, item.isonline,
               BUILTIN.DF(item.custitem_stock_code) AS stockcode,
               item.custitem_expressbath AS isexpressbath,
-              CASE WHEN item.custitem_cps_category IS NOT NULL THEN 'T' ELSE 'F' END AS hascpscategory
+              item.custitem_cps_category AS cpscategoryid,
+              BUILTIN.DF(item.custitem_cps_category) AS cpscategoryname
        FROM item
        WHERE item.itemid = '${itemid}'`
     );
-
-    const token = await getAccessToken();
-    const baseUrl = getBaseUrl();
-    const itemId = result.items[0]?.id;
-
-    let categories: any[] = [];
-    if (itemId) {
-      for (const recordType of ["inventoryitem", "kititem"]) {
-        try {
-          const subRes = await fetch(
-            `${baseUrl}/services/rest/record/v1/${recordType}/${itemId}/custitem_cps_category`,
-            { headers: { Authorization: `Bearer ${token}`, Accept: "application/json" } }
-          );
-          if (subRes.ok) {
-            const data = await subRes.json() as any;
-            if (data.items?.length > 0) {
-              categories = data.items.map((c: any) => ({ id: c.id, name: c.refName }));
-              break;
-            }
-          }
-        } catch {}
-      }
-    }
 
     const ppr = await executeSuiteQL<any>(
       `SELECT pi.id, pi.custrecord_ppritem_item, BUILTIN.DF(ppr.custrecord_ppr_status) AS status
@@ -82,11 +60,10 @@ router.get("/netsuite/diag/:itemid", async (req, res) => {
        INNER JOIN item ON item.id = pi.custrecord_ppritem_item
        WHERE item.itemid = '${itemid}'`
     );
-    return res.json({ item: result.items, categories, ppr: ppr.items });
+    return res.json({ item: result.items, ppr: ppr.items });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }
 });
-
 
 export default router;

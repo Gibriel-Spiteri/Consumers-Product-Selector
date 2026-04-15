@@ -4,7 +4,6 @@ import { eq, notInArray, sql } from "drizzle-orm";
 import {
   fetchNetSuiteCategories,
   fetchNetSuiteItems,
-  fetchItemCategoryAssignments,
   fetchItemAttributes,
   fetchRelatedItems,
   fetchActivePprItems,
@@ -206,21 +205,11 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
     const allCandidateItems = await fetchNetSuiteItems();
     logger.info({ count: allCandidateItems.length }, "Fetched all candidate items from NetSuite");
 
-    const allItemIds = allCandidateItems.map(item => item.id);
-
-    setProgress("items", 50, `Fetching category assignments for ${allItemIds.length} online items…`);
-    const categoryResult = await fetchItemCategoryAssignments(allItemIds);
-    const categoryAssignments = categoryResult.map;
-    const restFailureRate = allItemIds.length > 0 ? categoryResult.failureCount / allItemIds.length : 0;
-    logger.info({ itemsWithCategories: categoryAssignments.size, restFailures: categoryResult.failureCount, restFailureRate: restFailureRate.toFixed(3), checkedItems: allItemIds.length }, "Resolved category assignments");
-
-    const degradedMode = restFailureRate > 0.1;
-    if (degradedMode) {
-      logger.warn({ failureRate: restFailureRate.toFixed(3), failures: categoryResult.failureCount }, "REST category resolution degraded — will skip stale product deletion to prevent data loss");
-    }
+    const itemsWithCategory = allCandidateItems.filter(item => item.cpsCategoryId != null).length;
+    logger.info({ itemsWithCategory, totalItems: allCandidateItems.length }, "Category assignments from SuiteQL");
 
     const nsItems = allCandidateItems.filter(item => {
-      const hasCategory = categoryAssignments.has(item.id);
+      const hasCategory = item.cpsCategoryId != null;
       const isExpressBath = item.isExpressBath === true;
       const hasPpr = activePprItemsMap.has(item.id);
       return hasCategory || isExpressBath || hasPpr;
@@ -231,7 +220,7 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
 
     let productsSynced = 0;
     for (const item of nsItems) {
-      const nsCategoryId = categoryAssignments.get(item.id) ?? null;
+      const nsCategoryId = item.cpsCategoryId ?? null;
       const categoryDbId = nsCategoryId
         ? (netsuiteIdToDbId.get(nsCategoryId) ?? null)
         : null;
@@ -300,13 +289,11 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
 
     setProgress("cleanup", 82, "Cleaning stale products…");
     const syncedProductNetsuiteIds = nsItems.map((item) => item.id);
-    if (syncedProductNetsuiteIds.length > 0 && !degradedMode) {
+    if (syncedProductNetsuiteIds.length > 0) {
       const deletedProducts = await db
         .delete(productsTable)
         .where(notInArray(productsTable.netsuiteId!, syncedProductNetsuiteIds));
       logger.info({ deleted: deletedProducts.rowCount ?? 0 }, "Removed stale products");
-    } else if (degradedMode) {
-      logger.warn("Skipped stale product deletion due to degraded REST resolution");
     }
 
     setProgress("attributes", 84, "Fetching item attributes from NetSuite…");

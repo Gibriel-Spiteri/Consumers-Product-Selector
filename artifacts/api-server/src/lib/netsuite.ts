@@ -303,8 +303,7 @@ export interface NetSuiteItem {
   isExpressBath?: boolean;
   isSpecialOrderStock?: boolean;
   isOnline?: boolean;
-  sitecategoryid?: string | null;
-  hasCpsCategory?: boolean;
+  cpsCategoryId?: string | null;
 }
 
 export async function fetchNetSuiteCategories(): Promise<NetSuiteCategory[]> {
@@ -350,7 +349,7 @@ interface SuiteQLItemRow {
   isexpressbath: string | null;
   isspecialorderstock: string | null;
   isonline: string | null;
-  hascpscategory: string | null;
+  cpscategoryid: string | null;
 }
 
 function mapItemRow(row: SuiteQLItemRow): NetSuiteItem {
@@ -370,7 +369,7 @@ function mapItemRow(row: SuiteQLItemRow): NetSuiteItem {
     isExpressBath: row.isexpressbath === "T",
     isSpecialOrderStock: row.isspecialorderstock === "T",
     isOnline: row.isonline === "T",
-    hasCpsCategory: row.hascpscategory === "1",
+    cpsCategoryId: row.cpscategoryid ? String(row.cpscategoryid) : null,
   };
 }
 
@@ -426,7 +425,7 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
       item.custitem_expressbath AS isexpressbath,
       item.custitem_specord_stock AS isspecialorderstock,
       item.isonline,
-      NULL AS hascpscategory
+      item.custitem_cps_category AS cpscategoryid
     FROM InventoryItem item
     LEFT JOIN pricing p ON p.item = item.id AND p.pricelevel = 1 AND p.quantity = 1
     WHERE item.isinactive = 'F' AND item.isonline = 'T' AND UPPER(BUILTIN.DF(item.custitem_stock_code)) = 'STOCK'
@@ -452,7 +451,7 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
         item.custitem_expressbath AS isexpressbath,
         NULL AS isspecialorderstock,
         item.isonline,
-        NULL AS hascpscategory
+        item.custitem_cps_category AS cpscategoryid
       FROM KitItem item
       LEFT JOIN pricing p ON p.item = item.id AND p.pricelevel = 1 AND p.quantity = 1
       WHERE item.isinactive = 'F' AND item.isonline = 'T'
@@ -472,74 +471,6 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
   logger.info({ inventory: inventoryResult.items.length, kits: kitItems.length, total: allItems.length }, "Fetched items from NetSuite");
 
   return allItems;
-}
-
-export async function fetchItemCategoryAssignments(itemIds: string[]): Promise<{ map: Map<string, string>; failureCount: number }> {
-  const itemToCategoryMap = new Map<string, string>();
-  if (itemIds.length === 0) return { map: itemToCategoryMap, failureCount: 0 };
-
-  const token = await getAccessToken();
-  const baseUrl = getBaseUrl();
-  const headers = { Authorization: `Bearer ${token}`, Accept: "application/json" };
-  const batchSize = 5;
-
-  let failureCount = 0;
-
-  async function fetchCategoryForItem(itemId: string, retries = 2): Promise<{ itemId: string; categories: Array<{ id: string }> }> {
-    const recordTypes = ["inventoryitem", "kititem"];
-    for (const recordType of recordTypes) {
-      for (let attempt = 0; attempt <= retries; attempt++) {
-        try {
-          const res = await fetch(
-            `${baseUrl}/services/rest/record/v1/${recordType}/${itemId}/custitem_cps_category`,
-            { headers }
-          );
-          if (res.ok) {
-            const data = await res.json() as { items?: Array<{ id: string }> };
-            if (data.items && data.items.length > 0) {
-              return { itemId, categories: data.items };
-            }
-            break;
-          }
-          if (res.status === 404) break;
-          if (res.status === 429 || res.status >= 500) {
-            if (attempt < retries) {
-              const delay = Math.min(1000 * Math.pow(2, attempt), 5000) + Math.random() * 500;
-              await new Promise(resolve => setTimeout(resolve, delay));
-              continue;
-            }
-            failureCount++;
-            break;
-          }
-          break;
-        } catch {
-          if (attempt === retries) failureCount++;
-        }
-      }
-    }
-    return { itemId, categories: [] };
-  }
-
-  const totalBatches = Math.ceil(itemIds.length / batchSize);
-  for (let i = 0; i < itemIds.length; i += batchSize) {
-    const batch = itemIds.slice(i, i + batchSize);
-    const batchNum = Math.floor(i / batchSize) + 1;
-    const results = await Promise.all(batch.map(fetchCategoryForItem));
-    for (const { itemId, categories } of results) {
-      if (categories.length > 0) {
-        itemToCategoryMap.set(itemId, String(categories[0].id));
-      }
-    }
-    if (batchNum % 20 === 0 || batchNum === totalBatches) {
-      logger.info({ batch: batchNum, totalBatches, categoriesFound: itemToCategoryMap.size }, "Category assignment REST progress");
-    }
-    if (i + batchSize < itemIds.length) {
-      await new Promise(resolve => setTimeout(resolve, 200));
-    }
-  }
-
-  logger.info({ itemsWithCategories: itemToCategoryMap.size, totalChecked: itemIds.length, restFailures: failureCount }, "Fetched item category assignments via REST API");
-  return { map: itemToCategoryMap, failureCount };
 }
 
 export interface NetSuiteItemAttribute {
