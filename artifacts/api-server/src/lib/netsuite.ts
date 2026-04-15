@@ -429,7 +429,7 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
       NULL AS hascpscategory
     FROM InventoryItem item
     LEFT JOIN pricing p ON p.item = item.id AND p.pricelevel = 1 AND p.quantity = 1
-    WHERE item.isinactive = 'F' AND UPPER(BUILTIN.DF(item.custitem_stock_code)) = 'STOCK'
+    WHERE item.isinactive = 'F' AND item.isonline = 'T' AND UPPER(BUILTIN.DF(item.custitem_stock_code)) = 'STOCK'
     ORDER BY item.itemid`
   );
 
@@ -455,7 +455,7 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
         NULL AS hascpscategory
       FROM KitItem item
       LEFT JOIN pricing p ON p.item = item.id AND p.pricelevel = 1 AND p.quantity = 1
-      WHERE item.isinactive = 'F'
+      WHERE item.isinactive = 'F' AND item.isonline = 'T'
       ORDER BY item.itemid`
     );
     kitItems = kitResult.items;

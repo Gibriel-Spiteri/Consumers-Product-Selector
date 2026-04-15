@@ -206,15 +206,13 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
     const allCandidateItems = await fetchNetSuiteItems();
     logger.info({ count: allCandidateItems.length }, "Fetched all candidate items from NetSuite");
 
-    const onlineItems = allCandidateItems.filter(item => item.isOnline === true);
-    const onlineItemIds = onlineItems.map(item => item.id);
-    logger.info({ onlineItems: onlineItems.length, totalItems: allCandidateItems.length }, "Filtered to online items for REST category resolution");
+    const allItemIds = allCandidateItems.map(item => item.id);
 
-    setProgress("items", 50, `Fetching category assignments for ${onlineItemIds.length} online items…`);
-    const categoryResult = await fetchItemCategoryAssignments(onlineItemIds);
+    setProgress("items", 50, `Fetching category assignments for ${allItemIds.length} online items…`);
+    const categoryResult = await fetchItemCategoryAssignments(allItemIds);
     const categoryAssignments = categoryResult.map;
-    const restFailureRate = onlineItemIds.length > 0 ? categoryResult.failureCount / onlineItemIds.length : 0;
-    logger.info({ itemsWithCategories: categoryAssignments.size, restFailures: categoryResult.failureCount, restFailureRate: restFailureRate.toFixed(3), checkedItems: onlineItemIds.length }, "Resolved category assignments");
+    const restFailureRate = allItemIds.length > 0 ? categoryResult.failureCount / allItemIds.length : 0;
+    logger.info({ itemsWithCategories: categoryAssignments.size, restFailures: categoryResult.failureCount, restFailureRate: restFailureRate.toFixed(3), checkedItems: allItemIds.length }, "Resolved category assignments");
 
     const degradedMode = restFailureRate > 0.1;
     if (degradedMode) {
