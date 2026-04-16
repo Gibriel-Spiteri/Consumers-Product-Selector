@@ -716,10 +716,10 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                               <dd className="font-mono text-sm text-gray-800">{full.netsuiteId}</dd>
                             </div>
                           )}
-                          {full?.ourPrice != null && (
+                          {full?.price != null && (
                             <div>
                               <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Consumers Price</dt>
-                              <dd className="text-sm text-gray-800">${fmtPrice(Number(full.ourPrice))}</dd>
+                              <dd className="text-sm text-gray-800">${fmtPrice(Number(full.price) + (full.hasActivePpr && full.pprPriceReductionRetail ? Number(full.pprPriceReductionRetail) : 0))}</dd>
                             </div>
                           )}
                         </dl>
