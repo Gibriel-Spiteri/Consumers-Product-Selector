@@ -136,7 +136,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const categories = categoryData?.categories || [];
   const internalCategory = categories.find(c => c.level === 1 && c.name.toLowerCase() === "internal");
-  const topLevelCategories = categories.filter(c => c.level === 1 && c.name.toLowerCase() !== "internal");
+  const displaysForSaleCategory = categories.find(c => c.level === 1 && c.name.toLowerCase() === "displays for sale");
+  const topLevelCategories = categories.filter(c => c.level === 1 && c.name.toLowerCase() !== "internal" && c.name.toLowerCase() !== "displays for sale");
 
   const flatCategories = useMemo(() => {
     const result: Array<{ id: number; name: string; level: number; parentId: number | null }> = [];
@@ -517,6 +518,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     </li>
                   ))}
                 </ul>
+                {displaysForSaleCategory && (
+                  <Link
+                    href={displaysForSaleCategory.children && displaysForSaleCategory.children.length > 0 ? `/category/${displaysForSaleCategory.id}` : `/products/${displaysForSaleCategory.id}`}
+                    onClick={() => { setIsHoveringNav(false); setActiveTab(null); }}
+                    className="flex-shrink-0 flex items-center h-[50px] px-4 font-semibold uppercase tracking-widest text-amber-600 hover:text-amber-700 transition-colors text-[13px]"
+                  >
+                    Displays For Sale
+                  </Link>
+                )}
                 <Link
                   href="/express-bath"
                   onClick={() => { setIsHoveringNav(false); setActiveTab(null); }}
