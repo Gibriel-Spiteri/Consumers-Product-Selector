@@ -142,6 +142,9 @@ function PriceDisplay({ product }: { product: Product }) {
       {product.retailPrice != null && (
         <p className="text-[11px] text-gray-400">Retail <span className="line-through">${fmtPrice(Number(product.retailPrice))}</span></p>
       )}
+      {isClearance && product.pprPriceReductionRetail != null && (
+        <p className="text-[11px] text-emerald-600">You Saved ${fmtPrice(Number(product.pprPriceReductionRetail))}</p>
+      )}
     </PprPriceTooltip>
   );
 }
@@ -227,6 +230,9 @@ function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: P
                       </p>
                       {p.retailPrice != null && (
                         <p className="text-[11px] text-gray-400">Retail <span className="line-through">${fmtPrice(Number(p.retailPrice))}</span></p>
+                      )}
+                      {p.hasActivePpr && p.pprPriceReductionRetail != null && (
+                        <p className="text-[11px] text-emerald-600">You Saved ${fmtPrice(Number(p.pprPriceReductionRetail))}</p>
                       )}
                     </PprPriceTooltip>
                   ) : <span className="text-gray-300 font-normal">—</span>}

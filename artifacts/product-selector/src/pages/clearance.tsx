@@ -155,6 +155,9 @@ function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: P
                     {p.retailPrice != null && (
                       <p className="text-[11px] text-gray-400">Retail <span className="line-through">${fmtPrice(Number(p.retailPrice))}</span></p>
                     )}
+                    {p.pprPriceReductionRetail != null && (
+                      <p className="text-[11px] text-emerald-600">You Saved ${fmtPrice(Number(p.pprPriceReductionRetail))}</p>
+                    )}
                   </PprPriceTooltip>
                 ) : (
                   <span className="text-gray-300 font-normal text-sm">—</span>
@@ -214,6 +217,9 @@ function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: P
                       <p className="font-semibold text-emerald-600">${fmtPrice(Number(p.price))}</p>
                       {p.retailPrice != null && (
                         <p className="text-[11px] text-gray-400">Retail <span className="line-through">${fmtPrice(Number(p.retailPrice))}</span></p>
+                      )}
+                      {p.pprPriceReductionRetail != null && (
+                        <p className="text-[11px] text-emerald-600">You Saved ${fmtPrice(Number(p.pprPriceReductionRetail))}</p>
                       )}
                     </PprPriceTooltip>
                   ) : <span className="text-gray-300 font-normal">—</span>}
