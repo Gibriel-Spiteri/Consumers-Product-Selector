@@ -710,31 +710,15 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                           </div>
                         )}
                         <div>
-                          <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Availability</dt>
-                          {full?.quantityAvailable != null ? (
-                            full.quantityAvailable >= 1 ? (
-                              <dd><span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">In Stock ({full.quantityAvailable})</span></dd>
-                            ) : full.isSpecialOrderStock ? (
-                              <dd><span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-600">Non-Stock</span></dd>
-                            ) : (
-                              <dd><span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-red-50 text-red-500">Out of Stock</span></dd>
-                            )
+                          <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Inventory</dt>
+                          {full?.noReorder ? (
+                            <dd><span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-red-50 text-red-500">No Reorders</span></dd>
+                          ) : full?.isSpecialOrderStock ? (
+                            <dd><span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-600">Special Order Stock</span></dd>
                           ) : (
-                            <dd className="text-sm font-medium text-gray-400">—</dd>
+                            <dd><span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">Stock</span></dd>
                           )}
                         </div>
-                        {full?.noReorder && (
-                          <div>
-                            <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">No Reorders</dt>
-                            <dd><span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-red-50 text-red-500">Yes</span></dd>
-                          </div>
-                        )}
-                        {full?.isSpecialOrderStock && (
-                          <div>
-                            <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Special Order Stock</dt>
-                            <dd><span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-600">Yes</span></dd>
-                          </div>
-                        )}
                         {full?.netsuiteId && (
                           <div>
                             <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">NetSuite ID</dt>
