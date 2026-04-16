@@ -651,7 +651,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                   <div className="flex items-center gap-0 border-b border-gray-100 mb-4 lg:mb-5 overflow-x-auto">
                     {(
                       [
-                        { key: "more", label: `More from ${directCategoryName ?? "Category"}` },
+                        { key: "more", label: `More from ${directCategoryName ? directCategoryName.split(" › ").at(-1) : "Category"}` },
                         { key: "related", label: "Related Items" },
                         { key: "specs", label: "Specifications" },
                         { key: "collection", label: "Collection" },
