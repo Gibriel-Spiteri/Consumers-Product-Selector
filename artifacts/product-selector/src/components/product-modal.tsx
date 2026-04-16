@@ -637,7 +637,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                           ) : full?.isSpecialOrderStock ? (
                             <dd><span className="inline-flex items-center font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 text-[11px]">Special Order Stock</span></dd>
                           ) : (
-                            <dd><span className="inline-flex items-center font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[11px]">Stock</span></dd>
+                            <dd><span className="inline-flex items-center font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[11px]">Stock{full?.quantityAvailable != null ? ` (${full.quantityAvailable})` : ""}</span></dd>
                           )}
                         </div>
                       </dl>
@@ -738,7 +738,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                             ) : full?.isSpecialOrderStock ? (
                               <dd><span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-600">Special Order Stock</span></dd>
                             ) : (
-                              <dd><span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">Stock</span></dd>
+                              <dd><span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">Stock{full?.quantityAvailable != null ? ` (${full.quantityAvailable})` : ""}</span></dd>
                             )}
                           </div>
                           {full?.hasActivePpr && full?.pprName && (
