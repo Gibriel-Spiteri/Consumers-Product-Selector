@@ -342,7 +342,7 @@ function AddToListControls({ product, full }: { product: Product | null; full: F
   };
 
   return (
-    <div className="mt-4 pt-4 border-t border-gray-100">
+    <div className="py-1">
       {inList ? (
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-[12px] text-amber-600 font-medium flex items-center gap-1">
@@ -639,15 +639,15 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                           )}
                         </div>
                       </dl>
-                      <AddToListControls product={displayProduct} full={full} />
                     </div>
                   </div>
                 )}
 
                 {/* Bottom tabbed section */}
                 <div className="mt-5 lg:mt-8 pt-0 border-t border-gray-100">
-                  {/* Tab bar */}
-                  <div className="flex items-center gap-0 border-b border-gray-100 mb-4 lg:mb-5 overflow-x-auto">
+                  {/* Tab bar + Add to List */}
+                  <div className="flex items-center border-b border-gray-100 mb-4 lg:mb-5">
+                    <div className="flex items-center gap-0 overflow-x-auto flex-1">
                     {(
                       [
                         { key: "more", label: `More from ${directCategoryName ? directCategoryName.split(" › ").at(-1) : "Category"}` },
@@ -667,6 +667,15 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                         )}
                       </button>
                     ))}
+                    </div>
+                    <div className="shrink-0 ml-auto pl-3 hidden lg:block">
+                      <AddToListControls product={displayProduct} full={full} />
+                    </div>
+                  </div>
+
+                  {/* Mobile Add to List */}
+                  <div className="lg:hidden mb-4">
+                    <AddToListControls product={displayProduct} full={full} />
                   </div>
 
                   {/* Tab content */}
