@@ -646,8 +646,8 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                 {/* Bottom tabbed section */}
                 <div className="mt-5 lg:mt-8 pt-0 border-t border-gray-100">
                   {/* Tab bar + Add to List */}
-                  <div className="flex items-center border-b border-gray-100 mb-4 lg:mb-5">
-                    <div className="flex items-center gap-0 overflow-x-auto flex-1">
+                  <div className="flex items-end border-b border-gray-100 mb-4 lg:mb-5">
+                    <div className="flex items-center gap-0 overflow-x-auto lg:w-[66%] shrink-0">
                     {(
                       [
                         { key: "more", label: `More from ${directCategoryName ? directCategoryName.split(" › ").at(-1) : "Category"}` },
@@ -668,7 +668,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                       </button>
                     ))}
                     </div>
-                    <div className="shrink-0 ml-auto pl-3 hidden lg:block">
+                    <div className="flex-1 hidden lg:block lg:pl-8">
                       <AddToListControls product={displayProduct} full={full} />
                     </div>
                   </div>
