@@ -344,6 +344,13 @@ router.get("/products/uncategorized", async (_req, res) => {
 });
 
 router.get("/products/clearance", async (_req, res) => {
+  const dfsCategory = await db
+    .select({ id: categoriesTable.id })
+    .from(categoriesTable)
+    .where(ilike(categoriesTable.name, "displays for sale"))
+    .limit(1);
+  const dfsCategoryId = dfsCategory[0]?.id ?? null;
+
   const products = await db
     .select()
     .from(productsTable)
@@ -352,7 +359,8 @@ router.get("/products/clearance", async (_req, res) => {
         sql`${productsTable.hasActivePpr} = true`,
         sql`${productsTable.noReorder} = 1`
       ),
-      notDiscontinued
+      notDiscontinued,
+      dfsCategoryId ? sql`(${productsTable.categoryId} IS NULL OR ${productsTable.categoryId} != ${dfsCategoryId})` : undefined
     ));
 
   const netsuiteIds = products.map((p) => p.netsuiteId).filter((id): id is string => id != null);
