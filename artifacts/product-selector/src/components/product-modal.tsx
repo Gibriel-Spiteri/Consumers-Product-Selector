@@ -707,13 +707,13 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                           {full?.hasActivePpr && full?.pprName && (
                             <div>
                               <dt className="text-[10px] font-semibold uppercase tracking-widest text-emerald-600 mb-0.5">PPR</dt>
-                              <dd className="text-sm font-semibold text-emerald-600">{full.pprName}</dd>
+                              <dd className="text-sm text-emerald-600">{full.pprName}</dd>
                             </div>
                           )}
                           {full?.hasActivePpr && full?.pprPriceReductionRetail != null && (
                             <div>
                               <dt className="text-[10px] font-semibold uppercase tracking-widest text-emerald-600 mb-0.5">Price Reduction (Retail)</dt>
-                              <dd className="text-sm font-semibold text-emerald-600">${fmtPrice(Number(full.pprPriceReductionRetail))}</dd>
+                              <dd className="text-sm text-emerald-600">${fmtPrice(Number(full.pprPriceReductionRetail))}</dd>
                             </div>
                           )}
                         </dl>
