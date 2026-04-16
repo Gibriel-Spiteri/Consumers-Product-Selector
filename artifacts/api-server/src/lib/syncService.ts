@@ -208,13 +208,8 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
     const itemsWithCategory = allCandidateItems.filter(item => item.cpsCategoryId != null).length;
     logger.info({ itemsWithCategory, totalItems: allCandidateItems.length }, "Category assignments from SuiteQL");
 
-    const nsItems = allCandidateItems.filter(item => {
-      const hasCategory = item.cpsCategoryId != null;
-      const isExpressBath = item.isExpressBath === true;
-      const hasPpr = activePprItemsMap.has(item.id);
-      return hasCategory || isExpressBath || hasPpr;
-    });
-    logger.info({ qualified: nsItems.length, filtered: allCandidateItems.length - nsItems.length }, "Filtered items by inclusion criteria");
+    const nsItems = allCandidateItems;
+    logger.info({ qualified: nsItems.length }, "Including all candidate items (uncategorized will appear in Without Category)");
 
     setProgress("items", 55, `Saving ${nsItems.length} products…`);
 
