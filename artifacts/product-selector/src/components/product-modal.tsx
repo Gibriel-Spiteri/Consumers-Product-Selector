@@ -30,7 +30,6 @@ interface FullProduct extends Product {
   pprPriceReductionRetail?: number | null;
   noReorder?: boolean;
   isSpecialOrderStock?: boolean;
-  legacy12MonthUsedInv?: number | null;
   features: string[] | null;
   additionalImages?: string[] | null;
 }
@@ -730,12 +729,6 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                             <div>
                               <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Consumers Price</dt>
                               <dd className="text-sm text-gray-800">${fmtPrice(Number(full.price) + (full.hasActivePpr && full.pprPriceReductionRetail ? Number(full.pprPriceReductionRetail) : 0))}</dd>
-                            </div>
-                          )}
-                          {full?.legacy12MonthUsedInv != null && (
-                            <div>
-                              <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">12 Month Used</dt>
-                              <dd className="text-sm text-gray-800">{full.legacy12MonthUsedInv}</dd>
                             </div>
                           )}
                         </dl>

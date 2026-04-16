@@ -536,7 +536,6 @@ router.get("/products/:productId", async (req, res) => {
       pprPriceReductionRetail: p.pprPriceReductionRetail ? parseFloat(p.pprPriceReductionRetail) : null,
       noReorder: p.noReorder === 1,
       isSpecialOrderStock: p.isSpecialOrderStock ?? false,
-      legacy12MonthUsedInv: p.legacy12MonthUsedInv ?? null,
       features: null,
     },
   });
