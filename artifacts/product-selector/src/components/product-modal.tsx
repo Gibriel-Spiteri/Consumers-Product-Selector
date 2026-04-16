@@ -672,66 +672,52 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
 
                   {bottomTab === "specs" && (
                     <div className="pb-4">
-                      <dl className="grid grid-cols-2 gap-x-8 gap-y-4">
-                        {full?.manufacturer && (
-                          <div>
-                            <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Manufacturer</dt>
-                            <dd className="text-sm text-gray-800">{full.manufacturer}</dd>
-                          </div>
-                        )}
-                        {displayProduct?.sku && (
-                          <div>
-                            <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">SKU</dt>
-                            <dd className="font-mono text-sm text-gray-800">{displayProduct.sku}</dd>
-                          </div>
-                        )}
-                        {full?.price != null && (
-                          <div>
-                            <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Retail Price</dt>
-                            <dd className="text-sm text-gray-800">${fmtPrice(Number(full.price))}</dd>
-                          </div>
-                        )}
-                        {full?.ourPrice != null && (
-                          <div>
-                            <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Our Price</dt>
-                            <dd className="text-sm text-gray-800">${fmtPrice(Number(full.ourPrice))}</dd>
-                          </div>
-                        )}
-                        {full?.hasActivePpr && full?.pprName && (
-                          <div>
-                            <dt className="text-[10px] font-semibold uppercase tracking-widest text-emerald-600 mb-0.5">PPR</dt>
-                            <dd className="text-sm font-semibold text-emerald-600">{full.pprName}</dd>
-                          </div>
-                        )}
-                        {full?.hasActivePpr && full?.pprPriceReductionRetail != null && (
-                          <div>
-                            <dt className="text-[10px] font-semibold uppercase tracking-widest text-emerald-600 mb-0.5">Price Reduction (Retail)</dt>
-                            <dd className="text-sm font-semibold text-emerald-600">${fmtPrice(Number(full.pprPriceReductionRetail))}</dd>
-                          </div>
-                        )}
-                        <div>
-                          <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Inventory</dt>
-                          {full?.noReorder ? (
-                            <dd><span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-red-50 text-red-500">No Reorders</span></dd>
-                          ) : full?.isSpecialOrderStock ? (
-                            <dd><span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-600">Special Order Stock</span></dd>
-                          ) : (
-                            <dd><span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">Stock</span></dd>
+                      <div className="grid grid-cols-2 gap-x-8">
+                        <dl className="space-y-4">
+                          {full?.manufacturer && (
+                            <div>
+                              <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Manufacturer</dt>
+                              <dd className="text-sm text-gray-800">{full.manufacturer}</dd>
+                            </div>
                           )}
-                        </div>
-                        {full?.netsuiteId && (
+                          {displayProduct?.sku && (
+                            <div>
+                              <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">SKU</dt>
+                              <dd className="font-mono text-sm text-gray-800">{displayProduct.sku}</dd>
+                            </div>
+                          )}
+                          {full?.netsuiteId && (
+                            <div>
+                              <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">NetSuite ID</dt>
+                              <dd className="font-mono text-sm text-gray-800">{full.netsuiteId}</dd>
+                            </div>
+                          )}
+                        </dl>
+                        <dl className="space-y-4">
                           <div>
-                            <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">NetSuite ID</dt>
-                            <dd className="font-mono text-sm text-gray-800">{full.netsuiteId}</dd>
+                            <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Inventory</dt>
+                            {full?.noReorder ? (
+                              <dd><span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-red-50 text-red-500">No Reorders</span></dd>
+                            ) : full?.isSpecialOrderStock ? (
+                              <dd><span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-600">Special Order Stock</span></dd>
+                            ) : (
+                              <dd><span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">Stock</span></dd>
+                            )}
                           </div>
-                        )}
-                        {directCategoryName && (
-                          <div>
-                            <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Category</dt>
-                            <dd className="text-sm text-gray-800">{directCategoryName}</dd>
-                          </div>
-                        )}
-                      </dl>
+                          {full?.hasActivePpr && full?.pprName && (
+                            <div>
+                              <dt className="text-[10px] font-semibold uppercase tracking-widest text-emerald-600 mb-0.5">PPR</dt>
+                              <dd className="text-sm font-semibold text-emerald-600">{full.pprName}</dd>
+                            </div>
+                          )}
+                          {full?.hasActivePpr && full?.pprPriceReductionRetail != null && (
+                            <div>
+                              <dt className="text-[10px] font-semibold uppercase tracking-widest text-emerald-600 mb-0.5">Price Reduction (Retail)</dt>
+                              <dd className="text-sm font-semibold text-emerald-600">${fmtPrice(Number(full.pprPriceReductionRetail))}</dd>
+                            </div>
+                          )}
+                        </dl>
+                      </div>
                     </div>
                   )}
 
