@@ -316,7 +316,7 @@ function CopySku({ sku }: { sku: string }) {
   );
 }
 
-function ModalFooter({ product, full, onClose }: { product: Product | null; full: FullProduct | null; onClose: () => void }) {
+function AddToListControls({ product, full }: { product: Product | null; full: FullProduct | null }) {
   const { addItem, isInList, getQuantity, updateQuantity, removeItem } = useQuoteList();
   const [addQty, setAddQty] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
@@ -342,76 +342,74 @@ function ModalFooter({ product, full, onClose }: { product: Product | null; full
   };
 
   return (
-    <div className="px-5 py-4 lg:px-8 lg:py-5 border-t border-gray-100 shrink-0 flex items-center justify-between gap-3">
-      <div className="flex items-center gap-2">
-        {inList ? (
-          <div className="flex items-center gap-2">
-            <span className="text-[12px] text-amber-600 font-medium flex items-center gap-1">
-              <ClipboardList size={13} />
-              On list
+    <div className="mt-4 pt-4 border-t border-gray-100">
+      {inList ? (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[12px] text-amber-600 font-medium flex items-center gap-1">
+            <ClipboardList size={13} />
+            On list
+          </span>
+          <div className="flex items-center border border-gray-200 rounded-lg">
+            <button
+              onClick={() => currentQty <= 1 ? removeItem(product.id) : updateQuantity(product.id, currentQty - 1)}
+              className="px-2 py-1.5 hover:bg-gray-50 text-gray-500 transition-colors rounded-l-lg"
+            >
+              <Minus size={12} />
+            </button>
+            <span className="px-3 py-1.5 text-sm font-medium text-gray-900 min-w-[32px] text-center border-x border-gray-200">
+              {currentQty}
             </span>
-            <div className="flex items-center border border-gray-200 rounded-lg">
-              <button
-                onClick={() => currentQty <= 1 ? removeItem(product.id) : updateQuantity(product.id, currentQty - 1)}
-                className="px-2 py-1.5 hover:bg-gray-50 text-gray-500 transition-colors rounded-l-lg"
-              >
-                <Minus size={12} />
-              </button>
-              <span className="px-3 py-1.5 text-sm font-medium text-gray-900 min-w-[32px] text-center border-x border-gray-200">
-                {currentQty}
-              </span>
-              <button
-                onClick={() => updateQuantity(product.id, currentQty + 1)}
-                className="px-2 py-1.5 hover:bg-gray-50 text-gray-500 transition-colors rounded-r-lg"
-              >
-                <Plus size={12} />
-              </button>
-            </div>
             <button
-              onClick={() => removeItem(product.id)}
-              className="text-[12px] text-red-400 hover:text-red-600 transition-colors ml-1"
+              onClick={() => updateQuantity(product.id, currentQty + 1)}
+              className="px-2 py-1.5 hover:bg-gray-50 text-gray-500 transition-colors rounded-r-lg"
             >
-              Remove
+              <Plus size={12} />
             </button>
           </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            <div className="flex items-center border border-gray-200 rounded-lg">
-              <button
-                onClick={() => setAddQty(Math.max(1, addQty - 1))}
-                disabled={addQty <= 1}
-                className="px-2 py-1.5 hover:bg-gray-50 text-gray-500 transition-colors rounded-l-lg disabled:opacity-30"
-              >
-                <Minus size={12} />
-              </button>
-              <span className="px-3 py-1.5 text-sm font-medium text-gray-900 min-w-[32px] text-center border-x border-gray-200">
-                {addQty}
-              </span>
-              <button
-                onClick={() => setAddQty(addQty + 1)}
-                className="px-2 py-1.5 hover:bg-gray-50 text-gray-500 transition-colors rounded-r-lg"
-              >
-                <Plus size={12} />
-              </button>
-            </div>
+          <button
+            onClick={() => removeItem(product.id)}
+            className="text-[12px] text-red-400 hover:text-red-600 transition-colors ml-1"
+          >
+            Remove
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2">
+          <div className="flex items-center border border-gray-200 rounded-lg">
             <button
-              onClick={handleAdd}
-              className={cn(
-                "flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all",
-                justAdded
-                  ? "bg-emerald-500 text-white"
-                  : "bg-amber-500 hover:bg-amber-600 text-white"
-              )}
+              onClick={() => setAddQty(Math.max(1, addQty - 1))}
+              disabled={addQty <= 1}
+              className="px-2 py-1.5 hover:bg-gray-50 text-gray-500 transition-colors rounded-l-lg disabled:opacity-30"
             >
-              {justAdded ? (
-                <><Check size={14} /> Added</>
-              ) : (
-                <><Plus size={14} /> Add to List</>
-              )}
+              <Minus size={12} />
+            </button>
+            <span className="px-3 py-1.5 text-sm font-medium text-gray-900 min-w-[32px] text-center border-x border-gray-200">
+              {addQty}
+            </span>
+            <button
+              onClick={() => setAddQty(addQty + 1)}
+              className="px-2 py-1.5 hover:bg-gray-50 text-gray-500 transition-colors rounded-r-lg"
+            >
+              <Plus size={12} />
             </button>
           </div>
-        )}
-      </div>
+          <button
+            onClick={handleAdd}
+            className={cn(
+              "flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all",
+              justAdded
+                ? "bg-emerald-500 text-white"
+                : "bg-amber-500 hover:bg-amber-600 text-white"
+            )}
+          >
+            {justAdded ? (
+              <><Check size={14} /> Added</>
+            ) : (
+              <><Plus size={14} /> Add to List</>
+            )}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -641,6 +639,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                           )}
                         </div>
                       </dl>
+                      <AddToListControls product={displayProduct} full={full} />
                     </div>
                   </div>
                 )}
@@ -786,7 +785,6 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                 </div>
               </div>
 
-              <ModalFooter product={displayProduct} full={full} onClose={onClose} />
             </div>
           </motion.div>
         </>
