@@ -488,23 +488,24 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
     staleTime: 5 * 60 * 1000,
   });
 
-  const resolvedCategoryName = useMemo(() => {
-    if (categoryPath) return categoryPath.split(" › ").at(-1) ?? null;
+  const fullCategoryPath = useMemo(() => {
+    if (categoryPath) return categoryPath;
     if (!categoryId || !allCategoriesData?.categories) return null;
-    const findName = (cats: any[]): string | null => {
+    const findPath = (cats: any[], trail: string[]): string | null => {
       for (const c of cats) {
-        if (c.id === categoryId) return c.name;
+        const current = [...trail, c.name];
+        if (c.id === categoryId) return current.join(" › ");
         if (c.children) {
-          const found = findName(c.children);
+          const found = findPath(c.children, current);
           if (found) return found;
         }
       }
       return null;
     };
-    return findName(allCategoriesData.categories);
+    return findPath(allCategoriesData.categories, []);
   }, [categoryPath, categoryId, allCategoriesData]);
 
-  const directCategoryName = resolvedCategoryName;
+  const directCategoryName = fullCategoryPath;
 
   const [bottomTab, setBottomTab] = useState<"more" | "related" | "specs" | "collection">("more");
 
