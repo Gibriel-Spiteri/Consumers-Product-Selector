@@ -1,4 +1,4 @@
-import { useParams, Link } from "wouter";
+import { useParams, Link, Redirect } from "wouter";
 import { useGetCategories } from "@workspace/api-client-react";
 import { ChevronRight, Loader2, ArrowLeft } from "lucide-react";
 import { useCategoryPath } from "@/hooks/use-category-path";
@@ -72,9 +72,7 @@ export default function CategoryOverview() {
           </div>
 
           {subCategories.length === 0 ? (
-            <div className="py-20 text-center border-2 border-dashed border-border rounded-2xl bg-white shadow-sm text-muted-foreground">
-              No subcategories found in this section.
-            </div>
+            <Redirect to={`/products/${id}`} />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
               {subCategories.map((sub) => (

@@ -504,7 +504,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   {topLevelCategories.map(cat => (
                     <li key={cat.id} className="flex-shrink-0 relative">
                       <Link
-                        href={`/category/${cat.id}`}
+                        href={cat.children && cat.children.length > 0 ? `/category/${cat.id}` : `/products/${cat.id}`}
                         onMouseEnter={() => handleMouseEnterTab(cat.id)}
                         onClick={() => { setIsHoveringNav(false); setActiveTab(null); }}
                         className="flex items-center h-[50px] px-4 font-semibold uppercase tracking-widest transition-colors relative text-gray-900 text-[13px]"
