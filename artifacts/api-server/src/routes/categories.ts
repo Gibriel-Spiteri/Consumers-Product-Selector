@@ -341,7 +341,13 @@ router.get("/products/clearance", async (_req, res) => {
   const products = await db
     .select()
     .from(productsTable)
-    .where(and(sql`${productsTable.hasActivePpr} = true`, notDiscontinued));
+    .where(and(
+      or(
+        sql`${productsTable.hasActivePpr} = true`,
+        sql`${productsTable.noReorder} = 1`
+      ),
+      notDiscontinued
+    ));
 
   const netsuiteIds = products.map((p) => p.netsuiteId).filter((id): id is string => id != null);
   const liveInventory = await fetchLiveInventory(netsuiteIds);
@@ -359,9 +365,10 @@ router.get("/products/clearance", async (_req, res) => {
       imageUrl: p.imageUrl ?? null,
       fullImageUrl: p.fullImageUrl ?? null,
       quantityAvailable: liveQty ?? p.quantityAvailable ?? null,
-      hasActivePpr: true,
+      hasActivePpr: p.hasActivePpr ?? false,
       pprPriceReductionRetail: p.pprPriceReductionRetail ? parseFloat(p.pprPriceReductionRetail) : null,
       isSpecialOrderStock: p.isSpecialOrderStock ?? false,
+      isClearance: p.noReorder === 1,
     };
   });
 
