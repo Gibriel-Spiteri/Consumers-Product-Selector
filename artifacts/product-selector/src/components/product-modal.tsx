@@ -545,9 +545,9 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                 </h2>
                 <button
                   onClick={onClose}
-                  className="shrink-0 px-4 py-1.5 text-gray-400 hover:text-gray-600 text-sm font-medium transition-colors border border-gray-200 hover:border-gray-300 rounded-xl"
+                  className="shrink-0 p-1.5 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100"
                 >
-                  Dismiss
+                  <X size={20} />
                 </button>
               </div>
 
