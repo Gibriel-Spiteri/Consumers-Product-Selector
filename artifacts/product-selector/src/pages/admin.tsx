@@ -498,7 +498,7 @@ function UncategorizedSection() {
             <PackageX size={20} className="text-amber-500" />
           </div>
           <div>
-            <h2 className="text-base font-semibold text-gray-900">Without Category</h2>
+            <h2 className="font-semibold text-gray-900 text-[14px]">Without Category</h2>
             <p className="text-sm text-gray-500">
               {isLoading ? "Loading…" : `${count} product${count !== 1 ? "s" : ""} without a category`}
             </p>
