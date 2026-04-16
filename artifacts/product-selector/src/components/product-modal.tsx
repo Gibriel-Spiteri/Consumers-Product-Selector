@@ -647,7 +647,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                 <div className="mt-5 lg:mt-8 pt-0 border-t border-gray-100">
                   {/* Tab bar + Add to List */}
                   <div className="flex items-end border-b border-gray-100 mb-4 lg:mb-5">
-                    <div className="flex items-center gap-0 overflow-x-auto" style={{ flex: "0 0 calc(30% + 36% + 2rem)" }}>
+                    <div className="flex items-center gap-0 overflow-x-auto" style={{ flex: "0 0 calc(30% + 36% + 2rem + 31px)" }}>
                     {(
                       [
                         { key: "more", label: `More from ${directCategoryName ? directCategoryName.split(" › ").at(-1) : "Category"}` },
