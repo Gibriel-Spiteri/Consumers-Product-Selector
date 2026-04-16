@@ -692,8 +692,20 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                               <dd className="font-mono text-sm text-gray-800">{full.netsuiteId}</dd>
                             </div>
                           )}
+                          {full?.ourPrice != null && (
+                            <div>
+                              <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Consumers Price</dt>
+                              <dd className="text-sm text-gray-800">${fmtPrice(Number(full.ourPrice))}</dd>
+                            </div>
+                          )}
                         </dl>
                         <dl className="space-y-4">
+                          {directCategoryName && (
+                            <div>
+                              <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Category</dt>
+                              <dd className="text-sm text-gray-800">{directCategoryName}</dd>
+                            </div>
+                          )}
                           <div>
                             <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Inventory</dt>
                             {full?.noReorder ? (
