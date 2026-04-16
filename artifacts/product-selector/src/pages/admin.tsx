@@ -268,6 +268,10 @@ function SyncSection({ employeeName }: { employeeName: string }) {
       </div>
 
       <div className="mt-4 pt-4 border-t border-gray-200">
+        <UncategorizedSection />
+      </div>
+
+      <div className="mt-4 pt-4 border-t border-gray-200">
         <div className="flex items-center gap-2 mb-4">
           <Clock size={14} className="text-gray-400" />
           <span className="text-sm font-medium text-gray-700">Automatic Sync Schedule</span>
@@ -543,8 +547,8 @@ export default function AdminPage() {
 
       <div className="space-y-6">
         <SyncSection employeeName={`${employee.firstName} ${employee.lastName}`} />
-        <UncategorizedSection />
         <HeroImageSection employeeId={employee.id} />
+
       </div>
     </div>
   );
