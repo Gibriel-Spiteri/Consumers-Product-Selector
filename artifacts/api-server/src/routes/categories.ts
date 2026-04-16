@@ -194,6 +194,7 @@ router.get("/categories/:categoryId/products", async (req, res) => {
       hasActivePpr: p.hasActivePpr ?? false,
       pprName: p.pprName ?? null,
       pprPriceReductionRetail: p.pprPriceReductionRetail ? parseFloat(p.pprPriceReductionRetail) : null,
+      noReorder: p.noReorder === 1,
       isSpecialOrderStock: p.isSpecialOrderStock ?? false,
     };
   });
@@ -299,6 +300,7 @@ router.get("/products/search", async (req, res) => {
       hasActivePpr: p.hasActivePpr ?? false,
       pprName: p.pprName ?? null,
       pprPriceReductionRetail: p.pprPriceReductionRetail ? parseFloat(p.pprPriceReductionRetail) : null,
+      noReorder: p.noReorder === 1,
       isSpecialOrderStock: p.isSpecialOrderStock ?? false,
     };
   });
@@ -331,6 +333,7 @@ router.get("/products/uncategorized", async (_req, res) => {
       hasActivePpr: p.hasActivePpr ?? false,
       pprName: p.pprName ?? null,
       pprPriceReductionRetail: p.pprPriceReductionRetail ? parseFloat(p.pprPriceReductionRetail) : null,
+      noReorder: p.noReorder === 1,
       isSpecialOrderStock: p.isSpecialOrderStock ?? false,
     };
   });
@@ -371,6 +374,7 @@ router.get("/products/clearance", async (_req, res) => {
       hasActivePpr: p.hasActivePpr ?? false,
       pprName: p.pprName ?? null,
       pprPriceReductionRetail: p.pprPriceReductionRetail ? parseFloat(p.pprPriceReductionRetail) : null,
+      noReorder: p.noReorder === 1,
       isSpecialOrderStock: p.isSpecialOrderStock ?? false,
       isClearance: p.noReorder === 1,
     };
@@ -427,6 +431,7 @@ router.get("/products/express-bath", async (_req, res) => {
       hasActivePpr: p.hasActivePpr ?? false,
       pprName: p.pprName ?? null,
       pprPriceReductionRetail: p.pprPriceReductionRetail ? parseFloat(p.pprPriceReductionRetail) : null,
+      noReorder: p.noReorder === 1,
       isSpecialOrderStock: p.isSpecialOrderStock ?? false,
     };
   });
@@ -521,6 +526,7 @@ router.get("/products/:productId", async (req, res) => {
       hasActivePpr: p.hasActivePpr ?? false,
       pprName: p.pprName ?? null,
       pprPriceReductionRetail: p.pprPriceReductionRetail ? parseFloat(p.pprPriceReductionRetail) : null,
+      noReorder: p.noReorder === 1,
       isSpecialOrderStock: p.isSpecialOrderStock ?? false,
       features: null,
     },
@@ -579,6 +585,7 @@ router.get("/products/:productId/related", async (req, res) => {
       hasActivePpr: p?.hasActivePpr ?? false,
       pprName: p?.pprName ?? null,
       pprPriceReductionRetail: p?.pprPriceReductionRetail ? parseFloat(p.pprPriceReductionRetail) : null,
+      noReorder: p?.noReorder === 1,
       isSpecialOrderStock: p?.isSpecialOrderStock ?? false,
       description: r.description ?? null,
     };

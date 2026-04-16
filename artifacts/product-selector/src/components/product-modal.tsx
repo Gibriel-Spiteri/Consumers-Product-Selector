@@ -28,6 +28,8 @@ interface FullProduct extends Product {
   hasActivePpr?: boolean;
   pprName?: string | null;
   pprPriceReductionRetail?: number | null;
+  noReorder?: boolean;
+  isSpecialOrderStock?: boolean;
   features: string[] | null;
   additionalImages?: string[] | null;
 }
@@ -725,6 +727,18 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                             <dd className="text-sm font-medium text-gray-400">—</dd>
                           )}
                         </div>
+                        {full?.noReorder && (
+                          <div>
+                            <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">No Reorders</dt>
+                            <dd><span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-red-50 text-red-500">Yes</span></dd>
+                          </div>
+                        )}
+                        {full?.isSpecialOrderStock && (
+                          <div>
+                            <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Special Order Stock</dt>
+                            <dd><span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-600">Yes</span></dd>
+                          </div>
+                        )}
                         {full?.netsuiteId && (
                           <div>
                             <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">NetSuite ID</dt>
