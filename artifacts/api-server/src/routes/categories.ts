@@ -514,7 +514,7 @@ router.get("/products/:productId", async (req, res) => {
       sku: p.sku ?? null,
       price: p.price ? parseFloat(p.price) : null,
       retailPrice: p.retailPrice ? parseFloat(p.retailPrice) : null,
-      ourPrice: null,
+      ourPrice: p.price ? parseFloat(p.price) : null,
       categoryId: p.categoryId ?? null,
       netsuiteId: p.netsuiteId ?? null,
       imageUrl: p.imageUrl ?? null,

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getGetCategoryProductsQueryOptions } from "@workspace/api-client-react";
@@ -478,9 +478,33 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
     (p) => p.id !== resolvedId
   );
 
-  const directCategoryName = categoryPath
-    ? categoryPath.split(" › ").at(-1)
-    : null;
+  const { data: allCategoriesData } = useQuery({
+    queryKey: ["allCategories"],
+    queryFn: async () => {
+      const res = await fetch(`/api/categories`);
+      if (!res.ok) return { categories: [] };
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const resolvedCategoryName = useMemo(() => {
+    if (categoryPath) return categoryPath.split(" › ").at(-1) ?? null;
+    if (!categoryId || !allCategoriesData?.categories) return null;
+    const findName = (cats: any[]): string | null => {
+      for (const c of cats) {
+        if (c.id === categoryId) return c.name;
+        if (c.children) {
+          const found = findName(c.children);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    return findName(allCategoriesData.categories);
+  }, [categoryPath, categoryId, allCategoriesData]);
+
+  const directCategoryName = resolvedCategoryName;
 
   const [bottomTab, setBottomTab] = useState<"more" | "related" | "specs" | "collection">("more");
 
