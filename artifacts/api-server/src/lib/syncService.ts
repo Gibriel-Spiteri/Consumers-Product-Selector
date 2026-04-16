@@ -229,6 +229,7 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
       const pprData = activePprItemsMap.get(item.id);
       const hasActivePpr = !!pprData;
       const pprPriceReductionRetail = pprData?.priceReductionRetail ?? null;
+      const pprName = pprData?.name ?? null;
 
       const existing = await db
         .select()
@@ -252,6 +253,7 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
             quantityAvailable: item.quantityAvailable ?? null,
             noReorder: item.noReorder ? 1 : 0,
             hasActivePpr: hasActivePpr,
+            pprName: pprName,
             pprPriceReductionRetail: pprPriceReductionRetail != null ? String(pprPriceReductionRetail) : null,
             isExpressBath: item.isExpressBath ?? false,
             isSpecialOrderStock: item.isSpecialOrderStock ?? false,
@@ -274,6 +276,7 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
           quantityAvailable: item.quantityAvailable ?? null,
           noReorder: item.noReorder ? 1 : 0,
           hasActivePpr: hasActivePpr,
+          pprName: pprName,
           pprPriceReductionRetail: pprPriceReductionRetail != null ? String(pprPriceReductionRetail) : null,
           isExpressBath: item.isExpressBath ?? false,
           isSpecialOrderStock: item.isSpecialOrderStock ?? false,

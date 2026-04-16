@@ -374,6 +374,7 @@ function mapItemRow(row: SuiteQLItemRow): NetSuiteItem {
 }
 
 export interface PprItemData {
+  name: string | null;
   priceReductionRetail: number | null;
 }
 
@@ -381,9 +382,11 @@ export async function fetchActivePprItems(): Promise<Map<string, PprItemData>> {
   try {
     const result = await executeSuiteQL<{
       custrecord_ppritem_item: string;
+      pprname: string | null;
       custrecord_ppr_pricereddisplay_ret: string | null;
     }>(
       `SELECT pi.custrecord_ppritem_item,
+              ppr.name AS pprname,
               ppr.custrecord_ppr_pricereddisplay_ret
        FROM customrecord_ppritem pi
        INNER JOIN customrecord_ppr ppr ON ppr.id = pi.custrecord_ppritem_ppr
@@ -396,7 +399,7 @@ export async function fetchActivePprItems(): Promise<Map<string, PprItemData>> {
       const raw = r.custrecord_ppr_pricereddisplay_ret;
       const priceReductionRetail = raw != null ? Math.abs(parseFloat(raw)) : null;
       if (!map.has(id)) {
-        map.set(id, { priceReductionRetail });
+        map.set(id, { name: r.pprname ?? null, priceReductionRetail });
       }
     }
     logger.info({ count: map.size }, "Fetched active PPR items from NetSuite");

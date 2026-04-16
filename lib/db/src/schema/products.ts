@@ -17,6 +17,7 @@ export const productsTable = pgTable("products", {
   quantityAvailable: integer("quantity_available"),
   noReorder: integer("no_reorder").default(0),
   hasActivePpr: boolean("has_active_ppr").default(false),
+  pprName: text("ppr_name"),
   pprPriceReductionRetail: numeric("ppr_price_reduction_retail", { precision: 10, scale: 2 }),
   isExpressBath: boolean("is_express_bath").default(false),
   isSpecialOrderStock: boolean("is_special_order_stock").default(false),

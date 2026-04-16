@@ -26,6 +26,7 @@ interface FullProduct extends Product {
   manufacturer: string | null;
   quantityAvailable: number | null;
   hasActivePpr?: boolean;
+  pprName?: string | null;
   pprPriceReductionRetail?: number | null;
   features: string[] | null;
   additionalImages?: string[] | null;
@@ -696,6 +697,12 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                           <div>
                             <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Our Price</dt>
                             <dd className="text-sm text-gray-800">${fmtPrice(Number(full.ourPrice))}</dd>
+                          </div>
+                        )}
+                        {full?.hasActivePpr && full?.pprName && (
+                          <div>
+                            <dt className="text-[10px] font-semibold uppercase tracking-widest text-emerald-600 mb-0.5">PPR</dt>
+                            <dd className="text-sm font-semibold text-emerald-600">{full.pprName}</dd>
                           </div>
                         )}
                         {full?.hasActivePpr && full?.pprPriceReductionRetail != null && (
