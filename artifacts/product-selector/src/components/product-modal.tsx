@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getGetCategoryProductsQueryOptions } from "@workspace/api-client-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ImageOff, Copy, Check, ChevronLeft, ChevronRight, Loader2, X, ZoomIn, Plus, Minus, ClipboardList } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, fmtPrice } from "@/lib/utils";
 import { useQuoteList } from "@/context/quote-list-context";
 import { PprPriceTooltip } from "@/components/ppr-price-tooltip";
 
@@ -289,7 +289,7 @@ function RelatedMiniCard({ product, onSelect }: { product: FullProduct; onSelect
         </p>
         {displayPrice != null ? (
           <PprPriceTooltip price={Number(displayPrice)} pprPriceReductionRetail={product.pprPriceReductionRetail} hasActivePpr={!!product.hasActivePpr}>
-            <p className={cn("text-[13px] font-semibold", product.hasActivePpr ? "text-emerald-600" : "text-gray-900")}>${Number(displayPrice).toFixed(2)}</p>
+            <p className={cn("text-[13px] font-semibold", product.hasActivePpr ? "text-emerald-600" : "text-gray-900")}>${fmtPrice(Number(displayPrice))}</p>
           </PprPriceTooltip>
         ) : (
           <p className="text-[12px] text-gray-300">—</p>
@@ -573,11 +573,11 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                           <PprPriceTooltip price={Number(full.price)} pprPriceReductionRetail={full.pprPriceReductionRetail} hasActivePpr={!!full.hasActivePpr}>
                             <p className={cn("text-[10px] font-semibold uppercase tracking-widest mb-1", full.hasActivePpr ? "text-emerald-600" : "text-gray-400")}>{full.hasActivePpr ? "Clearance" : "Our Price"}</p>
                             <p className={cn("text-3xl font-bold mb-2", full.hasActivePpr ? "text-emerald-600" : "text-gray-900")}>
-                              ${Number(full.price).toFixed(2)}
+                              ${fmtPrice(Number(full.price))}
                             </p>
                             {full.retailPrice != null && (
                               <p className="text-sm text-gray-400">
-                                Retail <span className="line-through">${Number(full.retailPrice).toFixed(2)}</span>
+                                Retail <span className="line-through">${fmtPrice(Number(full.retailPrice))}</span>
                               </p>
                             )}
                           </PprPriceTooltip>
@@ -689,13 +689,13 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                         {full?.price != null && (
                           <div>
                             <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Retail Price</dt>
-                            <dd className="text-sm text-gray-800">${Number(full.price).toFixed(2)}</dd>
+                            <dd className="text-sm text-gray-800">${fmtPrice(Number(full.price))}</dd>
                           </div>
                         )}
                         {full?.ourPrice != null && (
                           <div>
                             <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Our Price</dt>
-                            <dd className="text-sm text-gray-800">${Number(full.ourPrice).toFixed(2)}</dd>
+                            <dd className="text-sm text-gray-800">${fmtPrice(Number(full.ourPrice))}</dd>
                           </div>
                         )}
                         <div>

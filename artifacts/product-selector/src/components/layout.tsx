@@ -5,7 +5,7 @@ import { useQuoteList } from "@/context/quote-list-context";
 import { useAuth } from "@/context/auth-context";
 import { useGetCategories, useSearchProducts, getSearchProductsQueryKey } from "@workspace/api-client-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
+import { cn, fmtPrice } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import ProductModal from "@/components/product-modal";
 
@@ -423,7 +423,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                                     </span>
                                     <span className="text-right">
                                       {product.price != null ? (
-                                        <span className="text-sm font-semibold text-gray-900">${product.price.toFixed(2)}</span>
+                                        <span className="text-sm font-semibold text-gray-900">${fmtPrice(product.price)}</span>
                                       ) : <span className="text-gray-300">—</span>}
                                     </span>
                                   </button>

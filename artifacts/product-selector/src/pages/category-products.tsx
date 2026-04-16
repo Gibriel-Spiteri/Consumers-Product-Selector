@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, PackageX, Loader2, ImageOff, LayoutList, LayoutGrid, Copy, Check, X, Filter, ChevronDown, Plus, Search } from "lucide-react";
 import { useCategoryPath } from "@/hooks/use-category-path";
 import ProductModal from "@/components/product-modal";
-import { cn } from "@/lib/utils";
+import { cn, fmtPrice } from "@/lib/utils";
 import { useQuoteList } from "@/context/quote-list-context";
 import { PprPriceTooltip } from "@/components/ppr-price-tooltip";
 
@@ -161,9 +161,9 @@ function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: P
                 {p.price ? (
                   <PprPriceTooltip price={Number(p.price)} pprPriceReductionRetail={p.pprPriceReductionRetail} hasActivePpr={p.hasActivePpr}>
                     <p className={cn("text-[10px] font-semibold uppercase tracking-widest", p.hasActivePpr ? "text-emerald-600" : "text-gray-400")}>{p.hasActivePpr ? "Clearance" : "Our Price"}</p>
-                    <p className={cn("font-semibold", p.hasActivePpr ? "text-emerald-600" : "text-gray-900")}>${Number(p.price).toFixed(2)}</p>
+                    <p className={cn("font-semibold", p.hasActivePpr ? "text-emerald-600" : "text-gray-900")}>${fmtPrice(Number(p.price))}</p>
                     {p.retailPrice != null && (
-                      <p className="text-[11px] text-gray-400">Retail <span className="line-through">${Number(p.retailPrice).toFixed(2)}</span></p>
+                      <p className="text-[11px] text-gray-400">Retail <span className="line-through">${fmtPrice(Number(p.retailPrice))}</span></p>
                     )}
                   </PprPriceTooltip>
                 ) : (
@@ -221,9 +221,9 @@ function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: P
                 <td className="px-5 py-3 text-right whitespace-nowrap">
                   {p.price ? (
                     <PprPriceTooltip price={Number(p.price)} pprPriceReductionRetail={p.pprPriceReductionRetail} hasActivePpr={!!p.hasActivePpr}>
-                      <p className={cn("font-semibold", p.hasActivePpr ? "text-emerald-600" : "text-gray-900")}>${Number(p.price).toFixed(2)}</p>
+                      <p className={cn("font-semibold", p.hasActivePpr ? "text-emerald-600" : "text-gray-900")}>${fmtPrice(Number(p.price))}</p>
                       {p.retailPrice != null && (
-                        <p className="text-[11px] text-gray-400">Retail <span className="line-through">${Number(p.retailPrice).toFixed(2)}</span></p>
+                        <p className="text-[11px] text-gray-400">Retail <span className="line-through">${fmtPrice(Number(p.retailPrice))}</span></p>
                       )}
                     </PprPriceTooltip>
                   ) : <span className="text-gray-300 font-normal">—</span>}

@@ -3,6 +3,7 @@ import { useParams, Link } from "wouter";
 import { getSearchProductsQueryOptions } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Loader2, ArrowLeft, PackageX } from "lucide-react";
+import { fmtPrice } from "@/lib/utils";
 import ProductModal from "@/components/product-modal";
 
 export default function SearchPage() {
@@ -77,7 +78,7 @@ export default function SearchPage() {
                      </td>
                      <td className="px-6 lg:px-8 py-5 text-right">
                        <span className={`inline-block px-3 py-1 bg-secondary rounded-md font-bold border border-border group-hover:bg-white group-hover:border-accent/30 transition-colors ${(p as any).hasActivePpr ? 'text-emerald-600' : 'text-accent'}`}>
-                         {p.price ? `$${Number(p.price).toFixed(2)}` : 'Call for price'}
+                         {p.price ? `$${fmtPrice(Number(p.price))}` : 'Call for price'}
                        </span>
                      </td>
                    </tr>

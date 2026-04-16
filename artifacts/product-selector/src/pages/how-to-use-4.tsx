@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { ArrowLeft, ChevronLeft, ChevronRight, Search, MousePointer2, LayoutGrid, List, Filter, ClipboardList, Plus, Send, ZoomIn, Tag, Sparkles, Shield, Copy, User, ChevronDown, ImageOff, Minus, X, ToggleRight, Layers, ArrowRight } from "lucide-react";
 import { Link } from "wouter";
-import { cn } from "@/lib/utils";
+import { cn, fmtPrice } from "@/lib/utils";
 
 interface Hotspot {
   top: string;
@@ -334,7 +334,7 @@ function QuoteListSlide() {
                 <span className="px-2 py-0.5 text-[11px] font-bold text-gray-900 border-x border-gray-200">{item.qty}</span>
                 <button className="px-1.5 py-0.5 text-gray-400"><Plus size={9} /></button>
               </div>
-              <p className="text-xs font-bold text-gray-900 w-16 text-right shrink-0">${(item.price * item.qty).toFixed(2)}</p>
+              <p className="text-xs font-bold text-gray-900 w-16 text-right shrink-0">${fmtPrice(item.price * item.qty)}</p>
             </div>
           ))}
         </div>

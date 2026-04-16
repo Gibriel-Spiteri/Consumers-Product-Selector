@@ -2,11 +2,7 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { ChevronRight, Trash2, Minus, Plus, ClipboardList, Search, Loader2, Send, Check, AlertCircle, ImageOff, X } from "lucide-react";
 import { useQuoteList } from "@/context/quote-list-context";
-import { cn } from "@/lib/utils";
-
-function fmtPrice(n: number) {
-  return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
+import { cn, fmtPrice } from "@/lib/utils";
 
 interface Estimate {
   id: number;
