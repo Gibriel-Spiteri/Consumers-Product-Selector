@@ -559,37 +559,50 @@ export async function fetchItemBins(): Promise<Map<string, string>> {
   const binMap = new Map<string, string>();
   if (!isNetSuiteConfigured()) return binMap;
 
-  const queries = [
-    `SELECT iil.item AS itemid, bn.binnumber AS binname
-     FROM inventoryitemlocations iil
-     JOIN binnumber bn ON bn.id = iil.preferredbin
-     WHERE bn.isinactive = 'F'`,
-    `SELECT iil.item AS itemid, bn.binnumber AS binname
-     FROM inventoryitemlocations iil
-     JOIN binnumber bn ON bn.id = iil.defaultreceivingbin
-     WHERE bn.isinactive = 'F'`,
-    `SELECT bn.id, bn.binnumber, bn.location FROM binnumber bn WHERE bn.isinactive = 'F' FETCH NEXT 5 ROWS ONLY`,
-  ];
+  try {
+    const result = await executeSuiteQL<{
+      itemid: string;
+      binname: string | null;
+      isdisplay: string | null;
+      qty: string | null;
+    }>(
+      `SELECT iib.item AS itemid,
+              b.binnumber AS binname,
+              b.custrecord_bin_isdisplay AS isdisplay,
+              iib.quantityonhand AS qty
+       FROM iteminventorybalance iib
+       JOIN bin b ON b.id = iib.binnumber
+       WHERE b.isinactive = 'F'`
+    );
 
-  for (const query of queries) {
-    try {
-      const result = await executeSuiteQL<{ itemid: string; binname: string | null }>(query);
-      for (const row of result.items) {
-        if (row.itemid && row.binname) {
-          const key = String(row.itemid);
-          if (!binMap.has(key)) {
-            binMap.set(key, row.binname);
-          }
-        }
+    type BinChoice = { binname: string; isDisplay: boolean; qty: number };
+    const perItem = new Map<string, BinChoice>();
+
+    for (const row of result.items) {
+      if (!row.itemid || !row.binname) continue;
+      const key = String(row.itemid);
+      const isDisplay = row.isdisplay === "T" || row.isdisplay === "true";
+      const qty = Number(row.qty ?? 0) || 0;
+      const candidate: BinChoice = { binname: row.binname, isDisplay, qty };
+      const existing = perItem.get(key);
+      if (
+        !existing ||
+        (candidate.isDisplay && !existing.isDisplay) ||
+        (candidate.isDisplay === existing.isDisplay && candidate.qty > existing.qty)
+      ) {
+        perItem.set(key, candidate);
       }
-      logger.info({ count: binMap.size }, "Fetched item bins from NetSuite");
-      return binMap;
-    } catch (err) {
-      logger.warn({ err, query: query.substring(0, 60) }, "Bin number query failed, trying next variant");
     }
+
+    for (const [key, choice] of perItem) {
+      binMap.set(key, choice.binname);
+    }
+
+    logger.info({ count: binMap.size }, "Fetched item bins from NetSuite");
+  } catch (err) {
+    logger.warn({ err }, "Bin number query failed; bin numbers will be empty");
   }
 
-  logger.warn("All bin number query variants failed; bin numbers will be empty");
   return binMap;
 }
 
