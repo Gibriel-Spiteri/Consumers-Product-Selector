@@ -23,6 +23,7 @@ interface Product {
   hasActivePpr?: boolean;
   pprPriceReductionRetail?: number | null;
   isSpecialOrderStock?: boolean;
+  binNumber?: string | null;
   attributes?: Array<{ name: string; value: string }>;
 }
 
@@ -367,11 +368,13 @@ export default function CategoryProducts() {
   const [inStockOnly, setInStockOnly] = useState(false);
   const [activeFilters, setActiveFilters] = useState<Map<string, Set<string>>>(new Map());
   const [refineQuery, setRefineQuery] = useState("");
+  const [activeLocations, setActiveLocations] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     setActiveFilters(new Map());
     setInStockOnly(false);
     setRefineQuery("");
+    setActiveLocations(new Set());
   }, [id]);
 
   const { data: productsData, isLoading: isLoadingProducts } = useQuery({
@@ -383,7 +386,12 @@ export default function CategoryProducts() {
   const path = useCategoryPath(categoriesData?.categories || [], id);
   const categoryPath = path.map(c => c.name).join(" › ");
 
-  const facets: Facet[] = (productsData as any)?.facets ?? [];
+  const isDisplaysForSale = path.length > 0 && path[0].name.toLowerCase() === "displays for sale";
+
+  const rawFacets: Facet[] = (productsData as any)?.facets ?? [];
+  const facets: Facet[] = isDisplaysForSale
+    ? rawFacets.filter(f => f.name.toLowerCase() !== "manufacturer")
+    : rawFacets;
 
   const toggleFilter = (facetName: string, value: string) => {
     setActiveFilters(prev => {
@@ -404,8 +412,34 @@ export default function CategoryProducts() {
     return [...items].sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
   }, [productsData]);
 
+  const locationOptions = useMemo(() => {
+    if (!isDisplaysForSale) return [] as Array<{ value: string; count: number }>;
+    const counts = new Map<string, number>();
+    for (const p of allProducts) {
+      const loc = p.binNumber?.trim();
+      if (!loc) continue;
+      counts.set(loc, (counts.get(loc) ?? 0) + 1);
+    }
+    return Array.from(counts.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([value, count]) => ({ value, count }));
+  }, [allProducts, isDisplaysForSale]);
+
+  const toggleLocation = (loc: string) => {
+    setActiveLocations(prev => {
+      const next = new Set(prev);
+      if (next.has(loc)) next.delete(loc);
+      else next.add(loc);
+      return next;
+    });
+  };
+
   const products = useMemo(() => {
     let filtered = allProducts;
+
+    if (isDisplaysForSale && activeLocations.size > 0) {
+      filtered = filtered.filter(p => p.binNumber && activeLocations.has(p.binNumber.trim()));
+    }
 
     if (activeFilters.size > 0) {
       const filterEntries = Array.from(activeFilters.entries());
@@ -529,6 +563,39 @@ export default function CategoryProducts() {
           </div>
         </div>
       </div>
+
+      {isDisplaysForSale && locationOptions.length > 0 && (
+        <div className="mb-5 flex flex-wrap items-center gap-2">
+          <span className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mr-1">Location</span>
+          {locationOptions.map(({ value, count }) => {
+            const active = activeLocations.has(value);
+            return (
+              <button
+                key={value}
+                onClick={() => toggleLocation(value)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium transition-all border",
+                  active
+                    ? "bg-emerald-500 text-white border-emerald-500 shadow-sm"
+                    : "bg-white text-gray-600 border-gray-200 hover:border-emerald-300 hover:text-emerald-600"
+                )}
+              >
+                {value}
+                <span className={cn("text-[10px]", active ? "text-white/80" : "text-gray-400")}>{count}</span>
+              </button>
+            );
+          })}
+          {activeLocations.size > 0 && (
+            <button
+              onClick={() => setActiveLocations(new Set())}
+              className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              <X size={12} />
+              Clear
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="flex items-center gap-3 flex-wrap mb-4">
         <div className="flex-1 min-w-0">

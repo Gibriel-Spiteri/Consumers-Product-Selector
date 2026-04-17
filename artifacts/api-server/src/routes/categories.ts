@@ -196,6 +196,7 @@ router.get("/categories/:categoryId/products", async (req, res) => {
       pprPriceReductionRetail: p.pprPriceReductionRetail ? parseFloat(p.pprPriceReductionRetail) : null,
       noReorder: p.noReorder === 1,
       isSpecialOrderStock: p.isSpecialOrderStock ?? false,
+      binNumber: p.binNumber ?? null,
     };
   });
 
