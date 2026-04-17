@@ -562,12 +562,12 @@ export default function CategoryProducts() {
             className={cn(
               "flex items-center gap-1.5 text-[13px] font-medium px-4 py-2 rounded-full transition-all border whitespace-nowrap",
               activeLocation === null
-                ? "bg-emerald-600 border-emerald-600 text-white"
-                : "bg-white border-gray-200 text-gray-600 hover:border-emerald-300 hover:text-emerald-600"
+                ? "bg-amber-600 border-amber-600 text-white"
+                : "bg-white border-gray-200 text-gray-600 hover:border-amber-300 hover:text-amber-600"
             )}
           >
             All
-            <span className={cn("text-[11px] font-semibold rounded-full px-1.5 py-0.5", activeLocation === null ? "bg-emerald-500 text-white" : "bg-gray-100 text-gray-400")}>
+            <span className={cn("text-[11px] font-semibold rounded-full px-1.5 py-0.5", activeLocation === null ? "bg-amber-500 text-white" : "bg-gray-100 text-gray-400")}>
               {allProducts.length}
             </span>
           </button>
@@ -580,12 +580,12 @@ export default function CategoryProducts() {
                 className={cn(
                   "flex items-center gap-1.5 text-[13px] font-medium px-4 py-2 rounded-full transition-all border whitespace-nowrap",
                   active
-                    ? "bg-emerald-600 border-emerald-600 text-white"
-                    : "bg-white border-gray-200 text-gray-600 hover:border-emerald-300 hover:text-emerald-600"
+                    ? "bg-amber-600 border-amber-600 text-white"
+                    : "bg-white border-gray-200 text-gray-600 hover:border-amber-300 hover:text-amber-600"
                 )}
               >
                 {value}
-                <span className={cn("text-[11px] font-semibold rounded-full px-1.5 py-0.5", active ? "bg-emerald-500 text-white" : "bg-gray-100 text-gray-400")}>
+                <span className={cn("text-[11px] font-semibold rounded-full px-1.5 py-0.5", active ? "bg-amber-500 text-white" : "bg-gray-100 text-gray-400")}>
                   {count}
                 </span>
               </button>
