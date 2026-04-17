@@ -50,7 +50,13 @@ router.get("/netsuite/diag/:itemid", async (req, res) => {
               item.custitem_noreorders AS isnoreorder,
               item.custitem_specord_stock AS isspecialorderstock,
               item.custitem_cps_category AS cpscategoryid,
-              BUILTIN.DF(item.custitem_cps_category) AS cpscategoryname
+              BUILTIN.DF(item.custitem_cps_category) AS cpscategoryname,
+              NVL(item.custitem_itemthumbnailurl, '(null)') AS thumbnailurl,
+              NVL(item.custitem_itemimageurl, '(null)') AS imageurl,
+              NVL(BUILTIN.DF(item.storedisplayimage), '(null)') AS storedisplayimage,
+              NVL(BUILTIN.DF(item.storedisplaythumbnail), '(null)') AS storedisplaythumbnail,
+              NVL(TO_CHAR(item.storedisplayimage), '(null)') AS storedisplayimage_id,
+              NVL(TO_CHAR(item.storedisplaythumbnail), '(null)') AS storedisplaythumbnail_id
        FROM item
        WHERE item.itemid = '${itemid}'`
     );
