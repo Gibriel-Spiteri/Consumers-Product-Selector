@@ -44,9 +44,11 @@ router.get("/netsuite/diag/:itemid", async (req, res) => {
   try {
     const itemid = req.params.itemid.replace(/'/g, "''");
     const result = await executeSuiteQL<any>(
-      `SELECT item.id, item.itemid, item.isinactive, item.isonline,
-              BUILTIN.DF(item.custitem_stock_code) AS stockcode,
+      `SELECT item.id, item.itemid, item.itemtype, item.isinactive, item.isonline,
+              NVL(BUILTIN.DF(item.custitem_stock_code), '(null)') AS stockcode,
               item.custitem_expressbath AS isexpressbath,
+              item.custitem_noreorders AS isnoreorder,
+              item.custitem_specord_stock AS isspecialorderstock,
               item.custitem_cps_category AS cpscategoryid,
               BUILTIN.DF(item.custitem_cps_category) AS cpscategoryname
        FROM item
