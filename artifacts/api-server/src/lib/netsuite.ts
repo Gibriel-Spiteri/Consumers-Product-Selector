@@ -31,10 +31,28 @@ function getTokenEndpoint(): string {
   return `${getBaseUrl()}/services/rest/auth/oauth2/v1/token`;
 }
 
+function normalizePem(input: string): string {
+  let s = input.trim();
+  s = s.replace(/\\r\\n/g, "\n").replace(/\\n/g, "\n").replace(/\r\n/g, "\n");
+  const headerMatch = s.match(/-----BEGIN ([A-Z0-9 ]+?)-----/);
+  const footerMatch = s.match(/-----END ([A-Z0-9 ]+?)-----/);
+  if (!headerMatch || !footerMatch) {
+    return s;
+  }
+  const label = headerMatch[1];
+  const header = `-----BEGIN ${label}-----`;
+  const footer = `-----END ${label}-----`;
+  const bodyStart = s.indexOf(header) + header.length;
+  const bodyEnd = s.indexOf(footer);
+  let body = s.slice(bodyStart, bodyEnd).replace(/[\s]+/g, "");
+  const wrapped = body.match(/.{1,64}/g)?.join("\n") ?? body;
+  return `${header}\n${wrapped}\n${footer}\n`;
+}
+
 function getPrivateKey(): string {
   const envKey = process.env.NETSUITE_PRIVATE_KEY;
   if (envKey && envKey.trim().length > 0) {
-    return envKey.replace(/\\n/g, "\n");
+    return normalizePem(envKey);
   }
   const candidates = [
     PRIVATE_KEY_PATH,
