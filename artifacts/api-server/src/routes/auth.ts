@@ -5,6 +5,16 @@ import { logger } from "../lib/logger";
 const router: IRouter = Router();
 
 router.post("/auth/login", async (req, res) => {
+  if (process.env.NODE_ENV === "production" && !req.secure) {
+    logger.warn(
+      { protocol: req.protocol },
+      "Rejected login over insecure transport",
+    );
+    return res
+      .status(400)
+      .json({ error: "Login must be performed over HTTPS" });
+  }
+
   const { email, password } = req.body;
 
   if (!email || !password) {
