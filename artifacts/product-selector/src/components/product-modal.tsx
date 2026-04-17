@@ -29,6 +29,7 @@ interface FullProduct extends Product {
   pprName?: string | null;
   pprPriceReductionRetail?: number | null;
   noReorder?: boolean;
+  binNumber?: string | null;
   isSpecialOrderStock?: boolean;
   features: string[] | null;
   additionalImages?: string[] | null;
@@ -762,6 +763,12 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                             <div>
                               <dt className="text-[10px] font-semibold uppercase tracking-widest text-emerald-600 mb-0.5">Price Reduction (Retail)</dt>
                               <dd className="text-sm text-emerald-600">${fmtPrice(Number(full.pprPriceReductionRetail))}</dd>
+                            </div>
+                          )}
+                          {full?.binNumber && (
+                            <div>
+                              <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Showroom Location</dt>
+                              <dd className="text-sm text-gray-800">{full.binNumber}</dd>
                             </div>
                           )}
                         </dl>

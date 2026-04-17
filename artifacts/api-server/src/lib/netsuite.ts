@@ -555,6 +555,44 @@ export async function fetchRelatedItems(): Promise<NetSuiteRelatedItem[]> {
   }));
 }
 
+export async function fetchItemBins(): Promise<Map<string, string>> {
+  const binMap = new Map<string, string>();
+  if (!isNetSuiteConfigured()) return binMap;
+
+  const queries = [
+    `SELECT iil.item AS itemid, bn.binnumber AS binname
+     FROM inventoryitemlocations iil
+     JOIN binnumber bn ON bn.id = iil.preferredbin
+     WHERE bn.isinactive = 'F'`,
+    `SELECT iil.item AS itemid, bn.binnumber AS binname
+     FROM inventoryitemlocations iil
+     JOIN binnumber bn ON bn.id = iil.defaultreceivingbin
+     WHERE bn.isinactive = 'F'`,
+    `SELECT bn.id, bn.binnumber, bn.location FROM binnumber bn WHERE bn.isinactive = 'F' FETCH NEXT 5 ROWS ONLY`,
+  ];
+
+  for (const query of queries) {
+    try {
+      const result = await executeSuiteQL<{ itemid: string; binname: string | null }>(query);
+      for (const row of result.items) {
+        if (row.itemid && row.binname) {
+          const key = String(row.itemid);
+          if (!binMap.has(key)) {
+            binMap.set(key, row.binname);
+          }
+        }
+      }
+      logger.info({ count: binMap.size }, "Fetched item bins from NetSuite");
+      return binMap;
+    } catch (err) {
+      logger.warn({ err, query: query.substring(0, 60) }, "Bin number query failed, trying next variant");
+    }
+  }
+
+  logger.warn("All bin number query variants failed; bin numbers will be empty");
+  return binMap;
+}
+
 export async function fetchLiveInventory(
   netsuiteIds: string[]
 ): Promise<Map<string, number>> {

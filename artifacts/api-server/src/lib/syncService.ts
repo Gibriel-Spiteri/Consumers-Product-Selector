@@ -7,6 +7,7 @@ import {
   fetchItemAttributes,
   fetchRelatedItems,
   fetchActivePprItems,
+  fetchItemBins,
   isNetSuiteConfigured,
   type NetSuiteCategory,
 } from "./netsuite";
@@ -202,6 +203,7 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
 
     setProgress("items", 45, "Fetching products from NetSuite…");
     const activePprItemsMap = await fetchActivePprItems();
+    const itemBinsMap = await fetchItemBins();
     const allCandidateItems = await fetchNetSuiteItems();
     logger.info({ count: allCandidateItems.length }, "Fetched all candidate items from NetSuite");
 
@@ -225,6 +227,7 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
       const hasActivePpr = !!pprData;
       const pprPriceReductionRetail = pprData?.priceReductionRetail ?? null;
       const pprName = pprData?.name ?? null;
+      const binNumber = itemBinsMap.get(item.id) ?? null;
 
       const existing = await db
         .select()
@@ -252,6 +255,7 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
             pprPriceReductionRetail: pprPriceReductionRetail != null ? String(pprPriceReductionRetail) : null,
             isExpressBath: item.isExpressBath ?? false,
             isSpecialOrderStock: item.isSpecialOrderStock ?? false,
+            binNumber,
             categoryId: categoryDbId,
             updatedAt: new Date(),
           })
@@ -275,6 +279,7 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
           pprPriceReductionRetail: pprPriceReductionRetail != null ? String(pprPriceReductionRetail) : null,
           isExpressBath: item.isExpressBath ?? false,
           isSpecialOrderStock: item.isSpecialOrderStock ?? false,
+          binNumber,
           categoryId: categoryDbId,
         });
       }
