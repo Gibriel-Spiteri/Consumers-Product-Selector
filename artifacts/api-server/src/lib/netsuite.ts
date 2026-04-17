@@ -442,7 +442,7 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
         item.id,
         item.itemid,
         item.fullname,
-        item.salesdescription,
+        item.description AS salesdescription,
         p.unitprice AS baseprice,
         item.custitem_normalretailprice AS retailprice,
         item.custitem_itemthumbnailurl AS imageurl,
@@ -450,14 +450,14 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
         item.storedescription,
         BUILTIN.DF(item.custitem_prodline) AS prodline,
         NULL AS quantityavailable,
-        item.custitem_noreorders AS isnoreorder,
+        NULL AS isnoreorder,
         item.custitem_expressbath AS isexpressbath,
-        item.custitem_specord_stock AS isspecialorderstock,
+        NULL AS isspecialorderstock,
         item.isonline,
         item.custitem_cps_category AS cpscategoryid
       FROM KitItem item
       LEFT JOIN pricing p ON p.item = item.id AND p.pricelevel = 1 AND p.quantity = 1
-      WHERE item.isinactive = 'F' AND item.isonline = 'T' AND UPPER(BUILTIN.DF(item.custitem_stock_code)) = 'STOCK'
+      WHERE item.isinactive = 'F' AND item.isonline = 'T'
       ORDER BY item.itemid`
     );
     kitItems = kitResult.items;
