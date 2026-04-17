@@ -1,0 +1,69 @@
+{
+  "audioFile": "audio/voiceover.mp3",
+  "totalDurationMs": 104920,
+  "scenes": [
+    {
+      "id": "login",
+      "text": "Welcome to the Consumers Product Selector. Sign in with your Consumers email and password to get started.",
+      "audioStartMs": 0,
+      "audioEndMs": 8808,
+      "sceneDurationMs": 9508
+    },
+    {
+      "id": "home",
+      "text": "You'll land on the home page. The dark navigation up top is your launchpad — categories, search, and the quote list are all one click away.",
+      "audioStartMs": 9508,
+      "audioEndMs": 19708,
+      "sceneDurationMs": 10900
+    },
+    {
+      "id": "categories",
+      "text": "Hover over Categories to open the menu. Drill into Bath, then pick a subcategory like Vanities or Toilets to see every product in that group.",
+      "audioStartMs": 20408,
+      "audioEndMs": 32720,
+      "sceneDurationMs": 13012
+    },
+    {
+      "id": "express",
+      "text": "The Express Bath section, marked in blue, shows everything we keep in stock for fast turnaround. The blue badge tells you how many items are available right now.",
+      "audioStartMs": 33420,
+      "audioEndMs": 45372,
+      "sceneDurationMs": 12652
+    },
+    {
+      "id": "clearance",
+      "text": "The Clearance and PPR page, in green, lists items with promotional pricing. The original price is crossed out, the reduced price is highlighted, and the green pill names the active promo.",
+      "audioStartMs": 46072,
+      "audioEndMs": 60088,
+      "sceneDurationMs": 14716
+    },
+    {
+      "id": "dfs",
+      "text": "Displays For Sale, in amber, shows our showroom display models. Use the location pills to filter by store — pick one to see only that location's displays.",
+      "audioStartMs": 60788,
+      "audioEndMs": 74156,
+      "sceneDurationMs": 14068
+    },
+    {
+      "id": "detail",
+      "text": "Click any product to open its detail view. You'll see the image, full description, retail and selling prices, and a copy button that puts the model number on your clipboard with one click.",
+      "audioStartMs": 74856,
+      "audioEndMs": 88104,
+      "sceneDurationMs": 13948
+    },
+    {
+      "id": "quote",
+      "text": "Add items to your Quote List as you browse. Open the Quote List from the top nav to review, edit, or print the full list before sending it to the customer.",
+      "audioStartMs": 88804,
+      "audioEndMs": 99868,
+      "sceneDurationMs": 11764
+    },
+    {
+      "id": "outro",
+      "text": "That's the Product Selector. Happy quoting.",
+      "audioStartMs": 100568,
+      "audioEndMs": 104120,
+      "sceneDurationMs": 4352
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+kind = "video"
+previewPath = "/training-video/"
+title = "Product Selector — Training Video"
+version = "1.0.0"
+id = "artifacts/training-video"
+router = "path"
+
+[[integratedSkills]]
+name = "video-js"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/training-video/" ]
+localPort = 21092
+
+[services.development]
+run = "pnpm --filter @workspace/training-video run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/training-video", "run", "build" ]
+publicDir = "artifacts/training-video/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21092"
+BASE_PATH = "/training-video/"

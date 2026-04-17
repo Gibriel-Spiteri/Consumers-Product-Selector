@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+:root {
+  --color-app-ink: #353b42;
+  --color-app-ink-soft: #4a5158;
+  --color-app-bg: #f7f7f5;
+  --color-app-card: #ffffff;
+  --color-app-line: #e5e7eb;
+
+  --color-amber: #d97706;
+  --color-amber-soft: #fef3c7;
+  --color-blue: #2563eb;
+  --color-blue-soft: #dbeafe;
+  --color-emerald: #059669;
+  --color-emerald-soft: #d1fae5;
+
+  --color-stage-bg: #0c0d10;
+
+  --font-display: 'Plus Jakarta Sans', sans-serif;
+  --font-body: 'Inter', sans-serif;
+}
+
+@theme inline {
+  --color-app-ink: var(--color-app-ink);
+  --color-app-ink-soft: var(--color-app-ink-soft);
+  --color-app-bg: var(--color-app-bg);
+  --color-app-card: var(--color-app-card);
+  --color-app-line: var(--color-app-line);
+  --color-amber: var(--color-amber);
+  --color-amber-soft: var(--color-amber-soft);
+  --color-blue: var(--color-blue);
+  --color-blue-soft: var(--color-blue-soft);
+  --color-emerald: var(--color-emerald);
+  --color-emerald-soft: var(--color-emerald-soft);
+  --color-stage-bg: var(--color-stage-bg);
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+}
+
+html, body, #root { height: 100%; }
+
+body {
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--color-stage-bg);
+  color: var(--color-app-ink);
+}
