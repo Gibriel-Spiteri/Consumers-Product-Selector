@@ -463,7 +463,7 @@ export default function CategoryProducts() {
     }
 
     return filtered;
-  }, [allProducts, activeFilters, inStockOnly, refineQuery]);
+  }, [allProducts, activeFilters, inStockOnly, refineQuery, activeLocation, isDisplaysForSale]);
 
   const hasActiveFilters = activeFilters.size > 0 || inStockOnly || refineQuery.trim().length > 0;
 
