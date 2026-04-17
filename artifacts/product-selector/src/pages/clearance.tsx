@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, Loader2, ImageOff, LayoutList, LayoutGrid, Copy, Check, PackageX, Plus } from "lucide-react";
+import { ChevronRight, Loader2, ImageOff, LayoutList, LayoutGrid, Copy, Check, PackageX, Plus, Search, X } from "lucide-react";
 import ProductModal from "@/components/product-modal";
 import { cn, fmtPrice } from "@/lib/utils";
 import { useQuoteList } from "@/context/quote-list-context";
@@ -14,6 +14,8 @@ interface Product {
   price: number | null;
   retailPrice?: number | null;
   categoryId?: number | null;
+  categoryParentId?: number | null;
+  categoryParentName?: string | null;
   netsuiteId?: string | null;
   imageUrl?: string | null;
   fullImageUrl?: string | null;
@@ -240,6 +242,8 @@ export default function ClearancePage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [inStockOnly, setInStockOnly] = useState(false);
+  const [activeCategoryId, setActiveCategoryId] = useState<number | null>(null);
+  const [refineQuery, setRefineQuery] = useState("");
 
   const { data, isLoading } = useQuery({
     queryKey: ["clearanceProducts"],
@@ -251,7 +255,37 @@ export default function ClearancePage() {
   });
 
   const products = data?.products ?? [];
-  const filtered = inStockOnly ? products.filter(p => (p.quantityAvailable ?? 0) >= 1) : products;
+
+  const parentCategories = useMemo(() => {
+    const displayNames: Record<string, string> = {
+      "Bathroom Sinks": "Sinks",
+      "Toilets": "Fixtures",
+    };
+    const map = new Map<number, { id: number; name: string; count: number }>();
+    for (const p of products) {
+      if (p.categoryParentId && p.categoryParentName) {
+        const existing = map.get(p.categoryParentId);
+        if (existing) {
+          existing.count++;
+        } else {
+          const label = displayNames[p.categoryParentName] ?? p.categoryParentName;
+          map.set(p.categoryParentId, { id: p.categoryParentId, name: label, count: 1 });
+        }
+      }
+    }
+    return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }, [products]);
+
+  let filtered = products;
+  if (activeCategoryId) filtered = filtered.filter(p => p.categoryParentId === activeCategoryId);
+  if (inStockOnly) filtered = filtered.filter(p => (p.quantityAvailable ?? 0) >= 1);
+  if (refineQuery.trim()) {
+    const q = refineQuery.trim().toLowerCase();
+    filtered = filtered.filter(p =>
+      p.name.toLowerCase().includes(q) ||
+      (p.sku && p.sku.toLowerCase().includes(q))
+    );
+  }
 
   if (isLoading) {
     return (
@@ -308,6 +342,62 @@ export default function ClearancePage() {
               <LayoutGrid size={14} /> Grid
             </button>
           </div>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 mb-6">
+        {parentCategories.length > 1 && (
+          <>
+            <button
+              onClick={() => setActiveCategoryId(null)}
+              className={cn(
+                "flex items-center gap-1.5 text-[13px] font-medium px-4 py-2 rounded-full transition-all border whitespace-nowrap",
+                activeCategoryId === null
+                  ? "bg-emerald-600 border-emerald-600 text-white"
+                  : "bg-white border-gray-200 text-gray-600 hover:border-emerald-300 hover:text-emerald-600"
+              )}
+            >
+              All
+              <span className={cn("text-[11px] font-semibold rounded-full px-1.5 py-0.5", activeCategoryId === null ? "bg-emerald-500 text-white" : "bg-gray-100 text-gray-400")}>
+                {products.length}
+              </span>
+            </button>
+            {parentCategories.map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => setActiveCategoryId(activeCategoryId === cat.id ? null : cat.id)}
+                className={cn(
+                  "flex items-center gap-1.5 text-[13px] font-medium px-4 py-2 rounded-full transition-all border whitespace-nowrap",
+                  activeCategoryId === cat.id
+                    ? "bg-emerald-600 border-emerald-600 text-white"
+                    : "bg-white border-gray-200 text-gray-600 hover:border-emerald-300 hover:text-emerald-600"
+                )}
+              >
+                {cat.name}
+                <span className={cn("text-[11px] font-semibold rounded-full px-1.5 py-0.5", activeCategoryId === cat.id ? "bg-emerald-500 text-white" : "bg-gray-100 text-gray-400")}>
+                  {cat.count}
+                </span>
+              </button>
+            ))}
+          </>
+        )}
+        <div className="relative w-64 ml-auto shrink-0">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Refine results..."
+            value={refineQuery}
+            onChange={e => setRefineQuery(e.target.value)}
+            className="w-full pl-9 pr-8 py-2 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400/40 focus:border-emerald-400 transition-all placeholder:text-gray-300"
+          />
+          {refineQuery && (
+            <button
+              onClick={() => setRefineQuery("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 transition-colors"
+            >
+              <X size={14} />
+            </button>
+          )}
         </div>
       </div>
 
