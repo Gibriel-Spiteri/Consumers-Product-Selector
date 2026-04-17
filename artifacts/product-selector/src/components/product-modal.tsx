@@ -293,6 +293,9 @@ function RelatedMiniCard({ product, onSelect }: { product: FullProduct; onSelect
         {displayPrice != null ? (
           <PprPriceTooltip price={Number(displayPrice)} pprPriceReductionRetail={product.pprPriceReductionRetail} hasActivePpr={!!product.hasActivePpr}>
             <p className={cn("text-[13px] font-semibold", product.hasActivePpr ? "text-emerald-600" : "text-gray-900")}>${fmtPrice(Number(displayPrice))}</p>
+            {product.hasActivePpr && product.pprPriceReductionRetail != null && (
+              <p className="text-[10px] text-emerald-600">You Saved ${fmtPrice(Number(product.pprPriceReductionRetail))}</p>
+            )}
           </PprPriceTooltip>
         ) : (
           <p className="text-[12px] text-gray-300">—</p>
