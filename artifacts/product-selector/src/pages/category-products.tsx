@@ -368,13 +368,13 @@ export default function CategoryProducts() {
   const [inStockOnly, setInStockOnly] = useState(false);
   const [activeFilters, setActiveFilters] = useState<Map<string, Set<string>>>(new Map());
   const [refineQuery, setRefineQuery] = useState("");
-  const [activeLocations, setActiveLocations] = useState<Set<string>>(new Set());
+  const [activeLocation, setActiveLocation] = useState<string | null>(null);
 
   useEffect(() => {
     setActiveFilters(new Map());
     setInStockOnly(false);
     setRefineQuery("");
-    setActiveLocations(new Set());
+    setActiveLocation(null);
   }, [id]);
 
   const { data: productsData, isLoading: isLoadingProducts } = useQuery({
@@ -425,20 +425,11 @@ export default function CategoryProducts() {
       .map(([value, count]) => ({ value, count }));
   }, [allProducts, isDisplaysForSale]);
 
-  const toggleLocation = (loc: string) => {
-    setActiveLocations(prev => {
-      const next = new Set(prev);
-      if (next.has(loc)) next.delete(loc);
-      else next.add(loc);
-      return next;
-    });
-  };
-
   const products = useMemo(() => {
     let filtered = allProducts;
 
-    if (isDisplaysForSale && activeLocations.size > 0) {
-      filtered = filtered.filter(p => p.binNumber && activeLocations.has(p.binNumber.trim()));
+    if (isDisplaysForSale && activeLocation) {
+      filtered = filtered.filter(p => p.binNumber?.trim() === activeLocation);
     }
 
     if (activeFilters.size > 0) {
@@ -565,35 +556,41 @@ export default function CategoryProducts() {
       </div>
 
       {isDisplaysForSale && locationOptions.length > 0 && (
-        <div className="mb-5 flex flex-wrap items-center gap-2">
-          <span className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mr-1">Location</span>
+        <div className="flex items-center gap-2 flex-wrap mb-6">
+          <button
+            onClick={() => setActiveLocation(null)}
+            className={cn(
+              "flex items-center gap-1.5 text-[13px] font-medium px-4 py-2 rounded-full transition-all border whitespace-nowrap",
+              activeLocation === null
+                ? "bg-emerald-600 border-emerald-600 text-white"
+                : "bg-white border-gray-200 text-gray-600 hover:border-emerald-300 hover:text-emerald-600"
+            )}
+          >
+            All
+            <span className={cn("text-[11px] font-semibold rounded-full px-1.5 py-0.5", activeLocation === null ? "bg-emerald-500 text-white" : "bg-gray-100 text-gray-400")}>
+              {allProducts.length}
+            </span>
+          </button>
           {locationOptions.map(({ value, count }) => {
-            const active = activeLocations.has(value);
+            const active = activeLocation === value;
             return (
               <button
                 key={value}
-                onClick={() => toggleLocation(value)}
+                onClick={() => setActiveLocation(active ? null : value)}
                 className={cn(
-                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium transition-all border",
+                  "flex items-center gap-1.5 text-[13px] font-medium px-4 py-2 rounded-full transition-all border whitespace-nowrap",
                   active
-                    ? "bg-emerald-500 text-white border-emerald-500 shadow-sm"
-                    : "bg-white text-gray-600 border-gray-200 hover:border-emerald-300 hover:text-emerald-600"
+                    ? "bg-emerald-600 border-emerald-600 text-white"
+                    : "bg-white border-gray-200 text-gray-600 hover:border-emerald-300 hover:text-emerald-600"
                 )}
               >
                 {value}
-                <span className={cn("text-[10px]", active ? "text-white/80" : "text-gray-400")}>{count}</span>
+                <span className={cn("text-[11px] font-semibold rounded-full px-1.5 py-0.5", active ? "bg-emerald-500 text-white" : "bg-gray-100 text-gray-400")}>
+                  {count}
+                </span>
               </button>
             );
           })}
-          {activeLocations.size > 0 && (
-            <button
-              onClick={() => setActiveLocations(new Set())}
-              className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] text-gray-500 hover:text-gray-700 transition-colors"
-            >
-              <X size={12} />
-              Clear
-            </button>
-          )}
         </div>
       )}
 
