@@ -358,7 +358,7 @@ export default function ClearancePage() {
               )}
             >
               All
-              <span className={cn("text-[11px] font-semibold rounded-full px-1.5 py-0.5", activeCategoryId === null ? "bg-white text-black" : "bg-gray-100 text-gray-400")}>
+              <span className={cn("text-[11px] font-semibold rounded-full px-1.5 py-0.5", activeCategoryId === null ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-400")}>
                 {products.length}
               </span>
             </button>
@@ -374,7 +374,7 @@ export default function ClearancePage() {
                 )}
               >
                 {cat.name}
-                <span className={cn("text-[11px] font-semibold rounded-full px-1.5 py-0.5", activeCategoryId === cat.id ? "bg-white text-black" : "bg-gray-100 text-gray-400")}>
+                <span className={cn("text-[11px] font-semibold rounded-full px-1.5 py-0.5", activeCategoryId === cat.id ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-400")}>
                   {cat.count}
                 </span>
               </button>
