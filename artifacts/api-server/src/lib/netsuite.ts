@@ -32,7 +32,23 @@ function getTokenEndpoint(): string {
 }
 
 function getPrivateKey(): string {
-  return fs.readFileSync(PRIVATE_KEY_PATH, "utf-8");
+  const envKey = process.env.NETSUITE_PRIVATE_KEY;
+  if (envKey && envKey.trim().length > 0) {
+    return envKey.replace(/\\n/g, "\n");
+  }
+  const candidates = [
+    PRIVATE_KEY_PATH,
+    path.resolve("artifacts/api-server/certs/private_key.pem"),
+    path.resolve(__dirname, "../../certs/private_key.pem"),
+  ];
+  for (const p of candidates) {
+    if (fs.existsSync(p)) {
+      return fs.readFileSync(p, "utf-8");
+    }
+  }
+  throw new Error(
+    "NetSuite private key not found. Set NETSUITE_PRIVATE_KEY env var or place key at certs/private_key.pem"
+  );
 }
 
 function getEffectiveClientId(): string {
