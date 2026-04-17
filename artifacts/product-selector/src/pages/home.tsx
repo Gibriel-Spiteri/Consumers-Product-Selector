@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpen, Flag, HelpCircle } from "lucide-react";
+import { ArrowRight, BookOpen, Flag } from "lucide-react";
 import { Link } from "wouter";
 
 export default function Home() {
@@ -26,38 +26,6 @@ export default function Home() {
 
       {/* Quick links */}
       <div className="py-10 flex items-center justify-center gap-8">
-        <Link
-          href="/how-to-use"
-          className="flex items-center gap-2 text-sm hover:text-gray-700 transition-colors text-[#353b42]"
-        >
-          <HelpCircle size={15} />
-          How to Use
-        </Link>
-        <span className="w-px h-4 bg-gray-200" />
-        <Link
-          href="/how-to-use-2"
-          className="flex items-center gap-2 text-sm hover:text-gray-700 transition-colors text-[#353b42]"
-        >
-          <HelpCircle size={15} />
-          How to Use 2
-        </Link>
-        <span className="w-px h-4 bg-gray-200" />
-        <Link
-          href="/how-to-use-3"
-          className="flex items-center gap-2 text-sm hover:text-gray-700 transition-colors text-[#353b42]"
-        >
-          <HelpCircle size={15} />
-          How to Use 3
-        </Link>
-        <span className="w-px h-4 bg-gray-200" />
-        <Link
-          href="/how-to-use-4"
-          className="flex items-center gap-2 text-sm hover:text-gray-700 transition-colors text-[#353b42]"
-        >
-          <HelpCircle size={15} />
-          How to Use 4
-        </Link>
-        <span className="w-px h-4 bg-gray-200" />
         <a
           href="https://1212804.app.netsuite.com/app/site/hosting/scriptlet.nl?script=3701&deploy=1&script=3701&deploy=1&whence=&siaT=1774876085696&siaWhc=%2Fapp%2Fcenter%2Fcard.nl&siaNv=sc"
           target="_blank"
