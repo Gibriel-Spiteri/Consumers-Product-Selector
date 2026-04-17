@@ -369,7 +369,7 @@ export default function ExpressBathPage() {
               )}
             >
               All
-              <span className={cn("text-[11px] font-semibold rounded-full px-1.5 py-0.5", activeCategoryId === null ? "text-black" : "bg-gray-100 text-gray-400")}>
+              <span className={cn("text-[11px] font-semibold rounded-full px-1.5 py-0.5", activeCategoryId === null ? "bg-white text-black" : "bg-gray-100 text-gray-400")}>
                 {products.length}
               </span>
             </button>
@@ -385,7 +385,7 @@ export default function ExpressBathPage() {
                 )}
               >
                 {cat.name}
-                <span className={cn("text-[11px] font-semibold rounded-full px-1.5 py-0.5", activeCategoryId === cat.id ? "text-black" : "bg-gray-100 text-gray-400")}>
+                <span className={cn("text-[11px] font-semibold rounded-full px-1.5 py-0.5", activeCategoryId === cat.id ? "bg-white text-black" : "bg-gray-100 text-gray-400")}>
                   {cat.count}
                 </span>
               </button>

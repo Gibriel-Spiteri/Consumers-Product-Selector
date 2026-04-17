@@ -567,7 +567,7 @@ export default function CategoryProducts() {
             )}
           >
             All
-            <span className={cn("text-[11px] font-semibold rounded-full px-1.5 py-0.5", activeLocation === null ? "text-black" : "bg-gray-100 text-gray-400")}>
+            <span className={cn("text-[11px] font-semibold rounded-full px-1.5 py-0.5", activeLocation === null ? "bg-white text-black" : "bg-gray-100 text-gray-400")}>
               {allProducts.length}
             </span>
           </button>
@@ -585,7 +585,7 @@ export default function CategoryProducts() {
                 )}
               >
                 {value}
-                <span className={cn("text-[11px] font-semibold rounded-full px-1.5 py-0.5", active ? "text-black" : "bg-gray-100 text-gray-400")}>
+                <span className={cn("text-[11px] font-semibold rounded-full px-1.5 py-0.5", active ? "bg-white text-black" : "bg-gray-100 text-gray-400")}>
                   {count}
                 </span>
               </button>
