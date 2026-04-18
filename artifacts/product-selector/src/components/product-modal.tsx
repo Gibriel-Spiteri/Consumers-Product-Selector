@@ -692,7 +692,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                       </button>
                     ))}
                     </div>
-                    <div className="flex-1 hidden lg:block lg:pl-2 lg:-ml-6">
+                    <div className="flex-1 hidden lg:flex lg:justify-end lg:pl-2">
                       <AddToListControls product={displayProduct} full={full} />
                     </div>
                   </div>
