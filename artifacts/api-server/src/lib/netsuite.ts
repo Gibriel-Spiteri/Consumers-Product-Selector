@@ -625,8 +625,8 @@ export function computeAtpDate(
 
   const onOrder = item.quantityOnOrder ?? 0;
   const backordered = item.quantityBackordered ?? 0;
-  const itemLead = item.itemLeadTime ?? 0;
-  const plLead = item.prodLineLeadTime ?? 0;
+  const itemLead = item.itemLeadTime;
+  const plLead = item.prodLineLeadTime;
   const plCycle = item.prodLineOrderCycle ?? 0;
 
   // Anchor "today" to UTC midnight so date-only arithmetic stays
@@ -644,11 +644,11 @@ export function computeAtpDate(
     }
   }
 
-  if (itemLead > 0) {
+  if (itemLead != null) {
     return toIsoDate(addDays(todayAnchor, itemLead + plCycle + 7));
   }
 
-  if (plLead > 0) {
+  if (plLead != null) {
     return toIsoDate(addDays(todayAnchor, plLead + plCycle + 7));
   }
 
