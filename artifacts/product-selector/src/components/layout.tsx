@@ -328,7 +328,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       >
         {/* Top row: logo | search | actions */}
         <div className="max-w-screen-xl mx-auto px-6 h-[65px] flex items-center gap-4 relative">
-          <Link href="/" className="flex items-baseline gap-2 shrink-0 group">
+          <Link href="/" className="flex items-baseline gap-1 shrink-0 group">
             <HeaderLogo />
             <span className="font-semibold text-amber-500 tracking-widest uppercase hidden sm:block text-[16px]">
               Product Selector
