@@ -413,7 +413,7 @@ function AddToListControls({ product, full }: { product: Product | null; full: F
           <button
             onClick={handleAdd}
             className={cn(
-              "flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all",
+              "flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap",
               justAdded
                 ? "bg-emerald-500 text-white"
                 : "bg-amber-500 hover:bg-amber-600 text-white"
@@ -692,7 +692,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                       </button>
                     ))}
                     </div>
-                    <div className="flex-1 hidden lg:block lg:pl-8">
+                    <div className="flex-1 hidden lg:block lg:pl-2 lg:-ml-6">
                       <AddToListControls product={displayProduct} full={full} />
                     </div>
                   </div>
