@@ -31,8 +31,21 @@ interface FullProduct extends Product {
   noReorder?: boolean;
   binNumber?: string | null;
   isSpecialOrderStock?: boolean;
+  atpDate?: string | null;
   features: string[] | null;
   additionalImages?: string[] | null;
+}
+
+function formatAtpDate(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const s = String(raw).trim();
+  if (!s) return null;
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  const d = iso
+    ? new Date(Date.UTC(parseInt(iso[1], 10), parseInt(iso[2], 10) - 1, parseInt(iso[3], 10)))
+    : new Date(s);
+  if (isNaN(d.getTime())) return s;
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 }
 
 interface ProductModalProps {
@@ -638,6 +651,13 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                             <dd><span className="inline-flex items-center font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-red-50 text-red-500 text-[11px]">No Reorders{full?.quantityAvailable != null ? ` (${full.quantityAvailable})` : ""}</span></dd>
                           ) : full?.isSpecialOrderStock ? (
                             <dd><span className="inline-flex items-center font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 text-[11px]">Special Order Stock{full?.quantityAvailable != null ? ` (${full.quantityAvailable})` : ""}</span></dd>
+                          ) : full?.quantityAvailable != null && full.quantityAvailable <= 0 ? (
+                            <dd className="flex items-center gap-2">
+                              <span className="inline-flex items-center font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 text-[11px]">Out of Stock</span>
+                              {formatAtpDate(full?.atpDate) && (
+                                <span className="text-[11px] font-medium text-muted-foreground">ATP: {formatAtpDate(full?.atpDate)}</span>
+                              )}
+                            </dd>
                           ) : (
                             <dd><span className="inline-flex items-center font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[11px]">Stock{full?.quantityAvailable != null ? ` (${full.quantityAvailable})` : ""}</span></dd>
                           )}
@@ -749,6 +769,13 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                               <dd><span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-red-50 text-red-500">No Reorders{full?.quantityAvailable != null ? ` (${full.quantityAvailable})` : ""}</span></dd>
                             ) : full?.isSpecialOrderStock ? (
                               <dd><span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-600">Special Order Stock{full?.quantityAvailable != null ? ` (${full.quantityAvailable})` : ""}</span></dd>
+                            ) : full?.quantityAvailable != null && full.quantityAvailable <= 0 ? (
+                              <dd className="flex items-center gap-2">
+                                <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-600">Out of Stock</span>
+                                {formatAtpDate(full?.atpDate) && (
+                                  <span className="text-[10px] font-medium text-muted-foreground">ATP: {formatAtpDate(full?.atpDate)}</span>
+                                )}
+                              </dd>
                             ) : (
                               <dd><span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">Stock{full?.quantityAvailable != null ? ` (${full.quantityAvailable})` : ""}</span></dd>
                             )}
