@@ -167,8 +167,14 @@ export function validateNetSuiteConfig(): { valid: boolean; missing: string[] } 
     .filter(([, value]) => !value)
     .map(([key]) => key);
 
-  if (!fs.existsSync(PRIVATE_KEY_PATH)) {
-    missing.push("Private Key File (certs/private_key.pem)");
+  const envKey = process.env.NETSUITE_PRIVATE_KEY;
+  const hasEnvKey = !!(envKey && envKey.trim().length > 0);
+  const hasFileKey =
+    fs.existsSync(PRIVATE_KEY_PATH) ||
+    fs.existsSync(path.resolve("artifacts/api-server/certs/private_key.pem")) ||
+    fs.existsSync(path.resolve(__dirname, "../../certs/private_key.pem"));
+  if (!hasEnvKey && !hasFileKey) {
+    missing.push("NETSUITE_PRIVATE_KEY env var or certs/private_key.pem file");
   }
 
   return { valid: missing.length === 0, missing };
