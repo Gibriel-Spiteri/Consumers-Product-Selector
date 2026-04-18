@@ -51,16 +51,9 @@ function StockBadge({ qty, isSpecialOrderStock, atpDate }: { qty: number | null 
   );
   const atp = formatAtpDate(atpDate);
   return (
-    <div className="inline-flex flex-col items-end gap-0.5">
-      <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-red-50 text-red-500">
-        Out of Stock
-      </span>
-      {atp && (
-        <span className="text-[10px] font-medium text-muted-foreground">
-          ATP: {atp}
-        </span>
-      )}
-    </div>
+    <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-600">
+      {atp ? `ATP: ${atp}` : "Out of Stock"}
+    </span>
   );
 }
 
