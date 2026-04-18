@@ -255,6 +255,7 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
             pprPriceReductionRetail: pprPriceReductionRetail != null ? String(pprPriceReductionRetail) : null,
             isExpressBath: item.isExpressBath ?? false,
             isSpecialOrderStock: item.isSpecialOrderStock ?? false,
+            atpDate: item.atpDate ?? null,
             binNumber,
             categoryId: categoryDbId,
             updatedAt: new Date(),
@@ -279,6 +280,7 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
           pprPriceReductionRetail: pprPriceReductionRetail != null ? String(pprPriceReductionRetail) : null,
           isExpressBath: item.isExpressBath ?? false,
           isSpecialOrderStock: item.isSpecialOrderStock ?? false,
+          atpDate: item.atpDate ?? null,
           binNumber,
           categoryId: categoryDbId,
         });

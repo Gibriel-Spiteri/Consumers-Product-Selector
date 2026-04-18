@@ -338,6 +338,7 @@ export interface NetSuiteItem {
   isSpecialOrderStock?: boolean;
   isOnline?: boolean;
   cpsCategoryId?: string | null;
+  atpDate?: string | null;
 }
 
 export async function fetchNetSuiteCategories(): Promise<NetSuiteCategory[]> {
@@ -384,6 +385,7 @@ interface SuiteQLItemRow {
   isspecialorderstock: string | null;
   isonline: string | null;
   cpscategoryid: string | null;
+  atpdate: string | null;
 }
 
 function mapItemRow(row: SuiteQLItemRow): NetSuiteItem {
@@ -404,6 +406,7 @@ function mapItemRow(row: SuiteQLItemRow): NetSuiteItem {
     isSpecialOrderStock: row.isspecialorderstock === "T",
     isOnline: row.isonline === "T",
     cpsCategoryId: row.cpscategoryid ? String(row.cpscategoryid) : null,
+    atpDate: row.atpdate ?? null,
   };
 }
 
@@ -462,7 +465,8 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
       item.custitem_expressbath AS isexpressbath,
       item.custitem_specord_stock AS isspecialorderstock,
       item.isonline,
-      item.custitem_cps_category AS cpscategoryid
+      item.custitem_cps_category AS cpscategoryid,
+      item.custitem_checkatp AS atpdate
     FROM InventoryItem item
     LEFT JOIN pricing p ON p.item = item.id AND p.pricelevel = 1 AND p.quantity = 1
     WHERE item.isinactive = 'F' AND item.isonline = 'T' AND UPPER(BUILTIN.DF(item.custitem_stock_code)) = 'STOCK'
@@ -488,7 +492,8 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
         item.custitem_expressbath AS isexpressbath,
         NULL AS isspecialorderstock,
         item.isonline,
-        item.custitem_cps_category AS cpscategoryid
+        item.custitem_cps_category AS cpscategoryid,
+        item.custitem_checkatp AS atpdate
       FROM KitItem item
       LEFT JOIN pricing p ON p.item = item.id AND p.pricelevel = 1 AND p.quantity = 1
       WHERE item.isinactive = 'F' AND item.isonline = 'T'

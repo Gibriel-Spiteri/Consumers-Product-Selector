@@ -16,4 +16,5 @@ export interface Product {
   imageUrl: string | null;
   fullImageUrl: string | null;
   quantityAvailable: number | null;
+  atpDate?: string | null;
 }

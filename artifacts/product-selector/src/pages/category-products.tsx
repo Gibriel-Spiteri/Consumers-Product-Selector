@@ -25,9 +25,19 @@ interface Product {
   isSpecialOrderStock?: boolean;
   binNumber?: string | null;
   attributes?: Array<{ name: string; value: string }>;
+  atpDate?: string | null;
 }
 
-function StockBadge({ qty, isSpecialOrderStock }: { qty: number | null | undefined; isSpecialOrderStock?: boolean }) {
+function formatAtpDate(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const s = String(raw).trim();
+  if (!s) return null;
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return s;
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function StockBadge({ qty, isSpecialOrderStock, atpDate }: { qty: number | null | undefined; isSpecialOrderStock?: boolean; atpDate?: string | null }) {
   if (qty == null) return null;
   if (qty >= 1) return (
     <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 cursor-default">
@@ -39,10 +49,18 @@ function StockBadge({ qty, isSpecialOrderStock }: { qty: number | null | undefin
       Non-Stock
     </span>
   );
+  const atp = formatAtpDate(atpDate);
   return (
-    <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-red-50 text-red-500">
-      Out of Stock
-    </span>
+    <div className="inline-flex flex-col items-end gap-0.5">
+      <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-red-50 text-red-500">
+        Out of Stock
+      </span>
+      {atp && (
+        <span className="text-[10px] font-medium text-muted-foreground">
+          ATP: {atp}
+        </span>
+      )}
+    </div>
   );
 }
 
@@ -175,7 +193,7 @@ function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: P
                 )}
               </div>
               <div className="flex flex-col items-end gap-1">
-                <StockBadge qty={p.quantityAvailable} isSpecialOrderStock={p.isSpecialOrderStock} />
+                <StockBadge qty={p.quantityAvailable} isSpecialOrderStock={p.isSpecialOrderStock} atpDate={p.atpDate} />
                 <AddToListButton product={p} />
               </div>
             </div>
@@ -220,7 +238,7 @@ function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: P
                   {p.name}
                 </td>
                 <td className="px-5 py-3 whitespace-nowrap">
-                  <StockBadge qty={p.quantityAvailable} isSpecialOrderStock={p.isSpecialOrderStock} />
+                  <StockBadge qty={p.quantityAvailable} isSpecialOrderStock={p.isSpecialOrderStock} atpDate={p.atpDate} />
                 </td>
                 <td className="px-5 py-3 text-right whitespace-nowrap">
                   {p.price ? (

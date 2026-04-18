@@ -21,6 +21,7 @@ export const productsTable = pgTable("products", {
   pprPriceReductionRetail: numeric("ppr_price_reduction_retail", { precision: 10, scale: 2 }),
   isExpressBath: boolean("is_express_bath").default(false),
   isSpecialOrderStock: boolean("is_special_order_stock").default(false),
+  atpDate: text("atp_date"),
   binNumber: text("bin_number"),
   categoryId: integer("category_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

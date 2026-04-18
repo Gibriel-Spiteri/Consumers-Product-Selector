@@ -182,6 +182,9 @@ components:
         quantityAvailable:
           type: integer
           nullable: true
+        atpDate:
+          type: string
+          nullable: true
       required:
         - id
         - name

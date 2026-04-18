@@ -196,6 +196,7 @@ router.get("/categories/:categoryId/products", async (req, res) => {
       pprPriceReductionRetail: p.pprPriceReductionRetail ? parseFloat(p.pprPriceReductionRetail) : null,
       noReorder: p.noReorder === 1,
       isSpecialOrderStock: p.isSpecialOrderStock ?? false,
+      atpDate: p.atpDate ?? null,
       binNumber: p.binNumber ?? null,
     };
   });
@@ -303,6 +304,7 @@ router.get("/products/search", async (req, res) => {
       pprPriceReductionRetail: p.pprPriceReductionRetail ? parseFloat(p.pprPriceReductionRetail) : null,
       noReorder: p.noReorder === 1,
       isSpecialOrderStock: p.isSpecialOrderStock ?? false,
+      atpDate: p.atpDate ?? null,
     };
   });
 
@@ -336,6 +338,7 @@ router.get("/products/uncategorized", async (_req, res) => {
       pprPriceReductionRetail: p.pprPriceReductionRetail ? parseFloat(p.pprPriceReductionRetail) : null,
       noReorder: p.noReorder === 1,
       isSpecialOrderStock: p.isSpecialOrderStock ?? false,
+      atpDate: p.atpDate ?? null,
     };
   });
 
@@ -406,6 +409,7 @@ router.get("/products/clearance", async (_req, res) => {
       pprPriceReductionRetail: p.pprPriceReductionRetail ? parseFloat(p.pprPriceReductionRetail) : null,
       noReorder: p.noReorder === 1,
       isSpecialOrderStock: p.isSpecialOrderStock ?? false,
+      atpDate: p.atpDate ?? null,
       isClearance: p.noReorder === 1,
     };
   });
@@ -463,6 +467,7 @@ router.get("/products/express-bath", async (_req, res) => {
       pprPriceReductionRetail: p.pprPriceReductionRetail ? parseFloat(p.pprPriceReductionRetail) : null,
       noReorder: p.noReorder === 1,
       isSpecialOrderStock: p.isSpecialOrderStock ?? false,
+      atpDate: p.atpDate ?? null,
     };
   });
 
@@ -558,6 +563,7 @@ router.get("/products/:productId", async (req, res) => {
       pprPriceReductionRetail: p.pprPriceReductionRetail ? parseFloat(p.pprPriceReductionRetail) : null,
       noReorder: p.noReorder === 1,
       isSpecialOrderStock: p.isSpecialOrderStock ?? false,
+      atpDate: p.atpDate ?? null,
       binNumber: p.binNumber ?? null,
       features: null,
     },
@@ -618,6 +624,7 @@ router.get("/products/:productId/related", async (req, res) => {
       pprPriceReductionRetail: p?.pprPriceReductionRetail ? parseFloat(p.pprPriceReductionRetail) : null,
       noReorder: p?.noReorder === 1,
       isSpecialOrderStock: p?.isSpecialOrderStock ?? false,
+      atpDate: p?.atpDate ?? null,
       description: r.description ?? null,
     };
   }).filter(item => item.name != null);
