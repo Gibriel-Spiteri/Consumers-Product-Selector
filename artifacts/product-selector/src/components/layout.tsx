@@ -27,7 +27,7 @@ function HeaderLogo() {
       <img
         src={dataUrl}
         alt="Logo"
-        className="h-[22px] w-auto max-w-[155px] object-contain relative top-[2px] group-hover:opacity-80 transition-opacity"
+        className="h-[22px] w-auto max-w-[155px] object-contain relative top-[3px] group-hover:opacity-80 transition-opacity"
       />
     );
   }
