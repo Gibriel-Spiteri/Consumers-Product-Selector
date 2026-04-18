@@ -386,6 +386,135 @@ function SyncSection({ employeeName }: { employeeName: string }) {
   );
 }
 
+function LogoSection({ employeeId }: { employeeId: string }) {
+  const queryClient = useQueryClient();
+  const [mode, setMode] = useState<"text" | "image">("text");
+  const [svg, setSvg] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    fetch("/api/admin/logo")
+      .then(r => r.json())
+      .then((d: { mode: "text" | "image"; svg: string | null }) => {
+        setMode(d.mode);
+        setSvg(d.svg);
+      })
+      .catch(() => undefined);
+  }, []);
+
+  const save = async (nextMode: "text" | "image", nextSvg: string | null) => {
+    setSaving(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/admin/logo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Employee-Id": employeeId },
+        body: JSON.stringify({ mode: nextMode, svg: nextSvg }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setMode(nextMode);
+        if (nextSvg !== null) setSvg(nextSvg);
+        setMessage({ type: "success", text: "Logo updated successfully" });
+        queryClient.invalidateQueries({ queryKey: ["adminLogo"] });
+      } else {
+        setMessage({ type: "error", text: data.error || "Save failed" });
+      }
+    } catch {
+      setMessage({ type: "error", text: "Failed to save logo" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleFile = (file: File) => {
+    if (!/\.svg$/i.test(file.name) && file.type !== "image/svg+xml") {
+      setMessage({ type: "error", text: "Please upload an SVG file" });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = String(reader.result || "");
+      if (!text.trim().toLowerCase().startsWith("<svg")) {
+        setMessage({ type: "error", text: "File does not appear to be a valid SVG" });
+        return;
+      }
+      save("image", text);
+    };
+    reader.onerror = () => setMessage({ type: "error", text: "Failed to read file" });
+    reader.readAsText(file);
+    if (fileRef.current) fileRef.current.value = "";
+  };
+
+  const previewDataUrl = svg ? `data:image/svg+xml;utf8,${encodeURIComponent(svg)}` : null;
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-1">Header Logo</h3>
+      <p className="text-sm text-gray-500 mb-4">
+        Choose between the default "CONSUMERS" text and an uploaded SVG logo. Recommended display height ~40px, max width ~180px.
+      </p>
+
+      {message && (
+        <div className={`mb-4 px-4 py-2.5 rounded-lg text-sm font-medium ${message.type === "success" ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>
+          {message.text}
+        </div>
+      )}
+
+      <div className="flex gap-2 mb-4">
+        <button
+          onClick={() => save("text", null)}
+          disabled={saving || mode === "text"}
+          className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${mode === "text" ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"}`}
+        >
+          Text "CONSUMERS"
+        </button>
+        <button
+          onClick={() => svg && save("image", svg)}
+          disabled={saving || !svg || mode === "image"}
+          className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${mode === "image" ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50 disabled:opacity-60"}`}
+        >
+          SVG Logo
+        </button>
+      </div>
+
+      <div className="border border-gray-200 rounded-lg overflow-hidden mb-4 bg-gray-50">
+        <div className="h-[80px] flex items-center justify-center px-4">
+          {mode === "image" && previewDataUrl ? (
+            <img src={previewDataUrl} alt="Logo preview" className="h-[40px] w-auto max-w-[180px] object-contain" />
+          ) : mode === "text" ? (
+            <span className="font-bold text-gray-900 tracking-tight text-[20px]">CONSUMERS</span>
+          ) : (
+            <span className="text-sm text-gray-400">No logo uploaded yet</span>
+          )}
+        </div>
+      </div>
+
+      <input
+        ref={fileRef}
+        type="file"
+        accept=".svg,image/svg+xml"
+        className="hidden"
+        onChange={e => {
+          const file = e.target.files?.[0];
+          if (file) handleFile(file);
+        }}
+      />
+
+      <button
+        onClick={() => fileRef.current?.click()}
+        disabled={saving}
+        className="flex items-center gap-2 bg-gray-900 hover:bg-gray-700 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors disabled:opacity-60"
+      >
+        <Upload size={14} />
+        {saving ? "Saving…" : svg ? "Replace SVG" : "Upload SVG"}
+      </button>
+    </div>
+  );
+}
+
 function HeroImageSection({ employeeId }: { employeeId: string }) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -547,6 +676,7 @@ export default function AdminPage() {
 
       <div className="space-y-6">
         <SyncSection employeeName={`${employee.firstName} ${employee.lastName}`} />
+        <LogoSection employeeId={employee.id} />
         <HeroImageSection employeeId={employee.id} />
 
       </div>

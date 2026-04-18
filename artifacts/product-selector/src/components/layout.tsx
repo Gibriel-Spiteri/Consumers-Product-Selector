@@ -10,6 +10,34 @@ import { useQuery } from "@tanstack/react-query";
 import ProductModal from "@/components/product-modal";
 
 
+function HeaderLogo() {
+  const { data } = useQuery({
+    queryKey: ["adminLogo"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/logo");
+      if (!res.ok) return { mode: "text" as const, svg: null };
+      return res.json() as Promise<{ mode: "text" | "image"; svg: string | null }>;
+    },
+    staleTime: 60_000,
+  });
+
+  if (data?.mode === "image" && data.svg) {
+    const dataUrl = `data:image/svg+xml;utf8,${encodeURIComponent(data.svg)}`;
+    return (
+      <img
+        src={dataUrl}
+        alt="Logo"
+        className="h-[40px] w-auto max-w-[180px] object-contain group-hover:opacity-80 transition-opacity"
+      />
+    );
+  }
+  return (
+    <span className="font-bold text-gray-900 tracking-tight group-hover:text-primary transition-colors text-[20px]">
+      CONSUMERS
+    </span>
+  );
+}
+
 function ProductStatsDebug() {
   const { data, isLoading } = useQuery({
     queryKey: ["productStats"],
@@ -301,9 +329,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {/* Top row: logo | search | actions */}
         <div className="max-w-screen-xl mx-auto px-6 h-[65px] flex items-center gap-4 relative">
           <Link href="/" className="flex items-baseline gap-2 shrink-0 group">
-            <span className="font-bold text-gray-900 tracking-tight group-hover:text-primary transition-colors text-[20px]">
-              CONSUMERS
-            </span>
+            <HeaderLogo />
             <span className="font-semibold text-amber-500 tracking-widest uppercase hidden sm:block text-[16px]">
               Product Selector
             </span>
