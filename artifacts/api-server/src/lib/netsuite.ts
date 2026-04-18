@@ -579,6 +579,7 @@ export async function fetchOpenPoEarliestReceipts(): Promise<Map<string, Date>> 
        FROM TransactionLine tl
        INNER JOIN Transaction t ON t.id = tl.transaction
        WHERE t.type = 'PurchOrd'
+         AND t.customform = 154
          AND t.status IN ('B', 'D', 'E', 'F')
          AND tl.item IS NOT NULL
          AND tl.expectedreceiptdate IS NOT NULL
