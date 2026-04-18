@@ -655,7 +655,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                             <dd className="flex items-center gap-2">
                               <span className="inline-flex items-center font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 text-[11px]">Out of Stock</span>
                               {formatAtpDate(full?.atpDate) && (
-                                <span className="text-[11px] font-medium text-muted-foreground">ATP: {formatAtpDate(full?.atpDate)}</span>
+                                <span className="text-[11px] font-medium text-muted-foreground">EST: {formatAtpDate(full?.atpDate)}</span>
                               )}
                             </dd>
                           ) : (
@@ -773,7 +773,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                               <dd className="flex items-center gap-2">
                                 <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-600">Out of Stock</span>
                                 {formatAtpDate(full?.atpDate) && (
-                                  <span className="text-[10px] font-medium text-muted-foreground">ATP: {formatAtpDate(full?.atpDate)}</span>
+                                  <span className="text-[10px] font-medium text-muted-foreground">EST: {formatAtpDate(full?.atpDate)}</span>
                                 )}
                               </dd>
                             ) : (
