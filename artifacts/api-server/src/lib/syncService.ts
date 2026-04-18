@@ -8,6 +8,8 @@ import {
   fetchRelatedItems,
   fetchActivePprItems,
   fetchItemBins,
+  fetchOpenPoEarliestReceipts,
+  computeAtpDate,
   isNetSuiteConfigured,
   type NetSuiteCategory,
 } from "./netsuite";
@@ -204,7 +206,12 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
     setProgress("items", 45, "Fetching products from NetSuite…");
     const activePprItemsMap = await fetchActivePprItems();
     const itemBinsMap = await fetchItemBins();
+    const openPoReceipts = await fetchOpenPoEarliestReceipts();
     const allCandidateItems = await fetchNetSuiteItems();
+    const atpToday = new Date();
+    for (const candidate of allCandidateItems) {
+      candidate.atpDate = computeAtpDate(candidate, openPoReceipts, atpToday);
+    }
     logger.info({ count: allCandidateItems.length }, "Fetched all candidate items from NetSuite");
 
     const itemsWithCategory = allCandidateItems.filter(item => item.cpsCategoryId != null).length;

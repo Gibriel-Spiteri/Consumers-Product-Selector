@@ -339,6 +339,11 @@ export interface NetSuiteItem {
   isOnline?: boolean;
   cpsCategoryId?: string | null;
   atpDate?: string | null;
+  itemLeadTime?: number | null;
+  quantityOnOrder?: number | null;
+  quantityBackordered?: number | null;
+  prodLineLeadTime?: number | null;
+  prodLineOrderCycle?: number | null;
 }
 
 export async function fetchNetSuiteCategories(): Promise<NetSuiteCategory[]> {
@@ -385,7 +390,11 @@ interface SuiteQLItemRow {
   isspecialorderstock: string | null;
   isonline: string | null;
   cpscategoryid: string | null;
-  atpdate: string | null;
+  itemleadtime: string | null;
+  quantityonorder: string | null;
+  quantitybackordered: string | null;
+  prodlineleadtime: string | null;
+  prodlineordercycle: string | null;
 }
 
 function mapItemRow(row: SuiteQLItemRow): NetSuiteItem {
@@ -406,7 +415,12 @@ function mapItemRow(row: SuiteQLItemRow): NetSuiteItem {
     isSpecialOrderStock: row.isspecialorderstock === "T",
     isOnline: row.isonline === "T",
     cpsCategoryId: row.cpscategoryid ? String(row.cpscategoryid) : null,
-    atpDate: row.atpdate ?? null,
+    atpDate: null,
+    itemLeadTime: row.itemleadtime != null ? Number(row.itemleadtime) : null,
+    quantityOnOrder: row.quantityonorder != null ? Number(row.quantityonorder) : null,
+    quantityBackordered: row.quantitybackordered != null ? Number(row.quantitybackordered) : null,
+    prodLineLeadTime: row.prodlineleadtime != null ? Number(row.prodlineleadtime) : null,
+    prodLineOrderCycle: row.prodlineordercycle != null ? Number(row.prodlineordercycle) : null,
   };
 }
 
@@ -466,9 +480,14 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
       item.custitem_specord_stock AS isspecialorderstock,
       item.isonline,
       item.custitem_cps_category AS cpscategoryid,
-      item.custitem_checkatp AS atpdate
+      item.leadtime AS itemleadtime,
+      item.quantityonorder,
+      item.quantitybackordered,
+      pl.custrecord_pl_leadtime AS prodlineleadtime,
+      pl.custrecord_pl_ordercycle AS prodlineordercycle
     FROM InventoryItem item
     LEFT JOIN pricing p ON p.item = item.id AND p.pricelevel = 1 AND p.quantity = 1
+    LEFT JOIN customrecord_pl pl ON pl.id = item.custitem_prodline
     WHERE item.isinactive = 'F' AND item.isonline = 'T' AND UPPER(BUILTIN.DF(item.custitem_stock_code)) = 'STOCK'
     ORDER BY item.itemid`
   );
@@ -493,9 +512,14 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
         NULL AS isspecialorderstock,
         item.isonline,
         item.custitem_cps_category AS cpscategoryid,
-        item.custitem_checkatp AS atpdate
+        NULL AS itemleadtime,
+        NULL AS quantityonorder,
+        NULL AS quantitybackordered,
+        pl.custrecord_pl_leadtime AS prodlineleadtime,
+        pl.custrecord_pl_ordercycle AS prodlineordercycle
       FROM KitItem item
       LEFT JOIN pricing p ON p.item = item.id AND p.pricelevel = 1 AND p.quantity = 1
+      LEFT JOIN customrecord_pl pl ON pl.id = item.custitem_prodline
       WHERE item.isinactive = 'F' AND item.isonline = 'T'
       ORDER BY item.itemid`
     );
@@ -513,6 +537,122 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
   logger.info({ inventory: inventoryResult.items.length, kits: kitItems.length, total: allItems.length }, "Fetched items from NetSuite");
 
   return allItems;
+}
+
+function parseNsDate(s: string | null | undefined): Date | null {
+  if (!s) return null;
+  const trimmed = String(s).trim();
+  if (!trimmed) return null;
+  const m = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (m) {
+    return new Date(Date.UTC(parseInt(m[3], 10), parseInt(m[1], 10) - 1, parseInt(m[2], 10)));
+  }
+  const iso = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) {
+    return new Date(Date.UTC(parseInt(iso[1], 10), parseInt(iso[2], 10) - 1, parseInt(iso[3], 10)));
+  }
+  const d = new Date(trimmed);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+export async function fetchOpenPoEarliestReceipts(): Promise<Map<string, Date>> {
+  const map = new Map<string, Date>();
+  if (!isNetSuiteConfigured()) return map;
+
+  try {
+    const result = await executeSuiteQL<{
+      item: string;
+      expectedreceiptdate: string | null;
+      quantity: string | null;
+      quantityshiprecv: string | null;
+    }>(
+      `SELECT tl.item,
+              tl.expectedreceiptdate,
+              tl.quantity,
+              tl.quantityshiprecv
+       FROM TransactionLine tl
+       INNER JOIN Transaction t ON t.id = tl.transaction
+       WHERE t.type = 'PurchOrd'
+         AND t.status IN ('B', 'D', 'E', 'F')
+         AND tl.item IS NOT NULL
+         AND tl.expectedreceiptdate IS NOT NULL
+         AND (tl.quantity - NVL(tl.quantityshiprecv, 0)) > 0`
+    );
+
+    for (const row of result.items) {
+      const itemId = row.item ? String(row.item) : null;
+      const date = parseNsDate(row.expectedreceiptdate);
+      if (!itemId || !date) continue;
+      const existing = map.get(itemId);
+      if (!existing || date < existing) {
+        map.set(itemId, date);
+      }
+    }
+    logger.info({ count: map.size }, "Fetched open PO earliest receipt dates from NetSuite");
+  } catch (err) {
+    logger.warn({ err }, "Open PO receipt date query failed; ATP fall-back to lead-time rules");
+  }
+
+  return map;
+}
+
+function addDays(date: Date, days: number): Date {
+  const d = new Date(date.getTime());
+  d.setUTCDate(d.getUTCDate() + days);
+  return d;
+}
+
+function toIsoDate(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+/**
+ * Replicates the NetSuite custitem_checkatp formula in JavaScript.
+ *
+ * Rules (only applied when item is out of stock; in-stock items get null):
+ * 1. quantityonorder > quantitybackordered → earliest open-PO receipt date + 7 days
+ * 2. else if item.leadtime is set → today + item.leadtime + prodLine.ordercycle + 7
+ * 3. else if prodLine.leadtime is set → today + prodLine.leadtime + prodLine.ordercycle + 7
+ * 4. else → null
+ */
+export function computeAtpDate(
+  item: NetSuiteItem,
+  poEarliestReceipts: Map<string, Date>,
+  today: Date = new Date()
+): string | null {
+  const qtyAvail = item.quantityAvailable;
+  if (qtyAvail == null || qtyAvail > 0) return null;
+
+  const onOrder = item.quantityOnOrder ?? 0;
+  const backordered = item.quantityBackordered ?? 0;
+  const itemLead = item.itemLeadTime ?? 0;
+  const plLead = item.prodLineLeadTime ?? 0;
+  const plCycle = item.prodLineOrderCycle ?? 0;
+
+  // Anchor "today" to UTC midnight so date-only arithmetic stays
+  // stable regardless of the wall-clock time when the sync runs.
+  const todayAnchor = new Date(Date.UTC(
+    today.getUTCFullYear(),
+    today.getUTCMonth(),
+    today.getUTCDate(),
+  ));
+
+  if (onOrder > backordered) {
+    const earliest = poEarliestReceipts.get(item.id);
+    if (earliest) {
+      return toIsoDate(addDays(earliest, 7));
+    }
+  }
+
+  if (itemLead > 0) {
+    return toIsoDate(addDays(todayAnchor, itemLead + plCycle + 7));
+  }
+
+  if (plLead > 0) {
+    return toIsoDate(addDays(todayAnchor, plLead + plCycle + 7));
+  }
+
+  return null;
 }
 
 export interface NetSuiteItemAttribute {
