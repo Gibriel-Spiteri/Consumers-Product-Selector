@@ -65,7 +65,13 @@ function buildCategoryTree(flatCategories: Array<{
       .filter(n => hasOnlineDescendant(n))
       .map(n => ({ ...n, children: pruneTree(n.children) }))
       .filter(n => productCounts ? hasProducts(n) : true)
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .sort((a, b) => {
+        const aIsComponents = a.name.trim().toLowerCase() === "components";
+        const bIsComponents = b.name.trim().toLowerCase() === "components";
+        if (aIsComponents && !bIsComponents) return 1;
+        if (!aIsComponents && bIsComponents) return -1;
+        return a.name.localeCompare(b.name);
+      });
   }
 
   return pruneTree(roots);
