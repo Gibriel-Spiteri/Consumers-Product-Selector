@@ -1,6 +1,36 @@
 import { useState } from "react";
 import { useAuth } from "@/context/auth-context";
 import { Loader2, AlertCircle, LogIn } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+
+function LoginBrand() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["adminLogo"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/logo");
+      if (!res.ok) return { mode: "text" as const, svg: null };
+      return res.json() as Promise<{ mode: "text" | "image"; svg: string | null }>;
+    },
+    staleTime: 5 * 60_000,
+    gcTime: Infinity,
+  });
+
+  if (isLoading || !data) {
+    return <span className="inline-block h-[28px] w-[200px]" aria-hidden />;
+  }
+
+  if (data.mode === "image" && data.svg) {
+    const dataUrl = `data:image/svg+xml;utf8,${encodeURIComponent(data.svg)}`;
+    return (
+      <img
+        src={dataUrl}
+        alt="Consumers"
+        className="h-[28px] w-auto max-w-[200px] object-contain inline-block align-middle"
+      />
+    );
+  }
+  return <span className="text-gray-900">CONSUMERS</span>;
+}
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -27,9 +57,9 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold tracking-tight">
-            <span className="text-amber-500">CONSUMERS</span>{" "}
-            <span className="text-gray-900">PRODUCT SELECTOR</span>
+          <h1 className="text-2xl font-bold tracking-tight inline-flex items-center justify-center gap-2 flex-wrap">
+            <LoginBrand />
+            <span className="text-amber-500">PRODUCT SELECTOR</span>
           </h1>
           <p className="text-sm text-gray-400 mt-2">Sign in with your employee credentials</p>
         </div>
