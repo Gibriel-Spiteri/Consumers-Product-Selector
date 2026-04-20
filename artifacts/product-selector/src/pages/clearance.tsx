@@ -35,22 +35,41 @@ function formatAtpDate(raw: string | null | undefined): string | null {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-function StockBadge({ qty, isSpecialOrderStock, atpDate }: { qty: number | null | undefined; isSpecialOrderStock?: boolean; atpDate?: string | null }) {
-  if (qty == null) return null;
-  if (qty >= 1) return (
-    <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 cursor-default">
-      In Stock ({qty})
-    </span>
-  );
-  if (isSpecialOrderStock) return (
-    <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-600">
-      Non-Stock
-    </span>
-  );
-  const atp = formatAtpDate(atpDate);
+function StockBadge({ qty, isSpecialOrderStock, atpDate, noReorder }: { qty: number | null | undefined; isSpecialOrderStock?: boolean; atpDate?: string | null; noReorder?: boolean }) {
+  const stock = (() => {
+    if (qty == null) return null;
+    if (qty >= 1) return (
+      <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 cursor-default">
+        In Stock ({qty})
+      </span>
+    );
+    if (isSpecialOrderStock) return (
+      <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-600">
+        Non-Stock
+      </span>
+    );
+    const atp = formatAtpDate(atpDate);
+    return (
+      <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-600">
+        {atp ? `EST: ${atp}` : "Out of Stock"}
+      </span>
+    );
+  })();
+
+  // TEMPORARY: surface NetSuite flags for debugging
   return (
-    <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-600">
-      {atp ? `EST: ${atp}` : "Out of Stock"}
+    <span className="inline-flex flex-wrap items-center gap-1 justify-end">
+      {stock}
+      {noReorder && (
+        <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-rose-50 text-rose-600" title="custitem_noreorders = T">
+          No Reorders
+        </span>
+      )}
+      {isSpecialOrderStock && (
+        <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-violet-50 text-violet-600" title="custitem_specord_stock = T">
+          Special Order Stock
+        </span>
+      )}
     </span>
   );
 }
@@ -177,7 +196,7 @@ function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: P
                 )}
               </div>
               <div className="flex flex-col items-end gap-1">
-                <StockBadge qty={p.quantityAvailable} isSpecialOrderStock={p.isSpecialOrderStock} atpDate={p.atpDate} />
+                <StockBadge qty={p.quantityAvailable} isSpecialOrderStock={p.isSpecialOrderStock} atpDate={p.atpDate} noReorder={p.noReorder} />
                 <AddToListButton product={p} />
               </div>
             </div>
@@ -222,7 +241,7 @@ function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: P
                   {p.name}
                 </td>
                 <td className="px-5 py-3 whitespace-nowrap">
-                  <StockBadge qty={p.quantityAvailable} isSpecialOrderStock={p.isSpecialOrderStock} atpDate={p.atpDate} />
+                  <StockBadge qty={p.quantityAvailable} isSpecialOrderStock={p.isSpecialOrderStock} atpDate={p.atpDate} noReorder={p.noReorder} />
                 </td>
                 <td className="px-5 py-3 text-right whitespace-nowrap">
                   {p.price ? (
