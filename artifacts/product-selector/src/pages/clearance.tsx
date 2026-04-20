@@ -62,12 +62,12 @@ function StockBadge({ qty, isSpecialOrderStock, atpDate, noReorder }: { qty: num
       {stock}
       {noReorder && (
         <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-rose-50 text-rose-600" title="custitem_noreorders = T">
-          No Reorders
+          NRO
         </span>
       )}
       {isSpecialOrderStock && (
         <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-violet-50 text-violet-600" title="custitem_specord_stock = T">
-          Special Order Stock
+          SOS
         </span>
       )}
     </span>
