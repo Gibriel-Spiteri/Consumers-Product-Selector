@@ -11,17 +11,22 @@ import ProductModal from "@/components/product-modal";
 
 
 function HeaderLogo() {
-  const { data } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["adminLogo"],
     queryFn: async () => {
       const res = await fetch("/api/admin/logo");
       if (!res.ok) return { mode: "text" as const, svg: null };
       return res.json() as Promise<{ mode: "text" | "image"; svg: string | null }>;
     },
-    staleTime: 60_000,
+    staleTime: 5 * 60_000,
+    gcTime: Infinity,
   });
 
-  if (data?.mode === "image" && data.svg) {
+  if (isLoading || !data) {
+    return <span className="inline-block h-[22px] w-[155px]" aria-hidden />;
+  }
+
+  if (data.mode === "image" && data.svg) {
     const dataUrl = `data:image/svg+xml;utf8,${encodeURIComponent(data.svg)}`;
     return (
       <img
