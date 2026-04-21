@@ -128,60 +128,83 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
 
     const sortedCategories = topologicalSortCategories(nsCategories);
 
-    const netsuiteIdToDbId = new Map<string, number>();
+    const nsCategoryById = new Map<string, NetSuiteCategory>();
+    for (const cat of sortedCategories) nsCategoryById.set(cat.id, cat);
 
-    let categoriesSynced = 0;
+    const levelByNsId = new Map<string, number>();
+    function computeLevel(cat: NetSuiteCategory): number {
+      const cached = levelByNsId.get(cat.id);
+      if (cached != null) return cached;
+      let lvl: number;
+      if (cat.fullname) {
+        lvl = cat.fullname.split(" : ").length;
+      } else if (!cat.parent) {
+        lvl = 1;
+      } else {
+        const parent = nsCategoryById.get(cat.parent);
+        lvl = parent ? computeLevel(parent) + 1 : 2;
+      }
+      levelByNsId.set(cat.id, lvl);
+      return lvl;
+    }
+    for (const cat of sortedCategories) computeLevel(cat);
+
+    const netsuiteIdToDbId = new Map<string, number>();
     let attributesSynced = 0;
     let relatedItemsSynced = 0;
-    for (const cat of sortedCategories) {
-      const parentNetsuiteId = cat.parent ?? null;
 
-      let parentDbId: number | null = null;
-      if (parentNetsuiteId) {
-        parentDbId = netsuiteIdToDbId.get(parentNetsuiteId) ?? null;
-      }
+    if (sortedCategories.length > 0) {
+      const initialRows = sortedCategories.map((cat) => ({
+        netsuiteId: cat.id,
+        name: cat.name,
+        level: levelByNsId.get(cat.id) ?? 1,
+        parentId: null as number | null,
+        isOnline: cat.isOnline,
+      }));
 
-      const level = cat.fullname
-        ? cat.fullname.split(" : ").length
-        : parentDbId == null ? 1 : await getCategoryLevel(parentDbId, netsuiteIdToDbId);
-
-      const existing = await db
-        .select()
-        .from(categoriesTable)
-        .where(eq(categoriesTable.netsuiteId, cat.id))
-        .limit(1);
-
-      if (existing.length > 0) {
-        await db
-          .update(categoriesTable)
-          .set({
-            name: cat.name,
-            level,
-            parentId: parentDbId,
-            isOnline: cat.isOnline,
+      const upserted = await db
+        .insert(categoriesTable)
+        .values(initialRows)
+        .onConflictDoUpdate({
+          target: categoriesTable.netsuiteId,
+          set: {
+            name: sql`excluded.name`,
+            level: sql`excluded.level`,
+            isOnline: sql`excluded.is_online`,
             updatedAt: new Date(),
-          })
-          .where(eq(categoriesTable.netsuiteId, cat.id));
-        netsuiteIdToDbId.set(cat.id, existing[0].id);
-      } else {
-        const [inserted] = await db
-          .insert(categoriesTable)
-          .values({
-            netsuiteId: cat.id,
-            name: cat.name,
-            level,
-            parentId: parentDbId,
-            isOnline: cat.isOnline,
-          })
-          .returning();
-        netsuiteIdToDbId.set(cat.id, inserted.id);
+          },
+        })
+        .returning({ id: categoriesTable.id, netsuiteId: categoriesTable.netsuiteId });
+
+      for (const row of upserted) {
+        if (row.netsuiteId) netsuiteIdToDbId.set(row.netsuiteId, row.id);
       }
-      categoriesSynced++;
-      if (categoriesSynced % 100 === 0 || categoriesSynced === sortedCategories.length) {
-        const pct = 15 + Math.round((categoriesSynced / sortedCategories.length) * 25);
-        setProgress("categories", pct, `Saved ${categoriesSynced} / ${sortedCategories.length} categories`);
-      }
+
+      const finalRows = sortedCategories.map((cat) => ({
+        netsuiteId: cat.id,
+        name: cat.name,
+        level: levelByNsId.get(cat.id) ?? 1,
+        parentId: cat.parent ? (netsuiteIdToDbId.get(cat.parent) ?? null) : null,
+        isOnline: cat.isOnline,
+      }));
+
+      await db
+        .insert(categoriesTable)
+        .values(finalRows)
+        .onConflictDoUpdate({
+          target: categoriesTable.netsuiteId,
+          set: {
+            name: sql`excluded.name`,
+            level: sql`excluded.level`,
+            parentId: sql`excluded.parent_id`,
+            isOnline: sql`excluded.is_online`,
+            updatedAt: new Date(),
+          },
+        });
+
+      setProgress("categories", 40, `Saved ${sortedCategories.length} categories`);
     }
+    const categoriesSynced = sortedCategories.length;
 
     setProgress("items", 42, "Cleaning stale categories…");
     const syncedNetsuiteIds = Array.from(netsuiteIdToDbId.keys());
@@ -222,81 +245,76 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
 
     setProgress("items", 55, `Saving ${nsItems.length} products…`);
 
-    let productsSynced = 0;
-    for (const item of nsItems) {
+    const productRows = nsItems.map((item) => {
       const nsCategoryId = item.cpsCategoryId ?? null;
       const categoryDbId = nsCategoryId
         ? (netsuiteIdToDbId.get(nsCategoryId) ?? null)
         : null;
-
-      const name = item.fullname || item.itemid;
       const pprData = activePprItemsMap.get(item.id);
       const hasActivePpr = !!pprData;
       const pprPriceReductionRetail = pprData?.priceReductionRetail ?? null;
       const pprName = pprData?.name ?? null;
       const binNumber = itemBinsMap.get(item.id) ?? null;
 
-      const existing = await db
-        .select()
-        .from(productsTable)
-        .where(eq(productsTable.netsuiteId, item.id))
-        .limit(1);
+      return {
+        netsuiteId: item.id,
+        name: item.fullname || item.itemid,
+        salesdescription: item.salesdescription ?? null,
+        sku: item.itemid,
+        price: item.baseprice ? String(item.baseprice) : null,
+        retailPrice: item.retailPrice != null ? String(item.retailPrice) : null,
+        imageUrl: item.imageUrl ?? null,
+        fullImageUrl: item.fullImageUrl ?? null,
+        description: item.description ?? null,
+        manufacturer: item.manufacturer ?? null,
+        quantityAvailable: item.quantityAvailable ?? null,
+        noReorder: item.noReorder ? 1 : 0,
+        hasActivePpr,
+        pprName,
+        pprPriceReductionRetail: pprPriceReductionRetail != null ? String(pprPriceReductionRetail) : null,
+        isExpressBath: item.isExpressBath ?? false,
+        isSpecialOrderStock: item.isSpecialOrderStock ?? false,
+        atpDate: item.atpDate ?? null,
+        binNumber,
+        categoryId: categoryDbId,
+      };
+    });
 
-      if (existing.length > 0) {
-        await db
-          .update(productsTable)
-          .set({
-            name,
-            salesdescription: item.salesdescription ?? null,
-            sku: item.itemid,
-            price: item.baseprice ? String(item.baseprice) : null,
-            retailPrice: item.retailPrice != null ? String(item.retailPrice) : null,
-            imageUrl: item.imageUrl ?? null,
-            fullImageUrl: item.fullImageUrl ?? null,
-            description: item.description ?? null,
-            manufacturer: item.manufacturer ?? null,
-            quantityAvailable: item.quantityAvailable ?? null,
-            noReorder: item.noReorder ? 1 : 0,
-            hasActivePpr: hasActivePpr,
-            pprName: pprName,
-            pprPriceReductionRetail: pprPriceReductionRetail != null ? String(pprPriceReductionRetail) : null,
-            isExpressBath: item.isExpressBath ?? false,
-            isSpecialOrderStock: item.isSpecialOrderStock ?? false,
-            atpDate: item.atpDate ?? null,
-            binNumber,
-            categoryId: categoryDbId,
+    let productsSynced = 0;
+    const PRODUCT_BATCH_SIZE = 200;
+    for (let i = 0; i < productRows.length; i += PRODUCT_BATCH_SIZE) {
+      const batch = productRows.slice(i, i + PRODUCT_BATCH_SIZE);
+      await db
+        .insert(productsTable)
+        .values(batch)
+        .onConflictDoUpdate({
+          target: productsTable.netsuiteId,
+          set: {
+            name: sql`excluded.name`,
+            salesdescription: sql`excluded.salesdescription`,
+            sku: sql`excluded.sku`,
+            price: sql`excluded.price`,
+            retailPrice: sql`excluded.retail_price`,
+            imageUrl: sql`excluded.image_url`,
+            fullImageUrl: sql`excluded.full_image_url`,
+            description: sql`excluded.description`,
+            manufacturer: sql`excluded.manufacturer`,
+            quantityAvailable: sql`excluded.quantity_available`,
+            noReorder: sql`excluded.no_reorder`,
+            hasActivePpr: sql`excluded.has_active_ppr`,
+            pprName: sql`excluded.ppr_name`,
+            pprPriceReductionRetail: sql`excluded.ppr_price_reduction_retail`,
+            isExpressBath: sql`excluded.is_express_bath`,
+            isSpecialOrderStock: sql`excluded.is_special_order_stock`,
+            atpDate: sql`excluded.atp_date`,
+            binNumber: sql`excluded.bin_number`,
+            categoryId: sql`excluded.category_id`,
             updatedAt: new Date(),
-          })
-          .where(eq(productsTable.netsuiteId, item.id));
-      } else {
-        await db.insert(productsTable).values({
-          netsuiteId: item.id,
-          name,
-          salesdescription: item.salesdescription ?? null,
-          sku: item.itemid,
-          price: item.baseprice ? String(item.baseprice) : null,
-          retailPrice: item.retailPrice != null ? String(item.retailPrice) : null,
-          imageUrl: item.imageUrl ?? null,
-          fullImageUrl: item.fullImageUrl ?? null,
-          description: item.description ?? null,
-          manufacturer: item.manufacturer ?? null,
-          quantityAvailable: item.quantityAvailable ?? null,
-          noReorder: item.noReorder ? 1 : 0,
-          hasActivePpr: hasActivePpr,
-          pprName: pprName,
-          pprPriceReductionRetail: pprPriceReductionRetail != null ? String(pprPriceReductionRetail) : null,
-          isExpressBath: item.isExpressBath ?? false,
-          isSpecialOrderStock: item.isSpecialOrderStock ?? false,
-          atpDate: item.atpDate ?? null,
-          binNumber,
-          categoryId: categoryDbId,
+          },
         });
-      }
-      productsSynced++;
-      if (productsSynced % 50 === 0 || productsSynced === nsItems.length) {
-        const pct = 55 + Math.round((productsSynced / nsItems.length) * 35);
-        setProgress("items", pct, `Saved ${productsSynced} / ${nsItems.length} products`);
-      }
+      productsSynced += batch.length;
+      const pct = 55 + Math.round((productsSynced / nsItems.length) * 35);
+      setProgress("items", pct, `Saved ${productsSynced} / ${nsItems.length} products`);
     }
 
     setProgress("cleanup", 82, "Cleaning stale products…");
