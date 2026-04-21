@@ -238,48 +238,49 @@ export async function probeAdditionalImages(baseImageUrl: string | null): Promis
 
   const [, fullPath, ext] = extMatch;
 
-  // Detect existing numeric suffix patterns and normalize the "stem" we increment.
-  // Supported patterns (in priority order):
-  //   foo_1.jpg     -> stem "foo", "_N" pattern, start at next index
-  //   foo-1.jpg     -> stem "foo", "-N" pattern, start at next index
-  //   foo (1).jpg   -> stem "foo", " (N)" pattern, start at next index
-  //   foo%20(1).jpg -> stem "foo", "%20(N)" pattern (URL-encoded space)
-  //   foo.jpg       -> stem "foo", default to "-N", start at 2
-  let stem = fullPath;
-  let buildSuffix: (i: number) => string = (i) => `-${i}`;
-  let startIndex = 2;
+  // Strip any trailing numeric suffix to find the canonical stem so we can probe
+  // every known naming convention regardless of which one the stored URL uses.
+  //   ".../LCSTV3022_1"     -> ".../LCSTV3022"
+  //   ".../LCSTV3022 (4)"   -> ".../LCSTV3022"
+  //   ".../LCSTV3022%20(4)" -> ".../LCSTV3022"
+  //   ".../LCSTV3022-2"     -> ".../LCSTV3022"
+  //   ".../LCSTV3022"       -> ".../LCSTV3022"
+  const stripMatch = fullPath.match(/^(.*?)(?:[_-]\d+|(?:\s|%20)\(\d+\))$/);
+  const stem = stripMatch ? stripMatch[1] : fullPath;
 
-  const parenMatch = fullPath.match(/^(.*?)(\s|%20)\((\d+)\)$/);
-  const dashUnderscoreMatch = fullPath.match(/^(.*?)([_-])(\d+)$/);
-  if (parenMatch) {
-    stem = parenMatch[1];
-    const space = parenMatch[2];
-    startIndex = parseInt(parenMatch[3], 10) + 1;
-    buildSuffix = (i) => `${space}(${i})`;
-  } else if (dashUnderscoreMatch) {
-    stem = dashUnderscoreMatch[1];
-    const sep = dashUnderscoreMatch[2];
-    startIndex = parseInt(dashUnderscoreMatch[3], 10) + 1;
-    buildSuffix = (i) => `${sep}${i}`;
+  const patterns: Array<(i: number) => string> = [
+    (i) => `${stem}_${i}${ext}`,
+    (i) => `${stem}-${i}${ext}`,
+    (i) => `${stem}%20(${i})${ext}`,
+  ];
+  const bareCandidate = `${stem}${ext}`;
+
+  const candidateUrls = new Set<string>([bareCandidate, baseImageUrl]);
+  for (const buildAt of patterns) {
+    for (let i = 1; i <= IMAGE_PROBE_MAX; i++) {
+      candidateUrls.add(buildAt(i));
+    }
   }
 
-  const images: string[] = [baseImageUrl];
+  const probeResults = await Promise.all(
+    Array.from(candidateUrls).map((url) =>
+      fetch(url, { method: "HEAD", redirect: "follow", signal: AbortSignal.timeout(3000) })
+        .then((r) => ({ url, exists: r.ok }))
+        .catch(() => ({ url, exists: false })),
+    ),
+  );
 
-  const probePromises: Promise<{ index: number; exists: boolean }>[] = [];
-  for (let i = startIndex; i < startIndex + IMAGE_PROBE_MAX; i++) {
-    const probeUrl = `${stem}${buildSuffix(i)}${ext}`;
-    probePromises.push(
-      fetch(probeUrl, { method: "HEAD", redirect: "follow", signal: AbortSignal.timeout(3000) })
-        .then(r => ({ index: i, exists: r.ok }))
-        .catch(() => ({ index: i, exists: false }))
-    );
+  const found = new Set(probeResults.filter((r) => r.exists).map((r) => r.url));
+  const images: string[] = [];
+  if (found.has(bareCandidate)) images.push(bareCandidate);
+  for (let i = 1; i <= IMAGE_PROBE_MAX; i++) {
+    for (const buildAt of patterns) {
+      const url = buildAt(i);
+      if (found.has(url) && !images.includes(url)) images.push(url);
+    }
   }
-
-  const results = await Promise.all(probePromises);
-  // Stop at the first gap so we don't include images past a missing index.
-  for (const { index, exists } of results.sort((a, b) => a.index - b.index)) {
-    if (!exists) break;
-    images.push(`${stem}${separator}${index}${ext}`);
+  if (found.has(baseImageUrl) && !images.includes(baseImageUrl)) {
+    images.unshift(baseImageUrl);
   }
 
   logger.info({ baseImageUrl, totalImages: images.length }, "Probed for additional item images");
