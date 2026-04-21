@@ -563,6 +563,7 @@ router.get("/products/:productId", async (req, res) => {
       additionalImages,
       description: p.description ?? null,
       manufacturer: p.manufacturer ?? null,
+      collection: p.collection ?? null,
       quantityAvailable: liveQty ?? p.quantityAvailable ?? null,
       hasActivePpr: p.hasActivePpr ?? false,
       pprName: p.pprName ?? null,
@@ -636,6 +637,63 @@ router.get("/products/:productId/related", async (req, res) => {
   }).filter(item => item.name != null);
 
   return res.json({ relatedItems: items });
+});
+
+router.get("/products/:productId/collection", async (req, res) => {
+  const productId = Number(req.params.productId);
+  if (isNaN(productId)) {
+    return res.status(400).json({ error: "Invalid product ID" });
+  }
+
+  const current = await db
+    .select({ id: productsTable.id, collection: productsTable.collection })
+    .from(productsTable)
+    .where(eq(productsTable.id, productId))
+    .limit(1);
+
+  if (current.length === 0 || !current[0].collection) {
+    return res.json({ items: [], collection: null });
+  }
+
+  const collectionName = current[0].collection;
+
+  const matches = await db
+    .select()
+    .from(productsTable)
+    .where(
+      and(
+        eq(productsTable.manufacturer, collectionName),
+        sql`${productsTable.id} != ${productId}`,
+        notDiscontinued,
+      ),
+    );
+
+  const netsuiteIds = matches.map(p => p.netsuiteId).filter((id): id is string => id != null);
+  const liveInventory = await fetchLiveInventory(netsuiteIds);
+
+  const items = matches.map(p => {
+    const liveQty = p.netsuiteId ? liveInventory.get(p.netsuiteId) : undefined;
+    return {
+      id: p.id,
+      netsuiteId: p.netsuiteId,
+      name: p.salesdescription || p.name,
+      sku: p.sku ?? null,
+      price: p.price ? parseFloat(p.price) : null,
+      retailPrice: p.retailPrice ? parseFloat(p.retailPrice) : null,
+      imageUrl: p.imageUrl ?? null,
+      fullImageUrl: p.fullImageUrl ?? null,
+      quantityAvailable: liveQty ?? p.quantityAvailable ?? null,
+      hasActivePpr: p.hasActivePpr ?? false,
+      pprName: p.pprName ?? null,
+      pprPriceReductionRetail: p.pprPriceReductionRetail ? parseFloat(p.pprPriceReductionRetail) : null,
+      noReorder: p.noReorder === 1,
+      isSpecialOrderStock: p.isSpecialOrderStock ?? false,
+      atpDate: p.atpDate ?? null,
+      manufacturer: p.manufacturer ?? null,
+    };
+  });
+
+  return res.json({ items, collection: collectionName });
 });
 
 export default router;

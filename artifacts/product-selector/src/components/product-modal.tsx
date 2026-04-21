@@ -473,6 +473,18 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
   });
   const relatedProducts = ((relatedData?.relatedItems ?? []) as FullProduct[]);
 
+  const { data: collectionData } = useQuery({
+    queryKey: ["collectionItems", resolvedId],
+    queryFn: async () => {
+      const res = await fetch(`/api/products/${resolvedId}/collection`);
+      if (!res.ok) return { items: [], collection: null };
+      return res.json();
+    },
+    enabled: !!resolvedId,
+  });
+  const collectionItems = ((collectionData?.items ?? []) as FullProduct[]);
+  const collectionName = (collectionData?.collection ?? null) as string | null;
+
   const categoryId = full?.categoryId ?? product?.categoryId;
   const { data: categoryData } = useQuery({
     queryKey: ["categoryProducts", categoryId],
@@ -804,23 +816,18 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                   )}
 
                   {bottomTab === "collection" && (
-                    full?.manufacturer ? (
+                    collectionName ? (
                       <div>
                         <p className="text-[11px] text-gray-400 mb-3">
-                          Other products by <span className="font-semibold text-gray-600">{full.manufacturer}</span>
+                          Other items in the <span className="font-semibold text-gray-600">{collectionName}</span> collection
                         </p>
-                        <div className="flex gap-3 overflow-x-auto pb-4">
-                          {relatedProducts
-                            .filter(p => (p as FullProduct).manufacturer === full.manufacturer)
-                            .concat(
-                              relatedProducts.filter(p => (p as FullProduct).manufacturer !== full.manufacturer)
-                            )
-                            .slice(0, 12)
-                            .map(p => (
+                        {collectionItems.length > 0 ? (
+                          <div className="flex gap-3 overflow-x-auto pb-4">
+                            {collectionItems.map(p => (
                               <RelatedMiniCard key={p.id} product={p} onSelect={handleSelectRelated} />
                             ))}
-                        </div>
-                        {relatedProducts.length === 0 && (
+                          </div>
+                        ) : (
                           <p className="text-sm text-gray-300 italic pb-4">No collection items found.</p>
                         )}
                       </div>

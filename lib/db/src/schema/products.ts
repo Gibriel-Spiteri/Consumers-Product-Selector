@@ -14,6 +14,7 @@ export const productsTable = pgTable("products", {
   fullImageUrl: text("full_image_url"),
   description: text("description"),
   manufacturer: text("manufacturer"),
+  collection: text("collection"),
   quantityAvailable: integer("quantity_available"),
   noReorder: integer("no_reorder").default(0),
   hasActivePpr: boolean("has_active_ppr").default(false),

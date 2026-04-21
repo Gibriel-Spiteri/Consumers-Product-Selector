@@ -338,6 +338,7 @@ export interface NetSuiteItem {
   fullImageUrl?: string | null;
   description?: string | null;
   manufacturer?: string | null;
+  collection?: string | null;
   quantityAvailable?: number | null;
   noReorder?: boolean;
   isExpressBath?: boolean;
@@ -390,6 +391,7 @@ interface SuiteQLItemRow {
   fullimageurl: string | null;
   storedescription: string | null;
   prodline: string | null;
+  collection: string | null;
   quantityavailable: string | null;
   isnoreorder: string | null;
   isexpressbath: string | null;
@@ -415,6 +417,7 @@ function mapItemRow(row: SuiteQLItemRow): NetSuiteItem {
     fullImageUrl: row.fullimageurl ?? null,
     description: row.storedescription ?? null,
     manufacturer: row.prodline ?? null,
+    collection: row.collection ?? null,
     quantityAvailable: row.quantityavailable != null ? Number(row.quantityavailable) : null,
     noReorder: row.isnoreorder === "T",
     isExpressBath: row.isexpressbath === "T",
@@ -480,6 +483,7 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
       item.custitem_itemimageurl AS fullimageurl,
       item.storedescription,
       BUILTIN.DF(item.custitem_prodline) AS prodline,
+      BUILTIN.DF(item.custitem_collection) AS collection,
       item.quantityavailable,
       item.custitem_noreorders AS isnoreorder,
       item.custitem_expressbath AS isexpressbath,
@@ -512,6 +516,7 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
         item.custitem_itemimageurl AS fullimageurl,
         item.storedescription,
         BUILTIN.DF(item.custitem_prodline) AS prodline,
+        BUILTIN.DF(item.custitem_collection) AS collection,
         NULL AS quantityavailable,
         NULL AS isnoreorder,
         item.custitem_expressbath AS isexpressbath,
