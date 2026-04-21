@@ -66,7 +66,7 @@ export default function WithoutAttributesProducts() {
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-gray-100">
-                  <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400">Attribute ID</th>
+                  <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400">Internal ID</th>
                   <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400">Product NetSuite ID</th>
                   <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400">Attribute</th>
                   <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400">Value</th>
@@ -76,7 +76,7 @@ export default function WithoutAttributesProducts() {
               <tbody className="divide-y divide-gray-50">
                 {attributes.map(a => (
                   <tr key={a.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-5 py-3 font-mono text-[12px] text-gray-700 whitespace-nowrap">{a.id}</td>
+                    <td className="px-5 py-3 font-mono text-[12px] text-gray-700 whitespace-nowrap">{a.netsuiteId ?? <span className="text-gray-300">—</span>}</td>
                     <td className="px-5 py-3 font-mono text-[12px] text-gray-700 whitespace-nowrap">{a.productNetsuiteId}</td>
                     <td className="px-5 py-3 text-gray-900">{a.attributeName}</td>
                     <td className="px-5 py-3 text-gray-700">{a.attributeValue}</td>
