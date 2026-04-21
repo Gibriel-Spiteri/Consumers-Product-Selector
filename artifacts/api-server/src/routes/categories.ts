@@ -317,43 +317,24 @@ router.get("/products/search", async (req, res) => {
   return res.json({ products: mapped, usingMockData: false });
 });
 
-router.get("/products/without-attributes", async (_req, res) => {
-  const products = await db
-    .select()
-    .from(productsTable)
-    .where(and(
-      notDiscontinued,
-      sql`NOT EXISTS (SELECT 1 FROM ${productAttributesTable} WHERE ${productAttributesTable.productNetsuiteId} = ${productsTable.netsuiteId})`,
-    ));
+router.get("/attributes/orphaned", async (_req, res) => {
+  const rows = await db
+    .select({
+      id: productAttributesTable.id,
+      netsuiteId: productAttributesTable.netsuiteId,
+      productNetsuiteId: productAttributesTable.productNetsuiteId,
+      attributeName: productAttributesTable.attributeName,
+      attributeValue: productAttributesTable.attributeValue,
+      attributeValueId: productAttributesTable.attributeValueId,
+      sortOrder: productAttributesTable.sortOrder,
+      isFilter: productAttributesTable.isFilter,
+      createdAt: productAttributesTable.createdAt,
+    })
+    .from(productAttributesTable)
+    .where(sql`NOT EXISTS (SELECT 1 FROM ${productsTable} WHERE ${productsTable.netsuiteId} = ${productAttributesTable.productNetsuiteId})`)
+    .orderBy(productAttributesTable.attributeName, productAttributesTable.attributeValue);
 
-  const netsuiteIds = products.map((p) => p.netsuiteId).filter((id): id is string => id != null);
-  const liveInventory = await fetchLiveInventory(netsuiteIds);
-
-  const mapped = products.map((p) => {
-    const liveQty = p.netsuiteId ? liveInventory.get(p.netsuiteId) : undefined;
-    return {
-      id: p.id,
-      name: p.salesdescription || p.name,
-      sku: p.sku ?? null,
-      price: p.price ? parseFloat(p.price) : null,
-      retailPrice: p.retailPrice ? parseFloat(p.retailPrice) : null,
-      categoryId: p.categoryId ?? null,
-      netsuiteId: p.netsuiteId ?? null,
-      imageUrl: p.imageUrl ?? null,
-      fullImageUrl: p.fullImageUrl ?? null,
-      quantityAvailable: liveQty ?? p.quantityAvailable ?? null,
-      hasActivePpr: p.hasActivePpr ?? false,
-      pprName: p.pprName ?? null,
-      pprPriceReductionRetail: p.pprPriceReductionRetail ? parseFloat(p.pprPriceReductionRetail) : null,
-      noReorder: p.noReorder === 1,
-      isSpecialOrderStock: p.isSpecialOrderStock ?? false,
-      atpDate: p.atpDate ?? null,
-    };
-  });
-
-  mapped.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
-
-  res.json({ products: mapped, usingMockData: false });
+  res.json({ attributes: rows });
 });
 
 router.get("/products/uncategorized", async (_req, res) => {
@@ -532,13 +513,10 @@ router.get("/products/stats", async (_req, res) => {
     .from(productsTable)
     .where(and(sql`${productsTable.categoryId} IS NULL`, notDiscontinued));
 
-  const withoutAttributesResult = await db
+  const orphanedAttributesResult = await db
     .select({ count: sql<number>`count(*)` })
-    .from(productsTable)
-    .where(and(
-      notDiscontinued,
-      sql`NOT EXISTS (SELECT 1 FROM ${productAttributesTable} WHERE ${productAttributesTable.productNetsuiteId} = ${productsTable.netsuiteId})`,
-    ));
+    .from(productAttributesTable)
+    .where(sql`NOT EXISTS (SELECT 1 FROM ${productsTable} WHERE ${productsTable.netsuiteId} = ${productAttributesTable.productNetsuiteId})`);
 
   const lastUpdatedResult = await db
     .select({ maxUpdated: sql<string>`max(${productsTable.updatedAt})` })
@@ -550,7 +528,7 @@ router.get("/products/stats", async (_req, res) => {
   res.json({
     totalProducts: Number(totalResult[0]?.count ?? 0),
     productsWithoutCategory: Number(orphanResult[0]?.count ?? 0),
-    productsWithoutAttributes: Number(withoutAttributesResult[0]?.count ?? 0),
+    orphanedAttributes: Number(orphanedAttributesResult[0]?.count ?? 0),
     lastUpdated,
   });
 });

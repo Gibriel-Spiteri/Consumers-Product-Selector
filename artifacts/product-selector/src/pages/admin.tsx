@@ -613,7 +613,7 @@ function UncategorizedSection() {
     queryFn: async () => {
       const res = await fetch("/api/products/stats");
       if (!res.ok) throw new Error("Failed to fetch stats");
-      return res.json() as Promise<{ productsWithoutCategory: number; productsWithoutAttributes: number }>;
+      return res.json() as Promise<{ productsWithoutCategory: number; orphanedAttributes: number }>;
     },
     staleTime: 60000,
   });
@@ -653,12 +653,12 @@ function WithoutAttributesSection() {
     queryFn: async () => {
       const res = await fetch("/api/products/stats");
       if (!res.ok) throw new Error("Failed to fetch stats");
-      return res.json() as Promise<{ productsWithoutCategory: number; productsWithoutAttributes: number }>;
+      return res.json() as Promise<{ productsWithoutCategory: number; orphanedAttributes: number }>;
     },
     staleTime: 60000,
   });
 
-  const count = data?.productsWithoutAttributes ?? 0;
+  const count = data?.orphanedAttributes ?? 0;
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-6">
@@ -668,9 +668,9 @@ function WithoutAttributesSection() {
             <PackageX size={20} className="text-amber-500" />
           </div>
           <div>
-            <h2 className="font-semibold text-gray-900 text-[14px]">Without Attributes</h2>
+            <h2 className="font-semibold text-gray-900 text-[14px]">Orphaned Attributes</h2>
             <p className="text-sm text-gray-500">
-              {isLoading ? "Loading…" : `${count} product${count !== 1 ? "s" : ""} without attributes`}
+              {isLoading ? "Loading…" : `${count} attribute row${count !== 1 ? "s" : ""} without a product`}
             </p>
           </div>
         </div>
@@ -679,7 +679,7 @@ function WithoutAttributesSection() {
             href="/without-attributes"
             className="text-sm font-medium text-amber-600 hover:text-amber-700 transition-colors"
           >
-            View Products →
+            View Attributes →
           </Link>
         )}
       </div>
