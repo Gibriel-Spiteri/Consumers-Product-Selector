@@ -116,7 +116,24 @@ router.post("/estimates/:estimateId/add-items", async (req, res) => {
 
     const existingLines = existing.item?.items ?? [];
 
-    const newLines = validatedItems.map(item => ({
+    // Pre-validate that every NetSuite item ID we're about to push still exists.
+    const distinctIds = Array.from(new Set(validatedItems.map(i => i.netsuiteId)));
+    const idList = distinctIds.join(",");
+    const check = await executeSuiteQL<{ id: string }>(
+      `SELECT id FROM item WHERE id IN (${idList})`
+    );
+    const validIds = new Set(check.items.map(r => String(r.id)));
+    const invalidIds = distinctIds.filter(id => !validIds.has(String(id)));
+
+    const goodItems = validatedItems.filter(i => validIds.has(String(i.netsuiteId)));
+    if (goodItems.length === 0) {
+      return res.status(400).json({
+        error: "None of the items can be added — they no longer exist in NetSuite.",
+        invalidNetsuiteIds: invalidIds,
+      });
+    }
+
+    const newLines = goodItems.map(item => ({
       item: { id: item.netsuiteId },
       quantity: item.quantity,
     }));
@@ -142,7 +159,7 @@ router.post("/estimates/:estimateId/add-items", async (req, res) => {
     );
 
     logger.info(
-      { estimateId, tranId: existing.tranId, newItemCount: validatedItems.length },
+      { estimateId, tranId: existing.tranId, newItemCount: goodItems.length, skipped: invalidIds },
       "Added items to estimate"
     );
 
@@ -150,7 +167,8 @@ router.post("/estimates/:estimateId/add-items", async (req, res) => {
       success: true,
       estimateId,
       tranId: existing.tranId,
-      itemsAdded: validatedItems.length,
+      itemsAdded: goodItems.length,
+      skippedNetsuiteIds: invalidIds,
     });
   } catch (err: any) {
     logger.error({ err, estimateId }, "Failed to add items to estimate");

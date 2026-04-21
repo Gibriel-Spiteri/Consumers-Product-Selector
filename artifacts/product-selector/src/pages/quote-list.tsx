@@ -212,12 +212,29 @@ export default function QuoteListPage() {
       body: JSON.stringify(payload),
     });
 
+    const data = await res.json().catch(() => ({}));
+
     if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
+      const invalidIds: string[] = data?.invalidNetsuiteIds ?? [];
+      if (invalidIds.length > 0) {
+        const skuList = invalidIds
+          .map(id => pushableItems.find(i => String(i.netsuiteId) === String(id))?.sku ?? `NetSuite ID ${id}`)
+          .join(", ");
+        throw new Error(`These items no longer exist in NetSuite and need to be removed from the list: ${skuList}`);
+      }
       throw new Error(data.error ?? "Failed to add items to estimate");
     }
 
-    setPushResult({ success: true, message: `Successfully added ${pushableItems.length} item${pushableItems.length === 1 ? "" : "s"} to estimate ${tranId}` });
+    const skipped: string[] = data?.skippedNetsuiteIds ?? [];
+    const added = data?.itemsAdded ?? pushableItems.length;
+    let msg = `Successfully added ${added} item${added === 1 ? "" : "s"} to estimate ${tranId}`;
+    if (skipped.length > 0) {
+      const skuList = skipped
+        .map(id => pushableItems.find(i => String(i.netsuiteId) === String(id))?.sku ?? `NetSuite ID ${id}`)
+        .join(", ");
+      msg += ` — skipped (no longer in NetSuite): ${skuList}`;
+    }
+    setPushResult({ success: true, message: msg });
     clearList();
   };
 
