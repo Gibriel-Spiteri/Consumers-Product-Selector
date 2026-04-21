@@ -6,6 +6,7 @@ import CategoryOverview from "@/pages/category-overview";
 import CategoryProducts from "@/pages/category-products";
 import SearchPage from "@/pages/search";
 import UncategorizedProducts from "@/pages/uncategorized-products";
+import WithoutAttributesProducts from "@/pages/without-attributes-products";
 import ClearancePage from "@/pages/clearance";
 import ExpressBathPage from "@/pages/express-bath";
 import QuoteListPage from "@/pages/quote-list";
@@ -58,6 +59,7 @@ function App() {
                   <Route path="/products/:categoryId" component={CategoryProducts} />
                   <Route path="/search/:query" component={SearchPage} />
                   <Route path="/uncategorized" component={UncategorizedProducts} />
+                  <Route path="/without-attributes" component={WithoutAttributesProducts} />
                   <Route path="/clearance" component={ClearancePage} />
                   <Route path="/express-bath" component={ExpressBathPage} />
                   <Route path="/list" component={QuoteListPage} />

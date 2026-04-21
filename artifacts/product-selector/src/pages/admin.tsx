@@ -674,6 +674,14 @@ function WithoutAttributesSection() {
             </p>
           </div>
         </div>
+        {count > 0 && (
+          <Link
+            href="/without-attributes"
+            className="text-sm font-medium text-amber-600 hover:text-amber-700 transition-colors"
+          >
+            View Products →
+          </Link>
+        )}
       </div>
     </div>
   );
