@@ -323,6 +323,7 @@ router.get("/attributes/orphaned", async (_req, res) => {
       id: productAttributesTable.id,
       netsuiteId: productAttributesTable.netsuiteId,
       productNetsuiteId: productAttributesTable.productNetsuiteId,
+      sku: productsTable.sku,
       attributeName: productAttributesTable.attributeName,
       attributeValue: productAttributesTable.attributeValue,
       attributeValueId: productAttributesTable.attributeValueId,
@@ -331,6 +332,7 @@ router.get("/attributes/orphaned", async (_req, res) => {
       createdAt: productAttributesTable.createdAt,
     })
     .from(productAttributesTable)
+    .leftJoin(productsTable, sql`${productsTable.netsuiteId} = ${productAttributesTable.productNetsuiteId}`)
     .where(sql`NOT EXISTS (SELECT 1 FROM ${productsTable} WHERE ${productsTable.netsuiteId} = ${productAttributesTable.productNetsuiteId})`)
     .orderBy(productAttributesTable.attributeName, productAttributesTable.attributeValue);
 
