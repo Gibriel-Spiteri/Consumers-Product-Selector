@@ -2,9 +2,30 @@ import { useState } from "react";
 import { useParams, Link } from "wouter";
 import { getSearchProductsQueryOptions } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Loader2, ArrowLeft, PackageX } from "lucide-react";
+import { Search, Loader2, ArrowLeft, PackageX, Copy, Check } from "lucide-react";
 import { fmtPrice } from "@/lib/utils";
 import ProductModal from "@/components/product-modal";
+
+function CopySkuButton({ sku }: { sku: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(sku).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  };
+  return (
+    <button
+      onClick={handleCopy}
+      title="Copy model number"
+      className="inline-flex items-center gap-1.5 font-mono bg-gray-100 hover:bg-gray-200 hover:text-gray-700 px-2 py-0.5 rounded-full transition-all text-[12px] text-[#1f2630]"
+    >
+      {copied ? <Check size={10} className="text-emerald-500" /> : <Copy size={10} />}
+      {sku}
+    </button>
+  );
+}
 
 export default function SearchPage() {
   const { query } = useParams();
@@ -70,8 +91,8 @@ export default function SearchPage() {
                      className="hover:bg-blue-50/50 transition-colors group cursor-pointer"
                      onClick={() => setModalProduct(p)}
                    >
-                     <td className="px-6 lg:px-8 py-5 font-mono text-muted-foreground font-medium group-hover:text-primary transition-colors">
-                       {p.sku || 'N/A'}
+                     <td className="px-6 lg:px-8 py-5">
+                       {p.sku ? <CopySkuButton sku={p.sku} /> : <span className="font-mono text-muted-foreground">N/A</span>}
                      </td>
                      <td className="px-6 lg:px-8 py-5 font-semibold text-foreground text-base">
                        {p.name}
