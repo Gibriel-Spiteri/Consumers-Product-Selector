@@ -274,6 +274,29 @@ function ImageGallery({ product, additionalImages }: { product: Product; additio
   );
 }
 
+function MiniStockPill({ qty, isSpecialOrderStock, atpDate }: { qty: number | null | undefined; isSpecialOrderStock?: boolean; atpDate?: string | null }) {
+  if (qty != null && qty >= 1) {
+    return (
+      <span className="inline-flex items-center text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600">
+        In Stock ({qty})
+      </span>
+    );
+  }
+  if (isSpecialOrderStock) {
+    return (
+      <span className="inline-flex items-center text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600">
+        Non-Stock
+      </span>
+    );
+  }
+  const atp = formatAtpDate(atpDate);
+  return (
+    <span className="inline-flex items-center text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600">
+      {atp ? `EST: ${atp}` : "Out of Stock"}
+    </span>
+  );
+}
+
 function RelatedMiniCard({ product, onSelect }: { product: FullProduct; onSelect: (p: FullProduct) => void }) {
   const images = getProductImageList(product);
   const [failedIndexes, setFailedIndexes] = useState<Set<number>>(new Set());
@@ -314,6 +337,13 @@ function RelatedMiniCard({ product, onSelect }: { product: FullProduct; onSelect
         ) : (
           <p className="text-[12px] text-gray-300">—</p>
         )}
+        <div className="mt-1.5">
+          <MiniStockPill
+            qty={product.quantityAvailable}
+            isSpecialOrderStock={product.isSpecialOrderStock}
+            atpDate={product.atpDate}
+          />
+        </div>
       </div>
     </button>
   );
