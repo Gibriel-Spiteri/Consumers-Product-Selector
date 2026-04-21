@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, Loader2, PackageX } from "lucide-react";
+import { ChevronRight, Download, Loader2, PackageX } from "lucide-react";
 
 interface OrphanedAttribute {
   id: number;
@@ -28,6 +28,32 @@ export default function WithoutAttributesProducts() {
 
   const attributes = data?.attributes ?? [];
 
+  const handleExport = () => {
+    const headers = ["Internal ID", "Product NetSuite ID", "Attribute", "Value", "Filter"];
+    const escape = (v: unknown) => {
+      const s = v == null ? "" : String(v);
+      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const lines = [
+      headers.join(","),
+      ...attributes.map(a =>
+        [a.netsuiteId ?? "", a.productNetsuiteId, a.attributeName, a.attributeValue, a.isFilter ? "Yes" : "No"]
+          .map(escape)
+          .join(",")
+      ),
+    ];
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const date = new Date().toISOString().slice(0, 10);
+    a.download = `orphaned-attributes-${date}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   if (isLoading) {
     return (
       <div className="max-w-screen-xl mx-auto px-6 py-16 flex flex-col items-center gap-3 text-gray-400">
@@ -52,6 +78,14 @@ export default function WithoutAttributesProducts() {
             {attributes.length} attribute row{attributes.length !== 1 ? "s" : ""} not associated with any product
           </p>
         </div>
+        <button
+          onClick={handleExport}
+          disabled={attributes.length === 0}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white text-sm font-medium hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <Download size={14} />
+          Export CSV
+        </button>
       </div>
 
       {attributes.length === 0 ? (
