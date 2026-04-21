@@ -662,7 +662,7 @@ router.get("/products/:productId/collection", async (req, res) => {
     .from(productsTable)
     .where(
       and(
-        eq(productsTable.manufacturer, collectionName),
+        eq(productsTable.collection, collectionName),
         sql`${productsTable.id} != ${productId}`,
         notDiscontinued,
       ),
