@@ -717,8 +717,8 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                     {(
                       [
                         { key: "more", label: `More from ${directCategoryName ? directCategoryName.split(" › ").at(-1) : "Category"}` },
-                        { key: "related", label: "Related Items" },
                         { key: "specs", label: "Specifications" },
+                        { key: "related", label: "Related Items" },
                         { key: "collection", label: "Collection" },
                       ] as const
                     ).map(tab => (
