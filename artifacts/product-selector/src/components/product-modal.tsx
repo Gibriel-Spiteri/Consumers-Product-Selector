@@ -719,7 +719,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                         { key: "more", label: `More from ${directCategoryName ? directCategoryName.split(" › ").at(-1) : "Category"}` },
                         { key: "specs", label: "Specifications" },
                         { key: "related", label: "Related Items" },
-                        { key: "collection", label: "Collection" },
+                        { key: "collection", label: "Collection Items" },
                       ] as const
                     ).map(tab => (
                       <button
