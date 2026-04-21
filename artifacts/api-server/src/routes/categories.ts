@@ -8,7 +8,7 @@ import {
   SearchProductsResponse,
 } from "@workspace/api-zod";
 import { MOCK_CATEGORIES, MOCK_PRODUCTS, MOCK_STOCK } from "../lib/mockData";
-import { fetchLiveInventory, probeAdditionalImages } from "../lib/netsuite";
+import { fetchLiveInventory, probeAdditionalImages, executeSuiteQL } from "../lib/netsuite";
 
 const router: IRouter = Router();
 
@@ -336,7 +336,30 @@ router.get("/attributes/orphaned", async (_req, res) => {
     .where(sql`NOT EXISTS (SELECT 1 FROM ${productsTable} WHERE ${productsTable.netsuiteId} = ${productAttributesTable.productNetsuiteId})`)
     .orderBy(productAttributesTable.attributeName, productAttributesTable.attributeValue);
 
-  res.json({ attributes: rows });
+  // Look up the NetSuite item ID (model number) for each orphaned attribute's
+  // product so the admin can recognise the item even when it's not in our DB.
+  const distinctIds = Array.from(new Set(rows.map(r => r.productNetsuiteId).filter(Boolean)));
+  const modelNumbers = new Map<string, string>();
+  if (distinctIds.length > 0) {
+    try {
+      const idList = distinctIds.map(id => `'${id.replace(/'/g, "''")}'`).join(",");
+      const result = await executeSuiteQL<{ id: string; itemid: string }>(
+        `SELECT id, itemid FROM item WHERE id IN (${idList})`
+      );
+      for (const row of result.items) {
+        if (row.id && row.itemid) modelNumbers.set(String(row.id), row.itemid);
+      }
+    } catch (err) {
+      // Don't fail the endpoint if NetSuite is unreachable — model numbers stay null.
+    }
+  }
+
+  const attributes = rows.map(r => ({
+    ...r,
+    modelNumber: modelNumbers.get(r.productNetsuiteId) ?? null,
+  }));
+
+  res.json({ attributes });
 });
 
 router.get("/products/uncategorized", async (_req, res) => {
