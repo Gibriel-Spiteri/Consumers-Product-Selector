@@ -267,8 +267,9 @@ function SyncSection({ employeeName }: { employeeName: string }) {
         </button>
       </div>
 
-      <div className="mt-4 pt-4 border-t border-gray-200">
+      <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-4">
         <UncategorizedSection />
+        <WithoutAttributesSection />
       </div>
 
       <div className="mt-4 pt-4 border-t border-gray-200">
@@ -612,7 +613,7 @@ function UncategorizedSection() {
     queryFn: async () => {
       const res = await fetch("/api/products/stats");
       if (!res.ok) throw new Error("Failed to fetch stats");
-      return res.json() as Promise<{ productsWithoutCategory: number }>;
+      return res.json() as Promise<{ productsWithoutCategory: number; productsWithoutAttributes: number }>;
     },
     staleTime: 60000,
   });
@@ -641,6 +642,38 @@ function UncategorizedSection() {
             View Products →
           </Link>
         )}
+      </div>
+    </div>
+  );
+}
+
+function WithoutAttributesSection() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["productStats"],
+    queryFn: async () => {
+      const res = await fetch("/api/products/stats");
+      if (!res.ok) throw new Error("Failed to fetch stats");
+      return res.json() as Promise<{ productsWithoutCategory: number; productsWithoutAttributes: number }>;
+    },
+    staleTime: 60000,
+  });
+
+  const count = data?.productsWithoutAttributes ?? 0;
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center">
+            <PackageX size={20} className="text-amber-500" />
+          </div>
+          <div>
+            <h2 className="font-semibold text-gray-900 text-[14px]">Without Attributes</h2>
+            <p className="text-sm text-gray-500">
+              {isLoading ? "Loading…" : `${count} product${count !== 1 ? "s" : ""} without attributes`}
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

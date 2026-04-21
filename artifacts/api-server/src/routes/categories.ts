@@ -493,6 +493,14 @@ router.get("/products/stats", async (_req, res) => {
     .from(productsTable)
     .where(and(sql`${productsTable.categoryId} IS NULL`, notDiscontinued));
 
+  const withoutAttributesResult = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(productsTable)
+    .where(and(
+      notDiscontinued,
+      sql`NOT EXISTS (SELECT 1 FROM ${productAttributesTable} WHERE ${productAttributesTable.productNetsuiteId} = ${productsTable.netsuiteId})`,
+    ));
+
   const lastUpdatedResult = await db
     .select({ maxUpdated: sql<string>`max(${productsTable.updatedAt})` })
     .from(productsTable);
@@ -503,6 +511,7 @@ router.get("/products/stats", async (_req, res) => {
   res.json({
     totalProducts: Number(totalResult[0]?.count ?? 0),
     productsWithoutCategory: Number(orphanResult[0]?.count ?? 0),
+    productsWithoutAttributes: Number(withoutAttributesResult[0]?.count ?? 0),
     lastUpdated,
   });
 });
