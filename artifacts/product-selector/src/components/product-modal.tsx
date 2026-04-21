@@ -327,17 +327,17 @@ function RelatedMiniCard({ product, onSelect }: { product: FullProduct; onSelect
         <p className="text-[12px] font-medium text-gray-800 leading-snug line-clamp-2 mb-1">
           {product.name}
         </p>
-        {displayPrice != null ? (
-          <PprPriceTooltip price={Number(displayPrice)} pprPriceReductionRetail={product.pprPriceReductionRetail} hasActivePpr={!!product.hasActivePpr}>
-            <p className={cn("text-[13px] font-semibold", product.hasActivePpr ? "text-emerald-600" : "text-gray-900")}>${fmtPrice(Number(displayPrice))}</p>
-            {product.hasActivePpr && product.pprPriceReductionRetail != null && (
-              <p className="text-[10px] text-emerald-600">You Saved ${fmtPrice(Number(product.pprPriceReductionRetail))}</p>
-            )}
-          </PprPriceTooltip>
-        ) : (
-          <p className="text-[12px] text-gray-300">—</p>
-        )}
-        <div className="mt-1.5">
+        <div className="flex items-center justify-between gap-2">
+          {displayPrice != null ? (
+            <PprPriceTooltip price={Number(displayPrice)} pprPriceReductionRetail={product.pprPriceReductionRetail} hasActivePpr={!!product.hasActivePpr}>
+              <p className={cn("text-[13px] font-semibold", product.hasActivePpr ? "text-emerald-600" : "text-gray-900")}>${fmtPrice(Number(displayPrice))}</p>
+              {product.hasActivePpr && product.pprPriceReductionRetail != null && (
+                <p className="text-[10px] text-emerald-600">You Saved ${fmtPrice(Number(product.pprPriceReductionRetail))}</p>
+              )}
+            </PprPriceTooltip>
+          ) : (
+            <p className="text-[12px] text-gray-300">—</p>
+          )}
           <MiniStockPill
             qty={product.quantityAvailable}
             isSpecialOrderStock={product.isSpecialOrderStock}
