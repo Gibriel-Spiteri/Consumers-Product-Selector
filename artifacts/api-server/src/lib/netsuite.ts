@@ -240,25 +240,34 @@ export async function probeAdditionalImages(baseImageUrl: string | null): Promis
 
   // Detect existing numeric suffix patterns and normalize the "stem" we increment.
   // Supported patterns (in priority order):
-  //   foo_1.jpg  -> stem "foo", separator "_", start at next index
-  //   foo-1.jpg  -> stem "foo", separator "-", start at next index
-  //   foo.jpg    -> stem "foo", default to separator "-", start at 2
+  //   foo_1.jpg     -> stem "foo", "_N" pattern, start at next index
+  //   foo-1.jpg     -> stem "foo", "-N" pattern, start at next index
+  //   foo (1).jpg   -> stem "foo", " (N)" pattern, start at next index
+  //   foo%20(1).jpg -> stem "foo", "%20(N)" pattern (URL-encoded space)
+  //   foo.jpg       -> stem "foo", default to "-N", start at 2
   let stem = fullPath;
-  let separator = "-";
+  let buildSuffix: (i: number) => string = (i) => `-${i}`;
   let startIndex = 2;
 
-  const suffixMatch = fullPath.match(/^(.*?)([_-])(\d+)$/);
-  if (suffixMatch) {
-    stem = suffixMatch[1];
-    separator = suffixMatch[2];
-    startIndex = parseInt(suffixMatch[3], 10) + 1;
+  const parenMatch = fullPath.match(/^(.*?)(\s|%20)\((\d+)\)$/);
+  const dashUnderscoreMatch = fullPath.match(/^(.*?)([_-])(\d+)$/);
+  if (parenMatch) {
+    stem = parenMatch[1];
+    const space = parenMatch[2];
+    startIndex = parseInt(parenMatch[3], 10) + 1;
+    buildSuffix = (i) => `${space}(${i})`;
+  } else if (dashUnderscoreMatch) {
+    stem = dashUnderscoreMatch[1];
+    const sep = dashUnderscoreMatch[2];
+    startIndex = parseInt(dashUnderscoreMatch[3], 10) + 1;
+    buildSuffix = (i) => `${sep}${i}`;
   }
 
   const images: string[] = [baseImageUrl];
 
   const probePromises: Promise<{ index: number; exists: boolean }>[] = [];
   for (let i = startIndex; i < startIndex + IMAGE_PROBE_MAX; i++) {
-    const probeUrl = `${stem}${separator}${i}${ext}`;
+    const probeUrl = `${stem}${buildSuffix(i)}${ext}`;
     probePromises.push(
       fetch(probeUrl, { method: "HEAD", redirect: "follow", signal: AbortSignal.timeout(3000) })
         .then(r => ({ index: i, exists: r.ok }))
