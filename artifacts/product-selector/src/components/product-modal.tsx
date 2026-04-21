@@ -306,7 +306,7 @@ function RelatedMiniCard({ product, onSelect }: { product: FullProduct; onSelect
   return (
     <button
       onClick={() => onSelect(product)}
-      className="shrink-0 w-44 hover:bg-gray-200 rounded-2xl overflow-hidden text-left transition-colors cursor-pointer"
+      className="shrink-0 w-44 hover:bg-[#ecedf0] rounded-2xl overflow-hidden text-left transition-colors cursor-pointer"
     >
       <div className="h-36 flex items-center justify-center p-4 bg-white">
         {!visibleSrc ? (
