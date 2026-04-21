@@ -233,15 +233,32 @@ export async function probeAdditionalImages(baseImageUrl: string | null): Promis
   const cacheKey = baseImageUrl;
   if (imageProbeCache.has(cacheKey)) return imageProbeCache.get(cacheKey)!;
 
-  const match = baseImageUrl.match(/^(.+?)(\.[a-zA-Z]+)$/);
-  if (!match) return [baseImageUrl];
+  const extMatch = baseImageUrl.match(/^(.+?)(\.[a-zA-Z]+)$/);
+  if (!extMatch) return [baseImageUrl];
 
-  const [, basePath, ext] = match;
+  const [, fullPath, ext] = extMatch;
+
+  // Detect existing numeric suffix patterns and normalize the "stem" we increment.
+  // Supported patterns (in priority order):
+  //   foo_1.jpg  -> stem "foo", separator "_", start at next index
+  //   foo-1.jpg  -> stem "foo", separator "-", start at next index
+  //   foo.jpg    -> stem "foo", default to separator "-", start at 2
+  let stem = fullPath;
+  let separator = "-";
+  let startIndex = 2;
+
+  const suffixMatch = fullPath.match(/^(.*?)([_-])(\d+)$/);
+  if (suffixMatch) {
+    stem = suffixMatch[1];
+    separator = suffixMatch[2];
+    startIndex = parseInt(suffixMatch[3], 10) + 1;
+  }
+
   const images: string[] = [baseImageUrl];
 
   const probePromises: Promise<{ index: number; exists: boolean }>[] = [];
-  for (let i = 2; i <= IMAGE_PROBE_MAX; i++) {
-    const probeUrl = `${basePath}-${i}${ext}`;
+  for (let i = startIndex; i < startIndex + IMAGE_PROBE_MAX; i++) {
+    const probeUrl = `${stem}${separator}${i}${ext}`;
     probePromises.push(
       fetch(probeUrl, { method: "HEAD", redirect: "follow", signal: AbortSignal.timeout(3000) })
         .then(r => ({ index: i, exists: r.ok }))
@@ -250,10 +267,10 @@ export async function probeAdditionalImages(baseImageUrl: string | null): Promis
   }
 
   const results = await Promise.all(probePromises);
+  // Stop at the first gap so we don't include images past a missing index.
   for (const { index, exists } of results.sort((a, b) => a.index - b.index)) {
-    if (exists) {
-      images.push(`${basePath}-${index}${ext}`);
-    }
+    if (!exists) break;
+    images.push(`${stem}${separator}${index}${ext}`);
   }
 
   logger.info({ baseImageUrl, totalImages: images.length }, "Probed for additional item images");
