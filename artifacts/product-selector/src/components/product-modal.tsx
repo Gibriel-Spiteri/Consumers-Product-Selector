@@ -805,23 +805,6 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                               <dd className="text-sm text-gray-800">{directCategoryName}</dd>
                             </div>
                           )}
-                          <div>
-                            <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Inventory</dt>
-                            {full?.noReorder ? (
-                              <dd><span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-red-50 text-red-500">No Reorders{full?.quantityAvailable != null ? ` (${full.quantityAvailable})` : ""}</span></dd>
-                            ) : full?.isSpecialOrderStock ? (
-                              <dd><span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-600">Special Order Stock{full?.quantityAvailable != null ? ` (${full.quantityAvailable})` : ""}</span></dd>
-                            ) : full?.quantityAvailable != null && full.quantityAvailable <= 0 ? (
-                              <dd className="flex items-center gap-2">
-                                <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-600">Out of Stock</span>
-                                {formatAtpDate(full?.atpDate) && (
-                                  <span className="text-[10px] font-medium text-muted-foreground">EST: {formatAtpDate(full?.atpDate)}</span>
-                                )}
-                              </dd>
-                            ) : (
-                              <dd><span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">Stock{full?.quantityAvailable != null ? ` (${full.quantityAvailable})` : ""}</span></dd>
-                            )}
-                          </div>
                           {full?.hasActivePpr && full?.pprName && (
                             <div>
                               <dt className="text-[10px] font-semibold uppercase tracking-widest text-emerald-600 mb-0.5">PPR</dt>
