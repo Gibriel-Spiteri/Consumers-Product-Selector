@@ -225,7 +225,7 @@ export async function netsuiteRequest<T>(
 }
 
 const imageProbeCache = new Map<string, string[]>();
-const IMAGE_PROBE_MAX = 10;
+const IMAGE_PROBE_MAX = 20;
 
 export async function probeAdditionalImages(baseImageUrl: string | null): Promise<string[]> {
   if (!baseImageUrl) return [];
