@@ -134,6 +134,7 @@ router.post("/estimates/:estimateId/add-items", async (req, res) => {
       `/estimate/${estimateId}`,
       "PATCH",
       {
+        custbody_weborder: true,
         item: {
           items: allLines,
         },
