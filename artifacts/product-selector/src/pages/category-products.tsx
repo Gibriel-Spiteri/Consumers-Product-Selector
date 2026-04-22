@@ -241,6 +241,7 @@ export function ListView({ products, onSelect }: { products: Product[]; onSelect
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[140px]">SKU</th>
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400">Product</th>
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[140px]">Stock</th>
+              <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[110px]">12mo Used</th>
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 text-right w-[120px]">MSRP</th>
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[80px]"></th>
             </tr>
@@ -264,10 +265,10 @@ export function ListView({ products, onSelect }: { products: Product[]; onSelect
                   {p.name}
                 </td>
                 <td className="px-5 py-3 whitespace-nowrap">
-                  <div className="flex items-center gap-1 flex-wrap">
-                    <StockBadge qty={p.quantityAvailable} isSpecialOrderStock={p.isSpecialOrderStock} atpDate={p.atpDate} noReorder={p.noReorder} />
-                    <TwelveMonthPill used={p.twelveMonthUsage} />
-                  </div>
+                  <StockBadge qty={p.quantityAvailable} isSpecialOrderStock={p.isSpecialOrderStock} atpDate={p.atpDate} noReorder={p.noReorder} />
+                </td>
+                <td className="px-5 py-3 whitespace-nowrap">
+                  <TwelveMonthPill used={p.twelveMonthUsage} />
                 </td>
                 <td className="px-5 py-3 text-right whitespace-nowrap">
                   {p.price ? (
