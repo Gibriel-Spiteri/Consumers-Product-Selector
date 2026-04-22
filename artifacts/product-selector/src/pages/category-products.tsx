@@ -7,6 +7,7 @@ import { useCategoryPath } from "@/hooks/use-category-path";
 import ProductModal from "@/components/product-modal";
 import { cn, fmtPrice } from "@/lib/utils";
 import { useQuoteList } from "@/context/quote-list-context";
+import { useAuth } from "@/context/auth-context";
 import { PprPriceTooltip } from "@/components/ppr-price-tooltip";
 
 export interface Product {
@@ -196,6 +197,8 @@ function AddToListButton({ product }: { product: Product }) {
 }
 
 export function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: Product) => void }) {
+  const { employee } = useAuth();
+  const isAdmin = employee?.isAdmin ?? false;
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
       {products.map(p => (
@@ -240,7 +243,7 @@ export function GridView({ products, onSelect }: { products: Product[]; onSelect
               <div className="flex flex-col items-end gap-1">
                 <StockBadge qty={p.quantityAvailable} isSpecialOrderStock={p.isSpecialOrderStock} atpDate={p.atpDate} noReorder={p.noReorder} />
                 {/* <ThreeMonthPill used={p.threeMonthUsage} /> */}
-                <TwelveMonthPill used={p.twelveMonthUsage} />
+                {isAdmin && <TwelveMonthPill used={p.twelveMonthUsage} />}
                 <AddToListButton product={p} />
               </div>
             </div>
@@ -252,6 +255,8 @@ export function GridView({ products, onSelect }: { products: Product[]; onSelect
 }
 
 export function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: Product) => void }) {
+  const { employee } = useAuth();
+  const isAdmin = employee?.isAdmin ?? false;
   return (
     <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
       <div className="overflow-x-auto">
@@ -264,7 +269,7 @@ export function ListView({ products, onSelect }: { products: Product[]; onSelect
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[120px]">Stock</th>
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[90px]">Flags</th>
               {/* <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[110px]">3mo Used</th> */}
-              <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[110px]">12mo Used</th>
+              {isAdmin && <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[110px]">12mo Used</th>}
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 text-right w-[120px]">MSRP</th>
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[80px]"></th>
             </tr>
@@ -296,9 +301,11 @@ export function ListView({ products, onSelect }: { products: Product[]; onSelect
                 {/* <td className="px-5 py-3 whitespace-nowrap">
                   <ThreeMonthPill used={p.threeMonthUsage} />
                 </td> */}
-                <td className="px-5 py-3 whitespace-nowrap">
-                  <TwelveMonthPill used={p.twelveMonthUsage} />
-                </td>
+                {isAdmin && (
+                  <td className="px-5 py-3 whitespace-nowrap">
+                    <TwelveMonthPill used={p.twelveMonthUsage} />
+                  </td>
+                )}
                 <td className="px-5 py-3 text-right whitespace-nowrap">
                   {p.price ? (
                     <PprPriceTooltip price={Number(p.price)} pprPriceReductionRetail={p.pprPriceReductionRetail} hasActivePpr={!!p.hasActivePpr}>

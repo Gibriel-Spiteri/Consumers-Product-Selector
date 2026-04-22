@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ImageOff, Copy, Check, ChevronLeft, ChevronRight, Loader2, X, ZoomIn, Plus, Minus, ClipboardList } from "lucide-react";
 import { cn, fmtPrice } from "@/lib/utils";
 import { useQuoteList } from "@/context/quote-list-context";
+import { useAuth } from "@/context/auth-context";
 import { PprPriceTooltip } from "@/components/ppr-price-tooltip";
 
 interface Product {
@@ -300,6 +301,8 @@ function MiniStockPill({ qty, isSpecialOrderStock, atpDate }: { qty: number | nu
 }
 
 function RelatedMiniCard({ product, onSelect }: { product: FullProduct; onSelect: (p: FullProduct) => void }) {
+  const { employee } = useAuth();
+  const isAdmin = employee?.isAdmin ?? false;
   const images = getProductImageList(product);
   const [failedIndexes, setFailedIndexes] = useState<Set<number>>(new Set());
   const displayPrice = product.ourPrice ?? product.price;
@@ -353,12 +356,14 @@ function RelatedMiniCard({ product, onSelect }: { product: FullProduct; onSelect
           >
             3mo: {product.threeMonthUsage ?? 0}
           </span> */}
-          <span
-            className="inline-flex items-center text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600"
-            title="12 month used"
-          >
-            12mo: {product.twelveMonthUsage ?? 0}
-          </span>
+          {isAdmin && (
+            <span
+              className="inline-flex items-center text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600"
+              title="12 month used"
+            >
+              12mo: {product.twelveMonthUsage ?? 0}
+            </span>
+          )}
         </div>
       </div>
     </button>
@@ -478,6 +483,8 @@ function AddToListControls({ product, full }: { product: Product | null; full: F
 }
 
 export default function ProductModal({ product, categoryPath, onClose }: ProductModalProps) {
+  const { employee } = useAuth();
+  const isAdmin = employee?.isAdmin ?? false;
   const [activeProduct, setActiveProduct] = useState<FullProduct | null>(null);
 
   // Reset to the outer product whenever the modal opens a new item
@@ -850,17 +857,19 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                               </span>
                             </dd>
                           </div> */}
-                          <div>
-                            <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">12 Month Used</dt>
-                            <dd>
-                              <span
-                                className="inline-flex items-center font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px]"
-                                title="Item 1 Year Sales"
-                              >
-                                {full?.twelveMonthUsage ?? 0}
-                              </span>
-                            </dd>
-                          </div>
+                          {isAdmin && (
+                            <div>
+                              <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">12 Month Used</dt>
+                              <dd>
+                                <span
+                                  className="inline-flex items-center font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px]"
+                                  title="Item 1 Year Sales"
+                                >
+                                  {full?.twelveMonthUsage ?? 0}
+                                </span>
+                              </dd>
+                            </div>
+                          )}
                         </dl>
                       </div>
                     </div>
