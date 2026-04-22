@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useParams, Link } from "wouter";
 import { useGetCategories, getGetCategoryProductsQueryOptions } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, PackageX, Loader2, ImageOff, LayoutList, LayoutGrid, Copy, Check, X, Filter, ChevronDown, Plus, Search } from "lucide-react";
+import { ChevronRight, PackageX, Loader2, ImageOff, LayoutList, LayoutGrid, Copy, Check, X, Filter, ChevronDown, Plus, Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { useCategoryPath } from "@/hooks/use-category-path";
 import ProductModal from "@/components/product-modal";
 import { cn, fmtPrice } from "@/lib/utils";
@@ -254,9 +254,96 @@ export function GridView({ products, onSelect }: { products: Product[]; onSelect
   );
 }
 
+type SortKey = "sku" | "name" | "stock" | "flags" | "twelveMonthUsage" | "price";
+type SortDir = "asc" | "desc";
+
+function SortHeader({
+  label,
+  sortKey,
+  active,
+  dir,
+  onSort,
+  className,
+  align = "left",
+}: {
+  label: string;
+  sortKey: SortKey;
+  active: boolean;
+  dir: SortDir;
+  onSort: (key: SortKey) => void;
+  className?: string;
+  align?: "left" | "right";
+}) {
+  const Icon = !active ? ArrowUpDown : dir === "asc" ? ArrowUp : ArrowDown;
+  return (
+    <th className={cn("px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400", className)}>
+      <button
+        type="button"
+        onClick={() => onSort(sortKey)}
+        className={cn(
+          "inline-flex items-center gap-1.5 hover:text-gray-700 transition-colors w-full",
+          align === "right" && "justify-end",
+          active && "text-gray-700",
+        )}
+      >
+        <span>{label}</span>
+        <Icon className={cn("w-3 h-3", active ? "opacity-100" : "opacity-50")} />
+      </button>
+    </th>
+  );
+}
+
 export function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: Product) => void }) {
   const { employee } = useAuth();
   const isAdmin = employee?.isAdmin ?? false;
+  const [sortKey, setSortKey] = useState<SortKey>("name");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+
+  const handleSort = (key: SortKey) => {
+    if (key === sortKey) {
+      setSortDir(d => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  };
+
+  const sorted = useMemo(() => {
+    const arr = [...products];
+    const factor = sortDir === "asc" ? 1 : -1;
+    const cmp = (a: Product, b: Product): number => {
+      switch (sortKey) {
+        case "sku":
+          return (a.sku ?? "").localeCompare(b.sku ?? "") * factor;
+        case "name":
+          return (a.name ?? "").localeCompare(b.name ?? "") * factor;
+        case "stock": {
+          const av = a.quantityAvailable ?? -Infinity;
+          const bv = b.quantityAvailable ?? -Infinity;
+          return (av - bv) * factor;
+        }
+        case "flags": {
+          const score = (p: Product) => (p.noReorder ? 2 : 0) + (p.isSpecialOrderStock ? 1 : 0);
+          return (score(a) - score(b)) * factor;
+        }
+        case "twelveMonthUsage": {
+          const av = a.twelveMonthUsage ?? -Infinity;
+          const bv = b.twelveMonthUsage ?? -Infinity;
+          return (av - bv) * factor;
+        }
+        case "price": {
+          const av = a.price != null ? Number(a.price) : -Infinity;
+          const bv = b.price != null ? Number(b.price) : -Infinity;
+          return (av - bv) * factor;
+        }
+        default:
+          return 0;
+      }
+    };
+    arr.sort(cmp);
+    return arr;
+  }, [products, sortKey, sortDir]);
+
   return (
     <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
       <div className="overflow-x-auto">
@@ -264,18 +351,20 @@ export function ListView({ products, onSelect }: { products: Product[]; onSelect
           <thead>
             <tr className="border-b border-gray-100">
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-16"></th>
-              <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[140px]">SKU</th>
-              <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400">Product</th>
-              <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[120px]">Stock</th>
-              <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[90px]">Flags</th>
+              <SortHeader label="SKU" sortKey="sku" active={sortKey === "sku"} dir={sortDir} onSort={handleSort} className="w-[140px]" />
+              <SortHeader label="Product" sortKey="name" active={sortKey === "name"} dir={sortDir} onSort={handleSort} />
+              <SortHeader label="Stock" sortKey="stock" active={sortKey === "stock"} dir={sortDir} onSort={handleSort} className="w-[120px]" />
+              <SortHeader label="Flags" sortKey="flags" active={sortKey === "flags"} dir={sortDir} onSort={handleSort} className="w-[90px]" />
               {/* <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[110px]">3mo Used</th> */}
-              {isAdmin && <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[110px]">12mo Used</th>}
-              <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 text-right w-[120px]">MSRP</th>
+              {isAdmin && (
+                <SortHeader label="12mo Used" sortKey="twelveMonthUsage" active={sortKey === "twelveMonthUsage"} dir={sortDir} onSort={handleSort} className="w-[110px]" />
+              )}
+              <SortHeader label="MSRP" sortKey="price" active={sortKey === "price"} dir={sortDir} onSort={handleSort} className="text-right w-[120px]" align="right" />
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[80px]"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
-            {products.map(p => (
+            {sorted.map(p => (
               <tr
                 key={p.id}
                 onClick={() => onSelect(p)}
