@@ -197,8 +197,7 @@ function AddToListButton({ product }: { product: Product }) {
 }
 
 export function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: Product) => void }) {
-  const { employee } = useAuth();
-  const isAdmin = employee?.isAdmin ?? false;
+  const { isAdmin } = useAuth();
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
       {products.map(p => (
@@ -294,8 +293,7 @@ function SortHeader({
 }
 
 export function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: Product) => void }) {
-  const { employee } = useAuth();
-  const isAdmin = employee?.isAdmin ?? false;
+  const { isAdmin } = useAuth();
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 

@@ -301,8 +301,7 @@ function MiniStockPill({ qty, isSpecialOrderStock, atpDate }: { qty: number | nu
 }
 
 function RelatedMiniCard({ product, onSelect }: { product: FullProduct; onSelect: (p: FullProduct) => void }) {
-  const { employee } = useAuth();
-  const isAdmin = employee?.isAdmin ?? false;
+  const { isAdmin } = useAuth();
   const images = getProductImageList(product);
   const [failedIndexes, setFailedIndexes] = useState<Set<number>>(new Set());
   const displayPrice = product.ourPrice ?? product.price;
@@ -483,8 +482,7 @@ function AddToListControls({ product, full }: { product: Product | null; full: F
 }
 
 export default function ProductModal({ product, categoryPath, onClose }: ProductModalProps) {
-  const { employee } = useAuth();
-  const isAdmin = employee?.isAdmin ?? false;
+  const { isAdmin } = useAuth();
   const [activeProduct, setActiveProduct] = useState<FullProduct | null>(null);
 
   // Reset to the outer product whenever the modal opens a new item

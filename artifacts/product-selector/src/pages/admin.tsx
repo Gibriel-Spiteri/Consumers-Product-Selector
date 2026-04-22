@@ -691,6 +691,7 @@ export default function AdminPage() {
   const { employee } = useAuth();
 
   if (!employee?.isAdmin) {
+    // Use real isAdmin so the "view as non-admin" toggle doesn't lock admins out
     return (
       <div className="flex flex-col items-center justify-center py-20 text-gray-400">
         <Shield size={48} className="mb-4" />

@@ -104,8 +104,35 @@ function QuoteListBadge() {
   );
 }
 
+function AdminViewToggle() {
+  const { realIsAdmin, viewAsNonAdmin, setViewAsNonAdmin } = useAuth();
+  if (!realIsAdmin) return null;
+  const previewing = viewAsNonAdmin;
+  return (
+    <button
+      type="button"
+      onClick={() => setViewAsNonAdmin(!previewing)}
+      title={previewing ? "Currently viewing as a regular employee. Click to return to admin view." : "Preview the page as a regular (non-admin) employee."}
+      className={cn(
+        "flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-full border transition-all",
+        previewing
+          ? "bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100"
+          : "bg-white border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700",
+      )}
+    >
+      <span
+        className={cn(
+          "w-1.5 h-1.5 rounded-full",
+          previewing ? "bg-amber-500" : "bg-emerald-500",
+        )}
+      />
+      {previewing ? "Viewing as Employee" : "Admin View"}
+    </button>
+  );
+}
+
 function EmployeeBadge() {
-  const { employee, logout } = useAuth();
+  const { employee, realIsAdmin, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -131,7 +158,7 @@ function EmployeeBadge() {
       </button>
       {open && (
         <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-          {employee.isAdmin && (
+          {realIsAdmin && (
             <Link
               href="/admin"
               onClick={() => setOpen(false)}
@@ -516,7 +543,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </AnimatePresence>
           </div>
 
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
+            <AdminViewToggle />
             <EmployeeBadge />
             <QuoteListBadge />
           </div>
