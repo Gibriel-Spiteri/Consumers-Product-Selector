@@ -239,7 +239,7 @@ export function GridView({ products, onSelect }: { products: Product[]; onSelect
               </div>
               <div className="flex flex-col items-end gap-1">
                 <StockBadge qty={p.quantityAvailable} isSpecialOrderStock={p.isSpecialOrderStock} atpDate={p.atpDate} noReorder={p.noReorder} />
-                <ThreeMonthPill used={p.threeMonthUsage} />
+                {/* <ThreeMonthPill used={p.threeMonthUsage} /> */}
                 <TwelveMonthPill used={p.twelveMonthUsage} />
                 <AddToListButton product={p} />
               </div>
@@ -263,7 +263,7 @@ export function ListView({ products, onSelect }: { products: Product[]; onSelect
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400">Product</th>
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[120px]">Stock</th>
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[90px]">Flags</th>
-              <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[110px]">3mo Used</th>
+              {/* <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[110px]">3mo Used</th> */}
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[110px]">12mo Used</th>
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 text-right w-[120px]">MSRP</th>
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[80px]"></th>
@@ -293,9 +293,9 @@ export function ListView({ products, onSelect }: { products: Product[]; onSelect
                 <td className="px-5 py-3 whitespace-nowrap">
                   <FlagBadges noReorder={p.noReorder} isSpecialOrderStock={p.isSpecialOrderStock} />
                 </td>
-                <td className="px-5 py-3 whitespace-nowrap">
+                {/* <td className="px-5 py-3 whitespace-nowrap">
                   <ThreeMonthPill used={p.threeMonthUsage} />
-                </td>
+                </td> */}
                 <td className="px-5 py-3 whitespace-nowrap">
                   <TwelveMonthPill used={p.twelveMonthUsage} />
                 </td>

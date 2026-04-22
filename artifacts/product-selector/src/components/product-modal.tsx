@@ -347,12 +347,12 @@ function RelatedMiniCard({ product, onSelect }: { product: FullProduct; onSelect
           />
         </div>
         <div className="mt-1 flex justify-end gap-1">
-          <span
+          {/* <span
             className="inline-flex items-center text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-600"
             title="3 month used"
           >
             3mo: {product.threeMonthUsage ?? 0}
-          </span>
+          </span> */}
           <span
             className="inline-flex items-center text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600"
             title="12 month used"
@@ -839,7 +839,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                               <dd className="text-sm text-gray-800">{full.binNumber}</dd>
                             </div>
                           )}
-                          <div>
+                          {/* <div>
                             <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">3 Month Used</dt>
                             <dd>
                               <span
@@ -849,7 +849,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                                 {full?.threeMonthUsage ?? 0}
                               </span>
                             </dd>
-                          </div>
+                          </div> */}
                           <div>
                             <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">12 Month Used</dt>
                             <dd>
