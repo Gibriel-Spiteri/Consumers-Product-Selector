@@ -24,6 +24,7 @@ export const productsTable = pgTable("products", {
   isSpecialOrderStock: boolean("is_special_order_stock").default(false),
   atpDate: text("atp_date"),
   binNumber: text("bin_number"),
+  twelveMonthUsage: integer("twelve_month_usage"),
   categoryId: integer("category_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

@@ -277,6 +277,7 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
         isSpecialOrderStock: item.isSpecialOrderStock ?? false,
         atpDate: item.atpDate ?? null,
         binNumber,
+        twelveMonthUsage: item.twelveMonthUsage ?? null,
         categoryId: categoryDbId,
       };
     });
@@ -310,6 +311,7 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
             isSpecialOrderStock: sql`excluded.is_special_order_stock`,
             atpDate: sql`excluded.atp_date`,
             binNumber: sql`excluded.bin_number`,
+            twelveMonthUsage: sql`excluded.twelve_month_usage`,
             categoryId: sql`excluded.category_id`,
             updatedAt: new Date(),
           },

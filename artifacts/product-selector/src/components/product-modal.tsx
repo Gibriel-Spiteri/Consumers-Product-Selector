@@ -32,6 +32,7 @@ interface FullProduct extends Product {
   binNumber?: string | null;
   isSpecialOrderStock?: boolean;
   atpDate?: string | null;
+  twelveMonthUsage?: number | null;
   features: string[] | null;
   additionalImages?: string[] | null;
 }
@@ -344,6 +345,16 @@ function RelatedMiniCard({ product, onSelect }: { product: FullProduct; onSelect
             atpDate={product.atpDate}
           />
         </div>
+        {product.twelveMonthUsage != null && (
+          <div className="mt-1 flex justify-end">
+            <span
+              className="inline-flex items-center text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600"
+              title="12 month used"
+            >
+              12mo: {product.twelveMonthUsage}
+            </span>
+          </div>
+        )}
       </div>
     </button>
   );
@@ -704,6 +715,19 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                             <dd><span className="inline-flex items-center font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[11px]">Stock{full?.quantityAvailable != null ? ` (${full.quantityAvailable})` : ""}</span></dd>
                           )}
                         </div>
+                        {full?.twelveMonthUsage != null && (
+                          <div>
+                            <dt className="font-semibold uppercase tracking-widest text-gray-400 mb-1 text-[11px]">12 Month Used</dt>
+                            <dd>
+                              <span
+                                className="inline-flex items-center font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px]"
+                                title="custitem_legacy12monthsugginv"
+                              >
+                                {full.twelveMonthUsage}
+                              </span>
+                            </dd>
+                          </div>
+                        )}
                       </dl>
                     </div>
                   </div>

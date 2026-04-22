@@ -204,6 +204,8 @@ router.get("/categories/:categoryId/products", async (req, res) => {
       isSpecialOrderStock: p.isSpecialOrderStock ?? false,
       atpDate: p.atpDate ?? null,
       binNumber: p.binNumber ?? null,
+      twelveMonthUsage: p.twelveMonthUsage ?? null,
+      manufacturer: p.manufacturer ?? null,
     };
   });
 
@@ -287,7 +289,12 @@ router.get("/products/search", async (req, res) => {
   const products = await db
     .select()
     .from(productsTable)
-    .where(and(or(ilike(productsTable.name, `%${q}%`), ilike(productsTable.sku, `%${q}%`), ilike(productsTable.salesdescription, `%${q}%`)), notDiscontinued));
+    .where(and(or(
+      ilike(productsTable.name, `%${q}%`),
+      ilike(productsTable.sku, `%${q}%`),
+      ilike(productsTable.salesdescription, `%${q}%`),
+      ilike(productsTable.manufacturer, `%${q}%`),
+    ), notDiscontinued));
 
   const netsuiteIds = products.map((p) => p.netsuiteId).filter((id): id is string => id != null);
   const liveInventory = await fetchLiveInventory(netsuiteIds);
@@ -311,6 +318,8 @@ router.get("/products/search", async (req, res) => {
       noReorder: p.noReorder === 1,
       isSpecialOrderStock: p.isSpecialOrderStock ?? false,
       atpDate: p.atpDate ?? null,
+      twelveMonthUsage: p.twelveMonthUsage ?? null,
+      manufacturer: p.manufacturer ?? null,
     };
   });
 
@@ -600,6 +609,7 @@ router.get("/products/:productId", async (req, res) => {
       isSpecialOrderStock: p.isSpecialOrderStock ?? false,
       atpDate: p.atpDate ?? null,
       binNumber: p.binNumber ?? null,
+      twelveMonthUsage: p.twelveMonthUsage ?? null,
       features: null,
     },
   });

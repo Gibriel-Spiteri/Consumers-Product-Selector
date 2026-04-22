@@ -26,6 +26,20 @@ interface Product {
   binNumber?: string | null;
   attributes?: Array<{ name: string; value: string }>;
   atpDate?: string | null;
+  twelveMonthUsage?: number | null;
+  manufacturer?: string | null;
+}
+
+function TwelveMonthPill({ used }: { used: number | null | undefined }) {
+  if (used == null) return null;
+  return (
+    <span
+      className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 cursor-default"
+      title="12 month used (custitem_legacy12monthsugginv)"
+    >
+      12mo Used: {used}
+    </span>
+  );
 }
 
 function formatAtpDate(raw: string | null | undefined): string | null {
@@ -206,6 +220,7 @@ function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: P
               </div>
               <div className="flex flex-col items-end gap-1">
                 <StockBadge qty={p.quantityAvailable} isSpecialOrderStock={p.isSpecialOrderStock} atpDate={p.atpDate} noReorder={p.noReorder} />
+                <TwelveMonthPill used={p.twelveMonthUsage} />
                 <AddToListButton product={p} />
               </div>
             </div>
@@ -250,7 +265,10 @@ function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: P
                   {p.name}
                 </td>
                 <td className="px-5 py-3 whitespace-nowrap">
-                  <StockBadge qty={p.quantityAvailable} isSpecialOrderStock={p.isSpecialOrderStock} atpDate={p.atpDate} noReorder={p.noReorder} />
+                  <div className="flex items-center gap-1 flex-wrap">
+                    <StockBadge qty={p.quantityAvailable} isSpecialOrderStock={p.isSpecialOrderStock} atpDate={p.atpDate} noReorder={p.noReorder} />
+                    <TwelveMonthPill used={p.twelveMonthUsage} />
+                  </div>
                 </td>
                 <td className="px-5 py-3 text-right whitespace-nowrap">
                   {p.price ? (
