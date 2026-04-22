@@ -345,16 +345,14 @@ function RelatedMiniCard({ product, onSelect }: { product: FullProduct; onSelect
             atpDate={product.atpDate}
           />
         </div>
-        {product.twelveMonthUsage != null && (
-          <div className="mt-1 flex justify-end">
-            <span
-              className="inline-flex items-center text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600"
-              title="12 month used"
-            >
-              12mo: {product.twelveMonthUsage}
-            </span>
-          </div>
-        )}
+        <div className="mt-1 flex justify-end">
+          <span
+            className="inline-flex items-center text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600"
+            title="12 month used"
+          >
+            12mo: {product.twelveMonthUsage ?? 0}
+          </span>
+        </div>
       </div>
     </button>
   );
@@ -834,19 +832,17 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                               <dd className="text-sm text-gray-800">{full.binNumber}</dd>
                             </div>
                           )}
-                          {full?.twelveMonthUsage != null && (
-                            <div>
-                              <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">12 Month Used</dt>
-                              <dd>
-                                <span
-                                  className="inline-flex items-center font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px]"
-                                  title="custitem_legacy12monthsugginv"
-                                >
-                                  {full.twelveMonthUsage}
-                                </span>
-                              </dd>
-                            </div>
-                          )}
+                          <div>
+                            <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">12 Month Used</dt>
+                            <dd>
+                              <span
+                                className="inline-flex items-center font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px]"
+                                title="custitem_legacy12monthsugginv"
+                              >
+                                {full?.twelveMonthUsage ?? 0}
+                              </span>
+                            </dd>
+                          </div>
                         </dl>
                       </div>
                     </div>

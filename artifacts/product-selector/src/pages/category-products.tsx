@@ -31,13 +31,12 @@ interface Product {
 }
 
 function TwelveMonthPill({ used }: { used: number | null | undefined }) {
-  if (used == null) return null;
   return (
     <span
       className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 cursor-default"
       title="12 month used (custitem_legacy12monthsugginv)"
     >
-      12mo Used: {used}
+      12mo Used: {used ?? 0}
     </span>
   );
 }
