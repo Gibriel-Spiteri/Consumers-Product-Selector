@@ -394,6 +394,38 @@ router.get("/products/clearance", async (_req, res) => {
     .limit(1);
   const dfsCategoryId = dfsCategory[0]?.id ?? null;
 
+  const internalCategory = await db
+    .select({ id: categoriesTable.id })
+    .from(categoriesTable)
+    .where(ilike(categoriesTable.name, "internal"))
+    .limit(1);
+  const internalRootId = internalCategory[0]?.id ?? null;
+
+  let excludedCategoryIds: number[] = [];
+  if (internalRootId != null) {
+    const allCats = await db
+      .select({ id: categoriesTable.id, parentId: categoriesTable.parentId })
+      .from(categoriesTable);
+    const childMap = new Map<number, number[]>();
+    for (const c of allCats) {
+      if (c.parentId != null) {
+        const arr = childMap.get(c.parentId) ?? [];
+        arr.push(c.id);
+        childMap.set(c.parentId, arr);
+      }
+    }
+    const descendants: number[] = [internalRootId];
+    const queue = [internalRootId];
+    while (queue.length > 0) {
+      const cur = queue.pop()!;
+      for (const child of childMap.get(cur) ?? []) {
+        descendants.push(child);
+        queue.push(child);
+      }
+    }
+    excludedCategoryIds = descendants;
+  }
+
   const products = await db
     .select()
     .from(productsTable)
@@ -404,7 +436,10 @@ router.get("/products/clearance", async (_req, res) => {
         sql`${productsTable.isSpecialOrderStock} = true AND ${productsTable.quantityAvailable} >= 1`
       ),
       notDiscontinued,
-      dfsCategoryId ? sql`(${productsTable.categoryId} IS NULL OR ${productsTable.categoryId} != ${dfsCategoryId})` : undefined
+      dfsCategoryId ? sql`(${productsTable.categoryId} IS NULL OR ${productsTable.categoryId} != ${dfsCategoryId})` : undefined,
+      excludedCategoryIds.length > 0
+        ? sql`(${productsTable.categoryId} IS NULL OR ${productsTable.categoryId} NOT IN ${excludedCategoryIds})`
+        : undefined
     ));
 
   const netsuiteIds = products.map((p) => p.netsuiteId).filter((id): id is string => id != null);
