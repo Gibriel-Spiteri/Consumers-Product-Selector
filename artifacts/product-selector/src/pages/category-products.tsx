@@ -9,7 +9,7 @@ import { cn, fmtPrice } from "@/lib/utils";
 import { useQuoteList } from "@/context/quote-list-context";
 import { PprPriceTooltip } from "@/components/ppr-price-tooltip";
 
-interface Product {
+export interface Product {
   id: number;
   name: string;
   sku: string | null;
@@ -175,7 +175,7 @@ function AddToListButton({ product }: { product: Product }) {
   );
 }
 
-function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: Product) => void }) {
+export function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: Product) => void }) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
       {products.map(p => (
@@ -230,7 +230,7 @@ function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: P
   );
 }
 
-function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: Product) => void }) {
+export function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: Product) => void }) {
   return (
     <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
       <div className="overflow-x-auto">
