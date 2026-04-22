@@ -8,7 +8,7 @@ import {
   SearchProductsResponse,
 } from "@workspace/api-zod";
 import { MOCK_CATEGORIES, MOCK_PRODUCTS, MOCK_STOCK } from "../lib/mockData";
-import { fetchLiveInventory, probeAdditionalImages } from "../lib/netsuite";
+import { fetchLiveInventory, fetchItemImages } from "../lib/netsuite";
 
 const router: IRouter = Router();
 
@@ -572,7 +572,7 @@ router.get("/products/:productId", async (req, res) => {
   const netsuiteIds = p.netsuiteId ? [p.netsuiteId] : [];
   const [liveInventory, additionalImages] = await Promise.all([
     fetchLiveInventory(netsuiteIds),
-    probeAdditionalImages(p.imageUrl),
+    fetchItemImages(p.netsuiteId, p.imageUrl),
   ]);
   const liveQty = p.netsuiteId ? liveInventory.get(p.netsuiteId) : undefined;
 

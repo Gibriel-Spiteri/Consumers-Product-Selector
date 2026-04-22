@@ -224,68 +224,75 @@ export async function netsuiteRequest<T>(
   return response.json() as Promise<T>;
 }
 
-const imageProbeCache = new Map<string, string[]>();
-const IMAGE_PROBE_MAX = 20;
+const itemImagesCache = new Map<string, { at: number; urls: string[] }>();
+const ITEM_IMAGES_TTL_MS = 5 * 60 * 1000;
 
-export async function probeAdditionalImages(baseImageUrl: string | null): Promise<string[]> {
-  if (!baseImageUrl) return [];
+// Encode a URL stored with literal spaces (as NetSuite stores them in the
+// customrecord_itemimg.url field) so it works in <img src>. Already-encoded
+// URLs (containing %20) are left alone.
+function encodeImageUrl(raw: string): string {
+  if (!raw) return raw;
+  if (/%[0-9A-Fa-f]{2}/.test(raw)) return raw.trim();
+  return raw.trim().replace(/ /g, "%20");
+}
 
-  const cacheKey = baseImageUrl;
-  if (imageProbeCache.has(cacheKey)) return imageProbeCache.get(cacheKey)!;
+/**
+ * Fetch additional item images for an item from the NetSuite custom record
+ * `customrecord_itemimg` (Item Attributes -> Item Image sublist on the item
+ * record). Returns image URLs ordered by display order then record id.
+ *
+ * If the item has no records, falls back to the provided base image URL.
+ */
+export async function fetchItemImages(
+  netsuiteId: string | null,
+  fallbackImageUrl: string | null = null,
+): Promise<string[]> {
+  if (!netsuiteId) return fallbackImageUrl ? [fallbackImageUrl] : [];
 
-  const extMatch = baseImageUrl.match(/^(.+?)(\.[a-zA-Z]+)$/);
-  if (!extMatch) return [baseImageUrl];
+  const cached = itemImagesCache.get(netsuiteId);
+  if (cached && Date.now() - cached.at < ITEM_IMAGES_TTL_MS) {
+    return cached.urls.length ? cached.urls : (fallbackImageUrl ? [fallbackImageUrl] : []);
+  }
 
-  const [, fullPath, ext] = extMatch;
+  const safeId = netsuiteId.replace(/[^0-9]/g, "");
+  if (!safeId) return fallbackImageUrl ? [fallbackImageUrl] : [];
 
-  // Strip any trailing numeric suffix to find the canonical stem so we can probe
-  // every known naming convention regardless of which one the stored URL uses.
-  //   ".../LCSTV3022_1"     -> ".../LCSTV3022"
-  //   ".../LCSTV3022 (4)"   -> ".../LCSTV3022"
-  //   ".../LCSTV3022%20(4)" -> ".../LCSTV3022"
-  //   ".../LCSTV3022-2"     -> ".../LCSTV3022"
-  //   ".../LCSTV3022"       -> ".../LCSTV3022"
-  const stripMatch = fullPath.match(/^(.*?)(?:[_-]\d+|(?:\s|%20)\(\d+\))$/);
-  const stem = stripMatch ? stripMatch[1] : fullPath;
-
-  const patterns: Array<(i: number) => string> = [
-    (i) => `${stem}_${i}${ext}`,
-    (i) => `${stem}-${i}${ext}`,
-    (i) => `${stem}%20(${i})${ext}`,
-  ];
-  const bareCandidate = `${stem}${ext}`;
-
-  const candidateUrls = new Set<string>([bareCandidate, baseImageUrl]);
-  for (const buildAt of patterns) {
-    for (let i = 1; i <= IMAGE_PROBE_MAX; i++) {
-      candidateUrls.add(buildAt(i));
+  const urls: string[] = [];
+  let querySucceeded = false;
+  try {
+    const result = await executeSuiteQL<{
+      id: string;
+      custrecord_itemimg_url: string | null;
+      custrecord_itemimg_displayorder: string | null;
+    }>(
+      `SELECT id, custrecord_itemimg_url, custrecord_itemimg_displayorder
+       FROM customrecord_itemimg
+       WHERE custrecord_itemimg_item = ${safeId}
+         AND isinactive = 'F'
+       ORDER BY NVL(TO_NUMBER(custrecord_itemimg_displayorder), 9999), TO_NUMBER(id)`
+    );
+    querySucceeded = true;
+    const seen = new Set<string>();
+    for (const row of result.items) {
+      const raw = row.custrecord_itemimg_url;
+      if (!raw) continue;
+      const encoded = encodeImageUrl(raw);
+      if (seen.has(encoded)) continue;
+      seen.add(encoded);
+      urls.push(encoded);
     }
+  } catch (err: any) {
+    logger.error({ netsuiteId, err: err.message }, "Failed to fetch item images from NetSuite");
   }
 
-  const probeResults = await Promise.all(
-    Array.from(candidateUrls).map((url) =>
-      fetch(url, { method: "HEAD", redirect: "follow", signal: AbortSignal.timeout(3000) })
-        .then((r) => ({ url, exists: r.ok }))
-        .catch(() => ({ url, exists: false })),
-    ),
-  );
-
-  const found = new Set(probeResults.filter((r) => r.exists).map((r) => r.url));
-  const images: string[] = [];
-  if (found.has(bareCandidate)) images.push(bareCandidate);
-  for (let i = 1; i <= IMAGE_PROBE_MAX; i++) {
-    for (const buildAt of patterns) {
-      const url = buildAt(i);
-      if (found.has(url) && !images.includes(url)) images.push(url);
-    }
-  }
-  if (found.has(baseImageUrl) && !images.includes(baseImageUrl)) {
-    images.unshift(baseImageUrl);
+  // Only cache successful queries so transient SuiteQL failures don't
+  // suppress images for the full TTL window.
+  if (querySucceeded) {
+    itemImagesCache.set(netsuiteId, { at: Date.now(), urls });
   }
 
-  logger.info({ baseImageUrl, totalImages: images.length }, "Probed for additional item images");
-  imageProbeCache.set(cacheKey, images);
-  return images;
+  if (urls.length === 0 && fallbackImageUrl) return [fallbackImageUrl];
+  return urls;
 }
 
 const SUITEQL_PAGE_SIZE = 1000;
