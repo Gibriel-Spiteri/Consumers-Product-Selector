@@ -400,7 +400,8 @@ router.get("/products/clearance", async (_req, res) => {
     .where(and(
       or(
         sql`${productsTable.hasActivePpr} = true`,
-        sql`${productsTable.noReorder} = 1`
+        sql`${productsTable.noReorder} = 1`,
+        sql`${productsTable.isSpecialOrderStock} = true AND ${productsTable.quantityAvailable} >= 1`
       ),
       notDiscontinued,
       dfsCategoryId ? sql`(${productsTable.categoryId} IS NULL OR ${productsTable.categoryId} != ${dfsCategoryId})` : undefined
