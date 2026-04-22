@@ -50,7 +50,25 @@ function formatAtpDate(raw: string | null | undefined): string | null {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-function StockBadge({ qty, isSpecialOrderStock, atpDate, noReorder }: { qty: number | null | undefined; isSpecialOrderStock?: boolean; atpDate?: string | null; noReorder?: boolean }) {
+function FlagBadges({ noReorder, isSpecialOrderStock }: { noReorder?: boolean; isSpecialOrderStock?: boolean }) {
+  if (!noReorder && !isSpecialOrderStock) return null;
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1">
+      {noReorder && (
+        <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-rose-50 text-rose-600" title="custitem_noreorders = T">
+          NRO
+        </span>
+      )}
+      {isSpecialOrderStock && (
+        <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-600" title="custitem_specord_stock = T">
+          SOS
+        </span>
+      )}
+    </span>
+  );
+}
+
+function StockBadge({ qty, isSpecialOrderStock, atpDate, noReorder, showFlags = true }: { qty: number | null | undefined; isSpecialOrderStock?: boolean; atpDate?: string | null; noReorder?: boolean; showFlags?: boolean }) {
   const stock = (() => {
     if (qty == null) return null;
     if (qty >= 1) return (
@@ -71,20 +89,10 @@ function StockBadge({ qty, isSpecialOrderStock, atpDate, noReorder }: { qty: num
     );
   })();
 
-  // TEMPORARY: surface NetSuite flags for debugging
   return (
     <span className="inline-flex flex-wrap items-center gap-1 justify-end">
       {stock}
-      {noReorder && (
-        <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-rose-50 text-rose-600" title="custitem_noreorders = T">
-          NRO
-        </span>
-      )}
-      {isSpecialOrderStock && (
-        <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-600" title="custitem_specord_stock = T">
-          SOS
-        </span>
-      )}
+      {showFlags && <FlagBadges noReorder={noReorder} isSpecialOrderStock={isSpecialOrderStock} />}
     </span>
   );
 }
@@ -240,7 +248,8 @@ export function ListView({ products, onSelect }: { products: Product[]; onSelect
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-16"></th>
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[140px]">SKU</th>
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400">Product</th>
-              <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[140px]">Stock</th>
+              <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[120px]">Stock</th>
+              <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[90px]">Flags</th>
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[110px]">12mo Used</th>
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 text-right w-[120px]">MSRP</th>
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[80px]"></th>
@@ -265,7 +274,10 @@ export function ListView({ products, onSelect }: { products: Product[]; onSelect
                   {p.name}
                 </td>
                 <td className="px-5 py-3 whitespace-nowrap">
-                  <StockBadge qty={p.quantityAvailable} isSpecialOrderStock={p.isSpecialOrderStock} atpDate={p.atpDate} noReorder={p.noReorder} />
+                  <StockBadge qty={p.quantityAvailable} isSpecialOrderStock={p.isSpecialOrderStock} atpDate={p.atpDate} noReorder={p.noReorder} showFlags={false} />
+                </td>
+                <td className="px-5 py-3 whitespace-nowrap">
+                  <FlagBadges noReorder={p.noReorder} isSpecialOrderStock={p.isSpecialOrderStock} />
                 </td>
                 <td className="px-5 py-3 whitespace-nowrap">
                   <TwelveMonthPill used={p.twelveMonthUsage} />
