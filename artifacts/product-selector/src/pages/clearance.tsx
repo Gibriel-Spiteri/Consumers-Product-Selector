@@ -317,6 +317,14 @@ export default function ClearancePage() {
     );
   }
 
+  filtered = [...filtered].sort((a, b) => {
+    const ac = a.categoryParentName ?? "\uffff";
+    const bc = b.categoryParentName ?? "\uffff";
+    const byCat = ac.localeCompare(bc);
+    if (byCat !== 0) return byCat;
+    return (a.name ?? "").localeCompare(b.name ?? "");
+  });
+
   if (isLoading) {
     return (
       <div className="max-w-screen-xl mx-auto px-6 py-16 flex flex-col items-center gap-3 text-gray-400">
