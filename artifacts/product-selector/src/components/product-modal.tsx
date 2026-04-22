@@ -830,7 +830,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                           )}
                           {full?.binNumber && (
                             <div>
-                              <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Showroom Location</dt>
+                              <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Warehouse Location</dt>
                               <dd className="text-sm text-gray-800">{full.binNumber}</dd>
                             </div>
                           )}
