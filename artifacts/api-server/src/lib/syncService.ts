@@ -9,6 +9,7 @@ import {
   fetchActivePprItems,
   fetchItemBins,
   fetchOpenPoEarliestReceipts,
+  fetchTwelveMonthSales,
   computeAtpDate,
   isNetSuiteConfigured,
   type NetSuiteCategory,
@@ -230,6 +231,12 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
     const activePprItemsMap = await fetchActivePprItems();
     const itemBinsMap = await fetchItemBins();
     const openPoReceipts = await fetchOpenPoEarliestReceipts();
+    let twelveMonthSalesMap = new Map<string, number>();
+    try {
+      twelveMonthSalesMap = await fetchTwelveMonthSales();
+    } catch (err: any) {
+      logger.error({ err: err.message }, "Failed to fetch 12-month sales aggregation; continuing without it");
+    }
     const allCandidateItems = await fetchNetSuiteItems();
     const atpToday = new Date();
     for (const candidate of allCandidateItems) {
@@ -277,7 +284,7 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
         isSpecialOrderStock: item.isSpecialOrderStock ?? false,
         atpDate: item.atpDate ?? null,
         binNumber,
-        twelveMonthUsage: item.twelveMonthUsage ?? null,
+        twelveMonthUsage: twelveMonthSalesMap.get(item.id) ?? null,
         categoryId: categoryDbId,
       };
     });

@@ -438,7 +438,6 @@ interface SuiteQLItemRow {
   quantitybackordered: string | null;
   prodlineleadtime: string | null;
   prodlineordercycle: string | null;
-  twelvemonthusage: string | null;
 }
 
 function mapItemRow(row: SuiteQLItemRow): NetSuiteItem {
@@ -466,8 +465,61 @@ function mapItemRow(row: SuiteQLItemRow): NetSuiteItem {
     quantityBackordered: row.quantitybackordered != null ? Number(row.quantitybackordered) : null,
     prodLineLeadTime: row.prodlineleadtime != null ? Number(row.prodlineleadtime) : null,
     prodLineOrderCycle: row.prodlineordercycle != null ? Number(row.prodlineordercycle) : null,
-    twelveMonthUsage: row.twelvemonthusage != null ? Number(row.twelvemonthusage) : null,
+    twelveMonthUsage: null,
   };
+}
+
+/**
+ * Replicates the NetSuite saved search "Item 1 Year Sales": sums quantity from
+ * Sales Order lines for transactions in the previous 12 months, excluding
+ * internal customers, grouped by item.
+ *
+ * The custitem_legacy12monthsugginv field in NetSuite is sourced from this
+ * search and stores no value, so SuiteQL cannot read it directly. We
+ * recompute it here.
+ */
+export async function fetchTwelveMonthSales(): Promise<Map<string, number>> {
+  const internalField = process.env.NETSUITE_INTERNAL_CUSTOMER_FIELD || "custentity_isinternal";
+  const baseQuery = (withInternalFilter: boolean) => `
+    SELECT tl.item AS itemid, ABS(SUM(tl.quantity)) AS qty
+    FROM transaction t
+    INNER JOIN transactionLine tl ON tl.transaction = t.id
+    LEFT JOIN customer c ON c.id = t.entity
+    WHERE t.type = 'SalesOrd'
+      AND t.trandate >= ADD_MONTHS(SYSDATE, -12)
+      AND tl.item IS NOT NULL
+      AND tl.quantity IS NOT NULL
+      ${withInternalFilter ? `AND (c.${internalField} IS NULL OR c.${internalField} = 'F')` : ""}
+    GROUP BY tl.item`;
+
+  let rows: Array<{ itemid: string | number; qty: string | number | null }> = [];
+  try {
+    const result = await executeSuiteQL<{ itemid: string | number; qty: string | number | null }>(
+      baseQuery(true)
+    );
+    rows = result.items;
+    logger.info({ count: rows.length, internalField }, "Fetched 12-month sales (with internal-customer filter)");
+  } catch (err: any) {
+    logger.warn(
+      { err: err.message, internalField },
+      "12-month sales query with internal-customer filter failed; retrying without filter"
+    );
+    const result = await executeSuiteQL<{ itemid: string | number; qty: string | number | null }>(
+      baseQuery(false)
+    );
+    rows = result.items;
+    logger.info({ count: rows.length }, "Fetched 12-month sales (no internal-customer filter)");
+  }
+
+  const map = new Map<string, number>();
+  for (const row of rows) {
+    if (row.itemid == null) continue;
+    const id = String(row.itemid);
+    const qty = row.qty != null ? Number(row.qty) : 0;
+    if (!Number.isFinite(qty)) continue;
+    map.set(id, Math.round(qty));
+  }
+  return map;
 }
 
 export interface PprItemData {
@@ -531,8 +583,7 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
       item.quantityonorder,
       item.quantitybackordered,
       pl.custrecord_pl_leadtime AS prodlineleadtime,
-      pl.custrecord_pl_ordercycle AS prodlineordercycle,
-      item.custitem_legacy12monthsugginv AS twelvemonthusage
+      pl.custrecord_pl_ordercycle AS prodlineordercycle
     FROM InventoryItem item
     LEFT JOIN pricing p ON p.item = item.id AND p.pricelevel = 1 AND p.quantity = 1
     LEFT JOIN customrecord_pl pl ON pl.id = item.custitem_prodline
@@ -565,8 +616,7 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
         NULL AS quantityonorder,
         NULL AS quantitybackordered,
         pl.custrecord_pl_leadtime AS prodlineleadtime,
-        pl.custrecord_pl_ordercycle AS prodlineordercycle,
-        item.custitem_legacy12monthsugginv AS twelvemonthusage
+        pl.custrecord_pl_ordercycle AS prodlineordercycle
       FROM KitItem item
       LEFT JOIN pricing p ON p.item = item.id AND p.pricelevel = 1 AND p.quantity = 1
       LEFT JOIN customrecord_pl pl ON pl.id = item.custitem_prodline
