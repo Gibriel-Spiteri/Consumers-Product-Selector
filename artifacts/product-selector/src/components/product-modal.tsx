@@ -715,19 +715,6 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                             <dd><span className="inline-flex items-center font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[11px]">Stock{full?.quantityAvailable != null ? ` (${full.quantityAvailable})` : ""}</span></dd>
                           )}
                         </div>
-                        {full?.twelveMonthUsage != null && (
-                          <div>
-                            <dt className="font-semibold uppercase tracking-widest text-gray-400 mb-1 text-[11px]">12 Month Used</dt>
-                            <dd>
-                              <span
-                                className="inline-flex items-center font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px]"
-                                title="custitem_legacy12monthsugginv"
-                              >
-                                {full.twelveMonthUsage}
-                              </span>
-                            </dd>
-                          </div>
-                        )}
                       </dl>
                     </div>
                   </div>
@@ -845,6 +832,19 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                             <div>
                               <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Showroom Location</dt>
                               <dd className="text-sm text-gray-800">{full.binNumber}</dd>
+                            </div>
+                          )}
+                          {full?.twelveMonthUsage != null && (
+                            <div>
+                              <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">12 Month Used</dt>
+                              <dd>
+                                <span
+                                  className="inline-flex items-center font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px]"
+                                  title="custitem_legacy12monthsugginv"
+                                >
+                                  {full.twelveMonthUsage}
+                                </span>
+                              </dd>
                             </div>
                           )}
                         </dl>
