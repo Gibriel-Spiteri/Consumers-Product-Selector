@@ -68,12 +68,12 @@ function FlagBadges({ noReorder, isSpecialOrderStock }: { noReorder?: boolean; i
   return (
     <span className="inline-flex flex-wrap items-center gap-1">
       {noReorder && (
-        <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-rose-50 text-rose-600" title="custitem_noreorders = T">
+        <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-rose-50 text-rose-600" title="No Reorders">
           NRO
         </span>
       )}
       {isSpecialOrderStock && (
-        <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-600" title="custitem_specord_stock = T">
+        <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-600" title="Special Order Stock">
           SOS
         </span>
       )}
