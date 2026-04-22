@@ -27,6 +27,7 @@ export interface Product {
   attributes?: Array<{ name: string; value: string }>;
   atpDate?: string | null;
   twelveMonthUsage?: number | null;
+  threeMonthUsage?: number | null;
   manufacturer?: string | null;
 }
 
@@ -34,9 +35,20 @@ function TwelveMonthPill({ used }: { used: number | null | undefined }) {
   return (
     <span
       className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 cursor-default"
-      title="12 month used (custitem_legacy12monthsugginv)"
+      title="12 month used (Item 1 Year Sales)"
     >
       12mo Used: {used ?? 0}
+    </span>
+  );
+}
+
+function ThreeMonthPill({ used }: { used: number | null | undefined }) {
+  return (
+    <span
+      className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 cursor-default"
+      title="3 month used (Item Past 3 Month Sales)"
+    >
+      3mo Used: {used ?? 0}
     </span>
   );
 }
@@ -227,6 +239,7 @@ export function GridView({ products, onSelect }: { products: Product[]; onSelect
               </div>
               <div className="flex flex-col items-end gap-1">
                 <StockBadge qty={p.quantityAvailable} isSpecialOrderStock={p.isSpecialOrderStock} atpDate={p.atpDate} noReorder={p.noReorder} />
+                <ThreeMonthPill used={p.threeMonthUsage} />
                 <TwelveMonthPill used={p.twelveMonthUsage} />
                 <AddToListButton product={p} />
               </div>
@@ -250,6 +263,7 @@ export function ListView({ products, onSelect }: { products: Product[]; onSelect
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400">Product</th>
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[120px]">Stock</th>
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[90px]">Flags</th>
+              <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[110px]">3mo Used</th>
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[110px]">12mo Used</th>
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 text-right w-[120px]">MSRP</th>
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[80px]"></th>
@@ -278,6 +292,9 @@ export function ListView({ products, onSelect }: { products: Product[]; onSelect
                 </td>
                 <td className="px-5 py-3 whitespace-nowrap">
                   <FlagBadges noReorder={p.noReorder} isSpecialOrderStock={p.isSpecialOrderStock} />
+                </td>
+                <td className="px-5 py-3 whitespace-nowrap">
+                  <ThreeMonthPill used={p.threeMonthUsage} />
                 </td>
                 <td className="px-5 py-3 whitespace-nowrap">
                   <TwelveMonthPill used={p.twelveMonthUsage} />

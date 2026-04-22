@@ -33,6 +33,7 @@ interface FullProduct extends Product {
   isSpecialOrderStock?: boolean;
   atpDate?: string | null;
   twelveMonthUsage?: number | null;
+  threeMonthUsage?: number | null;
   features: string[] | null;
   additionalImages?: string[] | null;
 }
@@ -345,7 +346,13 @@ function RelatedMiniCard({ product, onSelect }: { product: FullProduct; onSelect
             atpDate={product.atpDate}
           />
         </div>
-        <div className="mt-1 flex justify-end">
+        <div className="mt-1 flex justify-end gap-1">
+          <span
+            className="inline-flex items-center text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-600"
+            title="3 month used"
+          >
+            3mo: {product.threeMonthUsage ?? 0}
+          </span>
           <span
             className="inline-flex items-center text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600"
             title="12 month used"
@@ -833,11 +840,22 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                             </div>
                           )}
                           <div>
+                            <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">3 Month Used</dt>
+                            <dd>
+                              <span
+                                className="inline-flex items-center font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 text-[11px]"
+                                title="Item Past 3 Month Sales"
+                              >
+                                {full?.threeMonthUsage ?? 0}
+                              </span>
+                            </dd>
+                          </div>
+                          <div>
                             <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">12 Month Used</dt>
                             <dd>
                               <span
                                 className="inline-flex items-center font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px]"
-                                title="custitem_legacy12monthsugginv"
+                                title="Item 1 Year Sales"
                               >
                                 {full?.twelveMonthUsage ?? 0}
                               </span>

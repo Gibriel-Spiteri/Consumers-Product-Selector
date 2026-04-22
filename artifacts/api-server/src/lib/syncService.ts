@@ -10,6 +10,7 @@ import {
   fetchItemBins,
   fetchOpenPoEarliestReceipts,
   fetchTwelveMonthSales,
+  fetchThreeMonthSales,
   computeAtpDate,
   isNetSuiteConfigured,
   type NetSuiteCategory,
@@ -232,10 +233,20 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
     const itemBinsMap = await fetchItemBins();
     const openPoReceipts = await fetchOpenPoEarliestReceipts();
     let twelveMonthSalesMap = new Map<string, number>();
-    try {
-      twelveMonthSalesMap = await fetchTwelveMonthSales();
-    } catch (err: any) {
-      logger.error({ err: err.message }, "Failed to fetch 12-month sales aggregation; continuing without it");
+    let threeMonthSalesMap = new Map<string, number>();
+    const [twelveResult, threeResult] = await Promise.allSettled([
+      fetchTwelveMonthSales(),
+      fetchThreeMonthSales(),
+    ]);
+    if (twelveResult.status === "fulfilled") {
+      twelveMonthSalesMap = twelveResult.value;
+    } else {
+      logger.error({ err: twelveResult.reason?.message }, "Failed to fetch 12-month sales aggregation; continuing without it");
+    }
+    if (threeResult.status === "fulfilled") {
+      threeMonthSalesMap = threeResult.value;
+    } else {
+      logger.error({ err: threeResult.reason?.message }, "Failed to fetch 3-month sales aggregation; continuing without it");
     }
     const allCandidateItems = await fetchNetSuiteItems();
     const atpToday = new Date();
@@ -285,6 +296,7 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
         atpDate: item.atpDate ?? null,
         binNumber,
         twelveMonthUsage: twelveMonthSalesMap.get(item.id) ?? null,
+        threeMonthUsage: threeMonthSalesMap.get(item.id) ?? null,
         categoryId: categoryDbId,
       };
     });
@@ -319,6 +331,7 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
             atpDate: sql`excluded.atp_date`,
             binNumber: sql`excluded.bin_number`,
             twelveMonthUsage: sql`excluded.twelve_month_usage`,
+            threeMonthUsage: sql`excluded.three_month_usage`,
             categoryId: sql`excluded.category_id`,
             updatedAt: new Date(),
           },

@@ -470,15 +470,14 @@ function mapItemRow(row: SuiteQLItemRow): NetSuiteItem {
 }
 
 /**
- * Replicates the NetSuite saved search "Item 1 Year Sales": sums quantity from
- * Sales Order lines for transactions in the previous 12 months, excluding
- * internal customers, grouped by item.
+ * Replicates NetSuite saved searches "Item 1 Year Sales" and "Item Past 3 Month Sales":
+ * sums quantity from Sales Order lines for transactions in the previous N months,
+ * excluding internal customers, grouped by item.
  *
- * The custitem_legacy12monthsugginv field in NetSuite is sourced from this
- * search and stores no value, so SuiteQL cannot read it directly. We
- * recompute it here.
+ * The custitem_legacy12monthsugginv field in NetSuite is sourced from these
+ * searches and stores no value, so SuiteQL cannot read it directly — we recompute it here.
  */
-export async function fetchTwelveMonthSales(): Promise<Map<string, number>> {
+async function fetchSalesUsage(months: number, label: string): Promise<Map<string, number>> {
   const internalField = process.env.NETSUITE_INTERNAL_CUSTOMER_FIELD || "custentity_isinternal";
   const baseQuery = (withInternalFilter: boolean) => `
     SELECT tl.item AS itemid, ABS(SUM(tl.quantity)) AS qty
@@ -486,7 +485,7 @@ export async function fetchTwelveMonthSales(): Promise<Map<string, number>> {
     INNER JOIN transactionLine tl ON tl.transaction = t.id
     LEFT JOIN customer c ON c.id = t.entity
     WHERE t.type = 'SalesOrd'
-      AND t.trandate >= ADD_MONTHS(SYSDATE, -12)
+      AND t.trandate >= ADD_MONTHS(SYSDATE, -${months})
       AND tl.item IS NOT NULL
       AND tl.quantity IS NOT NULL
       ${withInternalFilter ? `AND (c.${internalField} IS NULL OR c.${internalField} = 'F')` : ""}
@@ -498,17 +497,17 @@ export async function fetchTwelveMonthSales(): Promise<Map<string, number>> {
       baseQuery(true)
     );
     rows = result.items;
-    logger.info({ count: rows.length, internalField }, "Fetched 12-month sales (with internal-customer filter)");
+    logger.info({ count: rows.length, internalField, months, label }, `Fetched ${label} sales (with internal-customer filter)`);
   } catch (err: any) {
     logger.warn(
-      { err: err.message, internalField },
-      "12-month sales query with internal-customer filter failed; retrying without filter"
+      { err: err.message, internalField, months, label },
+      `${label} sales query with internal-customer filter failed; retrying without filter`
     );
     const result = await executeSuiteQL<{ itemid: string | number; qty: string | number | null }>(
       baseQuery(false)
     );
     rows = result.items;
-    logger.info({ count: rows.length }, "Fetched 12-month sales (no internal-customer filter)");
+    logger.info({ count: rows.length, months, label }, `Fetched ${label} sales (no internal-customer filter)`);
   }
 
   const map = new Map<string, number>();
@@ -520,6 +519,14 @@ export async function fetchTwelveMonthSales(): Promise<Map<string, number>> {
     map.set(id, Math.round(qty));
   }
   return map;
+}
+
+export function fetchTwelveMonthSales(): Promise<Map<string, number>> {
+  return fetchSalesUsage(12, "12-month");
+}
+
+export function fetchThreeMonthSales(): Promise<Map<string, number>> {
+  return fetchSalesUsage(3, "3-month");
 }
 
 export interface PprItemData {

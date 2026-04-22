@@ -205,6 +205,7 @@ router.get("/categories/:categoryId/products", async (req, res) => {
       atpDate: p.atpDate ?? null,
       binNumber: p.binNumber ?? null,
       twelveMonthUsage: p.twelveMonthUsage ?? null,
+      threeMonthUsage: p.threeMonthUsage ?? null,
       manufacturer: p.manufacturer ?? null,
     };
   });
@@ -319,6 +320,7 @@ router.get("/products/search", async (req, res) => {
       isSpecialOrderStock: p.isSpecialOrderStock ?? false,
       atpDate: p.atpDate ?? null,
       twelveMonthUsage: p.twelveMonthUsage ?? null,
+      threeMonthUsage: p.threeMonthUsage ?? null,
       manufacturer: p.manufacturer ?? null,
     };
   });
@@ -610,6 +612,7 @@ router.get("/products/:productId", async (req, res) => {
       atpDate: p.atpDate ?? null,
       binNumber: p.binNumber ?? null,
       twelveMonthUsage: p.twelveMonthUsage ?? null,
+      threeMonthUsage: p.threeMonthUsage ?? null,
       features: null,
     },
   });
