@@ -25,6 +25,19 @@ interface Product {
   pprPriceReductionRetail?: number | null;
   isSpecialOrderStock?: boolean;
   atpDate?: string | null;
+  noReorder?: boolean;
+  twelveMonthUsage?: number | null;
+}
+
+function TwelveMonthPill({ used }: { used: number | null | undefined }) {
+  return (
+    <span
+      className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 cursor-default"
+      title="12 month used (Item 1 Year Sales)"
+    >
+      12mo Used: {used ?? 0}
+    </span>
+  );
 }
 
 function formatAtpDate(raw: string | null | undefined): string | null {
@@ -166,7 +179,7 @@ function AddToListButton({ product }: { product: Product }) {
   );
 }
 
-function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: Product) => void }) {
+function GridView({ products, onSelect, isAdmin }: { products: Product[]; onSelect: (p: Product) => void; isAdmin: boolean }) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
       {products.map(p => (
@@ -206,6 +219,7 @@ function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: P
               </div>
               <div className="flex flex-col items-end gap-1">
                 <StockBadge qty={p.quantityAvailable} isSpecialOrderStock={p.isSpecialOrderStock} atpDate={p.atpDate} noReorder={p.noReorder} />
+                {isAdmin && <TwelveMonthPill used={p.twelveMonthUsage} />}
                 <AddToListButton product={p} />
               </div>
             </div>
@@ -216,7 +230,7 @@ function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: P
   );
 }
 
-function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: Product) => void }) {
+function ListView({ products, onSelect, isAdmin }: { products: Product[]; onSelect: (p: Product) => void; isAdmin: boolean }) {
   return (
     <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
       <div className="overflow-x-auto">
@@ -228,6 +242,9 @@ function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: P
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400">Product</th>
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[120px]">Stock</th>
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[90px]">Flags</th>
+              {isAdmin && (
+                <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 text-right w-[110px]">12mo Used</th>
+              )}
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-emerald-600 text-right w-[120px]">Clearance</th>
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[80px]"></th>
             </tr>
@@ -256,6 +273,11 @@ function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: P
                 <td className="px-5 py-3 whitespace-nowrap">
                   <FlagBadges noReorder={p.noReorder} isSpecialOrderStock={p.isSpecialOrderStock} />
                 </td>
+                {isAdmin && (
+                  <td className="px-5 py-3 text-right whitespace-nowrap text-gray-700 tabular-nums">
+                    {p.twelveMonthUsage ?? 0}
+                  </td>
+                )}
                 <td className="px-5 py-3 text-right whitespace-nowrap">
                   {p.price ? (
                     <PprPriceTooltip price={Number(p.price)} pprPriceReductionRetail={p.pprPriceReductionRetail} hasActivePpr={true}>
@@ -312,6 +334,7 @@ async function exportToExcel(filename: string, rows: Product[]) {
     { header: "ATP Date", key: "atp", width: 14 },
     { header: "No Reorders", key: "nro", width: 12 },
     { header: "Special Order Stock", key: "sos", width: 18 },
+    { header: "12mo Used", key: "twelve", width: 12 },
     { header: "Clearance Price", key: "price", width: 16 },
     { header: "Retail Price", key: "retail", width: 14 },
     { header: "Savings", key: "savings", width: 12 },
@@ -336,6 +359,7 @@ async function exportToExcel(filename: string, rows: Product[]) {
       atp: p.atpDate ?? "",
       nro: p.noReorder ? "Yes" : "",
       sos: p.isSpecialOrderStock ? "Yes" : "",
+      twelve: p.twelveMonthUsage ?? 0,
       price: p.price != null ? Number(p.price) : "",
       retail: p.retailPrice != null ? Number(p.retailPrice) : "",
       savings: p.pprPriceReductionRetail != null ? Number(p.pprPriceReductionRetail) : "",
@@ -551,9 +575,9 @@ export default function ClearancePage() {
           <p className="text-sm mt-1">There are no products with active promotional pricing right now.</p>
         </div>
       ) : viewMode === "grid" ? (
-        <GridView products={filtered} onSelect={setSelectedProduct} />
+        <GridView products={filtered} onSelect={setSelectedProduct} isAdmin={isAdmin} />
       ) : (
-        <ListView products={filtered} onSelect={setSelectedProduct} />
+        <ListView products={filtered} onSelect={setSelectedProduct} isAdmin={isAdmin} />
       )}
 
       {selectedProduct && (

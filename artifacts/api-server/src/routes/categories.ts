@@ -486,6 +486,7 @@ router.get("/products/clearance", async (_req, res) => {
       isSpecialOrderStock: p.isSpecialOrderStock ?? false,
       atpDate: p.atpDate ?? null,
       isClearance: p.noReorder === 1,
+      twelveMonthUsage: p.twelveMonthUsage ?? null,
     };
   });
 
