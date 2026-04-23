@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 
 const router: IRouter = Router();
 
-router.get("/api/image-proxy", async (req, res) => {
+router.get("/image-proxy", async (req, res) => {
   const url = typeof req.query.url === "string" ? req.query.url : null;
   if (!url) {
     res.status(400).json({ error: "Missing url parameter" });
