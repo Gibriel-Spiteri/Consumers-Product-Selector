@@ -113,16 +113,16 @@ function AdminViewToggle() {
       onClick={() => setViewAsNonAdmin(!previewing)}
       title={previewing ? "Currently viewing as a regular user. Click to return to admin view." : "Preview the page as a regular (non-admin) user."}
       className={cn(
-        "flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-full border transition-all",
+        "flex items-center rounded-full border transition-all",
         previewing
-          ? "bg-transparent border-transparent text-amber-700 hover:bg-amber-50"
-          : "bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100",
+          ? "gap-1 text-[10px] font-normal px-1.5 py-0.5 bg-transparent border-transparent text-gray-400 hover:text-gray-600"
+          : "gap-1.5 text-[11px] font-medium px-2.5 py-1.5 bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100",
       )}
     >
       <span
         className={cn(
-          "w-1.5 h-1.5 rounded-full",
-          "bg-amber-500",
+          "rounded-full",
+          previewing ? "w-1 h-1 bg-gray-300" : "w-1.5 h-1.5 bg-amber-500",
         )}
       />
       {previewing ? "User View" : "Admin View"}
