@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { syncFromNetSuite } from "../lib/syncService";
-import { isNetSuiteConfigured, executeSuiteQL } from "../lib/netsuite";
+import { isNetSuiteConfigured, executeSuiteQL, netsuiteRequest } from "../lib/netsuite";
+import { logger } from "../lib/logger";
 import { db } from "@workspace/db";
 import { categoriesTable } from "@workspace/db";
 import { TriggerNetSuiteSyncResponse, GetNetSuiteStatusResponse } from "@workspace/api-zod";
@@ -71,6 +72,69 @@ router.get("/netsuite/diag/:itemid", async (req, res) => {
     return res.json({ item: result.items, ppr: ppr.items });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
+  }
+});
+
+// Cache the Innovation & Technology department lookup so we don't query every time
+let cachedInnovationTechDeptId: { id: string; at: number } | null = null;
+const DEPT_CACHE_TTL_MS = 60 * 60 * 1000;
+
+async function getInnovationTechDepartmentId(): Promise<string | null> {
+  if (cachedInnovationTechDeptId && Date.now() - cachedInnovationTechDeptId.at < DEPT_CACHE_TTL_MS) {
+    return cachedInnovationTechDeptId.id;
+  }
+  try {
+    const result = await executeSuiteQL<{ id: string; name: string }>(
+      `SELECT id, name FROM department WHERE LOWER(name) LIKE '%innovation%technology%' OR LOWER(fullname) LIKE '%innovation%technology%'`
+    );
+    if (result.items.length > 0) {
+      const id = String(result.items[0].id);
+      cachedInnovationTechDeptId = { id, at: Date.now() };
+      return id;
+    }
+  } catch (err) {
+    logger.warn({ err }, "Failed to look up Innovation & Technology department");
+  }
+  return null;
+}
+
+router.post("/cases", async (req, res) => {
+  const { subject, detail, employee } = req.body ?? {};
+
+  if (!subject || typeof subject !== "string" || !subject.trim()) {
+    return res.status(400).json({ error: "subject is required" });
+  }
+  if (!detail || typeof detail !== "string" || !detail.trim()) {
+    return res.status(400).json({ error: "detail is required" });
+  }
+
+  if (!isNetSuiteConfigured()) {
+    return res.status(503).json({ error: "NetSuite is not configured" });
+  }
+
+  try {
+    const departmentId = await getInnovationTechDepartmentId();
+    const reporterLine = employee
+      ? `Reported by: ${employee.firstName ?? ""} ${employee.lastName ?? ""} <${employee.email ?? ""}>`.trim()
+      : null;
+    const fullDetail = reporterLine ? `${reporterLine}\n\n${detail}` : detail;
+
+    const payload: Record<string, unknown> = {
+      title: subject.trim().slice(0, 300),
+      incomingMessage: fullDetail,
+    };
+    if (departmentId) payload.department = { id: departmentId };
+
+    const result = await netsuiteRequest<Record<string, unknown>>(
+      "/supportCase",
+      "POST",
+      payload
+    );
+    logger.info({ subject, departmentId, result }, "NetSuite support case created");
+    return res.json({ ok: true, caseId: (result as any)?.id ?? null });
+  } catch (err: any) {
+    logger.error({ err: err?.message }, "Failed to create NetSuite support case");
+    return res.status(500).json({ error: err?.message || "Failed to create case" });
   }
 });
 

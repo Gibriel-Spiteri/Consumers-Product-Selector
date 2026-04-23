@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Link, useLocation } from "wouter";
 import { Search, Loader2, ChevronRight, ChevronDown, Package, Folders, Copy, Check, ClipboardList, LogOut, Settings, BookOpen, Flag } from "lucide-react";
+import { ReportIssueModal } from "@/components/report-issue-modal";
 import { useQuoteList } from "@/context/quote-list-context";
 import { useAuth } from "@/context/auth-context";
 import { useGetCategories, useSearchProducts, getSearchProductsQueryKey } from "@workspace/api-client-react";
@@ -276,6 +277,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   };
 
   const [modalProduct, setModalProduct] = useState<any>(null);
+  const [reportIssueOpen, setReportIssueOpen] = useState(false);
 
   const handleSelectProduct = (product: any) => {
     setModalProduct(product);
@@ -675,18 +677,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               PRD Reference
             </a>
             <span className="w-px h-4 bg-white/15" />
-            <a
-              href="#"
+            <button
+              type="button"
+              onClick={() => setReportIssueOpen(true)}
               className="flex items-center gap-2 hover:text-white transition-colors"
             >
               <Flag size={15} />
               Report Issue
-            </a>
+            </button>
           </div>
           <ProductStatsDebug />
         </div>
       </footer>
       <ProductModal product={modalProduct} onClose={() => setModalProduct(null)} />
+      <ReportIssueModal open={reportIssueOpen} onClose={() => setReportIssueOpen(false)} />
     </div>
   );
 }
