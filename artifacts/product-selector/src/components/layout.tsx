@@ -125,7 +125,7 @@ function AdminViewToggle() {
           previewing ? "bg-amber-500" : "bg-emerald-500",
         )}
       />
-      {previewing ? "Admin View" : "User View"}
+      {previewing ? "Viewing as Employee" : "Admin View"}
     </button>
   );
 }
