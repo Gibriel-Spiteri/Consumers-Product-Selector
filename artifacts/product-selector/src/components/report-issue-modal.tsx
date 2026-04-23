@@ -189,7 +189,7 @@ export function ReportIssueModal({ open, onClose }: { open: boolean; onClose: ()
             <div className="bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-[12px] divide-y divide-gray-200/60">
               <div className="flex items-center justify-between py-1.5">
                 <span className="text-gray-500 uppercase tracking-widest font-semibold">Signed in as</span>
-                <span className="text-gray-800 font-medium">{userName || "—"}</span>
+                <span className="text-gray-800 font-normal">{userName || "—"}</span>
               </div>
               <div className="flex items-start justify-between gap-3 py-1.5">
                 <span className="text-gray-500 uppercase tracking-widest font-semibold shrink-0">Page URL</span>
