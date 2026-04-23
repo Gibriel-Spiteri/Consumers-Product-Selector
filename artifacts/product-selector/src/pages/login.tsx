@@ -59,7 +59,7 @@ export default function LoginPage() {
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold tracking-tight inline-flex items-center justify-center gap-2 flex-wrap">
             <LoginBrand />
-            <span className="text-amber-500">PRODUCT SELECTOR</span>
+            <span className="text-amber-500 relative top-[5px]">PRODUCT SELECTOR</span>
           </h1>
           <p className="text-sm text-gray-400 mt-2">Sign in with your employee credentials</p>
         </div>
