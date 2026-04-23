@@ -129,12 +129,13 @@ router.post("/cases", async (req, res) => {
 
     const payload: Record<string, unknown> = {
       title: subject.trim().slice(0, 300),
-      // The "Detail" field on the supportCase form maps to incomingMessage in REST API.
-      incomingMessage: fullDetail,
+      // "Detail" on this account's supportCase form is the custom field custevent_xprdetail.
+      custevent_xprdetail: fullDetail,
     };
-    if (departmentId) payload.department = { id: departmentId };
-    // "Case Created By" is the originator entity reference.
-    if (employee?.id) payload.originator = { id: String(employee.id) };
+    // "Department" is the custom field custevent_oprtype (list/record reference).
+    if (departmentId) payload.custevent_oprtype = { id: departmentId };
+    // "Case Created By" is the company field on this form.
+    if (employee?.id) payload.company = { id: String(employee.id) };
 
     if (!departmentId) {
       return res.status(500).json({
