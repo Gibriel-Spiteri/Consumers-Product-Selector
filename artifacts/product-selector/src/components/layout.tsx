@@ -114,9 +114,7 @@ function AdminViewToggle() {
       title={previewing ? "Currently viewing as a regular employee. Click to return to admin view." : "Preview the page as a regular (non-admin) employee."}
       className={cn(
         "flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-full border transition-all",
-        previewing
-          ? "bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100"
-          : "bg-white border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700",
+        "bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100",
       )}
     >
       <span
