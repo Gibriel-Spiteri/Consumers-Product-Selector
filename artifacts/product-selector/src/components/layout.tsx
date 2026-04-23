@@ -122,7 +122,7 @@ function AdminViewToggle() {
       <span
         className={cn(
           "w-1.5 h-1.5 rounded-full",
-          previewing ? "bg-amber-500" : "bg-emerald-500",
+          "bg-amber-500",
         )}
       />
       {previewing ? "Viewing as Employee" : "Admin View"}
