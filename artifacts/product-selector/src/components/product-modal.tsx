@@ -30,6 +30,7 @@ interface FullProduct extends Product {
   hasActivePpr?: boolean;
   pprName?: string | null;
   pprPriceReductionRetail?: number | null;
+  consumersPrice?: number | null;
   noReorder?: boolean;
   binNumber?: string | null;
   isSpecialOrderStock?: boolean;
@@ -334,10 +335,10 @@ function RelatedMiniCard({ product, onSelect }: { product: FullProduct; onSelect
         </p>
         <div className="flex items-center justify-between gap-2">
           {displayPrice != null ? (
-            <PprPriceTooltip price={Number(displayPrice)} pprPriceReductionRetail={product.pprPriceReductionRetail} hasActivePpr={!!product.hasActivePpr}>
+            <PprPriceTooltip price={Number(displayPrice)} pprPriceReductionRetail={product.pprPriceReductionRetail} consumersPrice={product.consumersPrice} hasActivePpr={!!product.hasActivePpr}>
               <p className={cn("text-[13px] font-semibold", product.hasActivePpr ? "text-emerald-600" : "text-gray-900")}>${fmtPrice(Number(displayPrice))}</p>
               {product.hasActivePpr && product.pprPriceReductionRetail != null && (
-                <p className="text-[10px] text-emerald-600">You Saved ${fmtPrice(Number(product.pprPriceReductionRetail))}</p>
+                <p className="text-[10px] text-emerald-600">You Saved ${fmtPrice(product.consumersPrice != null ? Number(product.consumersPrice) - Number(product.price) : Number(product.pprPriceReductionRetail))}</p>
               )}
             </PprPriceTooltip>
           ) : (
@@ -678,14 +679,14 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                       {/* Pricing */}
                       <div className="mb-5">
                         {full?.price != null ? (
-                          <PprPriceTooltip price={Number(full.price)} pprPriceReductionRetail={full.pprPriceReductionRetail} hasActivePpr={!!full.hasActivePpr}>
+                          <PprPriceTooltip price={Number(full.price)} pprPriceReductionRetail={full.pprPriceReductionRetail} consumersPrice={full.consumersPrice} hasActivePpr={!!full.hasActivePpr}>
                             <p className={cn("text-[10px] font-semibold uppercase tracking-widest mb-1", full.hasActivePpr ? "text-emerald-600" : "text-gray-400")}>{full.hasActivePpr ? "Clearance" : "Our Price"}</p>
                             <p className={cn("text-3xl font-bold mb-2", full.hasActivePpr ? "text-emerald-600" : "text-gray-900")}>
                               ${fmtPrice(Number(full.price))}
                             </p>
                             {full.retailPrice != null && (
                               <p className="text-sm text-gray-400">
-                                Retail <span className="line-through">${fmtPrice(Number(full.retailPrice))}</span>
+                                {full.hasActivePpr && full.consumersPrice != null ? "Consumers Price" : "Retail"}{" "}<span className="line-through">${fmtPrice(Number(full.hasActivePpr && full.consumersPrice != null ? full.consumersPrice : full.retailPrice))}</span>
                               </p>
                             )}
                           </PprPriceTooltip>
@@ -817,7 +818,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                           {full?.price != null && (
                             <div>
                               <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Consumers Price</dt>
-                              <dd className="text-sm text-gray-800">${fmtPrice(Number(full.price) + (full.hasActivePpr && full.pprPriceReductionRetail ? Number(full.pprPriceReductionRetail) : 0))}</dd>
+                              <dd className="text-sm text-gray-800">${fmtPrice(full.consumersPrice != null ? Number(full.consumersPrice) : Number(full.price) + (full.hasActivePpr && full.pprPriceReductionRetail ? Number(full.pprPriceReductionRetail) : 0))}</dd>
                             </div>
                           )}
                         </dl>

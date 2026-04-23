@@ -403,6 +403,7 @@ export interface NetSuiteItem {
   salesdescription?: string | null;
   baseprice?: number;
   retailPrice?: number | null;
+  consumersPrice?: number | null;
   imageUrl?: string | null;
   fullImageUrl?: string | null;
   description?: string | null;
@@ -457,6 +458,7 @@ interface SuiteQLItemRow {
   salesdescription: string | null;
   baseprice: string | null;
   retailprice: string | null;
+  consumersprice: string | null;
   imageurl: string | null;
   fullimageurl: string | null;
   storedescription: string | null;
@@ -483,6 +485,7 @@ function mapItemRow(row: SuiteQLItemRow): NetSuiteItem {
     salesdescription: row.salesdescription ?? null,
     baseprice: row.baseprice != null ? Number(row.baseprice) : undefined,
     retailPrice: row.retailprice != null ? Number(row.retailprice) : null,
+    consumersPrice: row.consumersprice != null ? Number(row.consumersprice) : null,
     imageUrl: row.imageurl ?? null,
     fullImageUrl: row.fullimageurl ?? null,
     description: row.storedescription ?? null,
@@ -610,6 +613,7 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
       item.salesdescription,
       p.unitprice AS baseprice,
       item.custitem_normalretailprice AS retailprice,
+      item.custitem_std_retprice AS consumersprice,
       item.custitem_itemthumbnailurl AS imageurl,
       item.custitem_itemimageurl AS fullimageurl,
       item.storedescription,
@@ -643,6 +647,7 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
         item.description AS salesdescription,
         p.unitprice AS baseprice,
         item.custitem_normalretailprice AS retailprice,
+        item.custitem_std_retprice AS consumersprice,
         item.custitem_itemthumbnailurl AS imageurl,
         item.custitem_itemimageurl AS fullimageurl,
         item.storedescription,

@@ -10,6 +10,7 @@ export const productsTable = pgTable("products", {
   sku: text("sku"),
   price: numeric("price", { precision: 10, scale: 2 }),
   retailPrice: numeric("retail_price", { precision: 10, scale: 2 }),
+  consumersPrice: numeric("consumers_price", { precision: 10, scale: 2 }),
   imageUrl: text("image_url"),
   fullImageUrl: text("full_image_url"),
   description: text("description"),

@@ -23,6 +23,7 @@ interface Product {
   quantityAvailable?: number | null;
   hasActivePpr?: boolean;
   pprPriceReductionRetail?: number | null;
+  consumersPrice?: number | null;
   isSpecialOrderStock?: boolean;
   atpDate?: string | null;
   noReorder?: boolean;
@@ -203,14 +204,14 @@ function GridView({ products, onSelect, isAdmin }: { products: Product[]; onSele
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div>
                 {p.price ? (
-                  <PprPriceTooltip price={Number(p.price)} pprPriceReductionRetail={p.pprPriceReductionRetail} hasActivePpr={true}>
+                  <PprPriceTooltip price={Number(p.price)} pprPriceReductionRetail={p.pprPriceReductionRetail} consumersPrice={p.consumersPrice} hasActivePpr={true}>
                     <p className="text-[10px] font-semibold uppercase tracking-widest text-emerald-600">Clearance</p>
                     <p className="font-semibold text-emerald-600">${fmtPrice(Number(p.price))}</p>
                     {p.retailPrice != null && (
-                      <p className="text-[11px] text-gray-400">Retail <span className="line-through">${fmtPrice(Number(p.retailPrice))}</span></p>
+                      <p className="text-[11px] text-gray-400">{p.consumersPrice != null ? "Consumers Price" : "Retail"}{" "}<span className="line-through">${fmtPrice(Number(p.consumersPrice ?? p.retailPrice))}</span></p>
                     )}
                     {p.pprPriceReductionRetail != null && (
-                      <p className="text-[11px] text-emerald-600">You Saved ${fmtPrice(Number(p.pprPriceReductionRetail))}</p>
+                      <p className="text-[11px] text-emerald-600">You Saved ${fmtPrice(p.consumersPrice != null ? Number(p.consumersPrice) - Number(p.price) : Number(p.pprPriceReductionRetail))}</p>
                     )}
                   </PprPriceTooltip>
                 ) : (
@@ -280,13 +281,13 @@ function ListView({ products, onSelect, isAdmin }: { products: Product[]; onSele
                 )}
                 <td className="px-5 py-3 text-right whitespace-nowrap">
                   {p.price ? (
-                    <PprPriceTooltip price={Number(p.price)} pprPriceReductionRetail={p.pprPriceReductionRetail} hasActivePpr={true}>
+                    <PprPriceTooltip price={Number(p.price)} pprPriceReductionRetail={p.pprPriceReductionRetail} consumersPrice={p.consumersPrice} hasActivePpr={true}>
                       <p className="font-semibold text-emerald-600">${fmtPrice(Number(p.price))}</p>
                       {p.retailPrice != null && (
-                        <p className="text-[11px] text-gray-400">Retail <span className="line-through">${fmtPrice(Number(p.retailPrice))}</span></p>
+                        <p className="text-[11px] text-gray-400">{p.consumersPrice != null ? "Consumers Price" : "Retail"}{" "}<span className="line-through">${fmtPrice(Number(p.consumersPrice ?? p.retailPrice))}</span></p>
                       )}
                       {p.pprPriceReductionRetail != null && (
-                        <p className="text-[11px] text-emerald-600">You Saved ${fmtPrice(Number(p.pprPriceReductionRetail))}</p>
+                        <p className="text-[11px] text-emerald-600">You Saved ${fmtPrice(p.consumersPrice != null ? Number(p.consumersPrice) - Number(p.price) : Number(p.pprPriceReductionRetail))}</p>
                       )}
                     </PprPriceTooltip>
                   ) : <span className="text-gray-300 font-normal">—</span>}

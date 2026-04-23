@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 interface PprPriceTooltipProps {
   price: number;
   pprPriceReductionRetail: number | null | undefined;
+  consumersPrice?: number | null | undefined;
   hasActivePpr: boolean;
   children: React.ReactNode;
 }
@@ -12,7 +13,7 @@ function fmt(n: number) {
   return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-export function PprPriceTooltip({ price, pprPriceReductionRetail, hasActivePpr, children }: PprPriceTooltipProps) {
+export function PprPriceTooltip({ price, pprPriceReductionRetail, consumersPrice: consumersPriceProp, hasActivePpr, children }: PprPriceTooltipProps) {
   const [show, setShow] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const [coords, setCoords] = useState({ x: 0, y: 0, position: "bottom" as "bottom" | "top" });
@@ -29,12 +30,12 @@ export function PprPriceTooltip({ price, pprPriceReductionRetail, hasActivePpr, 
     setShow(true);
   }, []);
 
-  if (!hasActivePpr || !pprPriceReductionRetail) {
+  const consumersPrice = consumersPriceProp ?? (pprPriceReductionRetail ? price + pprPriceReductionRetail : null);
+  const youSave = consumersPrice != null ? consumersPrice - price : null;
+
+  if (!hasActivePpr || consumersPrice == null || youSave == null || youSave <= 0) {
     return <>{children}</>;
   }
-
-  const consumersPrice = price + pprPriceReductionRetail;
-  const youSave = pprPriceReductionRetail;
 
   return (
     <div
