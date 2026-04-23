@@ -89,22 +89,52 @@ async function getInnovationTechDepartmentId(): Promise<string | null> {
     cachedInnovationTechDeptId = { id: envId, at: Date.now() };
     return envId;
   }
-  try {
-    const result = await executeSuiteQL<{ id: string; name: string }>(
-      `SELECT id, name FROM department WHERE LOWER(name) LIKE '%innovation%' AND LOWER(name) LIKE '%technology%'`
-    );
-    if (result.items.length > 0) {
-      const id = String(result.items[0].id);
-      logger.info({ id, name: result.items[0].name }, "Resolved Innovation & Technology department");
-      cachedInnovationTechDeptId = { id, at: Date.now() };
-      return id;
+  // custevent_oprtype sources from a custom list (not the standard department table).
+  // Try a few likely custom list table names.
+  const candidateTables = [
+    "customlist_oprtype",
+    "customlist_oprtype_list",
+    "customlist_operation_type",
+  ];
+  for (const table of candidateTables) {
+    try {
+      const result = await executeSuiteQL<{ id: string; name: string }>(
+        `SELECT id, name FROM ${table} WHERE LOWER(name) LIKE '%innovation%' AND LOWER(name) LIKE '%technology%'`
+      );
+      if (result.items.length > 0) {
+        const id = String(result.items[0].id);
+        logger.info({ id, name: result.items[0].name, table }, "Resolved Innovation & Technology entry");
+        cachedInnovationTechDeptId = { id, at: Date.now() };
+        return id;
+      }
+      logger.info({ table }, "Custom list queried but no matching row");
+    } catch (err: any) {
+      logger.info({ table, err: err?.message }, "Custom list table not queryable, trying next");
     }
-    logger.warn("No department found matching 'innovation' AND 'technology'");
-  } catch (err) {
-    logger.warn({ err }, "Failed to look up Innovation & Technology department");
   }
   return null;
 }
+
+// Diagnostic: list rows of the custom list backing custevent_oprtype so we can find the right ID
+router.get("/cases/oprtype-list", async (_req, res) => {
+  const candidateTables = [
+    "customlist_oprtype",
+    "customlist_oprtype_list",
+    "customlist_operation_type",
+  ];
+  const results: Record<string, unknown> = {};
+  for (const table of candidateTables) {
+    try {
+      const r = await executeSuiteQL<{ id: string; name: string }>(
+        `SELECT id, name FROM ${table} ORDER BY name`
+      );
+      results[table] = r.items;
+    } catch (err: any) {
+      results[table] = { error: err?.message };
+    }
+  }
+  return res.json(results);
+});
 
 router.post("/cases", async (req, res) => {
   const { subject, detail, employee } = req.body ?? {};
