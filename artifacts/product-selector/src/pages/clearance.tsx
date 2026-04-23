@@ -318,7 +318,6 @@ export default function ClearancePage() {
   const { isAdmin } = useAuth();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [inStockOnly, setInStockOnly] = useState(false);
   const [activeCategoryId, setActiveCategoryId] = useState<number | null>(null);
   const [refineQuery, setRefineQuery] = useState("");
 
@@ -355,7 +354,6 @@ export default function ClearancePage() {
 
   let filtered = products;
   if (activeCategoryId) filtered = filtered.filter(p => p.categoryParentId === activeCategoryId);
-  if (inStockOnly) filtered = filtered.filter(p => (p.quantityAvailable ?? 0) >= 1);
   if (refineQuery.trim()) {
     const q = refineQuery.trim().toLowerCase();
     filtered = filtered.filter(p =>
@@ -397,18 +395,6 @@ export default function ClearancePage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setInStockOnly(!inStockOnly)}
-            className={cn(
-              "flex items-center gap-1.5 text-[12px] font-medium px-3 py-1.5 rounded-full transition-all border",
-              inStockOnly
-                ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-                : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"
-            )}
-          >
-            <span className={cn("w-1.5 h-1.5 rounded-full", inStockOnly ? "bg-emerald-500" : "bg-gray-300")} />
-            In Stock Only
-          </button>
           {isAdmin && viewMode === "list" && (
             <button
               onClick={() => exportToCsv(`clearance-${new Date().toISOString().slice(0, 10)}.csv`, filtered)}
