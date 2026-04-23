@@ -281,29 +281,84 @@ function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: P
   );
 }
 
-function exportToCsv(filename: string, rows: Product[]) {
-  const headers = ["SKU", "Product", "Category", "Stock Qty", "ATP Date", "No Reorders", "Special Order Stock", "Clearance Price", "Retail Price", "Savings"];
-  const escape = (v: unknown) => {
-    if (v == null) return "";
-    const s = String(v);
-    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-  };
-  const lines = [headers.join(",")];
-  for (const p of rows) {
-    lines.push([
-      p.sku ?? "",
-      p.name,
-      p.categoryParentName ?? "",
-      p.quantityAvailable ?? "",
-      p.atpDate ?? "",
-      p.noReorder ? "Yes" : "",
-      p.isSpecialOrderStock ? "Yes" : "",
-      p.price ?? "",
-      p.retailPrice ?? "",
-      p.pprPriceReductionRetail ?? "",
-    ].map(escape).join(","));
+async function fetchImageBuffer(url: string): Promise<{ buffer: ArrayBuffer; ext: "png" | "jpeg" } | null> {
+  try {
+    const res = await fetch(url, { mode: "cors" });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    const buffer = await blob.arrayBuffer();
+    const type = blob.type.toLowerCase();
+    const ext: "png" | "jpeg" = type.includes("png") ? "png" : "jpeg";
+    return { buffer, ext };
+  } catch {
+    return null;
   }
-  const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+}
+
+async function exportToExcel(filename: string, rows: Product[]) {
+  const ExcelJS = (await import("exceljs")).default;
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "Consumers Product Selector";
+  workbook.created = new Date();
+  const sheet = workbook.addWorksheet("Clearance");
+
+  sheet.columns = [
+    { header: "Image", key: "image", width: 16 },
+    { header: "SKU", key: "sku", width: 18 },
+    { header: "Product", key: "name", width: 50 },
+    { header: "Category", key: "category", width: 20 },
+    { header: "Stock Qty", key: "qty", width: 12 },
+    { header: "ATP Date", key: "atp", width: 14 },
+    { header: "No Reorders", key: "nro", width: 12 },
+    { header: "Special Order Stock", key: "sos", width: 18 },
+    { header: "Clearance Price", key: "price", width: 16 },
+    { header: "Retail Price", key: "retail", width: 14 },
+    { header: "Savings", key: "savings", width: 12 },
+  ];
+  sheet.getRow(1).font = { bold: true };
+  sheet.getRow(1).alignment = { vertical: "middle" };
+
+  const numFmt = "$#,##0.00";
+
+  // Pre-fetch all images in parallel
+  const imageResults = await Promise.all(
+    rows.map(p => (p.imageUrl ? fetchImageBuffer(p.imageUrl) : Promise.resolve(null)))
+  );
+
+  rows.forEach((p, i) => {
+    const row = sheet.addRow({
+      image: "",
+      sku: p.sku ?? "",
+      name: p.name,
+      category: p.categoryParentName ?? "",
+      qty: p.quantityAvailable ?? "",
+      atp: p.atpDate ?? "",
+      nro: p.noReorder ? "Yes" : "",
+      sos: p.isSpecialOrderStock ? "Yes" : "",
+      price: p.price != null ? Number(p.price) : "",
+      retail: p.retailPrice != null ? Number(p.retailPrice) : "",
+      savings: p.pprPriceReductionRetail != null ? Number(p.pprPriceReductionRetail) : "",
+    });
+    row.height = 70;
+    row.alignment = { vertical: "middle" };
+    row.getCell("price").numFmt = numFmt;
+    row.getCell("retail").numFmt = numFmt;
+    row.getCell("savings").numFmt = numFmt;
+
+    const img = imageResults[i];
+    if (img) {
+      const imageId = workbook.addImage({ buffer: img.buffer, extension: img.ext });
+      // Excel rows are 1-indexed; header is row 1, so this row is i+2 (0-indexed: i+1)
+      sheet.addImage(imageId, {
+        tl: { col: 0.1, row: i + 1.1 },
+        ext: { width: 80, height: 80 },
+        editAs: "oneCell",
+      });
+    }
+  });
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -320,6 +375,7 @@ export default function ClearancePage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [activeCategoryId, setActiveCategoryId] = useState<number | null>(null);
   const [refineQuery, setRefineQuery] = useState("");
+  const [exporting, setExporting] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["clearanceProducts"],
@@ -397,9 +453,14 @@ export default function ClearancePage() {
         <div className="flex items-center gap-3">
           {isAdmin && viewMode === "list" && (
             <button
-              onClick={() => exportToCsv(`clearance-${new Date().toISOString().slice(0, 10)}.csv`, filtered)}
-              className="flex items-center gap-1.5 text-[12px] font-medium px-3 py-1.5 rounded-full transition-all border bg-white border-gray-200 text-gray-600 hover:border-emerald-300 hover:text-emerald-700"
-              title="Export current list to Excel (CSV)"
+              onClick={() => {
+                setExporting(true);
+                exportToExcel(`clearance-${new Date().toISOString().slice(0, 10)}.xlsx`, filtered)
+                  .finally(() => setExporting(false));
+              }}
+              disabled={exporting}
+              className="flex items-center gap-1.5 text-[12px] font-medium px-3 py-1.5 rounded-full transition-all border bg-white border-gray-200 text-gray-600 hover:border-emerald-300 hover:text-emerald-700 disabled:opacity-60 disabled:cursor-wait"
+              title="Export current list to Excel (.xlsx) with images"
             >
               <FileSpreadsheet size={14} />
               Export
