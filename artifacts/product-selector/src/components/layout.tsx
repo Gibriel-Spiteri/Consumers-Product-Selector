@@ -111,7 +111,7 @@ function AdminViewToggle() {
     <button
       type="button"
       onClick={() => setViewAsNonAdmin(!previewing)}
-      title={previewing ? "Currently viewing as a regular employee. Click to return to admin view." : "Preview the page as a regular (non-admin) employee."}
+      title={previewing ? "Currently viewing as a regular user. Click to return to admin view." : "Preview the page as a regular (non-admin) user."}
       className={cn(
         "flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-full border transition-all",
         "bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100",
@@ -123,7 +123,7 @@ function AdminViewToggle() {
           "bg-amber-500",
         )}
       />
-      {previewing ? "Viewing as Employee" : "Admin View"}
+      {previewing ? "User View" : "Admin View"}
     </button>
   );
 }
