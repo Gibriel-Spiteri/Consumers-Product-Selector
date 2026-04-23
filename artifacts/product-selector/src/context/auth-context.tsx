@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setEmployee(data.employee);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data.employee));
-      setViewAsNonAdmin(false);
+      setViewAsNonAdmin(true);
       return { success: true };
     } catch {
       return { success: false, error: "Unable to connect to authentication service" };
