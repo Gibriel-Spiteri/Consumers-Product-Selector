@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { X, Loader2, AlertCircle, CheckCircle2, Send, Save, ExternalLink } from "lucide-react";
+import { X, Loader2, AlertCircle, CheckCircle2, Send } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
 
-type Step = "compose" | "review" | "sending" | "success" | "error";
+type Step = "compose" | "sending" | "success" | "error";
 
 export function ReportIssueModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { employee } = useAuth();
@@ -46,11 +46,6 @@ export function ReportIssueModal({ open, onClose }: { open: boolean; onClose: ()
   const userName = employee
     ? toTitleCase(`${employee.firstName ?? ""} ${employee.lastName ?? ""}`.trim())
     : "";
-
-  const handleSave = () => {
-    if (!trimmedIssue || !trimmedDetail) return;
-    setStep("review");
-  };
 
   const handleSend = async () => {
     setStep("sending");
@@ -138,23 +133,6 @@ export function ReportIssueModal({ open, onClose }: { open: boolean; onClose: ()
             </>
           )}
 
-          {step === "review" && (
-            <>
-              <div>
-                <div className="text-[12px] font-semibold uppercase tracking-widest text-gray-400 mb-1.5">Issue</div>
-                <div className="text-sm text-gray-900 bg-gray-50 border border-gray-100 rounded-lg px-3 py-2">{trimmedIssue}</div>
-              </div>
-              <div>
-                <div className="text-[12px] font-semibold uppercase tracking-widest text-gray-400 mb-1.5">Detail</div>
-                <div className="text-sm text-gray-900 bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 whitespace-pre-wrap">{trimmedDetail}</div>
-              </div>
-              <div className="text-[11px] text-gray-500 italic flex items-center gap-1.5">
-                <ExternalLink size={11} />
-                Page URL will be appended to detail on send.
-              </div>
-            </>
-          )}
-
           {step === "sending" && (
             <div className="flex items-center justify-center gap-2 py-6 text-sm text-gray-600">
               <Loader2 size={16} className="animate-spin" />
@@ -185,7 +163,7 @@ export function ReportIssueModal({ open, onClose }: { open: boolean; onClose: ()
           )}
 
           {/* Combined Signed in as / Page URL info box */}
-          {(step === "compose" || step === "review") && (
+          {step === "compose" && (
             <div className="bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-[12px] divide-y divide-gray-200/60">
               <div className="flex items-center justify-between py-1.5">
                 <span className="text-gray-500 uppercase tracking-widest font-semibold">Signed in as</span>
@@ -212,34 +190,14 @@ export function ReportIssueModal({ open, onClose }: { open: boolean; onClose: ()
               </button>
               <button
                 type="button"
-                onClick={handleSave}
+                onClick={handleSend}
                 disabled={!trimmedIssue || !trimmedDetail}
                 className={cn(
                   "inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
                   !trimmedIssue || !trimmedDetail
                     ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                    : "bg-gray-900 text-white hover:bg-gray-800",
+                    : "bg-amber-500 text-white hover:bg-amber-600",
                 )}
-              >
-                <Save size={14} />
-                Save
-              </button>
-            </>
-          )}
-
-          {step === "review" && (
-            <>
-              <button
-                type="button"
-                onClick={() => setStep("compose")}
-                className="px-4 py-2 rounded-lg text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
-              >
-                Back
-              </button>
-              <button
-                type="button"
-                onClick={handleSend}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-amber-500 text-white hover:bg-amber-600 transition-colors"
               >
                 <Send size={14} />
                 Send
