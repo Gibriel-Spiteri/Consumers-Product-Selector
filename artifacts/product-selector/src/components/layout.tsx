@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import { Search, Loader2, ChevronRight, ChevronDown, Package, Folders, Copy, Check, ClipboardList, LogOut, Settings } from "lucide-react";
+import { Search, Loader2, ChevronRight, ChevronDown, Package, Folders, Copy, Check, ClipboardList, LogOut, Settings, BookOpen, Flag } from "lucide-react";
 import { useQuoteList } from "@/context/quote-list-context";
 import { useAuth } from "@/context/auth-context";
 import { useGetCategories, useSearchProducts, getSearchProductsQueryKey } from "@workspace/api-client-react";
@@ -664,6 +664,25 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Footer */}
       <footer className="bg-black">
         <div className="max-w-screen-xl mx-auto px-6 py-5">
+          <div className="flex items-center justify-center gap-8 text-[14px] text-[#cfcfcf]">
+            <a
+              href="https://1212804.app.netsuite.com/app/site/hosting/scriptlet.nl?script=3701&deploy=1&script=3701&deploy=1&whence=&siaT=1774876085696&siaWhc=%2Fapp%2Fcenter%2Fcard.nl&siaNv=sc"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 hover:text-white transition-colors"
+            >
+              <BookOpen size={15} />
+              PRD Reference
+            </a>
+            <span className="w-px h-4 bg-white/15" />
+            <a
+              href="#"
+              className="flex items-center gap-2 hover:text-white transition-colors"
+            >
+              <Flag size={15} />
+              Report Issue
+            </a>
+          </div>
           <ProductStatsDebug />
         </div>
       </footer>
