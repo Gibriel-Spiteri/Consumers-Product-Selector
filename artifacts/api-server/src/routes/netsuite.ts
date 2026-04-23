@@ -97,10 +97,7 @@ router.post("/cases", async (req, res) => {
 
   try {
     const departmentId = getInnovationTechDepartmentId();
-    const reporterLine = employee
-      ? `Reported by: ${employee.firstName ?? ""} ${employee.lastName ?? ""} <${employee.email ?? ""}>`.trim()
-      : null;
-    const fullDetail = reporterLine ? `${reporterLine}\n\n${detail}` : detail;
+    const fullDetail = detail;
 
     const payload: Record<string, unknown> = {
       title: subject.trim().slice(0, 300),
