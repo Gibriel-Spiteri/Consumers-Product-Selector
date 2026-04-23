@@ -5,6 +5,7 @@ import { ChevronRight, Loader2, ImageOff, LayoutList, LayoutGrid, Copy, Check, P
 import ProductModal from "@/components/product-modal";
 import { cn, fmtPrice } from "@/lib/utils";
 import { PprPriceTooltip } from "@/components/ppr-price-tooltip";
+import { useAuth } from "@/context/auth-context";
 
 interface Product {
   id: number;
@@ -33,7 +34,7 @@ function formatAtpDate(raw: string | null | undefined): string | null {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-function StockBadge({ qty, isSpecialOrderStock, atpDate, noReorder }: { qty: number | null | undefined; isSpecialOrderStock?: boolean; atpDate?: string | null; noReorder?: boolean }) {
+function StockBadge({ qty, isSpecialOrderStock, atpDate, noReorder, isAdmin }: { qty: number | null | undefined; isSpecialOrderStock?: boolean; atpDate?: string | null; noReorder?: boolean; isAdmin?: boolean }) {
   const stock = (() => {
     if (qty == null) return null;
     if (qty >= 1) return (
@@ -57,12 +58,12 @@ function StockBadge({ qty, isSpecialOrderStock, atpDate, noReorder }: { qty: num
   return (
     <span className="inline-flex flex-wrap items-center gap-1 justify-end">
       {stock}
-      {noReorder && (
+      {isAdmin && noReorder && (
         <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-rose-50 text-rose-600" title="No Reorders">
           NRO
         </span>
       )}
-      {isSpecialOrderStock && (
+      {isAdmin && isSpecialOrderStock && (
         <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-600" title="Special Order Stock">
           SOS
         </span>
@@ -111,7 +112,7 @@ function CopySkuButton({ sku }: { sku: string }) {
   );
 }
 
-function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: Product) => void }) {
+function GridView({ products, onSelect, isAdmin }: { products: Product[]; onSelect: (p: Product) => void; isAdmin: boolean }) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
       {products.map(p => (
@@ -149,7 +150,7 @@ function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: P
                   <span className="text-gray-300 font-normal text-sm">—</span>
                 )}
               </div>
-              <StockBadge qty={p.quantityAvailable} isSpecialOrderStock={p.isSpecialOrderStock} atpDate={p.atpDate} noReorder={p.noReorder} />
+              <StockBadge qty={p.quantityAvailable} isSpecialOrderStock={p.isSpecialOrderStock} atpDate={p.atpDate} noReorder={p.noReorder} isAdmin={isAdmin} />
             </div>
           </div>
         </div>
@@ -158,7 +159,7 @@ function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: P
   );
 }
 
-function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: Product) => void }) {
+function ListView({ products, onSelect, isAdmin }: { products: Product[]; onSelect: (p: Product) => void; isAdmin: boolean }) {
   return (
     <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
       <div className="overflow-x-auto">
@@ -191,7 +192,7 @@ function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: P
                   {p.name}
                 </td>
                 <td className="px-5 py-3 whitespace-nowrap">
-                  <StockBadge qty={p.quantityAvailable} isSpecialOrderStock={p.isSpecialOrderStock} atpDate={p.atpDate} noReorder={p.noReorder} />
+                  <StockBadge qty={p.quantityAvailable} isSpecialOrderStock={p.isSpecialOrderStock} atpDate={p.atpDate} noReorder={p.noReorder} isAdmin={isAdmin} />
                 </td>
                 <td className="px-5 py-3 text-right whitespace-nowrap">
                   {p.price ? (
@@ -216,6 +217,7 @@ function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: P
 }
 
 export default function UncategorizedProducts() {
+  const { isAdmin } = useAuth();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [inStockOnly, setInStockOnly] = useState(false);
@@ -297,9 +299,9 @@ export default function UncategorizedProducts() {
           <p className="text-sm mt-1">All products have been assigned to categories.</p>
         </div>
       ) : viewMode === "grid" ? (
-        <GridView products={filtered} onSelect={setSelectedProduct} />
+        <GridView products={filtered} onSelect={setSelectedProduct} isAdmin={isAdmin} />
       ) : (
-        <ListView products={filtered} onSelect={setSelectedProduct} />
+        <ListView products={filtered} onSelect={setSelectedProduct} isAdmin={isAdmin} />
       )}
 
       {selectedProduct && (

@@ -50,7 +50,8 @@ function formatAtpDate(raw: string | null | undefined): string | null {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-function FlagBadges({ noReorder, isSpecialOrderStock }: { noReorder?: boolean; isSpecialOrderStock?: boolean }) {
+function FlagBadges({ noReorder, isSpecialOrderStock, isAdmin }: { noReorder?: boolean; isSpecialOrderStock?: boolean; isAdmin?: boolean }) {
+  if (!isAdmin) return null;
   if (!noReorder && !isSpecialOrderStock) return null;
   return (
     <span className="inline-flex flex-wrap items-center gap-1">
@@ -219,7 +220,7 @@ function GridView({ products, onSelect, isAdmin }: { products: Product[]; onSele
                 )}
               </div>
               <div className="flex flex-col items-end gap-1">
-                <StockBadge qty={p.quantityAvailable} isSpecialOrderStock={p.isSpecialOrderStock} atpDate={p.atpDate} noReorder={p.noReorder} />
+                <StockBadge qty={p.quantityAvailable} isSpecialOrderStock={p.isSpecialOrderStock} atpDate={p.atpDate} noReorder={p.noReorder} isAdmin={isAdmin} />
                 {isAdmin && <TwelveMonthPill used={p.twelveMonthUsage} />}
                 <AddToListButton product={p} />
               </div>
@@ -269,10 +270,10 @@ function ListView({ products, onSelect, isAdmin }: { products: Product[]; onSele
                   {p.name}
                 </td>
                 <td className="px-5 py-3 whitespace-nowrap">
-                  <StockBadge qty={p.quantityAvailable} isSpecialOrderStock={p.isSpecialOrderStock} atpDate={p.atpDate} noReorder={p.noReorder} showFlags={false} />
+                  <StockBadge qty={p.quantityAvailable} isSpecialOrderStock={p.isSpecialOrderStock} atpDate={p.atpDate} noReorder={p.noReorder} isAdmin={isAdmin} showFlags={false} />
                 </td>
                 <td className="px-5 py-3 whitespace-nowrap">
-                  <FlagBadges noReorder={p.noReorder} isSpecialOrderStock={p.isSpecialOrderStock} />
+                  <FlagBadges noReorder={p.noReorder} isSpecialOrderStock={p.isSpecialOrderStock} isAdmin={isAdmin} />
                 </td>
                 {isAdmin && (
                   <td className="px-5 py-3 text-right whitespace-nowrap text-gray-700 tabular-nums">
