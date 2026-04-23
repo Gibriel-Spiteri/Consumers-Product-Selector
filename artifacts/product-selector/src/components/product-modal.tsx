@@ -3,11 +3,12 @@ import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getGetCategoryProductsQueryOptions } from "@workspace/api-client-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ImageOff, Copy, Check, ChevronLeft, ChevronRight, Loader2, X, ZoomIn, Plus, Minus, ClipboardList } from "lucide-react";
+import { ImageOff, Copy, Check, ChevronLeft, ChevronRight, Loader2, X, ZoomIn, Plus, Minus, ClipboardList, AlertCircle } from "lucide-react";
 import { cn, fmtPrice } from "@/lib/utils";
 import { useQuoteList } from "@/context/quote-list-context";
 import { useAuth } from "@/context/auth-context";
 import { PprPriceTooltip } from "@/components/ppr-price-tooltip";
+import { ReportIssueModal } from "@/components/report-issue-modal";
 
 interface Product {
   id: number;
@@ -580,6 +581,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
   const directCategoryName = fullCategoryPath;
 
   const [bottomTab, setBottomTab] = useState<"more" | "related" | "specs" | "collection">("more");
+  const [reportOpen, setReportOpen] = useState(false);
 
   const handleSelectRelated = useCallback((p: FullProduct) => {
     setActiveProduct(p);
@@ -844,6 +846,16 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                               <dd className="text-sm text-gray-800">{full.binNumber}</dd>
                             </div>
                           )}
+                          <div className="pt-1">
+                            <button
+                              type="button"
+                              onClick={() => setReportOpen(true)}
+                              className="inline-flex items-center gap-1.5 text-[12px] text-amber-700 hover:text-amber-800 hover:underline"
+                            >
+                              <AlertCircle size={12} />
+                              Report a Problem
+                            </button>
+                          </div>
                           {/* <div>
                             <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">3 Month Used</dt>
                             <dd>
@@ -898,6 +910,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
 
             </div>
           </motion.div>
+          <ReportIssueModal open={reportOpen} onClose={() => setReportOpen(false)} />
         </>
       )}
     </AnimatePresence>,
