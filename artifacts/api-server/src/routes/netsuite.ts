@@ -75,67 +75,11 @@ router.get("/netsuite/diag/:itemid", async (req, res) => {
   }
 });
 
-// Cache the Innovation & Technology department lookup so we don't query every time
-let cachedInnovationTechDeptId: { id: string; at: number } | null = null;
-const DEPT_CACHE_TTL_MS = 60 * 60 * 1000;
-
-async function getInnovationTechDepartmentId(): Promise<string | null> {
-  if (cachedInnovationTechDeptId && Date.now() - cachedInnovationTechDeptId.at < DEPT_CACHE_TTL_MS) {
-    return cachedInnovationTechDeptId.id;
-  }
-  // Allow override via env var
-  const envId = process.env.NETSUITE_INNOVATION_TECH_DEPT_ID?.trim();
-  if (envId) {
-    cachedInnovationTechDeptId = { id: envId, at: Date.now() };
-    return envId;
-  }
-  // custevent_oprtype sources from the "XPR Types" custom list.
-  const candidateTables = [
-    "customlist_xpr_types",
-    "customlist_xprtypes",
-    "customlist_xpr_type",
-    "customlist_oprtype",
-  ];
-  for (const table of candidateTables) {
-    try {
-      const result = await executeSuiteQL<{ id: string; name: string }>(
-        `SELECT id, name FROM ${table} WHERE LOWER(name) LIKE '%innovation%' AND LOWER(name) LIKE '%technology%'`
-      );
-      if (result.items.length > 0) {
-        const id = String(result.items[0].id);
-        logger.info({ id, name: result.items[0].name, table }, "Resolved Innovation & Technology entry");
-        cachedInnovationTechDeptId = { id, at: Date.now() };
-        return id;
-      }
-      logger.info({ table }, "Custom list queried but no matching row");
-    } catch (err: any) {
-      logger.info({ table, err: err?.message }, "Custom list table not queryable, trying next");
-    }
-  }
-  return null;
+// "Innovation & Technology" is internal id 12 on custom record type 169 (referenced by custevent_oprtype).
+// Allow override via env var if it ever changes.
+function getInnovationTechDepartmentId(): string {
+  return process.env.NETSUITE_INNOVATION_TECH_DEPT_ID?.trim() || "12";
 }
-
-// Diagnostic: list rows of the custom list backing custevent_oprtype so we can find the right ID
-router.get("/cases/oprtype-list", async (_req, res) => {
-  const candidateTables = [
-    "customlist_xpr_types",
-    "customlist_xprtypes",
-    "customlist_xpr_type",
-    "customlist_oprtype",
-  ];
-  const results: Record<string, unknown> = {};
-  for (const table of candidateTables) {
-    try {
-      const r = await executeSuiteQL<{ id: string; name: string }>(
-        `SELECT id, name FROM ${table} ORDER BY name`
-      );
-      results[table] = r.items;
-    } catch (err: any) {
-      results[table] = { error: err?.message };
-    }
-  }
-  return res.json(results);
-});
 
 router.post("/cases", async (req, res) => {
   const { subject, detail, employee } = req.body ?? {};
@@ -152,7 +96,7 @@ router.post("/cases", async (req, res) => {
   }
 
   try {
-    const departmentId = await getInnovationTechDepartmentId();
+    const departmentId = getInnovationTechDepartmentId();
     const reporterLine = employee
       ? `Reported by: ${employee.firstName ?? ""} ${employee.lastName ?? ""} <${employee.email ?? ""}>`.trim()
       : null;
