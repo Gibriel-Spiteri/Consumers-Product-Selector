@@ -17,13 +17,12 @@ export default function Home() {
             Elevate Your<br />Living Spaces.
           </h2>
           <p className="text-white/75 text-sm lg:text-base leading-relaxed max-w-md">Discover premium fixtures and finishes for your home.</p>
-          <div className="flex items-center gap-2 mt-6 text-white/50 text-xs font-semibold uppercase tracking-widest">
+          <div className="flex items-center gap-2 mt-6 text-white/50 text-xs uppercase tracking-widest font-normal">
             <ArrowRight size={13} className="text-amber-400" />
             Select a category above to start browsing
           </div>
         </div>
       </div>
-
     </div>
   );
 }
