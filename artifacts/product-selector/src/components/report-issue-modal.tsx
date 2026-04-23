@@ -36,8 +36,15 @@ export function ReportIssueModal({ open, onClose }: { open: boolean; onClose: ()
   const trimmedIssue = issue.trim();
   const trimmedDetail = detail.trim();
   const finalDetail = `${trimmedDetail}\n\nURL: ${currentUrl}`;
+  const toTitleCase = (s: string) =>
+    s
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
   const userName = employee
-    ? `${employee.firstName ?? ""} ${employee.lastName ?? ""}`.trim()
+    ? toTitleCase(`${employee.firstName ?? ""} ${employee.lastName ?? ""}`.trim())
     : "";
 
   const handleSave = () => {
@@ -102,10 +109,13 @@ export function ReportIssueModal({ open, onClose }: { open: boolean; onClose: ()
           {/* Signed-in user */}
           <div className="flex items-center justify-between text-[12px] bg-gray-50 border border-gray-100 rounded-lg px-3 py-2">
             <span className="text-gray-500 uppercase tracking-widest font-semibold">Signed in as</span>
-            <span className="text-gray-800 font-medium">
-              {userName || "—"}
-              {employee?.email && <span className="text-gray-400 ml-2">{employee.email}</span>}
-            </span>
+            <span className="text-gray-800 font-medium">{userName || "—"}</span>
+          </div>
+
+          {/* Current page URL */}
+          <div className="flex items-start justify-between gap-3 text-[12px] bg-gray-50 border border-gray-100 rounded-lg px-3 py-2">
+            <span className="text-gray-500 uppercase tracking-widest font-semibold shrink-0">Page URL</span>
+            <span className="text-gray-700 font-mono text-[11px] break-all text-right">{currentUrl}</span>
           </div>
 
           {step === "compose" && (
