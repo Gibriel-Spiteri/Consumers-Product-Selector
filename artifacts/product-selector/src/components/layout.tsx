@@ -81,7 +81,7 @@ function ProductStatsDebug() {
   return (
     <div className="mt-3 pt-3 border-t border-white/10 grid grid-cols-3 items-center text-[14px] text-[#b0b0b0]">
       <span className="text-white/50 justify-self-start text-[12px]">© {new Date().getFullYear()} All rights reserved.</span>
-      <span className="justify-self-center text-[12px]">
+      <span className="justify-self-center text-[12px] text-[#ffffff80]">
         {formattedTime ? `Data Synced: ${formattedTime}` : ""}
       </span>
       <span className="justify-self-end text-[12px]">Inventory Levels are Live</span>
