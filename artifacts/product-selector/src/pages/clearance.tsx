@@ -370,7 +370,7 @@ async function exportToExcel(filename: string, rows: Product[]) {
 }
 
 export default function ClearancePage() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, realIsAdmin } = useAuth();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [activeCategoryId, setActiveCategoryId] = useState<number | null>(null);
@@ -451,7 +451,7 @@ export default function ClearancePage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {isAdmin && viewMode === "list" && (
+          {realIsAdmin && viewMode === "list" && (
             <button
               onClick={() => {
                 setExporting(true);
