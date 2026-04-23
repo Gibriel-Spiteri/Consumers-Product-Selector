@@ -283,7 +283,8 @@ function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: P
 
 async function fetchImageBuffer(url: string): Promise<{ buffer: ArrayBuffer; ext: "png" | "jpeg" } | null> {
   try {
-    const res = await fetch(url, { mode: "cors" });
+    const proxied = `${import.meta.env.BASE_URL}api/image-proxy?url=${encodeURIComponent(url)}`;
+    const res = await fetch(proxied);
     if (!res.ok) return null;
     const blob = await res.blob();
     const buffer = await blob.arrayBuffer();

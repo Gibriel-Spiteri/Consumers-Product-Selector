@@ -5,6 +5,7 @@ import netsuiteRouter from "./netsuite";
 import estimatesRouter from "./estimates";
 import authRouter from "./auth";
 import adminRouter from "./admin";
+import imageProxyRouter from "./imageProxy";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(categoriesRouter);
 router.use(netsuiteRouter);
 router.use(estimatesRouter);
 router.use(adminRouter);
+router.use(imageProxyRouter);
 
 export default router;
