@@ -89,12 +89,12 @@ async function getInnovationTechDepartmentId(): Promise<string | null> {
     cachedInnovationTechDeptId = { id: envId, at: Date.now() };
     return envId;
   }
-  // custevent_oprtype sources from a custom list (not the standard department table).
-  // Try a few likely custom list table names.
+  // custevent_oprtype sources from the "XPR Types" custom list.
   const candidateTables = [
+    "customlist_xpr_types",
+    "customlist_xprtypes",
+    "customlist_xpr_type",
     "customlist_oprtype",
-    "customlist_oprtype_list",
-    "customlist_operation_type",
   ];
   for (const table of candidateTables) {
     try {
@@ -118,9 +118,10 @@ async function getInnovationTechDepartmentId(): Promise<string | null> {
 // Diagnostic: list rows of the custom list backing custevent_oprtype so we can find the right ID
 router.get("/cases/oprtype-list", async (_req, res) => {
   const candidateTables = [
+    "customlist_xpr_types",
+    "customlist_xprtypes",
+    "customlist_xpr_type",
     "customlist_oprtype",
-    "customlist_oprtype_list",
-    "customlist_operation_type",
   ];
   const results: Record<string, unknown> = {};
   for (const table of candidateTables) {
