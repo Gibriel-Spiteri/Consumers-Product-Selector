@@ -109,7 +109,7 @@ export function ReportIssueModal({ open, onClose }: { open: boolean; onClose: ()
           {step === "compose" && (
             <>
               <div>
-                <label htmlFor="issue" className="block text-[12px] font-semibold uppercase tracking-widest text-gray-400 mb-1.5">
+                <label htmlFor="issue" className="block text-[12px] font-semibold uppercase tracking-widest mb-1.5 text-[#5b6069]">
                   Issue
                 </label>
                 <input
