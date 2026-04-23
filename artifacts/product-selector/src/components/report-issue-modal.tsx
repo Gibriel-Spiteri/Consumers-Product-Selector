@@ -106,18 +106,6 @@ export function ReportIssueModal({ open, onClose }: { open: boolean; onClose: ()
         </div>
 
         <div className="px-6 py-5 space-y-4">
-          {/* Signed-in user */}
-          <div className="flex items-center justify-between text-[12px] bg-gray-50 border border-gray-100 rounded-lg px-3 py-2">
-            <span className="text-gray-500 uppercase tracking-widest font-semibold">Signed in as</span>
-            <span className="text-gray-800 font-medium">{userName || "—"}</span>
-          </div>
-
-          {/* Current page URL */}
-          <div className="flex items-start justify-between gap-3 text-[12px] bg-gray-50 border border-gray-100 rounded-lg px-3 py-2">
-            <span className="text-gray-500 uppercase tracking-widest font-semibold shrink-0">Page URL</span>
-            <span className="text-gray-700 font-mono text-[11px] break-all text-right">{currentUrl}</span>
-          </div>
-
           {step === "compose" && (
             <>
               <div>
@@ -160,14 +148,9 @@ export function ReportIssueModal({ open, onClose }: { open: boolean; onClose: ()
                 <div className="text-[12px] font-semibold uppercase tracking-widest text-gray-400 mb-1.5">Detail</div>
                 <div className="text-sm text-gray-900 bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 whitespace-pre-wrap">{trimmedDetail}</div>
               </div>
-              <div>
-                <div className="text-[12px] font-semibold uppercase tracking-widest text-gray-400 mb-1.5 flex items-center gap-1.5">
-                  <ExternalLink size={12} />
-                  Page URL (will be appended to detail on send)
-                </div>
-                <div className="text-[12px] text-gray-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 break-all font-mono">
-                  {currentUrl}
-                </div>
+              <div className="text-[11px] text-gray-500 italic flex items-center gap-1.5">
+                <ExternalLink size={11} />
+                Page URL will be appended to detail on send.
               </div>
             </>
           )}
@@ -197,6 +180,20 @@ export function ReportIssueModal({ open, onClose }: { open: boolean; onClose: ()
               <div>
                 <div className="font-medium">Could not create the case.</div>
                 {errorMsg && <div className="text-red-600/80 text-[12px] mt-0.5 break-all">{errorMsg}</div>}
+              </div>
+            </div>
+          )}
+
+          {/* Combined Signed in as / Page URL info box */}
+          {(step === "compose" || step === "review") && (
+            <div className="bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-[12px] divide-y divide-gray-200/60">
+              <div className="flex items-center justify-between py-1.5">
+                <span className="text-gray-500 uppercase tracking-widest font-semibold">Signed in as</span>
+                <span className="text-gray-800 font-medium">{userName || "—"}</span>
+              </div>
+              <div className="flex items-start justify-between gap-3 py-1.5">
+                <span className="text-gray-500 uppercase tracking-widest font-semibold shrink-0">Page URL</span>
+                <span className="text-gray-700 font-mono text-[11px] break-all text-right">{currentUrl}</span>
               </div>
             </div>
           )}
