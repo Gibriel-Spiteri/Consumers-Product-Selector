@@ -224,6 +224,41 @@ export async function netsuiteRequest<T>(
   return response.json() as Promise<T>;
 }
 
+/**
+ * POST a new record and return the new internal id parsed from the Location
+ * header. NetSuite returns 204 No Content on create with a Location header
+ * pointing at the created record.
+ */
+export async function netsuiteCreate(
+  urlPath: string,
+  body: unknown
+): Promise<string | null> {
+  const token = await getAccessToken();
+  const baseUrl = `${getBaseUrl()}/services/rest/record/v1`;
+  const url = `${baseUrl}${urlPath}`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      prefer: "transient",
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    if (response.status === 401) cachedToken = null;
+    throw new Error(`NetSuite API request failed: ${response.status} ${text}`);
+  }
+
+  const location = response.headers.get("Location") || response.headers.get("location");
+  if (!location) return null;
+  const match = location.match(/\/(\d+)(?:\?|$)/);
+  return match?.[1] ?? null;
+}
+
 const itemImagesCache = new Map<string, { at: number; urls: string[] }>();
 const ITEM_IMAGES_TTL_MS = 5 * 60 * 1000;
 

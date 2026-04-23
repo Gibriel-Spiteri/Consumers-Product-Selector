@@ -12,6 +12,7 @@ export function ReportIssueModal({ open, onClose }: { open: boolean; onClose: ()
   const [detail, setDetail] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [currentUrl, setCurrentUrl] = useState("");
+  const [caseNumber, setCaseNumber] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -19,6 +20,7 @@ export function ReportIssueModal({ open, onClose }: { open: boolean; onClose: ()
       setIssue("");
       setDetail("");
       setErrorMsg(null);
+      setCaseNumber(null);
       setCurrentUrl(typeof window !== "undefined" ? window.location.href : "");
     }
   }, [open]);
@@ -71,6 +73,8 @@ export function ReportIssueModal({ open, onClose }: { open: boolean; onClose: ()
         const text = await res.text();
         throw new Error(text || `Request failed (${res.status})`);
       }
+      const data = await res.json().catch(() => null);
+      setCaseNumber(data?.caseNumber ?? null);
       setStep("success");
     } catch (err: any) {
       setErrorMsg(err?.message || "Failed to send");
@@ -144,7 +148,9 @@ export function ReportIssueModal({ open, onClose }: { open: boolean; onClose: ()
             <div className="flex items-start gap-2 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-700">
               <CheckCircle2 size={16} className="shrink-0 mt-0.5" />
               <div>
-                <div className="font-medium">Case sent.</div>
+                <div className="font-medium">
+                  Case sent{caseNumber ? ` — #${caseNumber}` : ""}.
+                </div>
                 <div className="text-emerald-600/80 text-[12px] mt-0.5">
                   An Innovation &amp; Technology team member will follow up.
                 </div>

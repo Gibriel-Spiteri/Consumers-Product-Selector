@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { syncFromNetSuite } from "../lib/syncService";
-import { isNetSuiteConfigured, executeSuiteQL, netsuiteRequest } from "../lib/netsuite";
+import { isNetSuiteConfigured, executeSuiteQL, netsuiteRequest, netsuiteCreate } from "../lib/netsuite";
 import { logger } from "../lib/logger";
 import { db } from "@workspace/db";
 import { categoriesTable } from "@workspace/db";
@@ -122,13 +122,21 @@ router.post("/cases", async (req, res) => {
     }
 
     logger.info({ payload }, "Creating NetSuite support case with payload");
-    const result = await netsuiteRequest<Record<string, unknown>>(
-      "/supportCase",
-      "POST",
-      payload
-    );
-    logger.info({ subject, departmentId, result }, "NetSuite support case created");
-    return res.json({ ok: true, caseId: (result as any)?.id ?? null });
+    const newId = await netsuiteCreate("/supportCase", payload);
+    let caseNumber: string | null = null;
+    if (newId) {
+      try {
+        const created = await netsuiteRequest<Record<string, unknown>>(
+          `/supportCase/${newId}`,
+          "GET"
+        );
+        caseNumber = (created as any)?.caseNumber ?? null;
+      } catch (fetchErr: any) {
+        logger.warn({ err: fetchErr?.message, newId }, "Created case but could not fetch case number");
+      }
+    }
+    logger.info({ subject, departmentId, newId, caseNumber }, "NetSuite support case created");
+    return res.json({ ok: true, caseId: newId, caseNumber });
   } catch (err: any) {
     logger.error({ err: err?.message }, "Failed to create NetSuite support case");
     return res.status(500).json({ error: err?.message || "Failed to create case" });
