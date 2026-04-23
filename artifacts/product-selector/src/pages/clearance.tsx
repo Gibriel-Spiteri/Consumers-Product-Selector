@@ -1,10 +1,11 @@
 import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, Loader2, ImageOff, LayoutList, LayoutGrid, Copy, Check, PackageX, Plus, Search, X } from "lucide-react";
+import { ChevronRight, Loader2, ImageOff, LayoutList, LayoutGrid, Copy, Check, PackageX, Plus, Search, X, FileSpreadsheet } from "lucide-react";
 import ProductModal from "@/components/product-modal";
 import { cn, fmtPrice } from "@/lib/utils";
 import { useQuoteList } from "@/context/quote-list-context";
+import { useAuth } from "@/context/auth-context";
 import { PprPriceTooltip } from "@/components/ppr-price-tooltip";
 
 interface Product {
@@ -280,7 +281,41 @@ function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: P
   );
 }
 
+function exportToCsv(filename: string, rows: Product[]) {
+  const headers = ["SKU", "Product", "Category", "Stock Qty", "ATP Date", "No Reorders", "Special Order Stock", "Clearance Price", "Retail Price", "Savings"];
+  const escape = (v: unknown) => {
+    if (v == null) return "";
+    const s = String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const lines = [headers.join(",")];
+  for (const p of rows) {
+    lines.push([
+      p.sku ?? "",
+      p.name,
+      p.categoryParentName ?? "",
+      p.quantityAvailable ?? "",
+      p.atpDate ?? "",
+      p.noReorder ? "Yes" : "",
+      p.isSpecialOrderStock ? "Yes" : "",
+      p.price ?? "",
+      p.retailPrice ?? "",
+      p.pprPriceReductionRetail ?? "",
+    ].map(escape).join(","));
+  }
+  const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 export default function ClearancePage() {
+  const { isAdmin } = useAuth();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [inStockOnly, setInStockOnly] = useState(false);
@@ -374,6 +409,16 @@ export default function ClearancePage() {
             <span className={cn("w-1.5 h-1.5 rounded-full", inStockOnly ? "bg-emerald-500" : "bg-gray-300")} />
             In Stock Only
           </button>
+          {isAdmin && viewMode === "list" && (
+            <button
+              onClick={() => exportToCsv(`clearance-${new Date().toISOString().slice(0, 10)}.csv`, filtered)}
+              className="flex items-center gap-1.5 text-[12px] font-medium px-3 py-1.5 rounded-full transition-all border bg-white border-gray-200 text-gray-600 hover:border-emerald-300 hover:text-emerald-700"
+              title="Export current list to Excel (CSV)"
+            >
+              <FileSpreadsheet size={14} />
+              Export
+            </button>
+          )}
           <div className="flex rounded-lg border border-gray-200 overflow-hidden">
             <button
               onClick={() => setViewMode("list")}
