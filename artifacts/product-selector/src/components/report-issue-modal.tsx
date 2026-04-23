@@ -84,7 +84,7 @@ export function ReportIssueModal({ open, onClose }: { open: boolean; onClose: ()
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center px-4"
+      className="fixed inset-0 z-[10001] flex items-center justify-center px-4"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
