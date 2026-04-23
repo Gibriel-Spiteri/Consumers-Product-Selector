@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useAuth } from "@/context/auth-context";
 import { Loader2, AlertCircle, LogIn } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 
 function LoginBrand() {
   const { data, isLoading } = useQuery({
@@ -34,6 +35,7 @@ function LoginBrand() {
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const [, setLocation] = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -49,6 +51,8 @@ export default function LoginPage() {
     const result = await login(email.trim(), password.trim());
     if (!result.success) {
       setError(result.error || "Login failed");
+    } else {
+      setLocation("/");
     }
     setLoading(false);
   };
