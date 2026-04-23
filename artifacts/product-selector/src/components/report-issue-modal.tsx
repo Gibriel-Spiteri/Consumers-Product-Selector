@@ -123,7 +123,7 @@ export function ReportIssueModal({ open, onClose }: { open: boolean; onClose: ()
                 />
               </div>
               <div>
-                <label htmlFor="detail" className="block text-[12px] font-semibold uppercase tracking-widest text-gray-400 mb-1.5">
+                <label htmlFor="detail" className="block text-[12px] font-semibold uppercase tracking-widest mb-1.5 text-[#5b6069]">
                   Detail
                 </label>
                 <textarea
