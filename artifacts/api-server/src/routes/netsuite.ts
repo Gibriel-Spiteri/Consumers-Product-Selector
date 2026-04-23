@@ -83,15 +83,23 @@ async function getInnovationTechDepartmentId(): Promise<string | null> {
   if (cachedInnovationTechDeptId && Date.now() - cachedInnovationTechDeptId.at < DEPT_CACHE_TTL_MS) {
     return cachedInnovationTechDeptId.id;
   }
+  // Allow override via env var
+  const envId = process.env.NETSUITE_INNOVATION_TECH_DEPT_ID?.trim();
+  if (envId) {
+    cachedInnovationTechDeptId = { id: envId, at: Date.now() };
+    return envId;
+  }
   try {
     const result = await executeSuiteQL<{ id: string; name: string }>(
-      `SELECT id, name FROM department WHERE LOWER(name) LIKE '%innovation%technology%' OR LOWER(fullname) LIKE '%innovation%technology%'`
+      `SELECT id, name FROM department WHERE LOWER(name) LIKE '%innovation%' AND LOWER(name) LIKE '%technology%'`
     );
     if (result.items.length > 0) {
       const id = String(result.items[0].id);
+      logger.info({ id, name: result.items[0].name }, "Resolved Innovation & Technology department");
       cachedInnovationTechDeptId = { id, at: Date.now() };
       return id;
     }
+    logger.warn("No department found matching 'innovation' AND 'technology'");
   } catch (err) {
     logger.warn({ err }, "Failed to look up Innovation & Technology department");
   }
@@ -121,10 +129,21 @@ router.post("/cases", async (req, res) => {
 
     const payload: Record<string, unknown> = {
       title: subject.trim().slice(0, 300),
+      // The "Detail" field on the supportCase form maps to incomingMessage in REST API.
       incomingMessage: fullDetail,
     };
     if (departmentId) payload.department = { id: departmentId };
+    // "Case Created By" is the originator entity reference.
+    if (employee?.id) payload.originator = { id: String(employee.id) };
 
+    if (!departmentId) {
+      return res.status(500).json({
+        error:
+          "Innovation & Technology department could not be found in NetSuite. Set NETSUITE_INNOVATION_TECH_DEPT_ID with the department's internal id.",
+      });
+    }
+
+    logger.info({ payload }, "Creating NetSuite support case with payload");
     const result = await netsuiteRequest<Record<string, unknown>>(
       "/supportCase",
       "POST",
