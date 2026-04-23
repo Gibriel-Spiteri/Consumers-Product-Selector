@@ -80,16 +80,10 @@ function ProductStatsDebug() {
   return (
     <div className="mt-3 pt-3 border-t border-white/10 grid grid-cols-3 items-center text-[14px] text-[#b0b0b0]">
       <span className="text-white/50 justify-self-start">© {new Date().getFullYear()} All rights reserved.</span>
-      <div className="flex items-center justify-center gap-4 justify-self-center">
-        {formattedTime && (
-          <>
-            <span>Data Synced: {formattedTime}</span>
-            <span className="w-px h-3 bg-white/15" />
-          </>
-        )}
-        <span>Inventory Levels are Live</span>
-      </div>
-      <span className="justify-self-end" />
+      <span className="justify-self-center">
+        {formattedTime ? `Data Synced: ${formattedTime}` : ""}
+      </span>
+      <span className="justify-self-end">Inventory Levels are Live</span>
     </div>
   );
 }
