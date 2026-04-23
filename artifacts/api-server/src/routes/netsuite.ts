@@ -104,6 +104,8 @@ router.post("/cases", async (req, res) => {
 
     const payload: Record<string, unknown> = {
       title: subject.trim().slice(0, 300),
+      // Standard "Message" field on supportCase — required by NetSuite.
+      incomingMessage: fullDetail,
       // "Detail" on this account's supportCase form is the custom field custevent_xprdetail.
       custevent_xprdetail: fullDetail,
     };
