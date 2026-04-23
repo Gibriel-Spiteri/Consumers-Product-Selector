@@ -84,7 +84,7 @@ function ProductStatsDebug() {
       <span className="justify-self-center text-[12px]">
         {formattedTime ? `Data Synced: ${formattedTime}` : ""}
       </span>
-      <span className="justify-self-end">Inventory Levels are Live</span>
+      <span className="justify-self-end text-[12px]">Inventory Levels are Live</span>
     </div>
   );
 }
