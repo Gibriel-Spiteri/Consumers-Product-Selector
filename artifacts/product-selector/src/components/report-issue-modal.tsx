@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 
 type Step = "compose" | "sending" | "success" | "error";
 
-export function ReportIssueModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function ReportIssueModal({ open, onClose, initialDetail = "" }: { open: boolean; onClose: () => void; initialDetail?: string }) {
   const { employee } = useAuth();
   const [step, setStep] = useState<Step>("compose");
   const [issue, setIssue] = useState("");
@@ -18,7 +18,7 @@ export function ReportIssueModal({ open, onClose }: { open: boolean; onClose: ()
     if (open) {
       setStep("compose");
       setIssue("");
-      setDetail("");
+      setDetail(initialDetail);
       setErrorMsg(null);
       setCaseNumber(null);
       setCurrentUrl(typeof window !== "undefined" ? window.location.href : "");

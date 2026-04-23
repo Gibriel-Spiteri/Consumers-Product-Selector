@@ -910,7 +910,11 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
 
             </div>
           </motion.div>
-          <ReportIssueModal open={reportOpen} onClose={() => setReportOpen(false)} />
+          <ReportIssueModal
+            open={reportOpen}
+            onClose={() => setReportOpen(false)}
+            initialDetail={product.sku ? `SKU: ${product.sku}\n\n` : ""}
+          />
         </>
       )}
     </AnimatePresence>,
