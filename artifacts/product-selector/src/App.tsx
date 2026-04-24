@@ -13,6 +13,7 @@ import ClearancePage from "@/pages/clearance";
 import ExpressBathPage from "@/pages/express-bath";
 import QuoteListPage from "@/pages/quote-list";
 import AdminPage from "@/pages/admin";
+import AnalyticsPage from "@/pages/analytics";
 import LoginPage from "@/pages/login";
 import NotFound from "@/pages/not-found";
 import { QuoteListProvider } from "@/context/quote-list-context";
@@ -78,6 +79,7 @@ function App() {
                   <Route path="/clearance" component={ClearancePage} />
                   <Route path="/express-bath" component={ExpressBathPage} />
                   <Route path="/list" component={QuoteListPage} />
+                  <Route path="/admin/analytics" component={AnalyticsPage} />
                   <Route path="/admin" component={AdminPage} />
                   <Route component={NotFound} />
                 </Switch>
