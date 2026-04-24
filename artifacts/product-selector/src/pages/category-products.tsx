@@ -230,7 +230,7 @@ export function GridView({ products, onSelect }: { products: Product[]; onSelect
                   <PprPriceTooltip price={Number(p.price)} pprPriceReductionRetail={p.pprPriceReductionRetail} consumersPrice={p.consumersPrice} hasActivePpr={p.hasActivePpr}>
                     <p className={cn("text-[10px] font-semibold uppercase tracking-widest", p.hasActivePpr ? "text-emerald-600" : "text-gray-400")}>{p.hasActivePpr ? "Clearance" : "Our Price"}</p>
                     <p className={cn("font-semibold", p.hasActivePpr ? "text-emerald-600" : "text-gray-900")}>${fmtPrice(Number(p.price))}</p>
-                    {p.retailPrice != null && (
+                    {!p.hasActivePpr && p.retailPrice != null && (
                       <p className="text-[11px] text-gray-400">{p.hasActivePpr && p.consumersPrice != null ? "Consumers Price" : "Retail"}{" "}<span className="line-through">${fmtPrice(Number(p.hasActivePpr && p.consumersPrice != null ? p.consumersPrice : p.retailPrice))}</span></p>
                     )}
                     {p.hasActivePpr && p.pprPriceReductionRetail != null && (
@@ -399,7 +399,7 @@ export function ListView({ products, onSelect }: { products: Product[]; onSelect
                   {p.price ? (
                     <PprPriceTooltip price={Number(p.price)} pprPriceReductionRetail={p.pprPriceReductionRetail} consumersPrice={p.consumersPrice} hasActivePpr={!!p.hasActivePpr}>
                       <p className={cn("font-semibold", p.hasActivePpr ? "text-emerald-600" : "text-gray-900")}>${fmtPrice(Number(p.price))}</p>
-                      {p.retailPrice != null && (
+                      {!p.hasActivePpr && p.retailPrice != null && (
                         <p className="text-[11px] text-gray-400">{p.hasActivePpr && p.consumersPrice != null ? "Consumers Price" : "Retail"}{" "}<span className="line-through">${fmtPrice(Number(p.hasActivePpr && p.consumersPrice != null ? p.consumersPrice : p.retailPrice))}</span></p>
                       )}
                       {p.hasActivePpr && p.pprPriceReductionRetail != null && (

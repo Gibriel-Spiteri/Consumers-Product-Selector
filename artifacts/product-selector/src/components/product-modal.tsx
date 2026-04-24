@@ -684,7 +684,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                             <p className={cn("text-3xl font-bold mb-2", full.hasActivePpr ? "text-emerald-600" : "text-gray-900")}>
                               ${fmtPrice(Number(full.price))}
                             </p>
-                            {full.retailPrice != null && (
+                            {!full.hasActivePpr && full.retailPrice != null && (
                               <p className="text-sm text-gray-400">
                                 {full.hasActivePpr && full.consumersPrice != null ? "Consumers Price" : "Retail"}{" "}<span className="line-through">${fmtPrice(Number(full.hasActivePpr && full.consumersPrice != null ? full.consumersPrice : full.retailPrice))}</span>
                               </p>
@@ -815,7 +815,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                               <dd className="font-mono text-sm text-gray-800">{full.netsuiteId}</dd>
                             </div>
                           )}
-                          {full?.price != null && (
+                          {full?.price != null && !full?.hasActivePpr && (
                             <div>
                               <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Consumers Price</dt>
                               <dd className="text-sm text-gray-800">${fmtPrice(full.consumersPrice != null ? Number(full.consumersPrice) : Number(full.price) + (full.hasActivePpr && full.pprPriceReductionRetail ? Number(full.pprPriceReductionRetail) : 0))}</dd>

@@ -170,7 +170,7 @@ function PriceDisplay({ product }: { product: Product }) {
       <p className={cn("font-semibold", isClearance ? "text-emerald-600" : "text-gray-900")}>
         ${fmtPrice(Number(product.price))}
       </p>
-      {product.retailPrice != null && (
+      {!isClearance && product.retailPrice != null && (
         <p className="text-[11px] text-gray-400">{isClearance && product.consumersPrice != null ? "Consumers Price" : "Retail"}{" "}<span className="line-through">${fmtPrice(Number(isClearance && product.consumersPrice != null ? product.consumersPrice : product.retailPrice))}</span></p>
       )}
       {isClearance && product.pprPriceReductionRetail != null && (
@@ -259,7 +259,7 @@ function ListView({ products, onSelect, isAdmin }: { products: Product[]; onSele
                       <p className={cn("font-semibold", p.hasActivePpr ? "text-emerald-600" : "text-gray-900")}>
                         ${fmtPrice(Number(p.price))}
                       </p>
-                      {p.retailPrice != null && (
+                      {!p.hasActivePpr && p.retailPrice != null && (
                         <p className="text-[11px] text-gray-400">{p.hasActivePpr && p.consumersPrice != null ? "Consumers Price" : "Retail"}{" "}<span className="line-through">${fmtPrice(Number(p.hasActivePpr && p.consumersPrice != null ? p.consumersPrice : p.retailPrice))}</span></p>
                       )}
                       {p.hasActivePpr && p.pprPriceReductionRetail != null && (
