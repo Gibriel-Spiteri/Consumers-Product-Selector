@@ -5,6 +5,7 @@ import {
   analyticsEventsTable,
   productsTable,
   categoriesTable,
+  type InsertAnalyticsEvent,
 } from "@workspace/db";
 import { logger } from "../lib/logger";
 import { executeSuiteQL } from "../lib/netsuite";
@@ -14,7 +15,17 @@ const router: IRouter = Router();
 const MAX_BATCH = 50;
 const MAX_PATH_LEN = 512;
 const MAX_TYPE_LEN = 64;
-const MAX_NAME_LEN = 256;
+const MAX_UA_LEN = 512;
+const MAX_SESSION_LEN = 64;
+const MAX_EMPLOYEE_ID_LEN = 64;
+
+const ALLOWED_EVENT_TYPES = new Set([
+  "page_view",
+  "category_view",
+  "product_view",
+  "product_modal_open",
+  "search",
+]);
 
 const ipBuckets = new Map<string, { count: number; resetAt: number }>();
 const RATE_WINDOW_MS = 60_000;
@@ -46,6 +57,23 @@ function toIntOrNull(v: unknown): number | null {
   return Math.trunc(n);
 }
 
+interface IncomingEvent {
+  eventType?: unknown;
+  path?: unknown;
+  categoryId?: unknown;
+  productId?: unknown;
+  metadata?: unknown;
+}
+
+interface IncomingBody {
+  sessionId?: unknown;
+  events?: unknown;
+}
+
+function isIncomingEvent(v: unknown): v is IncomingEvent {
+  return typeof v === "object" && v !== null;
+}
+
 router.post("/analytics/event", async (req, res) => {
   const ip = (req.ip || "unknown").toString();
   if (!rateLimit(ip)) {
@@ -53,35 +81,48 @@ router.post("/analytics/event", async (req, res) => {
   }
 
   try {
-    const body = req.body || {};
-    const sessionId = trimStr(body.sessionId, 64);
+    const body = (req.body ?? {}) as IncomingBody;
+    const sessionId = trimStr(body.sessionId, MAX_SESSION_LEN);
     if (!sessionId) return res.status(400).json({ error: "sessionId required" });
 
-    const employeeId = trimStr(body.employeeId, 64);
-    const employeeName = trimStr(body.employeeName, MAX_NAME_LEN);
-    const events = Array.isArray(body.events) ? body.events.slice(0, MAX_BATCH) : [];
-    if (events.length === 0) return res.json({ ok: true, inserted: 0 });
+    // Identity is server-attached from the trusted X-Employee-Id header
+    // (same header the rest of the app uses for auth). Body-supplied identity
+    // is intentionally ignored to prevent client-side spoofing.
+    const employeeIdHeader = trimStr(
+      req.headers["x-employee-id"],
+      MAX_EMPLOYEE_ID_LEN,
+    );
+    const numericEmployeeId = employeeIdHeader ? Number(employeeIdHeader) : NaN;
+    const employeeId =
+      Number.isInteger(numericEmployeeId) && numericEmployeeId > 0
+        ? String(numericEmployeeId)
+        : null;
 
-    const userAgent = trimStr(req.headers["user-agent"], MAX_NAME_LEN);
+    const rawEvents = Array.isArray(body.events) ? body.events.slice(0, MAX_BATCH) : [];
+    if (rawEvents.length === 0) return res.json({ ok: true, inserted: 0 });
 
-    const rows = events
-      .map((e: any) => {
-        const eventType = trimStr(e?.eventType, MAX_TYPE_LEN);
-        if (!eventType) return null;
-        return {
-          employeeId,
-          employeeName,
-          sessionId,
-          eventType,
-          path: trimStr(e?.path, MAX_PATH_LEN),
-          categoryId: toIntOrNull(e?.categoryId),
-          productId: toIntOrNull(e?.productId),
-          metadata:
-            e?.metadata && typeof e.metadata === "object" ? e.metadata : null,
-          userAgent,
-        };
-      })
-      .filter((r: any): r is NonNullable<typeof r> => r !== null);
+    const userAgent = trimStr(req.headers["user-agent"], MAX_UA_LEN);
+
+    const rows: InsertAnalyticsEvent[] = [];
+    for (const raw of rawEvents) {
+      if (!isIncomingEvent(raw)) continue;
+      const eventType = trimStr(raw.eventType, MAX_TYPE_LEN);
+      if (!eventType || !ALLOWED_EVENT_TYPES.has(eventType)) continue;
+      const path = trimStr(raw.path, MAX_PATH_LEN);
+      // Defense in depth: never store admin-route activity.
+      if (path && path.startsWith("/admin")) continue;
+      rows.push({
+        employeeId,
+        sessionId,
+        eventType,
+        path,
+        categoryId: toIntOrNull(raw.categoryId),
+        productId: toIntOrNull(raw.productId),
+        metadata:
+          raw.metadata && typeof raw.metadata === "object" ? raw.metadata : null,
+        userAgent,
+      });
+    }
 
     if (rows.length === 0) return res.json({ ok: true, inserted: 0 });
 
@@ -93,22 +134,25 @@ router.post("/analytics/event", async (req, res) => {
   }
 });
 
+interface NetSuiteEmployeeRow {
+  id: string;
+  giveaccess: string;
+  custentity_webstore_access: string;
+  custentity_webstore_admin: string;
+}
+
 async function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  const employeeId = req.headers["x-employee-id"] as string | undefined;
-  if (!employeeId) {
+  const employeeId = req.headers["x-employee-id"];
+  const employeeIdStr = typeof employeeId === "string" ? employeeId : undefined;
+  if (!employeeIdStr) {
     return res.status(401).json({ error: "Authentication required" });
   }
-  const numericId = Number(employeeId);
+  const numericId = Number(employeeIdStr);
   if (!Number.isInteger(numericId) || numericId <= 0) {
     return res.status(401).json({ error: "Invalid employee id" });
   }
   try {
-    const result = await executeSuiteQL<{
-      id: string;
-      giveaccess: string;
-      custentity_webstore_access: string;
-      custentity_webstore_admin: string;
-    }>(
+    const result = await executeSuiteQL<NetSuiteEmployeeRow>(
       `SELECT id, giveaccess, custentity_webstore_access, custentity_webstore_admin
        FROM Employee WHERE id = ${numericId}`,
     );
@@ -132,6 +176,34 @@ function rangeToDays(range: unknown): number {
   return 7;
 }
 
+interface NetSuiteEmployeeName {
+  id: string;
+  firstname: string | null;
+  lastname: string | null;
+}
+
+async function fetchEmployeeNames(
+  ids: string[],
+): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  const numericIds = ids
+    .map((id) => Number(id))
+    .filter((n) => Number.isInteger(n) && n > 0);
+  if (numericIds.length === 0) return out;
+  try {
+    const result = await executeSuiteQL<NetSuiteEmployeeName>(
+      `SELECT id, firstname, lastname FROM Employee WHERE id IN (${numericIds.join(",")})`,
+    );
+    for (const row of result.items) {
+      const fullName = `${row.firstname ?? ""} ${row.lastname ?? ""}`.trim();
+      if (fullName) out.set(String(row.id), fullName);
+    }
+  } catch (err) {
+    logger.warn({ err }, "Failed to fetch employee names from NetSuite");
+  }
+  return out;
+}
+
 router.get("/admin/analytics/summary", requireAdmin, async (req, res) => {
   try {
     const days = rangeToDays(req.query.range);
@@ -148,10 +220,9 @@ router.get("/admin/analytics/summary", requireAdmin, async (req, res) => {
       .from(analyticsEventsTable)
       .where(baseWhere);
 
-    const activeUsers = await db
+    const activeUsersRaw = await db
       .select({
         employeeId: analyticsEventsTable.employeeId,
-        employeeName: sql<string | null>`max(${analyticsEventsTable.employeeName})`,
         sessions: sql<number>`count(distinct ${analyticsEventsTable.sessionId})::int`,
         pageViews: sql<number>`sum(case when ${analyticsEventsTable.eventType} = 'page_view' then 1 else 0 end)::int`,
         events: sql<number>`count(*)::int`,
@@ -162,6 +233,26 @@ router.get("/admin/analytics/summary", requireAdmin, async (req, res) => {
       .groupBy(analyticsEventsTable.employeeId)
       .orderBy(desc(sql`count(*)`))
       .limit(50);
+
+    const employeeNames = await fetchEmployeeNames(
+      activeUsersRaw
+        .map((u) => u.employeeId)
+        .filter((v): v is string => v != null),
+    );
+
+    const activeUsers = activeUsersRaw.map((u) => ({
+      employeeId: u.employeeId,
+      employeeName:
+        u.employeeId && employeeNames.get(u.employeeId)
+          ? employeeNames.get(u.employeeId)!
+          : u.employeeId
+          ? `Employee #${u.employeeId}`
+          : null,
+      sessions: u.sessions,
+      pageViews: u.pageViews,
+      events: u.events,
+      lastSeen: u.lastSeen,
+    }));
 
     const anonAgg = await db
       .select({
@@ -203,7 +294,10 @@ router.get("/admin/analytics/summary", requireAdmin, async (req, res) => {
     const catNameById = new Map(categories.map((c) => [c.id, c.name]));
     const topCategories = topCategoriesRaw.map((r) => ({
       categoryId: r.categoryId,
-      name: r.categoryId != null ? catNameById.get(r.categoryId) ?? `#${r.categoryId}` : "Unknown",
+      name:
+        r.categoryId != null
+          ? catNameById.get(r.categoryId) ?? `#${r.categoryId}`
+          : "Unknown",
       views: r.views,
     }));
 

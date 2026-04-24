@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, Loader2, ImageOff, LayoutList, LayoutGrid, Copy, Check, PackageX } from "lucide-react";
@@ -6,6 +6,7 @@ import ProductModal from "@/components/product-modal";
 import { cn, fmtPrice } from "@/lib/utils";
 import { PprPriceTooltip } from "@/components/ppr-price-tooltip";
 import { useAuth } from "@/context/auth-context";
+import { trackCategoryView } from "@/lib/analytics";
 
 interface Product {
   id: number;
@@ -221,6 +222,10 @@ export default function UncategorizedProducts() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [inStockOnly, setInStockOnly] = useState(false);
+
+  useEffect(() => {
+    trackCategoryView("/uncategorized", null);
+  }, []);
 
   const { data, isLoading } = useQuery({
     queryKey: ["uncategorizedProducts"],

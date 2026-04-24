@@ -16,10 +16,11 @@ interface QueuedEvent {
 const SESSION_KEY = "ps_analytics_session";
 const FLUSH_DEBOUNCE_MS = 1500;
 const FLUSH_INTERVAL_MS = 15_000;
+const FLUSH_BATCH_THRESHOLD = 20;
 
 function getApiBase(): string {
-  const base = (import.meta as any).env?.BASE_URL || "/";
-  return `${String(base).replace(/\/$/, "")}/api`;
+  const base = import.meta.env.BASE_URL || "/";
+  return `${base.replace(/\/$/, "")}/api`;
 }
 
 function generateId(): string {
@@ -46,10 +47,7 @@ function getSessionId(): string {
 }
 
 let queue: QueuedEvent[] = [];
-let identity: { employeeId: string | null; employeeName: string | null } = {
-  employeeId: null,
-  employeeName: null,
-};
+let employeeId: string | null = null;
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
 let intervalTimer: ReturnType<typeof setInterval> | null = null;
 let listenersAttached = false;
@@ -69,23 +67,34 @@ async function flush(useBeacon: boolean) {
   queue = [];
   const payload = JSON.stringify({
     sessionId: getSessionId(),
-    employeeId: identity.employeeId,
-    employeeName: identity.employeeName,
     events,
   });
   const url = `${getApiBase()}/analytics/event`;
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (employeeId) headers["X-Employee-Id"] = employeeId;
   try {
-    if (useBeacon && typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
-      const blob = new Blob([payload], { type: "application/json" });
-      const ok = navigator.sendBeacon(url, blob);
-      if (ok) return;
+    // Prefer fetch+keepalive so we can send the X-Employee-Id header
+    // (sendBeacon cannot set custom headers). keepalive works on unload
+    // in modern browsers. sendBeacon is only used as a last-resort
+    // anonymous fallback if fetch with keepalive is not available.
+    if (typeof fetch === "function") {
+      await fetch(url, {
+        method: "POST",
+        headers,
+        body: payload,
+        keepalive: true,
+        credentials: "same-origin",
+      });
+      return;
     }
-    await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: payload,
-      keepalive: true,
-    });
+    if (
+      useBeacon &&
+      typeof navigator !== "undefined" &&
+      typeof navigator.sendBeacon === "function"
+    ) {
+      const blob = new Blob([payload], { type: "application/json" });
+      navigator.sendBeacon(url, blob);
+    }
   } catch {
     /* swallow — analytics must never break the app */
   }
@@ -118,7 +127,7 @@ function enqueue(event: QueuedEvent) {
   attachListenersOnce();
   if (event.path && shouldSkipPath(event.path)) return;
   queue.push(event);
-  if (queue.length >= 20) {
+  if (queue.length >= FLUSH_BATCH_THRESHOLD) {
     if (flushTimer) {
       clearTimeout(flushTimer);
       flushTimer = null;
@@ -129,8 +138,8 @@ function enqueue(event: QueuedEvent) {
   }
 }
 
-export function setAnalyticsIdentity(employeeId: string | null, employeeName: string | null) {
-  identity = { employeeId, employeeName };
+export function setAnalyticsIdentity(id: string | null) {
+  employeeId = id;
 }
 
 export function trackPageView(path: string) {
@@ -162,6 +171,7 @@ export function trackSearch(query: string, resultsCount?: number) {
 export function _resetForTests() {
   queue = [];
   lastTrackedPath = null;
+  employeeId = null;
   if (flushTimer) clearTimeout(flushTimer);
   if (intervalTimer) clearInterval(intervalTimer);
   flushTimer = null;

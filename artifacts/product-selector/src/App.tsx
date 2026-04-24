@@ -33,10 +33,7 @@ function AnalyticsTracker() {
   const [location] = useLocation();
   const { employee } = useAuth();
   useEffect(() => {
-    setAnalyticsIdentity(
-      employee?.id ?? null,
-      employee ? `${employee.firstName} ${employee.lastName}`.trim() : null,
-    );
+    setAnalyticsIdentity(employee?.id ?? null);
   }, [employee]);
   useEffect(() => {
     trackPageView(location);
@@ -66,10 +63,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <AuthGate>
-          <QuoteListProvider>
-            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-              <AnalyticsTracker />
+        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+          <AnalyticsTracker />
+          <AuthGate>
+            <QuoteListProvider>
               <Layout>
                 <Switch>
                   <Route path="/" component={Home} />
@@ -85,9 +82,9 @@ function App() {
                   <Route component={NotFound} />
                 </Switch>
               </Layout>
-            </WouterRouter>
-          </QuoteListProvider>
-        </AuthGate>
+            </QuoteListProvider>
+          </AuthGate>
+        </WouterRouter>
       </AuthProvider>
     </QueryClientProvider>
   );

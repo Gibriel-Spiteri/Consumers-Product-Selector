@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, Loader2, ImageOff, LayoutList, LayoutGrid, Copy, Check, PackageX, Plus, Search, X } from "lucide-react";
@@ -7,6 +7,7 @@ import { cn, fmtPrice } from "@/lib/utils";
 import { useQuoteList } from "@/context/quote-list-context";
 import { PprPriceTooltip } from "@/components/ppr-price-tooltip";
 import { useAuth } from "@/context/auth-context";
+import { trackCategoryView } from "@/lib/analytics";
 
 interface Product {
   id: number;
@@ -287,6 +288,14 @@ export default function ExpressBathPage() {
   const [inStockOnly, setInStockOnly] = useState(false);
   const [activeCategoryId, setActiveCategoryId] = useState<number | null>(null);
   const [refineQuery, setRefineQuery] = useState("");
+
+  useEffect(() => {
+    trackCategoryView("/express-bath", null);
+  }, []);
+
+  useEffect(() => {
+    if (activeCategoryId != null) trackCategoryView("/express-bath", activeCategoryId);
+  }, [activeCategoryId]);
 
   const { data, isLoading } = useQuery({
     queryKey: ["expressBathProducts"],
