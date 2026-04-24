@@ -382,4 +382,103 @@ router.get("/admin/analytics/summary", requireAdmin, async (req, res) => {
   }
 });
 
+const USER_EVENTS_MAX = 200;
+
+router.get("/admin/analytics/user/:id", requireAdmin, async (req, res) => {
+  try {
+    const numericId = Number(req.params.id);
+    if (!Number.isInteger(numericId) || numericId <= 0) {
+      res.status(400).json({ error: "Invalid user id" });
+      return;
+    }
+    const employeeId = String(numericId);
+
+    const events = await db
+      .select({
+        id: analyticsEventsTable.id,
+        createdAt: analyticsEventsTable.createdAt,
+        eventType: analyticsEventsTable.eventType,
+        path: analyticsEventsTable.path,
+        categoryId: analyticsEventsTable.categoryId,
+        productId: analyticsEventsTable.productId,
+        sessionId: analyticsEventsTable.sessionId,
+        metadata: analyticsEventsTable.metadata,
+      })
+      .from(analyticsEventsTable)
+      .where(eq(analyticsEventsTable.employeeId, employeeId))
+      .orderBy(desc(analyticsEventsTable.createdAt))
+      .limit(USER_EVENTS_MAX);
+
+    const categoryIds = Array.from(
+      new Set(
+        events
+          .map((e) => e.categoryId)
+          .filter((v): v is number => v != null),
+      ),
+    );
+    const productIds = Array.from(
+      new Set(
+        events
+          .map((e) => e.productId)
+          .filter((v): v is number => v != null),
+      ),
+    );
+
+    const [categories, products, employeeNames] = await Promise.all([
+      categoryIds.length > 0
+        ? db
+            .select({ id: categoriesTable.id, name: categoriesTable.name })
+            .from(categoriesTable)
+            .where(inArray(categoriesTable.id, categoryIds))
+        : Promise.resolve([] as { id: number; name: string }[]),
+      productIds.length > 0
+        ? db
+            .select({
+              id: productsTable.id,
+              name: productsTable.name,
+              sku: productsTable.sku,
+            })
+            .from(productsTable)
+            .where(inArray(productsTable.id, productIds))
+        : Promise.resolve(
+            [] as { id: number; name: string; sku: string | null }[],
+          ),
+      fetchEmployeeNames([employeeId]),
+    ]);
+
+    const catNameById = new Map(categories.map((c) => [c.id, c.name]));
+    const productById = new Map(products.map((p) => [p.id, p]));
+
+    res.json({
+      employeeId,
+      employeeName: employeeNames.get(employeeId) ?? `Employee #${employeeId}`,
+      limit: USER_EVENTS_MAX,
+      truncated: events.length === USER_EVENTS_MAX,
+      events: events.map((e) => {
+        const product =
+          e.productId != null ? productById.get(e.productId) : undefined;
+        return {
+          id: e.id,
+          createdAt: e.createdAt,
+          eventType: e.eventType,
+          path: e.path,
+          sessionId: e.sessionId,
+          categoryId: e.categoryId,
+          categoryName:
+            e.categoryId != null
+              ? catNameById.get(e.categoryId) ?? null
+              : null,
+          productId: e.productId,
+          productName: product?.name ?? null,
+          productSku: product?.sku ?? null,
+          metadata: e.metadata,
+        };
+      }),
+    });
+  } catch (err) {
+    logger.error({ err, userId: req.params.id }, "Failed to load user activity");
+    res.status(500).json({ error: "Failed to load user activity" });
+  }
+});
+
 export default router;

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useAuth } from "@/context/auth-context";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
-import { RefreshCw, Upload, ImageIcon, Shield, ArrowLeft, Clock, PackageX, BarChart3 } from "lucide-react";
+import { RefreshCw, Upload, ImageIcon, Shield, ArrowLeft, Clock, PackageX, BarChart3, X } from "lucide-react";
 import { Link } from "wouter";
 
 interface AnalyticsSummary {
@@ -42,8 +42,189 @@ function fmtTimeAgo(iso: string | null) {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
+interface UserActivityResponse {
+  employeeId: string;
+  employeeName: string;
+  limit: number;
+  truncated: boolean;
+  events: Array<{
+    id: number;
+    createdAt: string;
+    eventType: string;
+    path: string | null;
+    sessionId: string;
+    categoryId: number | null;
+    categoryName: string | null;
+    productId: number | null;
+    productName: string | null;
+    productSku: string | null;
+    metadata: Record<string, unknown> | null;
+  }>;
+}
+
+const EVENT_TYPE_LABEL: Record<string, string> = {
+  page_view: "Page View",
+  category_view: "Category View",
+  product_view: "Product View",
+  product_modal_open: "Product Modal",
+  search: "Search",
+};
+
+const EVENT_TYPE_COLOR: Record<string, string> = {
+  page_view: "bg-blue-50 text-blue-700",
+  category_view: "bg-purple-50 text-purple-700",
+  product_view: "bg-emerald-50 text-emerald-700",
+  product_modal_open: "bg-amber-50 text-amber-700",
+  search: "bg-gray-100 text-gray-700",
+};
+
+function fmtAbsTime(iso: string) {
+  const ts = iso.endsWith("Z") ? iso : iso + "Z";
+  return new Date(ts).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
+}
+
+function UserActivityModal({
+  user,
+  adminEmployeeId,
+  onClose,
+}: {
+  user: { employeeId: string; employeeName: string };
+  adminEmployeeId: string;
+  onClose: () => void;
+}) {
+  const { data, isLoading, isError } = useQuery<UserActivityResponse>({
+    queryKey: ["adminUserActivity", user.employeeId],
+    queryFn: async () => {
+      const res = await fetch(
+        `/api/admin/analytics/user/${encodeURIComponent(user.employeeId)}`,
+        { headers: { "X-Employee-Id": adminEmployeeId } },
+      );
+      if (!res.ok) throw new Error("Failed to load user activity");
+      return res.json();
+    },
+  });
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  const events = data?.events ?? [];
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[85vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4 px-6 py-4 border-b border-gray-200">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">
+              {user.employeeName || `Employee #${user.employeeId}`}
+            </h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Recent activity · #{user.employeeId}
+              {data ? ` · ${events.length} event${events.length === 1 ? "" : "s"}` : ""}
+              {data?.truncated ? ` (last ${data.limit})` : ""}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 text-gray-400 hover:text-gray-700 rounded-md hover:bg-gray-100"
+            aria-label="Close"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="overflow-auto flex-1">
+          {isLoading ? (
+            <div className="py-12 text-center text-sm text-gray-400">Loading…</div>
+          ) : isError ? (
+            <div className="py-12 text-center text-sm text-red-600">
+              Failed to load activity.
+            </div>
+          ) : events.length === 0 ? (
+            <div className="py-12 text-center text-sm text-gray-400">
+              No recent activity for this user.
+            </div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 text-[11px] uppercase tracking-wide text-gray-400 font-semibold sticky top-0">
+                <tr>
+                  <th className="px-4 py-2 text-left">Time</th>
+                  <th className="px-4 py-2 text-left">Event</th>
+                  <th className="px-4 py-2 text-left">Detail</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {events.map((e) => {
+                  const detail = e.productName
+                    ? e.productName
+                    : e.categoryName
+                    ? e.categoryName
+                    : e.eventType === "search" &&
+                      e.metadata &&
+                      typeof (e.metadata as { query?: unknown }).query === "string"
+                    ? `"${(e.metadata as { query: string }).query}"`
+                    : e.path ?? "—";
+                  const subDetail =
+                    e.productSku ??
+                    (e.productName || e.categoryName ? e.path : null);
+                  return (
+                    <tr key={e.id} className="hover:bg-gray-50 align-top">
+                      <td className="px-4 py-2 text-gray-500 whitespace-nowrap">
+                        {fmtAbsTime(e.createdAt)}
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap">
+                        <span
+                          className={`inline-block px-2 py-0.5 rounded text-[11px] font-medium ${
+                            EVENT_TYPE_COLOR[e.eventType] ??
+                            "bg-gray-100 text-gray-700"
+                          }`}
+                        >
+                          {EVENT_TYPE_LABEL[e.eventType] ?? e.eventType}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2">
+                        <div className="text-gray-900 break-words">{detail}</div>
+                        {subDetail && (
+                          <div className="text-[11px] text-gray-400 font-mono break-all mt-0.5">
+                            {subDetail}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AnalyticsSection({ employeeId }: { employeeId: string }) {
   const [range, setRange] = useState<"7d" | "30d" | "90d">("7d");
+  const [selectedUser, setSelectedUser] = useState<{
+    employeeId: string;
+    employeeName: string;
+  } | null>(null);
   const { data, isLoading, isError, refetch, isFetching } = useQuery<AnalyticsSummary>({
     queryKey: ["adminAnalytics", range],
     queryFn: async () => {
@@ -154,18 +335,32 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
-                    {data.activeUsers.map((u) => (
-                      <tr key={u.employeeId ?? "unknown"} className="hover:bg-gray-50">
-                        <td className="px-3 py-2">
-                          <div className="font-medium text-gray-900">{u.employeeName || "Unknown"}</div>
-                          <div className="text-[11px] text-gray-400">#{u.employeeId}</div>
-                        </td>
-                        <td className="px-3 py-2 text-right text-gray-700">{u.sessions}</td>
-                        <td className="px-3 py-2 text-right text-gray-700">{u.pageViews}</td>
-                        <td className="px-3 py-2 text-right text-gray-700">{u.events}</td>
-                        <td className="px-3 py-2 text-right text-gray-500">{fmtTimeAgo(u.lastSeen)}</td>
-                      </tr>
-                    ))}
+                    {data.activeUsers.map((u) => {
+                      const clickable = u.employeeId != null;
+                      return (
+                        <tr
+                          key={u.employeeId ?? "unknown"}
+                          onClick={() => {
+                            if (!clickable) return;
+                            setSelectedUser({
+                              employeeId: u.employeeId!,
+                              employeeName: u.employeeName ?? `Employee #${u.employeeId}`,
+                            });
+                          }}
+                          className={`hover:bg-amber-50 ${clickable ? "cursor-pointer" : ""}`}
+                          title={clickable ? "View recent activity" : undefined}
+                        >
+                          <td className="px-3 py-2">
+                            <div className="font-medium text-gray-900">{u.employeeName || "Unknown"}</div>
+                            <div className="text-[11px] text-gray-400">#{u.employeeId}</div>
+                          </td>
+                          <td className="px-3 py-2 text-right text-gray-700">{u.sessions}</td>
+                          <td className="px-3 py-2 text-right text-gray-700">{u.pageViews}</td>
+                          <td className="px-3 py-2 text-right text-gray-700">{u.events}</td>
+                          <td className="px-3 py-2 text-right text-gray-500">{fmtTimeAgo(u.lastSeen)}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -231,6 +426,14 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
             </div>
           </div>
         </div>
+      )}
+
+      {selectedUser && (
+        <UserActivityModal
+          user={selectedUser}
+          adminEmployeeId={employeeId}
+          onClose={() => setSelectedUser(null)}
+        />
       )}
     </div>
   );
