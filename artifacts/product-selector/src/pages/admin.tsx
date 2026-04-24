@@ -163,7 +163,7 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
                         <td className="px-3 py-2 text-right text-gray-700">{u.sessions}</td>
                         <td className="px-3 py-2 text-right text-gray-700">{u.pageViews}</td>
                         <td className="px-3 py-2 text-right text-gray-700">{u.events}</td>
-                        <td className="px-3 py-2 text-right text-gray-500">{fmtTimeAgo(u.lastSeen as unknown as string)}</td>
+                        <td className="px-3 py-2 text-right text-gray-500">{fmtTimeAgo(u.lastSeen)}</td>
                       </tr>
                     ))}
                   </tbody>

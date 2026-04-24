@@ -70,31 +70,34 @@ async function flush(useBeacon: boolean) {
     events,
   });
   const url = `${getApiBase()}/analytics/event`;
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (employeeId) headers["X-Employee-Id"] = employeeId;
   try {
-    // Prefer fetch+keepalive so we can send the X-Employee-Id header
-    // (sendBeacon cannot set custom headers). keepalive works on unload
-    // in modern browsers. sendBeacon is only used as a last-resort
-    // anonymous fallback if fetch with keepalive is not available.
-    if (typeof fetch === "function") {
-      await fetch(url, {
-        method: "POST",
-        headers,
-        body: payload,
-        keepalive: true,
-        credentials: "same-origin",
-      });
-      return;
-    }
+    // On page-hide / visibility-hidden flushes, use sendBeacon: it is the
+    // most reliable transport during unload. sendBeacon cannot set custom
+    // headers, so identity is omitted — these unload-time flushes will be
+    // recorded as anonymous, which is an acceptable trade-off because the
+    // bulk of events have already been flushed via the debounced/interval
+    // path below (which does attach the X-Employee-Id header).
     if (
       useBeacon &&
       typeof navigator !== "undefined" &&
       typeof navigator.sendBeacon === "function"
     ) {
       const blob = new Blob([payload], { type: "application/json" });
-      navigator.sendBeacon(url, blob);
+      const ok = navigator.sendBeacon(url, blob);
+      if (ok) return;
     }
+    // Normal debounced / interval flush: use fetch with keepalive so the
+    // X-Employee-Id header travels with the request and identity is
+    // server-attached from a trusted source.
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (employeeId) headers["X-Employee-Id"] = employeeId;
+    await fetch(url, {
+      method: "POST",
+      headers,
+      body: payload,
+      keepalive: true,
+      credentials: "same-origin",
+    });
   } catch {
     /* swallow — analytics must never break the app */
   }
@@ -152,12 +155,17 @@ export function trackCategoryView(path: string, categoryId: number | null | unde
   enqueue({ eventType: "category_view", path, categoryId: categoryId ?? null });
 }
 
+function currentPath(): string | null {
+  if (typeof window === "undefined") return null;
+  return window.location.pathname + window.location.search;
+}
+
 export function trackProductView(productId: number, path?: string) {
-  enqueue({ eventType: "product_view", productId, path: path ?? null });
+  enqueue({ eventType: "product_view", productId, path: path ?? currentPath() });
 }
 
 export function trackProductModalOpen(productId: number, path?: string) {
-  enqueue({ eventType: "product_modal_open", productId, path: path ?? null });
+  enqueue({ eventType: "product_modal_open", productId, path: path ?? currentPath() });
 }
 
 export function trackSearch(query: string, resultsCount?: number) {
