@@ -87,11 +87,8 @@ router.get("/admin/logo", async (_req, res) => {
   try {
     const rows = await db.select().from(appSettingsTable).where(eq(appSettingsTable.key, "logo_mode"));
     const requestedMode = rows.length > 0 && rows[0].value === "image" ? "image" : "text";
-    let svg: string | null = null;
-    if (requestedMode === "image") {
-      const svgRows = await db.select().from(appSettingsTable).where(eq(appSettingsTable.key, "logo_svg"));
-      svg = svgRows.length > 0 ? svgRows[0].value : null;
-    }
+    const svgRows = await db.select().from(appSettingsTable).where(eq(appSettingsTable.key, "logo_svg"));
+    const svg: string | null = svgRows.length > 0 ? svgRows[0].value : null;
     const mode: "text" | "image" = requestedMode === "image" && svg ? "image" : "text";
     res.json({ mode, svg });
   } catch (err) {
