@@ -55,6 +55,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       const data = JSON.parse(stored) as Employee;
+      const numericId = Number(data?.id);
+      if (!Number.isFinite(numericId) || numericId <= 0) {
+        localStorage.removeItem(STORAGE_KEY);
+        setIsLoading(false);
+        return;
+      }
       fetch("/api/auth/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
