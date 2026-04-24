@@ -77,13 +77,17 @@ function isIncomingEvent(v: unknown): v is IncomingEvent {
 router.post("/analytics/event", async (req, res) => {
   const ip = (req.ip || "unknown").toString();
   if (!rateLimit(ip)) {
+    logger.warn({ ip }, "Analytics ingestion rate-limited");
     return res.status(429).json({ error: "Rate limit exceeded" });
   }
 
   try {
     const body = (req.body ?? {}) as IncomingBody;
     const sessionId = trimStr(body.sessionId, MAX_SESSION_LEN);
-    if (!sessionId) return res.status(400).json({ error: "sessionId required" });
+    if (!sessionId) {
+      logger.warn({ ip }, "Analytics ingestion rejected: missing sessionId");
+      return res.status(400).json({ error: "sessionId required" });
+    }
 
     // Identity is server-attached from the trusted X-Employee-Id header
     // (same header the rest of the app uses for auth). Body-supplied identity
