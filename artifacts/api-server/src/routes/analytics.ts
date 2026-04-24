@@ -146,19 +146,23 @@ interface NetSuiteEmployeeRow {
 }
 
 async function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  const employeeId = req.headers["x-employee-id"];
-  const employeeIdStr = typeof employeeId === "string" ? employeeId : undefined;
-  if (!employeeIdStr) {
+  const raw = req.headers["x-employee-id"];
+  const headerStr = Array.isArray(raw) ? raw[0] : raw;
+  if (typeof headerStr !== "string" || !headerStr.trim()) {
+    logger.warn({ raw }, "Analytics admin gate rejected: missing X-Employee-Id");
     return res.status(401).json({ error: "Authentication required" });
   }
-  const numericId = Number(employeeIdStr);
-  if (!Number.isInteger(numericId) || numericId <= 0) {
+  const trimmed = headerStr.trim();
+  const numericId = Number(trimmed);
+  if (!Number.isFinite(numericId) || numericId <= 0) {
+    logger.warn({ trimmed }, "Analytics admin gate rejected: non-numeric X-Employee-Id");
     return res.status(401).json({ error: "Invalid employee id" });
   }
+  const safeId = Math.floor(numericId);
   try {
     const result = await executeSuiteQL<NetSuiteEmployeeRow>(
       `SELECT id, giveaccess, custentity_webstore_access, custentity_webstore_admin
-       FROM Employee WHERE id = ${numericId}`,
+       FROM Employee WHERE id = ${safeId}`,
     );
     if (
       result.items.length === 0 ||
