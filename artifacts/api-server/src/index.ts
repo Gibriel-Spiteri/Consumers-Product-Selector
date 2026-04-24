@@ -2,6 +2,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { startScheduledSync, stopScheduledSync, loadPersistedSchedule } from "./lib/scheduler";
 import { loadPersistedSyncResult } from "./lib/syncService";
+import { startAnalyticsPurgeJob, stopAnalyticsPurgeJob } from "./lib/analyticsPurge";
 
 const rawPort = process.env["PORT"];
 
@@ -29,10 +30,12 @@ app.listen(port, (err) => {
       startScheduledSync();
     });
   });
+  startAnalyticsPurgeJob();
 
   const shutdown = () => {
     logger.info("Shutting down gracefully");
     stopScheduledSync();
+    stopAnalyticsPurgeJob();
     process.exit(0);
   };
   process.on("SIGTERM", shutdown);
