@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const data = JSON.parse(stored) as Employee;
       const numericId = Number(data?.id);
-      if (!Number.isFinite(numericId) || numericId <= 0) {
+      if (!Number.isFinite(numericId)) {
         localStorage.removeItem(STORAGE_KEY);
         setIsLoading(false);
         return;

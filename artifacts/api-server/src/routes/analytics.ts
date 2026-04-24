@@ -97,10 +97,9 @@ router.post("/analytics/event", async (req, res) => {
       MAX_EMPLOYEE_ID_LEN,
     );
     const numericEmployeeId = employeeIdHeader ? Number(employeeIdHeader) : NaN;
-    const employeeId =
-      Number.isInteger(numericEmployeeId) && numericEmployeeId > 0
-        ? String(numericEmployeeId)
-        : null;
+    const employeeId = Number.isInteger(numericEmployeeId)
+      ? String(numericEmployeeId)
+      : null;
 
     const rawEvents = Array.isArray(body.events) ? body.events.slice(0, MAX_BATCH) : [];
     if (rawEvents.length === 0) return res.json({ ok: true, inserted: 0 });
@@ -154,11 +153,11 @@ async function requireAdmin(req: Request, res: Response, next: NextFunction) {
   }
   const trimmed = headerStr.trim();
   const numericId = Number(trimmed);
-  if (!Number.isFinite(numericId) || numericId <= 0) {
+  if (!Number.isFinite(numericId)) {
     logger.warn({ trimmed }, "Analytics admin gate rejected: non-numeric X-Employee-Id");
     return res.status(401).json({ error: "Invalid employee id" });
   }
-  const safeId = Math.floor(numericId);
+  const safeId = Math.trunc(numericId);
   try {
     const result = await executeSuiteQL<NetSuiteEmployeeRow>(
       `SELECT id, giveaccess, custentity_webstore_access, custentity_webstore_admin
@@ -196,7 +195,7 @@ async function fetchEmployeeNames(
   const out = new Map<string, string>();
   const numericIds = ids
     .map((id) => Number(id))
-    .filter((n) => Number.isInteger(n) && n > 0);
+    .filter((n) => Number.isInteger(n));
   if (numericIds.length === 0) return out;
   try {
     const result = await executeSuiteQL<NetSuiteEmployeeName>(
@@ -391,7 +390,7 @@ const USER_EVENTS_MAX = 200;
 router.get("/admin/analytics/user/:id", requireAdmin, async (req, res) => {
   try {
     const numericId = Number(req.params.id);
-    if (!Number.isInteger(numericId) || numericId <= 0) {
+    if (!Number.isInteger(numericId)) {
       res.status(400).json({ error: "Invalid user id" });
       return;
     }
