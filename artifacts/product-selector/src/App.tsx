@@ -1,5 +1,7 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { useEffect } from "react";
+import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { setAnalyticsIdentity, trackPageView } from "@/lib/analytics";
 import Layout from "@/components/layout";
 import Home from "@/pages/home";
 import CategoryOverview from "@/pages/category-overview";
@@ -27,6 +29,21 @@ const queryClient = new QueryClient({
   },
 });
 
+function AnalyticsTracker() {
+  const [location] = useLocation();
+  const { employee } = useAuth();
+  useEffect(() => {
+    setAnalyticsIdentity(
+      employee?.id ?? null,
+      employee ? `${employee.firstName} ${employee.lastName}`.trim() : null,
+    );
+  }, [employee]);
+  useEffect(() => {
+    trackPageView(location);
+  }, [location]);
+  return null;
+}
+
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { employee, isLoading } = useAuth();
 
@@ -52,6 +69,7 @@ function App() {
         <AuthGate>
           <QuoteListProvider>
             <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <AnalyticsTracker />
               <Layout>
                 <Switch>
                   <Route path="/" component={Home} />

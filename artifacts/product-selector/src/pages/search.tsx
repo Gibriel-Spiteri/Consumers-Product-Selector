@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, Link } from "wouter";
 import { getSearchProductsQueryOptions } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
@@ -6,6 +6,7 @@ import { Search, Loader2, ArrowLeft, PackageX, LayoutList, LayoutGrid } from "lu
 import ProductModal from "@/components/product-modal";
 import { cn } from "@/lib/utils";
 import { GridView, ListView, type Product } from "@/pages/category-products";
+import { trackSearch } from "@/lib/analytics";
 
 export default function SearchPage() {
   const { query } = useParams();
@@ -19,6 +20,11 @@ export default function SearchPage() {
   });
 
   const products = (productsData?.products ?? []) as unknown as Product[];
+
+  useEffect(() => {
+    if (!q || isLoading) return;
+    trackSearch(q, products.length);
+  }, [q, isLoading, products.length]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10">

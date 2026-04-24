@@ -9,6 +9,7 @@ import { cn, fmtPrice } from "@/lib/utils";
 import { useQuoteList } from "@/context/quote-list-context";
 import { useAuth } from "@/context/auth-context";
 import { PprPriceTooltip } from "@/components/ppr-price-tooltip";
+import { trackCategoryView } from "@/lib/analytics";
 
 export interface Product {
   id: number;
@@ -538,6 +539,10 @@ export default function CategoryProducts() {
   const id = Number(categoryId);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [view, setView] = useState<"list" | "grid">("grid");
+
+  useEffect(() => {
+    if (Number.isFinite(id)) trackCategoryView(`/products/${id}`, id);
+  }, [id]);
   const [inStockOnly, setInStockOnly] = useState(false);
   const [activeFilters, setActiveFilters] = useState<Map<string, Set<string>>>(new Map());
   const [refineQuery, setRefineQuery] = useState("");

@@ -1,8 +1,240 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useAuth } from "@/context/auth-context";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
-import { RefreshCw, Upload, ImageIcon, Shield, ArrowLeft, Clock, PackageX } from "lucide-react";
+import { RefreshCw, Upload, ImageIcon, Shield, ArrowLeft, Clock, PackageX, BarChart3 } from "lucide-react";
 import { Link } from "wouter";
+
+interface AnalyticsSummary {
+  range: string;
+  totals: { events: number; sessions: number; users: number };
+  activeUsers: Array<{
+    employeeId: string | null;
+    employeeName: string | null;
+    sessions: number;
+    pageViews: number;
+    events: number;
+    lastSeen: string;
+  }>;
+  anonymous: { sessions: number; pageViews: number; events: number; lastSeen: string | null };
+  topCategories: Array<{ categoryId: number | null; name: string; views: number }>;
+  topProducts: Array<{
+    productId: number | null;
+    name: string;
+    sku: string | null;
+    views: number;
+    modalOpens: number;
+  }>;
+  dailyPageViews: Array<{ day: string; views: number }>;
+}
+
+function fmtTimeAgo(iso: string | null) {
+  if (!iso) return "—";
+  const ts = iso.endsWith("Z") ? iso : iso + "Z";
+  const date = new Date(ts);
+  const diffMs = Date.now() - date.getTime();
+  const min = Math.floor(diffMs / 60000);
+  if (min < 1) return "just now";
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const d = Math.floor(hr / 24);
+  if (d < 30) return `${d}d ago`;
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function AnalyticsSection({ employeeId }: { employeeId: string }) {
+  const [range, setRange] = useState<"7d" | "30d" | "90d">("7d");
+  const { data, isLoading, isError, refetch, isFetching } = useQuery<AnalyticsSummary>({
+    queryKey: ["adminAnalytics", range],
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/analytics/summary?range=${range}`, {
+        headers: { "X-Employee-Id": employeeId },
+      });
+      if (!res.ok) throw new Error("Failed to load analytics");
+      return res.json();
+    },
+  });
+
+  const maxDaily = useMemo(
+    () => Math.max(1, ...((data?.dailyPageViews ?? []).map((d) => d.views))),
+    [data],
+  );
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="flex items-start justify-between mb-1 gap-3 flex-wrap">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <BarChart3 size={18} className="text-amber-500" />
+            Usage Analytics
+          </h3>
+          <p className="text-sm text-gray-500">Who is using the selector and what they're viewing.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="inline-flex bg-gray-100 rounded-lg p-1">
+            {(["7d", "30d", "90d"] as const).map((r) => (
+              <button
+                key={r}
+                onClick={() => setRange(r)}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${range === r ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+              >
+                Last {r === "7d" ? "7 days" : r === "30d" ? "30 days" : "90 days"}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="p-2 text-gray-400 hover:text-gray-700 transition-colors"
+            title="Refresh"
+          >
+            <RefreshCw size={14} className={isFetching ? "animate-spin" : ""} />
+          </button>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="py-12 flex items-center justify-center text-gray-400 text-sm">Loading…</div>
+      ) : isError || !data ? (
+        <div className="py-8 text-center text-sm text-red-600">Failed to load analytics.</div>
+      ) : (
+        <div className="mt-4 space-y-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="bg-gray-50 rounded-lg px-4 py-3">
+              <div className="text-xs uppercase tracking-wide text-gray-400 font-semibold">Events</div>
+              <div className="text-xl font-bold text-gray-900">{data.totals.events.toLocaleString()}</div>
+            </div>
+            <div className="bg-gray-50 rounded-lg px-4 py-3">
+              <div className="text-xs uppercase tracking-wide text-gray-400 font-semibold">Sessions</div>
+              <div className="text-xl font-bold text-gray-900">{data.totals.sessions.toLocaleString()}</div>
+            </div>
+            <div className="bg-gray-50 rounded-lg px-4 py-3">
+              <div className="text-xs uppercase tracking-wide text-gray-400 font-semibold">Users</div>
+              <div className="text-xl font-bold text-gray-900">{data.totals.users.toLocaleString()}</div>
+            </div>
+            <div className="bg-gray-50 rounded-lg px-4 py-3">
+              <div className="text-xs uppercase tracking-wide text-gray-400 font-semibold">Anon Page Views</div>
+              <div className="text-xl font-bold text-gray-900">{data.anonymous.pageViews.toLocaleString()}</div>
+            </div>
+          </div>
+
+          {data.dailyPageViews.length > 0 && (
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Daily Page Views</div>
+              <div className="flex items-end gap-1 h-28 bg-gray-50 rounded-lg p-3">
+                {data.dailyPageViews.map((d) => (
+                  <div key={d.day} className="flex-1 flex flex-col items-center justify-end" title={`${d.day}: ${d.views} views`}>
+                    <div
+                      className="w-full bg-amber-400 rounded-t-sm"
+                      style={{ height: `${Math.max(2, (d.views / maxDaily) * 100)}%` }}
+                    />
+                    <div className="text-[9px] text-gray-400 mt-1 whitespace-nowrap">{d.day.slice(5)}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">
+              Active Users ({data.activeUsers.length})
+            </div>
+            {data.activeUsers.length === 0 ? (
+              <div className="text-sm text-gray-400 py-4 text-center bg-gray-50 rounded-lg">No signed-in activity yet.</div>
+            ) : (
+              <div className="overflow-x-auto border border-gray-100 rounded-lg">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 text-[11px] uppercase tracking-wide text-gray-400 font-semibold">
+                    <tr>
+                      <th className="px-3 py-2 text-left">User</th>
+                      <th className="px-3 py-2 text-right">Sessions</th>
+                      <th className="px-3 py-2 text-right">Page Views</th>
+                      <th className="px-3 py-2 text-right">Events</th>
+                      <th className="px-3 py-2 text-right">Last Seen</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {data.activeUsers.map((u) => (
+                      <tr key={u.employeeId ?? "unknown"} className="hover:bg-gray-50">
+                        <td className="px-3 py-2">
+                          <div className="font-medium text-gray-900">{u.employeeName || "Unknown"}</div>
+                          <div className="text-[11px] text-gray-400">#{u.employeeId}</div>
+                        </td>
+                        <td className="px-3 py-2 text-right text-gray-700">{u.sessions}</td>
+                        <td className="px-3 py-2 text-right text-gray-700">{u.pageViews}</td>
+                        <td className="px-3 py-2 text-right text-gray-700">{u.events}</td>
+                        <td className="px-3 py-2 text-right text-gray-500">{fmtTimeAgo(u.lastSeen as unknown as string)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Top Categories</div>
+              {data.topCategories.length === 0 ? (
+                <div className="text-sm text-gray-400 py-4 text-center bg-gray-50 rounded-lg">No category views yet.</div>
+              ) : (
+                <div className="border border-gray-100 rounded-lg overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 text-[11px] uppercase tracking-wide text-gray-400 font-semibold">
+                      <tr>
+                        <th className="px-3 py-2 text-left">Category</th>
+                        <th className="px-3 py-2 text-right">Views</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {data.topCategories.map((c) => (
+                        <tr key={c.categoryId ?? c.name} className="hover:bg-gray-50">
+                          <td className="px-3 py-2 text-gray-700">{c.name}</td>
+                          <td className="px-3 py-2 text-right font-medium text-gray-900">{c.views}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Top Products</div>
+              {data.topProducts.length === 0 ? (
+                <div className="text-sm text-gray-400 py-4 text-center bg-gray-50 rounded-lg">No product views yet.</div>
+              ) : (
+                <div className="border border-gray-100 rounded-lg overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 text-[11px] uppercase tracking-wide text-gray-400 font-semibold">
+                      <tr>
+                        <th className="px-3 py-2 text-left">Product</th>
+                        <th className="px-3 py-2 text-right">Views</th>
+                        <th className="px-3 py-2 text-right">Opens</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {data.topProducts.map((p) => (
+                        <tr key={p.productId ?? p.name} className="hover:bg-gray-50">
+                          <td className="px-3 py-2">
+                            <div className="font-medium text-gray-900 line-clamp-1">{p.name}</div>
+                            {p.sku && <div className="text-[11px] text-gray-400 font-mono">{p.sku}</div>}
+                          </td>
+                          <td className="px-3 py-2 text-right text-gray-700">{p.views}</td>
+                          <td className="px-3 py-2 text-right text-gray-700">{p.modalOpens}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 type ScheduleInterval = "off" | "1h" | "2h" | "4h" | "6h" | "12h" | "24h";
 
@@ -717,6 +949,7 @@ export default function AdminPage() {
       </div>
 
       <div className="space-y-6">
+        <AnalyticsSection employeeId={employee.id} />
         <SyncSection employeeName={`${employee.firstName} ${employee.lastName}`} />
         <LogoSection employeeId={employee.id} />
         <HeroImageSection employeeId={employee.id} />

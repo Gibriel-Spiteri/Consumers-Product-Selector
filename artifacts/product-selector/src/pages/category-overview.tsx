@@ -1,7 +1,9 @@
+import { useEffect } from "react";
 import { useParams, Link, Redirect } from "wouter";
 import { useGetCategories } from "@workspace/api-client-react";
 import { ChevronRight, Loader2, ArrowLeft } from "lucide-react";
 import { useCategoryPath } from "@/hooks/use-category-path";
+import { trackCategoryView } from "@/lib/analytics";
 
 function linkForCategory(cat: { id: number; children?: unknown[] }) {
   const hasChildren = cat.children && cat.children.length > 0;
@@ -29,6 +31,10 @@ export default function CategoryOverview() {
   const category = findCategoryDeep(categories, id);
   const subCategories = category?.children || [];
   const path = useCategoryPath(categories, id);
+
+  useEffect(() => {
+    if (Number.isFinite(id)) trackCategoryView(`/category/${id}`, id);
+  }, [id]);
 
   const parentLink = path.length > 1 ? `/category/${path[path.length - 2].id}` : "/";
 

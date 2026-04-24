@@ -61,6 +61,7 @@ A React + Vite web application served at `/` that implements a 3-level category 
 - **Search** — searches products by name or SKU at `/search/:query`
 - **NetSuite Banner** — yellow warning banner shown when NetSuite is not connected (using mock data)
 - **Sync Button** — triggers POST `/api/netsuite/sync` to pull live data from NetSuite
+- **Usage Analytics** — first-party event tracking. Browser client (`artifacts/product-selector/src/lib/analytics.ts`) buffers `page_view`, `category_view`, `product_view`, `product_modal_open`, `search` events per-tab session and flushes via `sendBeacon` (debounced + on visibility change). Events are stored in the `analytics_events` table. Admin dashboard (`AnalyticsSection` in `admin.tsx`) shows totals, active users, top categories/products, and daily page views over a configurable 7d/30d/90d range. Endpoints: `POST /api/analytics/event` (rate-limited 120/min/IP), `GET /api/admin/analytics/summary` (admin-gated). The `/admin` route itself is excluded from tracking.
 
 ### NetSuite M2M Integration (backend)
 
