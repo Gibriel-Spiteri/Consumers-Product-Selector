@@ -221,16 +221,18 @@ function UserActivityModal({
 
 function AnalyticsSection({ employeeId }: { employeeId: string }) {
   const [range, setRange] = useState<"7d" | "30d" | "90d">("7d");
+  const [includeAdmins, setIncludeAdmins] = useState(false);
   const [selectedUser, setSelectedUser] = useState<{
     employeeId: string;
     employeeName: string;
   } | null>(null);
   const { data, isLoading, isError, refetch, isFetching } = useQuery<AnalyticsSummary>({
-    queryKey: ["adminAnalytics", range],
+    queryKey: ["adminAnalytics", range, includeAdmins],
     queryFn: async () => {
-      const res = await fetch(`/api/admin/analytics/summary?range=${range}`, {
-        headers: { "X-Employee-Id": employeeId },
-      });
+      const res = await fetch(
+        `/api/admin/analytics/summary?range=${range}&includeAdmins=${includeAdmins ? "1" : "0"}`,
+        { headers: { "X-Employee-Id": employeeId } },
+      );
       if (!res.ok) throw new Error("Failed to load analytics");
       return res.json();
     },
@@ -251,7 +253,19 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
           </h3>
           <p className="text-sm text-gray-500">Who is using the selector and what they're viewing.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <label
+            className="inline-flex items-center gap-2 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg px-3 py-1.5 cursor-pointer select-none hover:bg-gray-200 transition-colors"
+            title="Include analytics from admin users"
+          >
+            <input
+              type="checkbox"
+              checked={includeAdmins}
+              onChange={(e) => setIncludeAdmins(e.target.checked)}
+              className="h-3.5 w-3.5 accent-amber-500"
+            />
+            Include admins
+          </label>
           <div className="inline-flex bg-gray-100 rounded-lg p-1">
             {(["7d", "30d", "90d"] as const).map((r) => (
               <button

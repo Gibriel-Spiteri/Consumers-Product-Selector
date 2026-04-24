@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
-import { sql, and, gte, isNotNull, desc, eq, inArray } from "drizzle-orm";
+import { sql, and, gte, isNotNull, desc, eq, inArray, notInArray, or, isNull } from "drizzle-orm";
 import {
   db,
   analyticsEventsTable,
@@ -189,6 +189,22 @@ interface NetSuiteEmployeeName {
   lastname: string | null;
 }
 
+interface NetSuiteAdminIdRow {
+  id: string;
+}
+
+async function fetchAdminEmployeeIds(): Promise<string[]> {
+  try {
+    const result = await executeSuiteQL<NetSuiteAdminIdRow>(
+      `SELECT id FROM Employee WHERE custentity_webstore_admin = 'T'`,
+    );
+    return result.items.map((r) => String(r.id));
+  } catch (err) {
+    logger.warn({ err }, "Failed to fetch admin employee ids from NetSuite");
+    return [];
+  }
+}
+
 async function fetchEmployeeNames(
   ids: string[],
 ): Promise<Map<string, string>> {
@@ -216,7 +232,19 @@ router.get("/admin/analytics/summary", requireAdmin, async (req, res) => {
     const days = rangeToDays(req.query.range);
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
-    const baseWhere = gte(analyticsEventsTable.createdAt, since);
+    const includeAdmins = req.query.includeAdmins === "1";
+    const adminIds = includeAdmins ? [] : await fetchAdminEmployeeIds();
+    const adminFilter =
+      adminIds.length > 0
+        ? or(
+            isNull(analyticsEventsTable.employeeId),
+            notInArray(analyticsEventsTable.employeeId, adminIds),
+          )
+        : undefined;
+
+    const baseWhere = adminFilter
+      ? and(gte(analyticsEventsTable.createdAt, since), adminFilter)!
+      : gte(analyticsEventsTable.createdAt, since);
 
     const [totals] = await db
       .select({
