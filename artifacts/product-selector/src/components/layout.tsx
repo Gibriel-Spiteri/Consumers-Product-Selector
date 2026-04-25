@@ -624,9 +624,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 className="absolute top-full left-0 w-full bg-white border-b border-gray-200 shadow-xl shadow-black/5 max-h-[70vh] overflow-y-auto"
               >
                 <div className="max-w-screen-xl mx-auto px-6 py-10">
-                  <div className="flex flex-wrap gap-x-16 gap-y-10">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-12 gap-y-10">
                     {categories.find(c => c.id === activeTab)?.children?.map(subCat => (
-                      <div key={subCat.id} className="min-w-[160px] max-w-[240px] flex-1">
+                      <div key={subCat.id} className="min-w-0">
                         <Link
                           href={subCat.children && subCat.children.length > 0 ? `/category/${subCat.id}` : `/products/${subCat.id}`}
                           onClick={() => { setIsHoveringNav(false); setActiveTab(null); }}
