@@ -286,7 +286,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   };
 
   const handleSelectCategory = (cat: { id: number; level: number }) => {
-    const fullCat = flatCategories.find(c => c.id === cat.id);
     const hasChildren = categories.some(top =>
       top.children?.some(mid =>
         mid.id === cat.id ? (mid.children?.length ?? 0) > 0 :
