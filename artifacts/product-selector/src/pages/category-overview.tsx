@@ -1,18 +1,20 @@
 import { useEffect } from "react";
-import { useParams, Link, Redirect } from "wouter";
+import { useParams, useLocation, Link, Redirect } from "wouter";
 import { useGetCategories } from "@workspace/api-client-react";
 import { ChevronRight, Loader2, ArrowLeft } from "lucide-react";
 import { useCategoryPath } from "@/hooks/use-category-path";
 import { trackCategoryView } from "@/lib/analytics";
-
-function linkForCategory(cat: { id: number; children?: unknown[] }) {
-  const hasChildren = cat.children && cat.children.length > 0;
-  return hasChildren ? `/category/${cat.id}` : `/products/${cat.id}`;
-}
+import {
+  categoryHref,
+  categoryOverviewHref,
+  categoryProductsHref,
+  parseCategoryIdParam,
+} from "@/lib/category-url";
 
 export default function CategoryOverview() {
-  const { categoryId } = useParams();
-  const id = Number(categoryId);
+  const { categorySlug } = useParams();
+  const id = parseCategoryIdParam(categorySlug);
+  const [, setLocation] = useLocation();
 
   const { data: categoryData, isLoading } = useGetCategories();
   const categories = categoryData?.categories || [];
@@ -32,11 +34,19 @@ export default function CategoryOverview() {
   const subCategories = category?.children || [];
   const path = useCategoryPath(categories, id);
 
+  const canonicalHref = category ? categoryOverviewHref(category) : null;
   useEffect(() => {
-    if (Number.isFinite(id)) trackCategoryView(`/category/${id}`, id);
-  }, [id]);
+    if (!canonicalHref || !categorySlug) return;
+    if (`/category/${categorySlug}` !== canonicalHref) {
+      setLocation(canonicalHref, { replace: true });
+    }
+  }, [canonicalHref, categorySlug, setLocation]);
 
-  const parentLink = path.length > 1 ? `/category/${path[path.length - 2].id}` : "/";
+  useEffect(() => {
+    if (Number.isFinite(id) && canonicalHref) trackCategoryView(canonicalHref, id);
+  }, [id, canonicalHref]);
+
+  const parentLink = path.length > 1 ? categoryOverviewHref(path[path.length - 2]) : "/";
 
   return (
     <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10">
@@ -46,7 +56,7 @@ export default function CategoryOverview() {
           <span key={cat.id} className="flex items-center gap-1">
             <ChevronRight size={11} className="text-gray-300" />
             {i < path.length - 1 ? (
-              <Link href={`/category/${cat.id}`} className="hover:text-gray-600 transition-colors">
+              <Link href={categoryOverviewHref(cat)} className="hover:text-gray-600 transition-colors">
                 {cat.name}
               </Link>
             ) : (
@@ -78,7 +88,7 @@ export default function CategoryOverview() {
           </div>
 
           {subCategories.length === 0 ? (
-            <Redirect to={`/products/${id}`} />
+            <Redirect to={categoryProductsHref(category)} />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
               {subCategories.map((sub) => (
@@ -87,7 +97,7 @@ export default function CategoryOverview() {
                   className="bg-white rounded-2xl border border-border shadow-sm p-6 hover:shadow-md hover:border-accent/30 transition-all"
                 >
                   <Link
-                    href={linkForCategory(sub)}
+                    href={categoryHref(sub)}
                     className="block font-display font-bold text-primary uppercase tracking-wide text-sm border-b-2 border-accent/30 pb-3 mb-4 hover:text-accent transition-colors"
                   >
                     {sub.name}
@@ -97,7 +107,7 @@ export default function CategoryOverview() {
                       {(sub.children || []).map((item) => (
                         <li key={item.id}>
                           <Link
-                            href={linkForCategory(item as { id: number; children?: unknown[] })}
+                            href={categoryHref(item as { id: number; name?: string; children?: unknown[] })}
                             className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center group py-0.5"
                           >
                             <ChevronRight

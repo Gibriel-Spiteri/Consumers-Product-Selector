@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn, fmtPrice } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import ProductModal from "@/components/product-modal";
+import { categoryHref, categoryOverviewHref, categoryProductsHref } from "@/lib/category-url";
 
 
 function HeaderLogo() {
@@ -292,7 +293,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         mid.children?.some(sub => sub.id === cat.id && ((sub as any).children?.length ?? 0) > 0)
       ) || top.id === cat.id
     );
-    setLocation(hasChildren && cat.level < 3 ? `/category/${cat.id}` : `/products/${cat.id}`);
+    setLocation(hasChildren && cat.level < 3 ? categoryOverviewHref(cat) : categoryProductsHref(cat));
     closeSearch();
   };
 
@@ -564,7 +565,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   {topLevelCategories.map(cat => (
                     <li key={cat.id} className="flex-shrink-0 relative">
                       <Link
-                        href={cat.children && cat.children.length > 0 ? `/category/${cat.id}` : `/products/${cat.id}`}
+                        href={categoryHref(cat)}
                         onMouseEnter={() => handleMouseEnterTab(cat.id)}
                         onClick={() => { setIsHoveringNav(false); setActiveTab(null); }}
                         className="flex items-center h-[50px] px-4 font-semibold uppercase tracking-widest transition-colors relative text-gray-900 text-[13px]"
@@ -579,7 +580,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </ul>
                 {displaysForSaleCategory && (
                   <Link
-                    href={displaysForSaleCategory.children && displaysForSaleCategory.children.length > 0 ? `/category/${displaysForSaleCategory.id}` : `/products/${displaysForSaleCategory.id}`}
+                    href={categoryHref(displaysForSaleCategory)}
                     onClick={() => { setIsHoveringNav(false); setActiveTab(null); }}
                     className="flex-shrink-0 flex items-center h-[50px] px-4 font-semibold uppercase tracking-widest text-amber-600 hover:text-amber-700 transition-colors text-[13px]"
                   >
@@ -602,7 +603,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </Link>
                 {internalCategory && (
                   <Link
-                    href={`/category/${internalCategory.id}`}
+                    href={categoryOverviewHref(internalCategory)}
                     onClick={() => { setIsHoveringNav(false); setActiveTab(null); }}
                     className="flex-shrink-0 flex items-center h-[50px] px-4 font-semibold uppercase tracking-widest text-gray-500 hover:text-gray-700 transition-colors text-[13px]"
                   >
@@ -628,7 +629,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     {categories.find(c => c.id === activeTab)?.children?.map(subCat => (
                       <div key={subCat.id} className="min-w-0">
                         <Link
-                          href={subCat.children && subCat.children.length > 0 ? `/category/${subCat.id}` : `/products/${subCat.id}`}
+                          href={categoryHref(subCat)}
                           onClick={() => { setIsHoveringNav(false); setActiveTab(null); }}
                           className="block font-semibold uppercase tracking-widest text-amber-500 hover:text-amber-600 mb-4 pb-2 border-b border-gray-100 text-[12px] transition-colors"
                         >
@@ -639,7 +640,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                             {subCat.children.map(item => (
                               <li key={item.id}>
                                 <Link
-                                  href={(item as any).children && (item as any).children.length > 0 ? `/category/${item.id}` : `/products/${item.id}`}
+                                  href={categoryHref(item as { id: number; name?: string; children?: unknown[] })}
                                   onClick={() => { setIsHoveringNav(false); setActiveTab(null); }}
                                   className="text-sm text-gray-500 hover:text-gray-900 transition-colors flex items-center group/link gap-1.5 py-0.5"
                                 >

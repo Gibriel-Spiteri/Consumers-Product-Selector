@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useParams, Link } from "wouter";
+import { useParams, useLocation, Link } from "wouter";
 import { useGetCategories, getGetCategoryProductsQueryOptions } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, PackageX, Loader2, ImageOff, LayoutList, LayoutGrid, Copy, Check, X, Filter, ChevronDown, Plus, Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
@@ -10,6 +10,11 @@ import { useQuoteList } from "@/context/quote-list-context";
 import { useAuth } from "@/context/auth-context";
 import { PprPriceTooltip } from "@/components/ppr-price-tooltip";
 import { trackCategoryView } from "@/lib/analytics";
+import {
+  categoryOverviewHref,
+  categoryProductsHref,
+  parseCategoryIdParam,
+} from "@/lib/category-url";
 
 export interface Product {
   id: number;
@@ -541,14 +546,11 @@ function FacetBar({ facets, activeFilters, onToggle, onClear }: {
 }
 
 export default function CategoryProducts() {
-  const { categoryId } = useParams();
-  const id = Number(categoryId);
+  const { categorySlug } = useParams();
+  const id = parseCategoryIdParam(categorySlug);
+  const [, setLocation] = useLocation();
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [view, setView] = useState<"list" | "grid">("grid");
-
-  useEffect(() => {
-    if (Number.isFinite(id)) trackCategoryView(`/products/${id}`, id);
-  }, [id]);
   const [inStockOnly, setInStockOnly] = useState(false);
   const [activeFilters, setActiveFilters] = useState<Map<string, Set<string>>>(new Map());
   const [refineQuery, setRefineQuery] = useState("");
@@ -569,6 +571,19 @@ export default function CategoryProducts() {
   const { data: categoriesData } = useGetCategories();
   const path = useCategoryPath(categoriesData?.categories || [], id);
   const categoryPath = path.map(c => c.name).join(" › ");
+
+  const currentCategory = path.length > 0 ? path[path.length - 1] : null;
+  const canonicalHref = currentCategory ? categoryProductsHref(currentCategory) : null;
+  useEffect(() => {
+    if (!canonicalHref || !categorySlug) return;
+    if (`/products/${categorySlug}` !== canonicalHref) {
+      setLocation(canonicalHref, { replace: true });
+    }
+  }, [canonicalHref, categorySlug, setLocation]);
+
+  useEffect(() => {
+    if (Number.isFinite(id) && canonicalHref) trackCategoryView(canonicalHref, id);
+  }, [id, canonicalHref]);
 
   const isDisplaysForSale = path.length > 0 && path[0].name.toLowerCase() === "displays for sale";
 
@@ -668,7 +683,7 @@ export default function CategoryProducts() {
           {path.map((cat) => (
             <span key={cat.id} className="flex items-center gap-1">
               <ChevronRight size={11} className="text-gray-300" />
-              <Link href={`/category/${cat.id}`} className="hover:text-gray-600 transition-colors">
+              <Link href={categoryOverviewHref(cat)} className="hover:text-gray-600 transition-colors">
                 {cat.name}
               </Link>
             </span>

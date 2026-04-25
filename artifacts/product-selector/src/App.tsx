@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { setAnalyticsIdentity, trackPageView } from "@/lib/analytics";
+import { isBareCategoryUrl } from "@/lib/category-url";
 import Layout from "@/components/layout";
 import Home from "@/pages/home";
 import CategoryOverview from "@/pages/category-overview";
@@ -37,6 +38,7 @@ function AnalyticsTracker() {
     setAnalyticsIdentity(employee?.id ?? null);
   }, [employee]);
   useEffect(() => {
+    if (isBareCategoryUrl(location)) return;
     trackPageView(location);
   }, [location]);
   return null;
@@ -71,8 +73,8 @@ function App() {
               <Layout>
                 <Switch>
                   <Route path="/" component={Home} />
-                  <Route path="/category/:categoryId" component={CategoryOverview} />
-                  <Route path="/products/:categoryId" component={CategoryProducts} />
+                  <Route path="/category/:categorySlug" component={CategoryOverview} />
+                  <Route path="/products/:categorySlug" component={CategoryProducts} />
                   <Route path="/search/:query" component={SearchPage} />
                   <Route path="/uncategorized" component={UncategorizedProducts} />
                   <Route path="/without-attributes" component={WithoutAttributesProducts} />
