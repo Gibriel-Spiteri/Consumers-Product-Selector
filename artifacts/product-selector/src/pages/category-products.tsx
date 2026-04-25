@@ -10,6 +10,7 @@ import { useQuoteList } from "@/context/quote-list-context";
 import { useAuth } from "@/context/auth-context";
 import { PprPriceTooltip } from "@/components/ppr-price-tooltip";
 import { trackCategoryView } from "@/lib/analytics";
+import { useProductImpression } from "@/hooks/use-product-impression";
 
 export interface Product {
   id: number;
@@ -199,58 +200,64 @@ function AddToListButton({ product }: { product: Product }) {
   );
 }
 
+function GridCard({ p, onSelect, isAdmin }: { p: Product; onSelect: (p: Product) => void; isAdmin: boolean }) {
+  const ref = useProductImpression<HTMLDivElement>(p.id);
+  return (
+    <div
+      ref={ref}
+      onClick={() => onSelect(p)}
+      className="bg-white rounded-2xl overflow-hidden cursor-pointer group hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/8 transition-all duration-200 shadow-[0_1px_4px_rgba(0,0,0,0.06)]"
+    >
+      <div className="bg-white h-[196px] flex items-center justify-center p-2">
+        <ProductImage
+          imageUrl={p.imageUrl}
+          name={p.name}
+          className="max-w-[180px] max-h-[180px]"
+        />
+      </div>
+      <div className="px-5 pb-5 pt-0">
+        <p className="text-[14px] font-medium text-gray-900 leading-snug line-clamp-2 min-h-[2.5rem] mb-2.5 group-hover:text-primary transition-colors">
+          {p.name}
+        </p>
+        {p.sku && (
+          <div className="mb-3">
+            <CopySkuButton sku={p.sku} />
+          </div>
+        )}
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div>
+            {p.price ? (
+              <PprPriceTooltip price={Number(p.price)} pprPriceReductionRetail={p.pprPriceReductionRetail} consumersPrice={p.consumersPrice} hasActivePpr={p.hasActivePpr}>
+                <p className={cn("text-[10px] font-semibold uppercase tracking-widest", p.hasActivePpr ? "text-emerald-600" : "text-gray-400")}>{p.hasActivePpr ? "Clearance" : "Our Price"}</p>
+                <p className={cn("font-semibold", p.hasActivePpr ? "text-emerald-600" : "text-gray-900")}>${fmtPrice(Number(p.price))}</p>
+                {!p.hasActivePpr && p.retailPrice != null && (
+                  <p className="text-[11px] text-gray-400">{p.hasActivePpr && p.consumersPrice != null ? "Consumers Price" : "Retail"}{" "}<span className="line-through">${fmtPrice(Number(p.hasActivePpr && p.consumersPrice != null ? p.consumersPrice : p.retailPrice))}</span></p>
+                )}
+                {p.hasActivePpr && p.pprPriceReductionRetail != null && (
+                  <p className="text-[11px] text-emerald-600">You Saved ${fmtPrice(p.consumersPrice != null ? Number(p.consumersPrice) - Number(p.price) : Number(p.pprPriceReductionRetail))}</p>
+                )}
+              </PprPriceTooltip>
+            ) : (
+              <span className="text-gray-300 font-normal text-sm">—</span>
+            )}
+          </div>
+          <div className="flex flex-col items-end gap-1">
+            <StockBadge qty={p.quantityAvailable} isSpecialOrderStock={p.isSpecialOrderStock} atpDate={p.atpDate} noReorder={p.noReorder} isAdmin={isAdmin} />
+            {isAdmin && <TwelveMonthPill used={p.twelveMonthUsage} />}
+            <AddToListButton product={p} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: Product) => void }) {
   const { isAdmin } = useAuth();
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
       {products.map(p => (
-        <div
-          key={p.id}
-          onClick={() => onSelect(p)}
-          className="bg-white rounded-2xl overflow-hidden cursor-pointer group hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/8 transition-all duration-200 shadow-[0_1px_4px_rgba(0,0,0,0.06)]"
-        >
-          <div className="bg-white h-[196px] flex items-center justify-center p-2">
-            <ProductImage
-              imageUrl={p.imageUrl}
-              name={p.name}
-              className="max-w-[180px] max-h-[180px]"
-            />
-          </div>
-          <div className="px-5 pb-5 pt-0">
-            <p className="text-[14px] font-medium text-gray-900 leading-snug line-clamp-2 min-h-[2.5rem] mb-2.5 group-hover:text-primary transition-colors">
-              {p.name}
-            </p>
-            {p.sku && (
-              <div className="mb-3">
-                <CopySkuButton sku={p.sku} />
-              </div>
-            )}
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <div>
-                {p.price ? (
-                  <PprPriceTooltip price={Number(p.price)} pprPriceReductionRetail={p.pprPriceReductionRetail} consumersPrice={p.consumersPrice} hasActivePpr={p.hasActivePpr}>
-                    <p className={cn("text-[10px] font-semibold uppercase tracking-widest", p.hasActivePpr ? "text-emerald-600" : "text-gray-400")}>{p.hasActivePpr ? "Clearance" : "Our Price"}</p>
-                    <p className={cn("font-semibold", p.hasActivePpr ? "text-emerald-600" : "text-gray-900")}>${fmtPrice(Number(p.price))}</p>
-                    {!p.hasActivePpr && p.retailPrice != null && (
-                      <p className="text-[11px] text-gray-400">{p.hasActivePpr && p.consumersPrice != null ? "Consumers Price" : "Retail"}{" "}<span className="line-through">${fmtPrice(Number(p.hasActivePpr && p.consumersPrice != null ? p.consumersPrice : p.retailPrice))}</span></p>
-                    )}
-                    {p.hasActivePpr && p.pprPriceReductionRetail != null && (
-                      <p className="text-[11px] text-emerald-600">You Saved ${fmtPrice(p.consumersPrice != null ? Number(p.consumersPrice) - Number(p.price) : Number(p.pprPriceReductionRetail))}</p>
-                    )}
-                  </PprPriceTooltip>
-                ) : (
-                  <span className="text-gray-300 font-normal text-sm">—</span>
-                )}
-              </div>
-              <div className="flex flex-col items-end gap-1">
-                <StockBadge qty={p.quantityAvailable} isSpecialOrderStock={p.isSpecialOrderStock} atpDate={p.atpDate} noReorder={p.noReorder} isAdmin={isAdmin} />
-                {/* <ThreeMonthPill used={p.threeMonthUsage} /> */}
-                {isAdmin && <TwelveMonthPill used={p.twelveMonthUsage} />}
-                <AddToListButton product={p} />
-              </div>
-            </div>
-          </div>
-        </div>
+        <GridCard key={p.id} p={p} onSelect={onSelect} isAdmin={isAdmin} />
       ))}
     </div>
   );
@@ -292,6 +299,56 @@ function SortHeader({
         <Icon className={cn("w-3 h-3", active ? "opacity-100" : "opacity-50")} />
       </button>
     </th>
+  );
+}
+
+function ListRow({ p, onSelect, isAdmin }: { p: Product; onSelect: (p: Product) => void; isAdmin: boolean }) {
+  const ref = useProductImpression<HTMLTableRowElement>(p.id);
+  return (
+    <tr
+      ref={ref}
+      onClick={() => onSelect(p)}
+      className="hover:bg-gray-50 transition-colors group cursor-pointer"
+    >
+      <td className="px-5 py-3">
+        <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center overflow-hidden shrink-0">
+          <ProductImage imageUrl={p.imageUrl} name={p.name} className="max-w-[46px] max-h-[46px]" />
+        </div>
+      </td>
+      <td className="px-5 py-3 whitespace-nowrap">
+        {p.sku ? <CopySkuButton sku={p.sku} /> : <span className="text-gray-300">—</span>}
+      </td>
+      <td className="px-5 py-3 font-medium text-gray-900 group-hover:text-primary transition-colors">
+        {p.name}
+      </td>
+      <td className="px-5 py-3 whitespace-nowrap">
+        <StockBadge qty={p.quantityAvailable} isSpecialOrderStock={p.isSpecialOrderStock} atpDate={p.atpDate} noReorder={p.noReorder} isAdmin={isAdmin} showFlags={false} />
+      </td>
+      <td className="px-5 py-3 whitespace-nowrap">
+        <FlagBadges noReorder={p.noReorder} isSpecialOrderStock={p.isSpecialOrderStock} isAdmin={isAdmin} />
+      </td>
+      {isAdmin && (
+        <td className="px-5 py-3 whitespace-nowrap">
+          <TwelveMonthPill used={p.twelveMonthUsage} />
+        </td>
+      )}
+      <td className="px-5 py-3 text-right whitespace-nowrap">
+        {p.price ? (
+          <PprPriceTooltip price={Number(p.price)} pprPriceReductionRetail={p.pprPriceReductionRetail} consumersPrice={p.consumersPrice} hasActivePpr={!!p.hasActivePpr}>
+            <p className={cn("font-semibold", p.hasActivePpr ? "text-emerald-600" : "text-gray-900")}>${fmtPrice(Number(p.price))}</p>
+            {!p.hasActivePpr && p.retailPrice != null && (
+              <p className="text-[11px] text-gray-400">{p.hasActivePpr && p.consumersPrice != null ? "Consumers Price" : "Retail"}{" "}<span className="line-through">${fmtPrice(Number(p.hasActivePpr && p.consumersPrice != null ? p.consumersPrice : p.retailPrice))}</span></p>
+            )}
+            {p.hasActivePpr && p.pprPriceReductionRetail != null && (
+              <p className="text-[11px] text-emerald-600">You Saved ${fmtPrice(p.consumersPrice != null ? Number(p.consumersPrice) - Number(p.price) : Number(p.pprPriceReductionRetail))}</p>
+            )}
+          </PprPriceTooltip>
+        ) : <span className="text-gray-300 font-normal">—</span>}
+      </td>
+      <td className="px-5 py-3 whitespace-nowrap">
+        <AddToListButton product={p} />
+      </td>
+    </tr>
   );
 }
 
@@ -366,53 +423,7 @@ export function ListView({ products, onSelect }: { products: Product[]; onSelect
           </thead>
           <tbody className="divide-y divide-gray-50">
             {sorted.map(p => (
-              <tr
-                key={p.id}
-                onClick={() => onSelect(p)}
-                className="hover:bg-gray-50 transition-colors group cursor-pointer"
-              >
-                <td className="px-5 py-3">
-                  <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center overflow-hidden shrink-0">
-                    <ProductImage imageUrl={p.imageUrl} name={p.name} className="max-w-[46px] max-h-[46px]" />
-                  </div>
-                </td>
-                <td className="px-5 py-3 whitespace-nowrap">
-                  {p.sku ? <CopySkuButton sku={p.sku} /> : <span className="text-gray-300">—</span>}
-                </td>
-                <td className="px-5 py-3 font-medium text-gray-900 group-hover:text-primary transition-colors">
-                  {p.name}
-                </td>
-                <td className="px-5 py-3 whitespace-nowrap">
-                  <StockBadge qty={p.quantityAvailable} isSpecialOrderStock={p.isSpecialOrderStock} atpDate={p.atpDate} noReorder={p.noReorder} isAdmin={isAdmin} showFlags={false} />
-                </td>
-                <td className="px-5 py-3 whitespace-nowrap">
-                  <FlagBadges noReorder={p.noReorder} isSpecialOrderStock={p.isSpecialOrderStock} isAdmin={isAdmin} />
-                </td>
-                {/* <td className="px-5 py-3 whitespace-nowrap">
-                  <ThreeMonthPill used={p.threeMonthUsage} />
-                </td> */}
-                {isAdmin && (
-                  <td className="px-5 py-3 whitespace-nowrap">
-                    <TwelveMonthPill used={p.twelveMonthUsage} />
-                  </td>
-                )}
-                <td className="px-5 py-3 text-right whitespace-nowrap">
-                  {p.price ? (
-                    <PprPriceTooltip price={Number(p.price)} pprPriceReductionRetail={p.pprPriceReductionRetail} consumersPrice={p.consumersPrice} hasActivePpr={!!p.hasActivePpr}>
-                      <p className={cn("font-semibold", p.hasActivePpr ? "text-emerald-600" : "text-gray-900")}>${fmtPrice(Number(p.price))}</p>
-                      {!p.hasActivePpr && p.retailPrice != null && (
-                        <p className="text-[11px] text-gray-400">{p.hasActivePpr && p.consumersPrice != null ? "Consumers Price" : "Retail"}{" "}<span className="line-through">${fmtPrice(Number(p.hasActivePpr && p.consumersPrice != null ? p.consumersPrice : p.retailPrice))}</span></p>
-                      )}
-                      {p.hasActivePpr && p.pprPriceReductionRetail != null && (
-                        <p className="text-[11px] text-emerald-600">You Saved ${fmtPrice(p.consumersPrice != null ? Number(p.consumersPrice) - Number(p.price) : Number(p.pprPriceReductionRetail))}</p>
-                      )}
-                    </PprPriceTooltip>
-                  ) : <span className="text-gray-300 font-normal">—</span>}
-                </td>
-                <td className="px-5 py-3 whitespace-nowrap">
-                  <AddToListButton product={p} />
-                </td>
-              </tr>
+              <ListRow key={p.id} p={p} onSelect={onSelect} isAdmin={isAdmin} />
             ))}
           </tbody>
         </table>

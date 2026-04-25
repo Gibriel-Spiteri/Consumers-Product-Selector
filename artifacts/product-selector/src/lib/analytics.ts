@@ -160,7 +160,12 @@ function currentPath(): string | null {
   return window.location.pathname + window.location.search;
 }
 
+const seenProductIds = new Set<number>();
+
 export function trackProductView(productId: number, path?: string) {
+  if (!Number.isFinite(productId)) return;
+  if (seenProductIds.has(productId)) return;
+  seenProductIds.add(productId);
   enqueue({ eventType: "product_view", productId, path: path ?? currentPath() });
 }
 
