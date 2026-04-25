@@ -236,6 +236,10 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
       if (!res.ok) throw new Error("Failed to load analytics");
       return res.json();
     },
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchInterval: 30_000,
   });
 
   const maxDaily = useMemo(
