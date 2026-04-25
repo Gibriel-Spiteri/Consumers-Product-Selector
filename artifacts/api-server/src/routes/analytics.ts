@@ -327,20 +327,34 @@ router.get("/admin/analytics/summary", requireAdmin, async (req, res) => {
     const categoryIds = topCategoriesRaw
       .map((r) => r.categoryId)
       .filter((v): v is number => v != null);
-    const categories =
+    const allCategories =
       categoryIds.length > 0
         ? await db
-            .select({ id: categoriesTable.id, name: categoriesTable.name })
+            .select({
+              id: categoriesTable.id,
+              name: categoriesTable.name,
+              parentId: categoriesTable.parentId,
+            })
             .from(categoriesTable)
-            .where(inArray(categoriesTable.id, categoryIds))
         : [];
-    const catNameById = new Map(categories.map((c) => [c.id, c.name]));
+    const catById = new Map(allCategories.map((c) => [c.id, c]));
+    const buildCategoryPath = (id: number | null): string => {
+      if (id == null) return "Unknown";
+      const parts: string[] = [];
+      let current = catById.get(id);
+      const seen = new Set<number>();
+      while (current && !seen.has(current.id)) {
+        seen.add(current.id);
+        parts.unshift(current.name);
+        if (current.parentId == null) break;
+        current = catById.get(current.parentId);
+      }
+      if (parts.length === 0) return `#${id}`;
+      return parts.join(" › ");
+    };
     const topCategories = topCategoriesRaw.map((r) => ({
       categoryId: r.categoryId,
-      name:
-        r.categoryId != null
-          ? catNameById.get(r.categoryId) ?? `#${r.categoryId}`
-          : "Unknown",
+      name: buildCategoryPath(r.categoryId),
       views: r.views,
     }));
 
