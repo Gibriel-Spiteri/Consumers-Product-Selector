@@ -6,12 +6,20 @@ import { Link } from "wouter";
 
 interface AnalyticsSummary {
   range: string;
-  totals: { events: number; sessions: number; users: number };
+  totals: {
+    events: number;
+    sessions: number;
+    users: number;
+    addToList: number;
+    pushToEstimate: number;
+  };
   activeUsers: Array<{
     employeeId: string | null;
     employeeName: string | null;
     sessions: number;
     pageViews: number;
+    addsToList: number;
+    pushesToEstimate: number;
     events: number;
     lastSeen: string;
   }>;
@@ -24,7 +32,30 @@ interface AnalyticsSummary {
     views: number;
     modalOpens: number;
   }>;
+  topAddedItems: Array<{
+    productId: number | null;
+    name: string;
+    sku: string | null;
+    adds: number;
+    qtyAdded: number;
+    users: number;
+  }>;
+  recentEstimates: Array<{
+    createdAt: string;
+    employeeId: string | null;
+    employeeName: string | null;
+    estimateId: number | string | null;
+    tranId: string | null;
+    itemCount: number | null;
+    lineCount: number | null;
+    totalValue: number | null;
+  }>;
   dailyPageViews: Array<{ day: string; views: number }>;
+}
+
+function fmtUsd(v: number | null) {
+  if (v == null) return "—";
+  return v.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 }
 
 function fmtTimeAgo(iso: string | null) {
@@ -298,7 +329,7 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
         <div className="py-8 text-center text-sm text-red-600">Failed to load analytics.</div>
       ) : (
         <div className="mt-4 space-y-6">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             <div className="bg-gray-50 rounded-lg px-4 py-3">
               <div className="text-xs uppercase tracking-wide text-gray-400 font-semibold">Events</div>
               <div className="text-xl font-bold text-gray-900">{data.totals.events.toLocaleString()}</div>
@@ -312,8 +343,16 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
               <div className="text-xl font-bold text-gray-900">{data.totals.users.toLocaleString()}</div>
             </div>
             <div className="bg-gray-50 rounded-lg px-4 py-3">
-              <div className="text-xs uppercase tracking-wide text-gray-400 font-semibold">Anon Page Views</div>
+              <div className="text-xs uppercase tracking-wide text-gray-400 font-semibold">Anon Views</div>
               <div className="text-xl font-bold text-gray-900">{data.anonymous.pageViews.toLocaleString()}</div>
+            </div>
+            <div className="bg-amber-50 rounded-lg px-4 py-3">
+              <div className="text-xs uppercase tracking-wide text-amber-700 font-semibold">Added to List</div>
+              <div className="text-xl font-bold text-gray-900">{(data.totals.addToList ?? 0).toLocaleString()}</div>
+            </div>
+            <div className="bg-emerald-50 rounded-lg px-4 py-3">
+              <div className="text-xs uppercase tracking-wide text-emerald-700 font-semibold">Estimates Sent</div>
+              <div className="text-xl font-bold text-gray-900">{(data.totals.pushToEstimate ?? 0).toLocaleString()}</div>
             </div>
           </div>
 
@@ -348,6 +387,8 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
                       <th className="px-3 py-2 text-left">User</th>
                       <th className="px-3 py-2 text-right">Sessions</th>
                       <th className="px-3 py-2 text-right">Page Views</th>
+                      <th className="px-3 py-2 text-right">Adds</th>
+                      <th className="px-3 py-2 text-right">Estimates</th>
                       <th className="px-3 py-2 text-right">Events</th>
                       <th className="px-3 py-2 text-right">Last Seen</th>
                     </tr>
@@ -374,6 +415,8 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
                           </td>
                           <td className="px-3 py-2 text-right text-gray-700">{u.sessions}</td>
                           <td className="px-3 py-2 text-right text-gray-700">{u.pageViews}</td>
+                          <td className="px-3 py-2 text-right text-amber-700 font-medium">{u.addsToList}</td>
+                          <td className="px-3 py-2 text-right text-emerald-700 font-medium">{u.pushesToEstimate}</td>
                           <td className="px-3 py-2 text-right text-gray-700">{u.events}</td>
                           <td className="px-3 py-2 text-right text-gray-500">{fmtTimeAgo(u.lastSeen)}</td>
                         </tr>
@@ -435,6 +478,92 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
                           </td>
                           <td className="px-3 py-2 text-right text-gray-700">{p.views}</td>
                           <td className="px-3 py-2 text-right text-gray-700">{p.modalOpens}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">
+                Top Added Items
+              </div>
+              {data.topAddedItems.length === 0 ? (
+                <div className="text-sm text-gray-400 py-4 text-center bg-gray-50 rounded-lg">
+                  No items added to lists yet.
+                </div>
+              ) : (
+                <div className="border border-gray-100 rounded-lg overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 text-[11px] uppercase tracking-wide text-gray-400 font-semibold">
+                      <tr>
+                        <th className="px-3 py-2 text-left">Product</th>
+                        <th className="px-3 py-2 text-right">Adds</th>
+                        <th className="px-3 py-2 text-right">Qty</th>
+                        <th className="px-3 py-2 text-right">Users</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {data.topAddedItems.map((p) => (
+                        <tr key={p.productId ?? p.name} className="hover:bg-gray-50">
+                          <td className="px-3 py-2">
+                            <div className="font-medium text-gray-900 line-clamp-1">{p.name}</div>
+                            {p.sku && <div className="text-[11px] text-gray-400 font-mono">{p.sku}</div>}
+                          </td>
+                          <td className="px-3 py-2 text-right text-amber-700 font-medium">{p.adds}</td>
+                          <td className="px-3 py-2 text-right text-gray-700">{p.qtyAdded}</td>
+                          <td className="px-3 py-2 text-right text-gray-700">{p.users}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">
+                Recent Estimates Sent
+              </div>
+              {data.recentEstimates.length === 0 ? (
+                <div className="text-sm text-gray-400 py-4 text-center bg-gray-50 rounded-lg">
+                  No estimates sent yet.
+                </div>
+              ) : (
+                <div className="border border-gray-100 rounded-lg overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 text-[11px] uppercase tracking-wide text-gray-400 font-semibold">
+                      <tr>
+                        <th className="px-3 py-2 text-left">When</th>
+                        <th className="px-3 py-2 text-left">User</th>
+                        <th className="px-3 py-2 text-left">Estimate</th>
+                        <th className="px-3 py-2 text-right">Items</th>
+                        <th className="px-3 py-2 text-right">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {data.recentEstimates.map((e, idx) => (
+                        <tr key={`${e.estimateId ?? "x"}-${idx}`} className="hover:bg-gray-50">
+                          <td className="px-3 py-2 text-gray-500 text-xs whitespace-nowrap">
+                            {fmtTimeAgo(e.createdAt)}
+                          </td>
+                          <td className="px-3 py-2 text-gray-700">
+                            {e.employeeName || (e.employeeId ? `#${e.employeeId}` : "Unknown")}
+                          </td>
+                          <td className="px-3 py-2 text-emerald-700 font-medium">
+                            {e.tranId ?? (e.estimateId != null ? `#${e.estimateId}` : "—")}
+                          </td>
+                          <td className="px-3 py-2 text-right text-gray-700">
+                            {e.itemCount ?? "—"}
+                            {e.lineCount != null && (
+                              <span className="text-[10px] text-gray-400 ml-1">({e.lineCount} lines)</span>
+                            )}
+                          </td>
+                          <td className="px-3 py-2 text-right text-gray-700">{fmtUsd(e.totalValue)}</td>
                         </tr>
                       ))}
                     </tbody>

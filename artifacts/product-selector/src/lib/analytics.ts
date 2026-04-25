@@ -3,7 +3,9 @@ type EventType =
   | "category_view"
   | "product_view"
   | "product_modal_open"
-  | "search";
+  | "search"
+  | "add_to_list"
+  | "push_to_estimate";
 
 interface QueuedEvent {
   eventType: EventType;
@@ -171,6 +173,45 @@ export function trackProductView(productId: number, path?: string) {
 
 export function trackProductModalOpen(productId: number, path?: string) {
   enqueue({ eventType: "product_modal_open", productId, path: path ?? currentPath() });
+}
+
+export function trackAddToList(
+  productId: number,
+  quantity: number,
+  productName?: string,
+  sku?: string | null,
+) {
+  if (!Number.isFinite(productId)) return;
+  enqueue({
+    eventType: "add_to_list",
+    productId,
+    path: currentPath(),
+    metadata: {
+      quantity,
+      productName: productName ?? null,
+      sku: sku ?? null,
+    },
+  });
+}
+
+export function trackPushToEstimate(payload: {
+  estimateId: number | string;
+  tranId: string;
+  itemCount: number;
+  lineCount: number;
+  totalValue: number;
+}) {
+  enqueue({
+    eventType: "push_to_estimate",
+    path: currentPath(),
+    metadata: {
+      estimateId: payload.estimateId,
+      tranId: payload.tranId,
+      itemCount: payload.itemCount,
+      lineCount: payload.lineCount,
+      totalValue: payload.totalValue,
+    },
+  });
 }
 
 export function trackSearch(query: string, resultsCount?: number) {

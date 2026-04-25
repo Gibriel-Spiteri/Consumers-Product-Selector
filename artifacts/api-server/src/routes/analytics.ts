@@ -25,6 +25,8 @@ const ALLOWED_EVENT_TYPES = new Set([
   "product_view",
   "product_modal_open",
   "search",
+  "add_to_list",
+  "push_to_estimate",
 ]);
 
 const ipBuckets = new Map<string, { count: number; resetAt: number }>();
@@ -251,6 +253,8 @@ router.get("/admin/analytics/summary", requireAdmin, async (req, res) => {
         totalEvents: sql<number>`count(*)::int`,
         totalSessions: sql<number>`count(distinct ${analyticsEventsTable.sessionId})::int`,
         totalUsers: sql<number>`count(distinct ${analyticsEventsTable.employeeId})::int`,
+        addToListEvents: sql<number>`coalesce(sum(case when ${analyticsEventsTable.eventType} = 'add_to_list' then 1 else 0 end), 0)::int`,
+        pushToEstimateEvents: sql<number>`coalesce(sum(case when ${analyticsEventsTable.eventType} = 'push_to_estimate' then 1 else 0 end), 0)::int`,
       })
       .from(analyticsEventsTable)
       .where(baseWhere);
@@ -260,6 +264,8 @@ router.get("/admin/analytics/summary", requireAdmin, async (req, res) => {
         employeeId: analyticsEventsTable.employeeId,
         sessions: sql<number>`count(distinct ${analyticsEventsTable.sessionId})::int`,
         pageViews: sql<number>`coalesce(sum(case when ${analyticsEventsTable.eventType} = 'page_view' then 1 else 0 end), 0)::int`,
+        addsToList: sql<number>`coalesce(sum(case when ${analyticsEventsTable.eventType} = 'add_to_list' then 1 else 0 end), 0)::int`,
+        pushesToEstimate: sql<number>`coalesce(sum(case when ${analyticsEventsTable.eventType} = 'push_to_estimate' then 1 else 0 end), 0)::int`,
         events: sql<number>`count(*)::int`,
         lastSeen: sql<Date>`max(${analyticsEventsTable.createdAt})`,
       })
@@ -285,6 +291,8 @@ router.get("/admin/analytics/summary", requireAdmin, async (req, res) => {
           : null,
       sessions: u.sessions,
       pageViews: u.pageViews,
+      addsToList: u.addsToList,
+      pushesToEstimate: u.pushesToEstimate,
       events: u.events,
       lastSeen: u.lastSeen,
     }));
@@ -394,17 +402,117 @@ router.get("/admin/analytics/summary", requireAdmin, async (req, res) => {
       .groupBy(sql`date_trunc('day', ${analyticsEventsTable.createdAt})`)
       .orderBy(sql`date_trunc('day', ${analyticsEventsTable.createdAt})`);
 
+    const topAddedRaw = await db
+      .select({
+        productId: analyticsEventsTable.productId,
+        adds: sql<number>`count(*)::int`,
+        qtyAdded: sql<number>`coalesce(sum(case when (${analyticsEventsTable.metadata}->>'quantity') ~ '^-?[0-9]+$' then (${analyticsEventsTable.metadata}->>'quantity')::int else 0 end), 0)::int`,
+        users: sql<number>`count(distinct ${analyticsEventsTable.employeeId})::int`,
+      })
+      .from(analyticsEventsTable)
+      .where(
+        and(
+          baseWhere,
+          isNotNull(analyticsEventsTable.productId),
+          eq(analyticsEventsTable.eventType, "add_to_list"),
+        ),
+      )
+      .groupBy(analyticsEventsTable.productId)
+      .orderBy(desc(sql`count(*)`))
+      .limit(25);
+
+    const addedProductIds = topAddedRaw
+      .map((r) => r.productId)
+      .filter((v): v is number => v != null);
+    const missingAddedIds = addedProductIds.filter((id) => !productById.has(id));
+    const addedProducts =
+      missingAddedIds.length > 0
+        ? await db
+            .select({
+              id: productsTable.id,
+              name: productsTable.name,
+              sku: productsTable.sku,
+            })
+            .from(productsTable)
+            .where(inArray(productsTable.id, missingAddedIds))
+        : [];
+    for (const p of addedProducts) productById.set(p.id, p);
+    const topAddedItems = topAddedRaw.map((r) => {
+      const p = r.productId != null ? productById.get(r.productId) : undefined;
+      return {
+        productId: r.productId,
+        name: p?.name ?? `#${r.productId}`,
+        sku: p?.sku ?? null,
+        adds: r.adds,
+        qtyAdded: r.qtyAdded,
+        users: r.users,
+      };
+    });
+
+    const recentEstimatesRaw = await db
+      .select({
+        createdAt: analyticsEventsTable.createdAt,
+        employeeId: analyticsEventsTable.employeeId,
+        metadata: analyticsEventsTable.metadata,
+      })
+      .from(analyticsEventsTable)
+      .where(and(baseWhere, eq(analyticsEventsTable.eventType, "push_to_estimate")))
+      .orderBy(desc(analyticsEventsTable.createdAt))
+      .limit(25);
+
+    const recentEstimateEmployeeIds = recentEstimatesRaw
+      .map((e) => e.employeeId)
+      .filter((v): v is string => v != null);
+    const missingNameIds = recentEstimateEmployeeIds.filter(
+      (id) => !employeeNames.has(id),
+    );
+    if (missingNameIds.length > 0) {
+      const extra = await fetchEmployeeNames(missingNameIds);
+      for (const [id, name] of extra) employeeNames.set(id, name);
+    }
+    const recentEstimates = recentEstimatesRaw.map((e) => {
+      const meta = (e.metadata ?? {}) as Record<string, unknown>;
+      const tranId = typeof meta.tranId === "string" ? meta.tranId : null;
+      const estimateId =
+        typeof meta.estimateId === "number" || typeof meta.estimateId === "string"
+          ? meta.estimateId
+          : null;
+      const itemCount = typeof meta.itemCount === "number" ? meta.itemCount : null;
+      const lineCount = typeof meta.lineCount === "number" ? meta.lineCount : null;
+      const totalValue =
+        typeof meta.totalValue === "number" ? meta.totalValue : null;
+      return {
+        createdAt: e.createdAt,
+        employeeId: e.employeeId,
+        employeeName:
+          e.employeeId && employeeNames.get(e.employeeId)
+            ? employeeNames.get(e.employeeId)!
+            : e.employeeId
+            ? `Employee #${e.employeeId}`
+            : null,
+        estimateId,
+        tranId,
+        itemCount,
+        lineCount,
+        totalValue,
+      };
+    });
+
     res.json({
       range: `${days}d`,
       totals: {
         events: totals?.totalEvents ?? 0,
         sessions: totals?.totalSessions ?? 0,
         users: totals?.totalUsers ?? 0,
+        addToList: totals?.addToListEvents ?? 0,
+        pushToEstimate: totals?.pushToEstimateEvents ?? 0,
       },
       activeUsers,
       anonymous: anonAgg[0] ?? { sessions: 0, pageViews: 0, events: 0, lastSeen: null },
       topCategories,
       topProducts,
+      topAddedItems,
+      recentEstimates,
       dailyPageViews,
     });
   } catch (err) {

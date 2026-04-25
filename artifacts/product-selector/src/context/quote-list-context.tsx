@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
+import { trackAddToList } from "@/lib/analytics";
 
 export interface QuoteItem {
   productId: number;
@@ -62,6 +63,7 @@ export function QuoteListProvider({ children }: { children: ReactNode }) {
       }
       return [...prev, { ...item, quantity: qty }];
     });
+    trackAddToList(item.productId, qty, item.name, item.sku);
   }, []);
 
   const removeItem = useCallback((productId: number) => {

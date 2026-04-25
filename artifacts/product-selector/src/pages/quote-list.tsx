@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { ChevronRight, Trash2, Minus, Plus, ClipboardList, Search, Loader2, Send, Check, AlertCircle, ImageOff, X } from "lucide-react";
 import { useQuoteList } from "@/context/quote-list-context";
 import { cn, fmtPrice } from "@/lib/utils";
+import { trackPushToEstimate } from "@/lib/analytics";
 
 interface Estimate {
   id: number;
@@ -234,6 +235,13 @@ export default function QuoteListPage() {
         .join(", ");
       msg += ` — skipped (no longer in NetSuite): ${skuList}`;
     }
+    trackPushToEstimate({
+      estimateId,
+      tranId,
+      itemCount: pushableItems.reduce((sum, i) => sum + i.quantity, 0),
+      lineCount: pushableItems.length,
+      totalValue: pushableItems.reduce((sum, i) => sum + (i.price ?? 0) * i.quantity, 0),
+    });
     setPushResult({ success: true, message: msg });
     clearList();
   };
