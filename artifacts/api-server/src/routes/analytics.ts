@@ -259,7 +259,7 @@ router.get("/admin/analytics/summary", requireAdmin, async (req, res) => {
       .select({
         employeeId: analyticsEventsTable.employeeId,
         sessions: sql<number>`count(distinct ${analyticsEventsTable.sessionId})::int`,
-        pageViews: sql<number>`sum(case when ${analyticsEventsTable.eventType} = 'page_view' then 1 else 0 end)::int`,
+        pageViews: sql<number>`coalesce(sum(case when ${analyticsEventsTable.eventType} = 'page_view' then 1 else 0 end), 0)::int`,
         events: sql<number>`count(*)::int`,
         lastSeen: sql<Date>`max(${analyticsEventsTable.createdAt})`,
       })
@@ -292,7 +292,7 @@ router.get("/admin/analytics/summary", requireAdmin, async (req, res) => {
     const anonAgg = await db
       .select({
         sessions: sql<number>`count(distinct ${analyticsEventsTable.sessionId})::int`,
-        pageViews: sql<number>`sum(case when ${analyticsEventsTable.eventType} = 'page_view' then 1 else 0 end)::int`,
+        pageViews: sql<number>`coalesce(sum(case when ${analyticsEventsTable.eventType} = 'page_view' then 1 else 0 end), 0)::int`,
         events: sql<number>`count(*)::int`,
         lastSeen: sql<Date>`max(${analyticsEventsTable.createdAt})`,
       })
