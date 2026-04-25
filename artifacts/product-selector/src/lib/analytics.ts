@@ -1,7 +1,6 @@
 type EventType =
   | "page_view"
   | "category_view"
-  | "product_view"
   | "product_modal_open"
   | "search"
   | "add_to_list"
@@ -160,15 +159,6 @@ export function trackCategoryView(path: string, categoryId: number | null | unde
 function currentPath(): string | null {
   if (typeof window === "undefined") return null;
   return window.location.pathname + window.location.search;
-}
-
-const seenProductIds = new Set<number>();
-
-export function trackProductView(productId: number, path?: string) {
-  if (!Number.isFinite(productId)) return;
-  if (seenProductIds.has(productId)) return;
-  seenProductIds.add(productId);
-  enqueue({ eventType: "product_view", productId, path: path ?? currentPath() });
 }
 
 export function trackProductModalOpen(productId: number, path?: string) {

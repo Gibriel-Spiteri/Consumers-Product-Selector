@@ -29,7 +29,6 @@ interface AnalyticsSummary {
     productId: number | null;
     name: string;
     sku: string | null;
-    views: number;
     modalOpens: number;
   }>;
   topAddedItems: Array<{
@@ -96,17 +95,19 @@ interface UserActivityResponse {
 const EVENT_TYPE_LABEL: Record<string, string> = {
   page_view: "Page View",
   category_view: "Category View",
-  product_view: "Product View",
   product_modal_open: "Product Modal",
   search: "Search",
+  add_to_list: "Add to List",
+  push_to_estimate: "Sent to Estimate",
 };
 
 const EVENT_TYPE_COLOR: Record<string, string> = {
   page_view: "bg-blue-50 text-blue-700",
   category_view: "bg-purple-50 text-purple-700",
-  product_view: "bg-emerald-50 text-emerald-700",
   product_modal_open: "bg-amber-50 text-amber-700",
   search: "bg-gray-100 text-gray-700",
+  add_to_list: "bg-amber-50 text-amber-700",
+  push_to_estimate: "bg-emerald-50 text-emerald-700",
 };
 
 function fmtAbsTime(iso: string) {
@@ -458,14 +459,13 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
             <div>
               <div className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Top Products</div>
               {data.topProducts.length === 0 ? (
-                <div className="text-sm text-gray-400 py-4 text-center bg-gray-50 rounded-lg">No product views yet.</div>
+                <div className="text-sm text-gray-400 py-4 text-center bg-gray-50 rounded-lg">No product opens yet.</div>
               ) : (
                 <div className="border border-gray-100 rounded-lg overflow-hidden">
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50 text-[11px] uppercase tracking-wide text-gray-400 font-semibold">
                       <tr>
                         <th className="px-3 py-2 text-left">Product</th>
-                        <th className="px-3 py-2 text-right">Views</th>
                         <th className="px-3 py-2 text-right">Opens</th>
                       </tr>
                     </thead>
@@ -476,7 +476,6 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
                             <div className="font-medium text-gray-900 line-clamp-1">{p.name}</div>
                             {p.sku && <div className="text-[11px] text-gray-400 font-mono">{p.sku}</div>}
                           </td>
-                          <td className="px-3 py-2 text-right text-gray-700">{p.views}</td>
                           <td className="px-3 py-2 text-right text-gray-700">{p.modalOpens}</td>
                         </tr>
                       ))}

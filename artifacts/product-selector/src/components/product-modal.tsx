@@ -9,7 +9,7 @@ import { useQuoteList } from "@/context/quote-list-context";
 import { useAuth } from "@/context/auth-context";
 import { PprPriceTooltip } from "@/components/ppr-price-tooltip";
 import { ReportIssueModal } from "@/components/report-issue-modal";
-import { trackProductModalOpen, trackProductView } from "@/lib/analytics";
+import { trackProductModalOpen } from "@/lib/analytics";
 
 interface Product {
   id: number;
@@ -498,10 +498,6 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
   }, [product?.id]);
 
   const resolvedId = activeProduct?.id ?? product?.id;
-
-  useEffect(() => {
-    if (resolvedId) trackProductView(resolvedId);
-  }, [resolvedId]);
 
   const { data, isLoading } = useQuery<{ product: FullProduct }>({
     queryKey: [`/api/products/${resolvedId}`],

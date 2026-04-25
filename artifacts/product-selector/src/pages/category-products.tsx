@@ -10,7 +10,6 @@ import { useQuoteList } from "@/context/quote-list-context";
 import { useAuth } from "@/context/auth-context";
 import { PprPriceTooltip } from "@/components/ppr-price-tooltip";
 import { trackCategoryView } from "@/lib/analytics";
-import { useProductImpression } from "@/hooks/use-product-impression";
 
 export interface Product {
   id: number;
@@ -201,10 +200,8 @@ function AddToListButton({ product }: { product: Product }) {
 }
 
 function GridCard({ p, onSelect, isAdmin }: { p: Product; onSelect: (p: Product) => void; isAdmin: boolean }) {
-  const ref = useProductImpression<HTMLDivElement>(p.id);
   return (
     <div
-      ref={ref}
       onClick={() => onSelect(p)}
       className="bg-white rounded-2xl overflow-hidden cursor-pointer group hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/8 transition-all duration-200 shadow-[0_1px_4px_rgba(0,0,0,0.06)]"
     >
@@ -303,10 +300,8 @@ function SortHeader({
 }
 
 function ListRow({ p, onSelect, isAdmin }: { p: Product; onSelect: (p: Product) => void; isAdmin: boolean }) {
-  const ref = useProductImpression<HTMLTableRowElement>(p.id);
   return (
     <tr
-      ref={ref}
       onClick={() => onSelect(p)}
       className="hover:bg-gray-50 transition-colors group cursor-pointer"
     >

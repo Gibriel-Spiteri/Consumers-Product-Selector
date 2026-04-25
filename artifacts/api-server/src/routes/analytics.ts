@@ -22,7 +22,6 @@ const MAX_EMPLOYEE_ID_LEN = 64;
 const ALLOWED_EVENT_TYPES = new Set([
   "page_view",
   "category_view",
-  "product_view",
   "product_modal_open",
   "search",
   "add_to_list",
@@ -361,19 +360,14 @@ router.get("/admin/analytics/summary", requireAdmin, async (req, res) => {
     const topProductsRaw = await db
       .select({
         productId: analyticsEventsTable.productId,
-        views: sql<number>`sum(case when ${analyticsEventsTable.eventType} = 'product_view' then 1 else 0 end)::int`,
-        modalOpens: sql<number>`sum(case when ${analyticsEventsTable.eventType} = 'product_modal_open' then 1 else 0 end)::int`,
-        total: sql<number>`count(*)::int`,
+        modalOpens: sql<number>`count(*)::int`,
       })
       .from(analyticsEventsTable)
       .where(
         and(
           baseWhere,
           isNotNull(analyticsEventsTable.productId),
-          inArray(analyticsEventsTable.eventType, [
-            "product_view",
-            "product_modal_open",
-          ]),
+          eq(analyticsEventsTable.eventType, "product_modal_open"),
         ),
       )
       .groupBy(analyticsEventsTable.productId)
@@ -401,7 +395,6 @@ router.get("/admin/analytics/summary", requireAdmin, async (req, res) => {
         productId: r.productId,
         name: p?.name ?? `#${r.productId}`,
         sku: p?.sku ?? null,
-        views: r.views,
         modalOpens: r.modalOpens,
       };
     });
