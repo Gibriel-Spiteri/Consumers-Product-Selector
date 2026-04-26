@@ -38,6 +38,7 @@ interface FullProduct extends Product {
   atpDate?: string | null;
   twelveMonthUsage?: number | null;
   threeMonthUsage?: number | null;
+  createdAt?: string | null;
   features: string[] | null;
   additionalImages?: string[] | null;
 }
@@ -512,6 +513,12 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
   const full = data?.product ?? activeProduct;
   const displayProduct = full ?? product;
 
+  const isClearance = !!(
+    full?.hasActivePpr ||
+    full?.noReorder ||
+    (full?.isSpecialOrderStock && (full?.quantityAvailable ?? 0) >= 1)
+  );
+
   useEffect(() => {
     if (!product) return;
     setBottomTab("more");
@@ -886,6 +893,28 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                               </dd>
                             </div>
                           )}
+                          {isAdmin && isClearance && full?.createdAt && (() => {
+                            const added = new Date(full.createdAt);
+                            if (isNaN(added.getTime())) return null;
+                            const days = Math.max(
+                              0,
+                              Math.floor((Date.now() - added.getTime()) / 86_400_000),
+                            );
+                            const formatted = added.toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            });
+                            return (
+                              <div>
+                                <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Date Added</dt>
+                                <dd className="text-sm text-gray-800">
+                                  {formatted}
+                                  <span className="text-gray-500"> · {days} {days === 1 ? "day" : "days"} ago</span>
+                                </dd>
+                              </div>
+                            );
+                          })()}
                         </dl>
                       </div>
                     </div>
