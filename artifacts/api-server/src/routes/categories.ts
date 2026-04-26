@@ -208,6 +208,7 @@ router.get("/categories/:categoryId/products", async (req, res) => {
       twelveMonthUsage: p.twelveMonthUsage ?? null,
       threeMonthUsage: p.threeMonthUsage ?? null,
       manufacturer: p.manufacturer ?? null,
+      dateAdded: p.dateAdded ?? null,
     };
   });
 

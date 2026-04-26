@@ -38,6 +38,36 @@ export interface Product {
   twelveMonthUsage?: number | null;
   threeMonthUsage?: number | null;
   manufacturer?: string | null;
+  dateAdded?: string | null;
+}
+
+function parseNetSuiteDate(raw: string | null | undefined): Date | null {
+  if (!raw) return null;
+  const s = String(raw).trim();
+  if (!s) return null;
+  const us = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (us) return new Date(Date.UTC(parseInt(us[3], 10), parseInt(us[1], 10) - 1, parseInt(us[2], 10)));
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return new Date(Date.UTC(parseInt(iso[1], 10), parseInt(iso[2], 10) - 1, parseInt(iso[3], 10)));
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function monthsSince(raw: string | null | undefined): number | null {
+  const d = parseNetSuiteDate(raw);
+  if (!d) return null;
+  const now = new Date();
+  const months =
+    (now.getUTCFullYear() - d.getUTCFullYear()) * 12 +
+    (now.getUTCMonth() - d.getUTCMonth()) +
+    (now.getUTCDate() >= d.getUTCDate() ? 0 : -1);
+  return Math.max(0, months);
+}
+
+function formatNetSuiteDate(raw: string | null | undefined): string | null {
+  const d = parseNetSuiteDate(raw);
+  if (!d) return null;
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 }
 
 function TwelveMonthPill({ used }: { used: number | null | undefined }) {
@@ -266,7 +296,7 @@ export function GridView({ products, onSelect }: { products: Product[]; onSelect
   );
 }
 
-type SortKey = "sku" | "name" | "stock" | "flags" | "twelveMonthUsage" | "price";
+type SortKey = "sku" | "name" | "stock" | "flags" | "twelveMonthUsage" | "monthsListed" | "price";
 type SortDir = "asc" | "desc";
 
 function SortHeader({
@@ -333,6 +363,20 @@ function ListRow({ p, onSelect, isAdmin }: { p: Product; onSelect: (p: Product) 
           <TwelveMonthPill used={p.twelveMonthUsage} />
         </td>
       )}
+      {isAdmin && (
+        <td className="px-5 py-3 text-right whitespace-nowrap text-gray-700 tabular-nums">
+          {(() => {
+            const months = monthsSince(p.dateAdded);
+            if (months == null) return <span className="text-gray-300">—</span>;
+            const formatted = formatNetSuiteDate(p.dateAdded);
+            return (
+              <span title={formatted ?? undefined}>
+                {months}mo
+              </span>
+            );
+          })()}
+        </td>
+      )}
       <td className="px-5 py-3 text-right whitespace-nowrap">
         {p.price ? (
           <PprPriceTooltip price={Number(p.price)} pprPriceReductionRetail={p.pprPriceReductionRetail} consumersPrice={p.consumersPrice} hasActivePpr={!!p.hasActivePpr}>
@@ -390,6 +434,11 @@ export function ListView({ products, onSelect }: { products: Product[]; onSelect
           const bv = b.twelveMonthUsage ?? -Infinity;
           return (av - bv) * factor;
         }
+        case "monthsListed": {
+          const av = monthsSince(a.dateAdded) ?? -Infinity;
+          const bv = monthsSince(b.dateAdded) ?? -Infinity;
+          return (av - bv) * factor;
+        }
         case "price": {
           const av = a.price != null ? Number(a.price) : -Infinity;
           const bv = b.price != null ? Number(b.price) : -Infinity;
@@ -417,6 +466,9 @@ export function ListView({ products, onSelect }: { products: Product[]; onSelect
               {/* <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[110px]">3mo Used</th> */}
               {isAdmin && (
                 <SortHeader label="12mo Used" sortKey="twelveMonthUsage" active={sortKey === "twelveMonthUsage"} dir={sortDir} onSort={handleSort} className="w-[110px]" />
+              )}
+              {isAdmin && (
+                <SortHeader label="Months Listed" sortKey="monthsListed" active={sortKey === "monthsListed"} dir={sortDir} onSort={handleSort} className="text-right w-[120px]" align="right" />
               )}
               <SortHeader label="MSRP" sortKey="price" active={sortKey === "price"} dir={sortDir} onSort={handleSort} className="text-right w-[120px]" align="right" />
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[80px]"></th>
