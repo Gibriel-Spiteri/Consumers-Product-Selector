@@ -381,9 +381,11 @@ function ListRow({ p, onSelect, isAdmin, showMonthsListed }: { p: Product; onSel
       <td className="px-5 py-3 whitespace-nowrap">
         <StockBadge qty={p.quantityAvailable} isSpecialOrderStock={p.isSpecialOrderStock} atpDate={p.atpDate} noReorder={p.noReorder} isAdmin={isAdmin} showFlags={false} />
       </td>
-      <td className="px-5 py-3 whitespace-nowrap">
-        <FlagBadges noReorder={p.noReorder} isSpecialOrderStock={p.isSpecialOrderStock} isAdmin={isAdmin} />
-      </td>
+      {isAdmin && (
+        <td className="px-5 py-3 whitespace-nowrap">
+          <FlagBadges noReorder={p.noReorder} isSpecialOrderStock={p.isSpecialOrderStock} isAdmin={isAdmin} />
+        </td>
+      )}
       {isAdmin && (
         <td className="px-5 py-3 whitespace-nowrap">
           <TwelveMonthPill used={p.twelveMonthUsage} />
@@ -489,7 +491,9 @@ export function ListView({ products, onSelect, categoryId }: { products: Product
               <SortHeader label="SKU" sortKey="sku" active={sortKey === "sku"} dir={sortDir} onSort={handleSort} className="w-[140px]" />
               <SortHeader label="Product" sortKey="name" active={sortKey === "name"} dir={sortDir} onSort={handleSort} />
               <SortHeader label="Stock" sortKey="stock" active={sortKey === "stock"} dir={sortDir} onSort={handleSort} className="w-[120px]" />
-              <SortHeader label="Flags" sortKey="flags" active={sortKey === "flags"} dir={sortDir} onSort={handleSort} className="w-[90px]" />
+              {isAdmin && (
+                <SortHeader label="Flags" sortKey="flags" active={sortKey === "flags"} dir={sortDir} onSort={handleSort} className="w-[90px]" />
+              )}
               {/* <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[110px]">3mo Used</th> */}
               {isAdmin && (
                 <SortHeader label="12mo Used" sortKey="twelveMonthUsage" active={sortKey === "twelveMonthUsage"} dir={sortDir} onSort={handleSort} className="w-[110px]" />
