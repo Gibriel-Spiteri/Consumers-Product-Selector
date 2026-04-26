@@ -1,15 +1,18 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getGetCategoryProductsQueryOptions } from "@workspace/api-client-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ImageOff, Copy, Check, ChevronLeft, ChevronRight, Loader2, X, ZoomIn, Plus, Minus, ClipboardList, AlertCircle } from "lucide-react";
+import { ImageOff, Copy, Check, ChevronLeft, ChevronRight, Loader2, X, ZoomIn, Plus, Minus, ClipboardList, AlertCircle, Trash2 } from "lucide-react";
 import { cn, fmtPrice } from "@/lib/utils";
 import { useQuoteList } from "@/context/quote-list-context";
 import { useAuth } from "@/context/auth-context";
 import { PprPriceTooltip } from "@/components/ppr-price-tooltip";
 import { ReportIssueModal } from "@/components/report-issue-modal";
+import { UploadDisplayImage } from "@/components/upload-display-image";
 import { trackProductModalOpen } from "@/lib/analytics";
+
+const DISPLAYS_FOR_SALE_CATEGORY_ID = 1829;
 
 interface Product {
   id: number;
@@ -20,9 +23,11 @@ interface Product {
   netsuiteId?: string | null;
   imageUrl?: string | null;
   fullImageUrl?: string | null;
+  imageSource?: "netsuite" | "user" | null;
 }
 
 interface FullProduct extends Product {
+  imageSource?: "netsuite" | "user" | null;
   ourPrice: number | null;
   retailPrice: number | null;
   description: string | null;
@@ -71,8 +76,56 @@ function getProductImageList(product: Product, additionalImages?: string[] | nul
   return images;
 }
 
-function ImageGallery({ product, additionalImages }: { product: Product; additionalImages?: string[] | null }) {
+function ImageGallery({
+  product,
+  additionalImages,
+  imageSource,
+  isAdmin,
+}: {
+  product: Product;
+  additionalImages?: string[] | null;
+  imageSource?: "netsuite" | "user" | null;
+  isAdmin?: boolean;
+}) {
   const images = getProductImageList(product, additionalImages);
+  const queryClient = useQueryClient();
+  const { employee } = useAuth();
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const canShowUploader =
+    !!product.netsuiteId &&
+    product.categoryId === DISPLAYS_FOR_SALE_CATEGORY_ID &&
+    images.length === 0;
+
+  const canDeleteUserImage =
+    !!isAdmin && !!product.netsuiteId && imageSource === "user" && images.length > 0;
+
+  const handleDelete = async () => {
+    if (!product.netsuiteId || !employee) return;
+    if (!window.confirm("Delete this user-uploaded photo?")) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch(`/api/products/${encodeURIComponent(product.netsuiteId)}/image`, {
+        method: "DELETE",
+        headers: { "x-employee-id": employee.id },
+      });
+      if (!res.ok && res.status !== 204) {
+        const e = await res.json().catch(() => ({}));
+        throw new Error(e.error || `Delete failed (${res.status})`);
+      }
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["categoryProducts"] }),
+        queryClient.invalidateQueries({ queryKey: [`/api/products/${product.id}`] }),
+      ]);
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Delete failed");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [direction, setDirection] = useState(0);
   const [failedIndexes, setFailedIndexes] = useState<Set<number>>(new Set());
@@ -120,9 +173,16 @@ function ImageGallery({ product, additionalImages }: { product: Product; additio
 
   if (images.length === 0) {
     return (
-      <div className="bg-white rounded-2xl h-[180px] lg:aspect-square lg:h-auto flex items-center justify-center flex-col gap-2 text-gray-300">
+      <div className="bg-white rounded-2xl h-[180px] lg:aspect-square lg:h-auto flex items-center justify-center flex-col gap-3 text-gray-300">
         <ImageOff size={32} />
         <span className="text-xs">No image</span>
+        {canShowUploader && employee && (
+          <UploadDisplayImage
+            netsuiteId={product.netsuiteId!}
+            productName={product.name}
+            variant="inline-button"
+          />
+        )}
       </div>
     );
   }
@@ -130,6 +190,28 @@ function ImageGallery({ product, additionalImages }: { product: Product; additio
   return (
     <div className="flex flex-col gap-2">
       <div className="relative bg-white rounded-2xl h-[180px] lg:aspect-square lg:h-auto overflow-hidden group">
+        {canDeleteUserImage && (
+          <div className="absolute top-2 right-2 z-10 flex flex-col items-end gap-1">
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); handleDelete(); }}
+              disabled={deleting}
+              title="Delete user-uploaded photo"
+              className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide px-2 py-1 rounded-full bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-50 transition-colors"
+            >
+              {deleting ? <Loader2 size={10} className="animate-spin" /> : <Trash2 size={10} />}
+              {deleting ? "Deleting…" : "Delete photo"}
+            </button>
+            {deleteError && (
+              <span className="text-[10px] text-red-600 bg-white/90 rounded px-2 py-0.5">{deleteError}</span>
+            )}
+          </div>
+        )}
+        {imageSource === "user" && (
+          <div className="absolute top-2 left-2 z-10 inline-flex items-center text-[9px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
+            Employee photo
+          </div>
+        )}
         <AnimatePresence mode="wait" initial={false} custom={direction}>
           {isFailed ? (
             <div className="absolute inset-0 flex items-center justify-center flex-col gap-2 text-gray-300">
@@ -655,7 +737,12 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
 
                     {/* Left — image gallery */}
                     <div className="lg:w-[30%] shrink-0">
-                      <ImageGallery product={product} additionalImages={(full as FullProduct)?.additionalImages} />
+                      <ImageGallery
+                        product={{ ...product, ...(full ?? {}) } as Product}
+                        additionalImages={(full as FullProduct)?.additionalImages}
+                        imageSource={(full as FullProduct)?.imageSource ?? product.imageSource ?? null}
+                        isAdmin={isAdmin}
+                      />
                     </div>
 
                     {/* Middle — features */}

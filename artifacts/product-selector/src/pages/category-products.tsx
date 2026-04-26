@@ -11,11 +11,14 @@ import { useQuoteList } from "@/context/quote-list-context";
 import { useAuth } from "@/context/auth-context";
 import { PprPriceTooltip } from "@/components/ppr-price-tooltip";
 import { trackCategoryView } from "@/lib/analytics";
+import { UploadDisplayImage } from "@/components/upload-display-image";
 import {
   categoryOverviewHref,
   categoryProductsHref,
   parseCategoryIdParam,
 } from "@/lib/category-url";
+
+const DISPLAYS_FOR_SALE_CATEGORY_ID = 1829;
 
 export interface Product {
   id: number;
@@ -149,13 +152,24 @@ function StockBadge({ qty, isSpecialOrderStock, atpDate, noReorder, showFlags = 
   );
 }
 
-function ProductImage({ imageUrl, name, className }: { imageUrl?: string | null; name: string; className?: string }) {
+function ProductImage({
+  imageUrl,
+  name,
+  className,
+  emptySlot,
+}: {
+  imageUrl?: string | null;
+  name: string;
+  className?: string;
+  emptySlot?: React.ReactNode;
+}) {
   const [failed, setFailed] = useState(false);
 
   if (!imageUrl || failed) {
     return (
-      <div className={cn("flex items-center justify-center text-muted-foreground/30", className)}>
+      <div className={cn("flex items-center justify-center text-muted-foreground/30 gap-2", className)}>
         <ImageOff size={20} />
+        {emptySlot}
       </div>
     );
   }
@@ -241,12 +255,17 @@ function GridCard({ p, onSelect, isAdmin }: { p: Product; onSelect: (p: Product)
       onClick={() => onSelect(p)}
       className="bg-white rounded-2xl overflow-hidden cursor-pointer group hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/8 transition-all duration-200 shadow-[0_1px_4px_rgba(0,0,0,0.06)]"
     >
-      <div className="bg-white h-[140px] sm:h-[196px] flex items-center justify-center p-2">
+      <div className="bg-white h-[140px] sm:h-[196px] flex items-center justify-center p-2 relative">
         <ProductImage
           imageUrl={p.imageUrl}
           name={p.name}
           className="max-w-[140px] max-h-[140px] sm:max-w-[180px] sm:max-h-[180px]"
         />
+        {!p.imageUrl && p.categoryId === DISPLAYS_FOR_SALE_CATEGORY_ID && p.netsuiteId && (
+          <div className="absolute bottom-2 right-2" onClick={(e) => e.stopPropagation()}>
+            <UploadDisplayImage netsuiteId={p.netsuiteId} productName={p.name} />
+          </div>
+        )}
       </div>
       <div className="px-3 sm:px-5 pb-4 sm:pb-5 pt-0">
         <p className="text-[13px] sm:text-[14px] font-medium text-gray-900 leading-snug line-clamp-2 min-h-[2.25rem] sm:min-h-[2.5rem] mb-2 sm:mb-2.5 group-hover:text-primary transition-colors">
@@ -342,8 +361,15 @@ function ListRow({ p, onSelect, isAdmin, showMonthsListed }: { p: Product; onSel
       className="hover:bg-gray-50 transition-colors group cursor-pointer"
     >
       <td className="px-5 py-3">
-        <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center overflow-hidden shrink-0">
-          <ProductImage imageUrl={p.imageUrl} name={p.name} className="max-w-[46px] max-h-[46px]" />
+        <div className="flex items-center gap-2">
+          <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center overflow-hidden shrink-0">
+            <ProductImage imageUrl={p.imageUrl} name={p.name} className="max-w-[46px] max-h-[46px]" />
+          </div>
+          {!p.imageUrl && p.categoryId === DISPLAYS_FOR_SALE_CATEGORY_ID && p.netsuiteId && (
+            <div onClick={(e) => e.stopPropagation()}>
+              <UploadDisplayImage netsuiteId={p.netsuiteId} productName={p.name} />
+            </div>
+          )}
         </div>
       </td>
       <td className="px-5 py-3 whitespace-nowrap">

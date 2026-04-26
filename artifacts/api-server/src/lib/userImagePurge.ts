@@ -2,10 +2,12 @@ import { db, appSettingsTable, productUserImagesTable } from "@workspace/db";
 import { eq, lt } from "drizzle-orm";
 import { logger } from "./logger";
 import { objectStorageClient } from "./objectStorage";
+import { getLastSyncResult } from "./syncService";
 
 const RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 const RUN_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const MIN_GAP_MS = 23 * 60 * 60 * 1000;
+const RECENT_SYNC_MAX_AGE_MS = 12 * 60 * 60 * 1000;
 const LAST_PURGE_KEY = "user_image_last_purge_at";
 
 let timeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -64,6 +66,17 @@ export async function purgeOldUserImages(force = false): Promise<number> {
       if (last !== null && Date.now() - last < MIN_GAP_MS) {
         return 0;
       }
+      // Skip if no recent successful sync — otherwise active products' user
+      // images could be wrongly purged during a prolonged sync outage.
+      const lastSync = getLastSyncResult();
+      const lastSyncMs = lastSync?.completedAt ? Date.parse(lastSync.completedAt) : NaN;
+      if (!Number.isFinite(lastSyncMs) || Date.now() - lastSyncMs > RECENT_SYNC_MAX_AGE_MS) {
+        logger.warn(
+          { lastSync: lastSync?.completedAt ?? null },
+          "Skipping user-image purge: no recent successful sync"
+        );
+        return 0;
+      }
     }
     const cutoff = new Date(Date.now() - RETENTION_MS);
 
@@ -81,7 +94,7 @@ export async function purgeOldUserImages(force = false): Promise<number> {
     }
 
     await Promise.allSettled(
-      stale.map(async (row) => {
+      stale.map(async (row: { netsuiteId: string; objectKey: string }) => {
         const parsed = gcsKeyFromObjectPath(row.objectKey);
         if (!parsed) return;
         try {

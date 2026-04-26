@@ -1,16 +1,18 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { eq } from "drizzle-orm";
 import { db, productsTable, productUserImagesTable } from "@workspace/db";
-import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
+import { ObjectStorageService, objectStorageClient } from "../lib/objectStorage";
 import { logger } from "../lib/logger";
 import { executeSuiteQL } from "../lib/netsuite";
-import { requireAdmin } from "./admin";
+import { requireAdmin, requireEmployee } from "./admin";
 import { DISPLAYS_FOR_SALE_CATEGORY_ID, objectKeyToUrl } from "../lib/userImages";
 
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
 
 const MAX_BYTES = 8 * 1024 * 1024;
+const OBJECT_KEY_RE = /^\/objects\/[A-Za-z0-9_-]+$/;
+const ALLOWED_CONTENT_TYPE = "image/png";
 
 async function fetchEmployeeName(employeeId: string): Promise<string | null> {
   try {
@@ -66,18 +68,14 @@ async function loadDfsProductByNetsuiteId(netsuiteId: string) {
   return rows[0] ?? null;
 }
 
-router.post("/products/:netsuiteId/image/request-upload", async (req: Request, res: Response) => {
-  const employeeId = req.headers["x-employee-id"] as string | undefined;
-  if (!employeeId) {
-    return res.status(401).json({ error: "Authentication required" });
-  }
-
+router.post("/products/:netsuiteId/image/request-upload", requireEmployee, async (req: Request, res: Response) => {
+  const employeeId = req.headers["x-employee-id"] as string;
   const netsuiteId = req.params.netsuiteId;
   if (!netsuiteId) {
     return res.status(400).json({ error: "Missing product id" });
   }
 
-  const product = await loadDfsProductByNetsuiteId(netsuiteId);
+  const product = await loadDfsProductByNetsuiteId(String(netsuiteId));
   if (!product) {
     return res.status(404).json({ error: "Product not found" });
   }
@@ -100,22 +98,18 @@ router.post("/products/:netsuiteId/image/request-upload", async (req: Request, r
   }
 });
 
-router.post("/products/:netsuiteId/image/confirm", async (req: Request, res: Response) => {
-  const employeeId = req.headers["x-employee-id"] as string | undefined;
-  if (!employeeId) {
-    return res.status(401).json({ error: "Authentication required" });
-  }
-
+router.post("/products/:netsuiteId/image/confirm", requireEmployee, async (req: Request, res: Response) => {
+  const employeeId = req.headers["x-employee-id"] as string;
   const netsuiteId = req.params.netsuiteId;
   const { objectKey, byteSize } = req.body ?? {};
-  if (!netsuiteId || typeof objectKey !== "string" || !objectKey.startsWith("/objects/")) {
+  if (!netsuiteId || typeof objectKey !== "string" || !OBJECT_KEY_RE.test(objectKey)) {
     return res.status(400).json({ error: "Missing or invalid objectKey" });
   }
   if (typeof byteSize !== "number" || byteSize <= 0 || byteSize > MAX_BYTES) {
     return res.status(400).json({ error: "Invalid byteSize" });
   }
 
-  const product = await loadDfsProductByNetsuiteId(netsuiteId);
+  const product = await loadDfsProductByNetsuiteId(String(netsuiteId));
   if (!product) {
     return res.status(404).json({ error: "Product not found" });
   }
@@ -123,9 +117,35 @@ router.post("/products/:netsuiteId/image/confirm", async (req: Request, res: Res
     return res.status(403).json({ error: "Image uploads are only allowed for Displays For Sale items" });
   }
   if (product.imageUrl) {
-    // NetSuite gave it a real image while the user was processing — discard.
     await deleteGcsObject(objectKey);
     return res.status(409).json({ error: "Product already has a NetSuite image" });
+  }
+
+  // Verify the object actually exists in GCS and matches the constraints.
+  const parsed = gcsKeyFromObjectPath(objectKey);
+  if (!parsed) {
+    return res.status(400).json({ error: "Invalid objectKey" });
+  }
+  let actualSize = 0;
+  let actualType = "";
+  try {
+    const [metadata] = await objectStorageClient
+      .bucket(parsed.bucketName)
+      .file(parsed.objectName)
+      .getMetadata();
+    actualType = String(metadata.contentType ?? "");
+    actualSize = Number(metadata.size ?? 0);
+  } catch (err) {
+    logger.warn({ err, objectKey }, "Confirm: object not found or inaccessible");
+    return res.status(400).json({ error: "Uploaded object was not found" });
+  }
+  if (actualType !== ALLOWED_CONTENT_TYPE) {
+    await deleteGcsObject(objectKey);
+    return res.status(400).json({ error: "Uploaded file must be a PNG" });
+  }
+  if (!Number.isFinite(actualSize) || actualSize <= 0 || actualSize > MAX_BYTES) {
+    await deleteGcsObject(objectKey);
+    return res.status(400).json({ error: "Uploaded file is too large" });
   }
 
   const employeeName = await fetchEmployeeName(employeeId);

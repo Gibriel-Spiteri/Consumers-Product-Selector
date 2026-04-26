@@ -481,3 +481,65 @@ async function getCategoryLevel(
   const parent = rows[0];
   return parent.level + 1;
 }
+
+async function reconcileUserUploadedImages(syncedNetsuiteIds: string[]): Promise<void> {
+  if (syncedNetsuiteIds.length === 0) return;
+
+  const now = new Date();
+  const CHUNK = 1000;
+
+  for (let i = 0; i < syncedNetsuiteIds.length; i += CHUNK) {
+    const slice = syncedNetsuiteIds.slice(i, i + CHUNK);
+    await db
+      .update(productUserImagesTable)
+      .set({ lastSeenInSyncAt: now })
+      .where(inArray(productUserImagesTable.netsuiteId, slice));
+  }
+
+  const supersededRows = await db
+    .select({
+      netsuiteId: productUserImagesTable.netsuiteId,
+      objectKey: productUserImagesTable.objectKey,
+    })
+    .from(productUserImagesTable)
+    .innerJoin(productsTable, eq(productsTable.netsuiteId, productUserImagesTable.netsuiteId))
+    .where(sql`${productsTable.imageUrl} IS NOT NULL`);
+
+  if (supersededRows.length === 0) return;
+
+  const supersededIds = supersededRows.map((r: { netsuiteId: string; objectKey: string }) => r.netsuiteId);
+  for (let i = 0; i < supersededIds.length; i += CHUNK) {
+    const slice = supersededIds.slice(i, i + CHUNK);
+    await db
+      .delete(productUserImagesTable)
+      .where(inArray(productUserImagesTable.netsuiteId, slice));
+  }
+
+  const dir = process.env.PRIVATE_OBJECT_DIR;
+  if (!dir) {
+    logger.info({ count: supersededRows.length }, "Removed superseded user-image rows (no PRIVATE_OBJECT_DIR; skipped GCS deletes)");
+    return;
+  }
+
+  const results = await Promise.allSettled(
+    supersededRows.map(async (row: { netsuiteId: string; objectKey: string }) => {
+      const trimmed = row.objectKey.startsWith("/objects/")
+        ? row.objectKey.slice("/objects/".length)
+        : row.objectKey;
+      const fullPath = `${dir}/${trimmed}`;
+      const parts = fullPath.split("/").filter(Boolean);
+      if (parts.length < 2) return;
+      const [bucketName, ...rest] = parts;
+      await objectStorageClient
+        .bucket(bucketName)
+        .file(rest.join("/"))
+        .delete({ ignoreNotFound: true });
+    })
+  );
+  const failed = results.filter((r: PromiseSettledResult<void>) => r.status === "rejected").length;
+  logger.info(
+    { removed: supersededRows.length, gcsDeleted: supersededRows.length - failed, gcsFailed: failed },
+    "Removed user-image rows superseded by NetSuite images"
+  );
+}
+

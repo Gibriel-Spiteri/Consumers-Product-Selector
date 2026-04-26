@@ -26,6 +26,33 @@ const upload = multer({
   },
 });
 
+export async function requireEmployee(req: Request, res: Response, next: NextFunction) {
+  const employeeId = req.headers["x-employee-id"] as string | undefined;
+  if (!employeeId || !/^\d+$/.test(employeeId)) {
+    return res.status(401).json({ error: "Authentication required" });
+  }
+  try {
+    const result = await executeSuiteQL<{
+      id: string;
+      giveaccess: string;
+      custentity_webstore_access: string;
+    }>(
+      `SELECT id, giveaccess, custentity_webstore_access
+       FROM Employee WHERE id = ${Number(employeeId)}`
+    );
+    if (
+      result.items.length === 0 ||
+      result.items[0].giveaccess !== "T" ||
+      result.items[0].custentity_webstore_access !== "T"
+    ) {
+      return res.status(403).json({ error: "Employee access required" });
+    }
+    next();
+  } catch {
+    return res.status(500).json({ error: "Authorization check failed" });
+  }
+}
+
 export async function requireAdmin(req: Request, res: Response, next: NextFunction) {
   const employeeId = req.headers["x-employee-id"] as string | undefined;
   if (!employeeId) {
