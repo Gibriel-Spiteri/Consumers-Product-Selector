@@ -18,13 +18,13 @@ interface UploadDisplayImageProps {
 function authHeaders(employeeId: string | number | undefined | null): HeadersInit {
   const h: Record<string, string> = { "Content-Type": "application/json" };
   const v = employeeId == null ? "" : String(employeeId).trim();
-  if (v && /^\d+$/.test(v)) h["x-employee-id"] = v;
+  if (v && /^-?\d+$/.test(v)) h["x-employee-id"] = v;
   return h;
 }
 
 function employeeIdString(employeeId: string | number | undefined | null): string {
   const v = employeeId == null ? "" : String(employeeId).trim();
-  return /^\d+$/.test(v) ? v : "";
+  return /^-?\d+$/.test(v) ? v : "";
 }
 
 async function resizeToPng(blob: Blob, maxEdge: number): Promise<Blob> {

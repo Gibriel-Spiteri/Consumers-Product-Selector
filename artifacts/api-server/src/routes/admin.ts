@@ -37,7 +37,7 @@ export async function requireEmployee(req: Request, res: Response, next: NextFun
       : typeof bodyId === "string" || typeof bodyId === "number"
         ? String(bodyId)
         : "";
-  if (!candidate || !/^\d+$/.test(candidate)) {
+  if (!candidate || !/^-?\d+$/.test(candidate)) {
     logger.warn(
       {
         url: req.originalUrl,
