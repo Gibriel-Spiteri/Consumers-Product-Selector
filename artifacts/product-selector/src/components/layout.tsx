@@ -598,36 +598,36 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   ))}
                 </ul>
 
-                {/* Colored shortcut tabs — scroll on mobile, natural on desktop */}
-                <div className="flex-1 md:flex-none flex items-center overflow-x-auto md:overflow-visible">
+                {/* Colored shortcut tabs — desktop only */}
+                <div className="hidden md:flex items-center">
                   {displaysForSaleCategory && (
                     <Link
                       href={categoryHref(displaysForSaleCategory)}
-                      onClick={() => { setIsHoveringNav(false); setActiveTab(null); setMobileMenuOpen(false); }}
-                      className="flex-shrink-0 flex items-center h-[50px] px-3 sm:px-4 font-semibold uppercase tracking-widest text-amber-600 hover:text-amber-700 transition-colors text-[12px] sm:text-[13px]"
+                      onClick={() => { setIsHoveringNav(false); setActiveTab(null); }}
+                      className="flex-shrink-0 flex items-center h-[50px] px-4 font-semibold uppercase tracking-widest text-amber-600 hover:text-amber-700 transition-colors text-[13px]"
                     >
                       Displays For Sale
                     </Link>
                   )}
                   <Link
                     href="/express-bath"
-                    onClick={() => { setIsHoveringNav(false); setActiveTab(null); setMobileMenuOpen(false); }}
-                    className="flex-shrink-0 flex items-center h-[50px] px-3 sm:px-4 font-semibold uppercase tracking-widest text-blue-600 hover:text-blue-700 transition-colors text-[12px] sm:text-[13px]"
+                    onClick={() => { setIsHoveringNav(false); setActiveTab(null); }}
+                    className="flex-shrink-0 flex items-center h-[50px] px-4 font-semibold uppercase tracking-widest text-blue-600 hover:text-blue-700 transition-colors text-[13px]"
                   >
                     Express Bath
                   </Link>
                   <Link
                     href="/clearance"
-                    onClick={() => { setIsHoveringNav(false); setActiveTab(null); setMobileMenuOpen(false); }}
-                    className="flex-shrink-0 flex items-center h-[50px] px-3 sm:px-4 font-semibold uppercase tracking-widest text-emerald-600 hover:text-emerald-700 transition-colors text-[12px] sm:text-[13px]"
+                    onClick={() => { setIsHoveringNav(false); setActiveTab(null); }}
+                    className="flex-shrink-0 flex items-center h-[50px] px-4 font-semibold uppercase tracking-widest text-emerald-600 hover:text-emerald-700 transition-colors text-[13px]"
                   >
                     Clearance
                   </Link>
                   {internalCategory && (
                     <Link
                       href={categoryOverviewHref(internalCategory)}
-                      onClick={() => { setIsHoveringNav(false); setActiveTab(null); setMobileMenuOpen(false); }}
-                      className="flex-shrink-0 flex items-center h-[50px] px-3 sm:px-4 font-semibold uppercase tracking-widest text-gray-500 hover:text-gray-700 transition-colors text-[12px] sm:text-[13px]"
+                      onClick={() => { setIsHoveringNav(false); setActiveTab(null); }}
+                      className="flex-shrink-0 flex items-center h-[50px] px-4 font-semibold uppercase tracking-widest text-gray-500 hover:text-gray-700 transition-colors text-[13px]"
                     >
                       Internal
                     </Link>
@@ -653,6 +653,55 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   transition={{ duration: 0.15, ease: "easeOut" }}
                   className="md:hidden absolute top-full left-0 w-full bg-white border-b border-gray-200 shadow-xl shadow-black/5 max-h-[70vh] overflow-y-auto z-40"
                 >
+                  {/* Colored shortcut tabs */}
+                  <ul className="divide-y divide-gray-100 border-b-4 border-gray-50">
+                    {displaysForSaleCategory && (
+                      <li>
+                        <Link
+                          href={categoryHref(displaysForSaleCategory)}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="flex items-center justify-between px-6 py-4 font-semibold uppercase tracking-widest text-amber-600 text-[13px] hover:bg-amber-50 active:bg-amber-100 transition-colors"
+                        >
+                          <span>Displays For Sale</span>
+                          <ChevronRight size={16} className="text-amber-300" />
+                        </Link>
+                      </li>
+                    )}
+                    <li>
+                      <Link
+                        href="/express-bath"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center justify-between px-6 py-4 font-semibold uppercase tracking-widest text-blue-600 text-[13px] hover:bg-blue-50 active:bg-blue-100 transition-colors"
+                      >
+                        <span>Express Bath</span>
+                        <ChevronRight size={16} className="text-blue-300" />
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/clearance"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center justify-between px-6 py-4 font-semibold uppercase tracking-widest text-emerald-600 text-[13px] hover:bg-emerald-50 active:bg-emerald-100 transition-colors"
+                      >
+                        <span>Clearance</span>
+                        <ChevronRight size={16} className="text-emerald-300" />
+                      </Link>
+                    </li>
+                    {internalCategory && (
+                      <li>
+                        <Link
+                          href={categoryOverviewHref(internalCategory)}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="flex items-center justify-between px-6 py-4 font-semibold uppercase tracking-widest text-gray-500 text-[13px] hover:bg-gray-50 active:bg-gray-100 transition-colors"
+                        >
+                          <span>Internal</span>
+                          <ChevronRight size={16} className="text-gray-300" />
+                        </Link>
+                      </li>
+                    )}
+                  </ul>
+
+                  {/* Regular categories */}
                   <ul className="divide-y divide-gray-100">
                     {topLevelCategories.map(cat => (
                       <li key={cat.id}>
