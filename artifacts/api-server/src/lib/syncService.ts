@@ -298,7 +298,7 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
         binNumber,
         twelveMonthUsage: twelveMonthSalesMap.get(item.id) ?? null,
         threeMonthUsage: threeMonthSalesMap.get(item.id) ?? null,
-        dateAdded: item.dateAdded ?? null,
+        dateAdded: hasActivePpr ? null : (item.dateAdded ?? null),
         categoryId: categoryDbId,
       };
     });
