@@ -15,10 +15,16 @@ interface UploadDisplayImageProps {
   onUploaded?: (imageUrl: string) => void;
 }
 
-function authHeaders(employeeId: string | undefined): HeadersInit {
+function authHeaders(employeeId: string | number | undefined | null): HeadersInit {
   const h: Record<string, string> = { "Content-Type": "application/json" };
-  if (employeeId) h["x-employee-id"] = employeeId;
+  const v = employeeId == null ? "" : String(employeeId).trim();
+  if (v && /^\d+$/.test(v)) h["x-employee-id"] = v;
   return h;
+}
+
+function employeeIdString(employeeId: string | number | undefined | null): string {
+  const v = employeeId == null ? "" : String(employeeId).trim();
+  return /^\d+$/.test(v) ? v : "";
 }
 
 async function resizeToPng(blob: Blob, maxEdge: number): Promise<Blob> {
@@ -113,12 +119,14 @@ export function UploadDisplayImage({
     setStage("uploading");
     setError(null);
     try {
+      const empId = employeeIdString(employee.id);
+      if (!empId) throw new Error("Your account is missing an employee id. Please sign out and back in.");
       const reqRes = await fetch(
         `/api/products/${encodeURIComponent(netsuiteId)}/image/request-upload`,
         {
           method: "POST",
-          headers: authHeaders(employee.id),
-          body: JSON.stringify({ employeeId: employee.id }),
+          headers: authHeaders(empId),
+          body: JSON.stringify({ employeeId: empId }),
         }
       );
       if (!reqRes.ok) {
@@ -138,9 +146,9 @@ export function UploadDisplayImage({
         `/api/products/${encodeURIComponent(netsuiteId)}/image/confirm`,
         {
           method: "POST",
-          headers: authHeaders(employee.id),
+          headers: authHeaders(empId),
           body: JSON.stringify({
-            employeeId: employee.id,
+            employeeId: empId,
             objectKey,
             byteSize: processedBlob.size,
           }),

@@ -41,8 +41,9 @@ export async function requireEmployee(req: Request, res: Response, next: NextFun
     logger.warn(
       {
         url: req.originalUrl,
-        hasHeader: typeof headerId === "string" && headerId.length > 0,
-        headerNames: Object.keys(req.headers),
+        headerValue: typeof headerId === "string" ? headerId : null,
+        bodyEmployeeId: bodyId === undefined ? null : String(bodyId),
+        bodyKeys: req.body && typeof req.body === "object" ? Object.keys(req.body) : null,
       },
       "requireEmployee rejected: missing/invalid employee id"
     );
