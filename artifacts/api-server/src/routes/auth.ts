@@ -32,11 +32,14 @@ router.post("/auth/login", async (req, res) => {
       custentity_webstorepassword: string;
       custentity_webstore_access: string;
       custentity_webstore_admin: string;
+      location: string | null;
+      locationname: string | null;
     }>(
       `SELECT
         id, entityid, email, firstname, lastname,
         giveaccess, custentity_webstorepassword, custentity_webstore_access,
-        custentity_webstore_admin
+        custentity_webstore_admin,
+        location, BUILTIN.DF(location) AS locationname
       FROM Employee
       WHERE LOWER(email) = LOWER('${email.replace(/'/g, "''")}')`
     );
@@ -73,6 +76,8 @@ router.post("/auth/login", async (req, res) => {
         firstName: emp.firstname,
         lastName: emp.lastname,
         isAdmin: emp.custentity_webstore_admin === "T",
+        locationId: emp.location ?? null,
+        locationName: emp.locationname ?? null,
       },
     });
   } catch (err: any) {
@@ -98,8 +103,11 @@ router.post("/auth/verify", async (req, res) => {
       lastname: string;
       email: string;
       entityid: string;
+      location: string | null;
+      locationname: string | null;
     }>(
-      `SELECT id, custentity_webstore_access, custentity_webstore_admin, giveaccess, firstname, lastname, email, entityid
+      `SELECT id, custentity_webstore_access, custentity_webstore_admin, giveaccess, firstname, lastname, email, entityid,
+              location, BUILTIN.DF(location) AS locationname
        FROM Employee WHERE id = ${Number(employeeId)}`
     );
 
@@ -120,6 +128,8 @@ router.post("/auth/verify", async (req, res) => {
             firstName: emp.firstname,
             lastName: emp.lastname,
             isAdmin: emp.custentity_webstore_admin === "T",
+            locationId: emp.location ?? null,
+            locationName: emp.locationname ?? null,
           }
         : undefined,
     });

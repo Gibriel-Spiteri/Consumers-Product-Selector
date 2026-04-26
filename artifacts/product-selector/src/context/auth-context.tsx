@@ -7,6 +7,8 @@ interface Employee {
   firstName: string;
   lastName: string;
   isAdmin: boolean;
+  locationId: string | null;
+  locationName: string | null;
 }
 
 interface AuthContextType {
