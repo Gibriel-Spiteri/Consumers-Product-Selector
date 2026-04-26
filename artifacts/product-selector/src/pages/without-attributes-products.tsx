@@ -29,7 +29,7 @@ export default function WithoutAttributesProducts() {
   const attributes = data?.attributes ?? [];
 
   const handleExport = () => {
-    const headers = ["Internal ID", "Product NetSuite ID", "Attribute", "Value", "Filter"];
+    const headers = ["Internal ID", "Product NetSuite ID", "SKU", "Attribute", "Value", "Filter"];
     const escape = (v: unknown) => {
       const s = v == null ? "" : String(v);
       return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
@@ -37,7 +37,7 @@ export default function WithoutAttributesProducts() {
     const lines = [
       headers.join(","),
       ...attributes.map(a =>
-        [a.netsuiteId ?? "", a.productNetsuiteId, a.attributeName, a.attributeValue, a.isFilter ? "Yes" : "No"]
+        [a.netsuiteId ?? "", a.productNetsuiteId, a.sku ?? "", a.attributeName, a.attributeValue, a.isFilter ? "Yes" : "No"]
           .map(escape)
           .join(",")
       ),
@@ -102,6 +102,7 @@ export default function WithoutAttributesProducts() {
                 <tr className="border-b border-gray-100">
                   <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400">Internal ID</th>
                   <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400">Product NetSuite ID</th>
+                  <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400">SKU</th>
                   <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400">Attribute</th>
                   <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400">Value</th>
                   <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 text-right">Filter</th>
@@ -112,6 +113,7 @@ export default function WithoutAttributesProducts() {
                   <tr key={a.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-5 py-3 font-mono text-[12px] text-gray-700 whitespace-nowrap">{a.netsuiteId ?? <span className="text-gray-300">—</span>}</td>
                     <td className="px-5 py-3 font-mono text-[12px] text-gray-700 whitespace-nowrap">{a.productNetsuiteId}</td>
+                    <td className="px-5 py-3 font-mono text-[12px] text-gray-700 whitespace-nowrap">{a.sku ?? <span className="text-gray-300">—</span>}</td>
                     <td className="px-5 py-3 text-gray-900">{a.attributeName}</td>
                     <td className="px-5 py-3 text-gray-700">{a.attributeValue}</td>
                     <td className="px-5 py-3 text-right whitespace-nowrap">
