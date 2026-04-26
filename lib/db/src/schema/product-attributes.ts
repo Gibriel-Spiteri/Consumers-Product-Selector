@@ -4,6 +4,7 @@ export const productAttributesTable = pgTable("product_attributes", {
   id: serial("id").primaryKey(),
   netsuiteId: text("netsuite_id").unique(),
   productNetsuiteId: text("product_netsuite_id").notNull(),
+  sku: text("sku"),
   attributeName: text("attribute_name").notNull(),
   attributeValueId: text("attribute_value_id"),
   attributeValue: text("attribute_value").notNull(),

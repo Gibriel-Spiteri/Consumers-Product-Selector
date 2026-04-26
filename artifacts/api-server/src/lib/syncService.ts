@@ -376,6 +376,7 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
           batch.map((a) => ({
             netsuiteId: a.id,
             productNetsuiteId: a.itemNetsuiteId,
+            sku: a.sku,
             attributeName: a.attributeName,
             attributeValueId: a.attributeValueId,
             attributeValue: a.attributeValue,

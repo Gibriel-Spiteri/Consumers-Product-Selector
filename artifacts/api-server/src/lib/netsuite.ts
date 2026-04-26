@@ -811,6 +811,7 @@ export function computeAtpDate(
 export interface NetSuiteItemAttribute {
   id: string;
   itemNetsuiteId: string;
+  sku: string | null;
   attributeName: string;
   attributeValueId: string;
   attributeValue: string;
@@ -823,18 +824,21 @@ export async function fetchItemAttributes(): Promise<NetSuiteItemAttribute[]> {
     SELECT
       iav.id,
       iav.custrecord_itematrbval_item AS itemid,
+      i.itemid AS sku,
       iav.custrecord_itematrbval_displayname AS attributename,
       iav.custrecord_itematrbval_val AS valueid,
       BUILTIN.DF(iav.custrecord_itematrbval_val) AS valuename,
       iav.custrecord_itematrbval_sortorder AS sortorder,
       iav.custrecord_itematrbval_filter AS isfilter
     FROM CUSTOMRECORD_ITEMATRBVAL iav
+    LEFT JOIN item i ON i.id = iav.custrecord_itematrbval_item
     WHERE iav.isinactive = 'F'
   `;
 
   const result = await executeSuiteQL<{
     id: string;
     itemid: string;
+    sku: string | null;
     attributename: string;
     valueid: string;
     valuename: string;
@@ -845,6 +849,7 @@ export async function fetchItemAttributes(): Promise<NetSuiteItemAttribute[]> {
   return result.items.map((row) => ({
     id: String(row.id),
     itemNetsuiteId: String(row.itemid),
+    sku: row.sku ?? null,
     attributeName: row.attributename ?? "",
     attributeValueId: String(row.valueid),
     attributeValue: row.valuename ?? "",
