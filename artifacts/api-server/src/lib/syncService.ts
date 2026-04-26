@@ -298,6 +298,7 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
         binNumber,
         twelveMonthUsage: twelveMonthSalesMap.get(item.id) ?? null,
         threeMonthUsage: threeMonthSalesMap.get(item.id) ?? null,
+        dateAdded: item.dateAdded ?? null,
         categoryId: categoryDbId,
       };
     });
@@ -334,6 +335,7 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
             binNumber: sql`excluded.bin_number`,
             twelveMonthUsage: sql`excluded.twelve_month_usage`,
             threeMonthUsage: sql`excluded.three_month_usage`,
+            dateAdded: sql`excluded.date_added`,
             categoryId: sql`excluded.category_id`,
             updatedAt: new Date(),
           },

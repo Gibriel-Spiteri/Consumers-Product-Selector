@@ -656,7 +656,7 @@ router.get("/products/:productId", async (req, res) => {
       binNumber: p.binNumber ?? null,
       twelveMonthUsage: p.twelveMonthUsage ?? null,
       threeMonthUsage: p.threeMonthUsage ?? null,
-      createdAt: p.createdAt ? p.createdAt.toISOString() : null,
+      dateAdded: p.dateAdded ?? null,
       features: null,
     },
   });

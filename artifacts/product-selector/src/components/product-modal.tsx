@@ -38,7 +38,7 @@ interface FullProduct extends Product {
   atpDate?: string | null;
   twelveMonthUsage?: number | null;
   threeMonthUsage?: number | null;
-  createdAt?: string | null;
+  dateAdded?: string | null;
   features: string[] | null;
   additionalImages?: string[] | null;
 }
@@ -893,8 +893,15 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                               </dd>
                             </div>
                           )}
-                          {isAdmin && isClearance && full?.createdAt && (() => {
-                            const added = new Date(full.createdAt);
+                          {isAdmin && isClearance && full?.dateAdded && (() => {
+                            const raw = String(full.dateAdded).trim();
+                            const us = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+                            const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+                            const added = us
+                              ? new Date(Date.UTC(parseInt(us[3], 10), parseInt(us[1], 10) - 1, parseInt(us[2], 10)))
+                              : iso
+                                ? new Date(Date.UTC(parseInt(iso[1], 10), parseInt(iso[2], 10) - 1, parseInt(iso[3], 10)))
+                                : new Date(raw);
                             if (isNaN(added.getTime())) return null;
                             const days = Math.max(
                               0,
@@ -904,6 +911,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                               month: "short",
                               day: "numeric",
                               year: "numeric",
+                              timeZone: "UTC",
                             });
                             return (
                               <div>

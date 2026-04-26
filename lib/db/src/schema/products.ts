@@ -27,6 +27,7 @@ export const productsTable = pgTable("products", {
   binNumber: text("bin_number"),
   twelveMonthUsage: integer("twelve_month_usage"),
   threeMonthUsage: integer("three_month_usage"),
+  dateAdded: text("date_added"),
   categoryId: integer("category_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

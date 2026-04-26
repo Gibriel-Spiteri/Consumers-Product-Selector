@@ -422,6 +422,7 @@ export interface NetSuiteItem {
   prodLineLeadTime?: number | null;
   prodLineOrderCycle?: number | null;
   twelveMonthUsage?: number | null;
+  dateAdded?: string | null;
 }
 
 export async function fetchNetSuiteCategories(): Promise<NetSuiteCategory[]> {
@@ -475,6 +476,7 @@ interface SuiteQLItemRow {
   quantitybackordered: string | null;
   prodlineleadtime: string | null;
   prodlineordercycle: string | null;
+  dateadded: string | null;
 }
 
 function mapItemRow(row: SuiteQLItemRow): NetSuiteItem {
@@ -504,6 +506,7 @@ function mapItemRow(row: SuiteQLItemRow): NetSuiteItem {
     prodLineLeadTime: row.prodlineleadtime != null ? Number(row.prodlineleadtime) : null,
     prodLineOrderCycle: row.prodlineordercycle != null ? Number(row.prodlineordercycle) : null,
     twelveMonthUsage: null,
+    dateAdded: row.dateadded ?? null,
   };
 }
 
@@ -629,7 +632,8 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
       item.quantityonorder,
       item.quantitybackordered,
       pl.custrecord_pl_leadtime AS prodlineleadtime,
-      pl.custrecord_pl_ordercycle AS prodlineordercycle
+      pl.custrecord_pl_ordercycle AS prodlineordercycle,
+      item.custitem_dateadded AS dateadded
     FROM InventoryItem item
     LEFT JOIN pricing p ON p.item = item.id AND p.pricelevel = 1 AND p.quantity = 1
     LEFT JOIN customrecord_pl pl ON pl.id = item.custitem_prodline
@@ -663,7 +667,8 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
         NULL AS quantityonorder,
         NULL AS quantitybackordered,
         pl.custrecord_pl_leadtime AS prodlineleadtime,
-        pl.custrecord_pl_ordercycle AS prodlineordercycle
+        pl.custrecord_pl_ordercycle AS prodlineordercycle,
+        item.custitem_dateadded AS dateadded
       FROM KitItem item
       LEFT JOIN pricing p ON p.item = item.id AND p.pricelevel = 1 AND p.quantity = 1
       LEFT JOIN customrecord_pl pl ON pl.id = item.custitem_prodline
