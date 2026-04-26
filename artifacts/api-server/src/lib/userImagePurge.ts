@@ -8,7 +8,7 @@ const RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 const RUN_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const MIN_GAP_MS = 23 * 60 * 60 * 1000;
 const RECENT_SYNC_MAX_AGE_MS = 12 * 60 * 60 * 1000;
-const LAST_PURGE_KEY = "user_image_last_purge_at";
+const LAST_PURGE_KEY = "last_user_image_purge_at";
 
 let timeoutId: ReturnType<typeof setTimeout> | null = null;
 let running = false;

@@ -5,7 +5,7 @@ import { Camera, Loader2, X, Upload, AlertCircle, Check } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
 
-const MAX_INPUT_BYTES = 15 * 1024 * 1024;
+const MAX_INPUT_BYTES = 10 * 1024 * 1024;
 const MAX_OUTPUT_LONGEST_EDGE = 800;
 
 interface UploadDisplayImageProps {
@@ -296,6 +296,7 @@ export function UploadDisplayImage({
               ref={fileInputRef}
               type="file"
               accept="image/*"
+              capture="environment"
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
