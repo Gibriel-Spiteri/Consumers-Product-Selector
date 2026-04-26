@@ -3,6 +3,7 @@ import { useParams, useLocation, Link, Redirect } from "wouter";
 import { useGetCategories } from "@workspace/api-client-react";
 import { ChevronRight, Loader2, ArrowLeft } from "lucide-react";
 import { useCategoryPath } from "@/hooks/use-category-path";
+import { useDocumentTitle } from "@/hooks/use-document-title";
 import { trackCategoryView } from "@/lib/analytics";
 import {
   categoryHref,
@@ -47,6 +48,8 @@ export default function CategoryOverview() {
   }, [id, canonicalHref]);
 
   const parentLink = path.length > 1 ? categoryOverviewHref(path[path.length - 2]) : "/";
+
+  useDocumentTitle(category ? `${category.name} · Consumers Product Selector` : null);
 
   return (
     <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10">

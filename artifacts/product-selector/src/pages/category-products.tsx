@@ -4,6 +4,7 @@ import { useGetCategories, getGetCategoryProductsQueryOptions } from "@workspace
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, PackageX, Loader2, ImageOff, LayoutList, LayoutGrid, Copy, Check, X, Filter, ChevronDown, Plus, Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { useCategoryPath } from "@/hooks/use-category-path";
+import { useDocumentTitle } from "@/hooks/use-document-title";
 import ProductModal from "@/components/product-modal";
 import { cn, fmtPrice } from "@/lib/utils";
 import { useQuoteList } from "@/context/quote-list-context";
@@ -584,6 +585,8 @@ export default function CategoryProducts() {
   useEffect(() => {
     if (Number.isFinite(id) && canonicalHref) trackCategoryView(canonicalHref, id);
   }, [id, canonicalHref]);
+
+  useDocumentTitle(currentCategory ? `${currentCategory.name} · Consumers Product Selector` : null);
 
   const isDisplaysForSale = path.length > 0 && path[0].name.toLowerCase() === "displays for sale";
 
