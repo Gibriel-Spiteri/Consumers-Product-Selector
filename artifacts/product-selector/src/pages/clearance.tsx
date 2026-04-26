@@ -269,7 +269,7 @@ function GridView({ products, onSelect, isAdmin }: { products: Product[]; onSele
   );
 }
 
-function ListView({ products, onSelect, isAdmin }: { products: Product[]; onSelect: (p: Product) => void; isAdmin: boolean }) {
+function ListView({ products, onSelect, isAdmin, realIsAdmin }: { products: Product[]; onSelect: (p: Product) => void; isAdmin: boolean; realIsAdmin: boolean }) {
   return (
     <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
       <div className="overflow-x-auto">
@@ -284,7 +284,7 @@ function ListView({ products, onSelect, isAdmin }: { products: Product[]; onSele
               {isAdmin && (
                 <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 text-right w-[110px]">12mo Used</th>
               )}
-              {isAdmin && (
+              {realIsAdmin && (
                 <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 text-right w-[110px]">Months Listed</th>
               )}
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-emerald-600 text-right w-[120px]">Clearance</th>
@@ -320,7 +320,7 @@ function ListView({ products, onSelect, isAdmin }: { products: Product[]; onSele
                     {p.twelveMonthUsage ?? 0}
                   </td>
                 )}
-                {isAdmin && (
+                {realIsAdmin && (
                   <td className="px-5 py-3 text-right whitespace-nowrap text-gray-700 tabular-nums">
                     {(() => {
                       const months = monthsSince(p.dateAdded);
@@ -451,7 +451,7 @@ async function exportToExcel(filename: string, rows: Product[]) {
 }
 
 export default function ClearancePage() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, realIsAdmin } = useAuth();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [activeCategoryId, setActiveCategoryId] = useState<number | null>(null);
@@ -641,7 +641,7 @@ export default function ClearancePage() {
       ) : viewMode === "grid" ? (
         <GridView products={filtered} onSelect={setSelectedProduct} isAdmin={isAdmin} />
       ) : (
-        <ListView products={filtered} onSelect={setSelectedProduct} isAdmin={isAdmin} />
+        <ListView products={filtered} onSelect={setSelectedProduct} isAdmin={isAdmin} realIsAdmin={realIsAdmin} />
       )}
 
       {selectedProduct && (
