@@ -60,6 +60,36 @@ function formatAtpDate(raw: string | null | undefined): string | null {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 }
 
+function parseDateAdded(raw: string | null | undefined): Date | null {
+  if (!raw) return null;
+  const s = String(raw).trim();
+  if (!s) return null;
+  const mdy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (mdy) {
+    const [, mo, da, yr] = mdy;
+    return new Date(Date.UTC(parseInt(yr, 10), parseInt(mo, 10) - 1, parseInt(da, 10)));
+  }
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function monthsListedFrom(raw: string | null | undefined): number | null {
+  const d = parseDateAdded(raw);
+  if (!d) return null;
+  const now = new Date();
+  const months =
+    (now.getUTCFullYear() - d.getUTCFullYear()) * 12 +
+    (now.getUTCMonth() - d.getUTCMonth()) +
+    (now.getUTCDate() >= d.getUTCDate() ? 0 : -1);
+  return Math.max(0, months);
+}
+
+function formatDateAdded(raw: string | null | undefined): string | null {
+  const d = parseDateAdded(raw);
+  if (!d) return null;
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+}
+
 interface ProductModalProps {
   product: Product | null;
   categoryPath?: string;
@@ -967,6 +997,18 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                               </span>
                             </dd>
                           </div> */}
+                          {isAdmin && categoryId === DISPLAYS_FOR_SALE_CATEGORY_ID && (() => {
+                            const months = monthsListedFrom(full?.dateAdded);
+                            const formatted = formatDateAdded(full?.dateAdded);
+                            return (
+                              <div>
+                                <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Months Listed</dt>
+                                <dd className="text-sm text-gray-800" title={formatted ?? undefined}>
+                                  {months != null ? `${months}mo` : "—"}
+                                </dd>
+                              </div>
+                            );
+                          })()}
                           {isAdmin && (
                             <div>
                               <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">12 Month Used</dt>
