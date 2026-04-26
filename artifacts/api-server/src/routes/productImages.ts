@@ -11,7 +11,9 @@ const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
 
 const MAX_BYTES = 8 * 1024 * 1024;
-const OBJECT_KEY_RE = /^\/objects\/[A-Za-z0-9_-]+$/;
+// Object keys are minted by ObjectStorageService and look like
+// `/objects/uploads/<uuid>` (multi-segment under PRIVATE_OBJECT_DIR).
+const OBJECT_KEY_RE = /^\/objects\/[A-Za-z0-9_\/-]+$/;
 const ALLOWED_CONTENT_TYPE = "image/png";
 
 async function fetchEmployeeName(employeeId: string): Promise<string | null> {
