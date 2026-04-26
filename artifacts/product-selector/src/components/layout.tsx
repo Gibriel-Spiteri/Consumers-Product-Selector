@@ -566,8 +566,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 Loading…
               </div>
             ) : (
-              <div className="flex items-center">
-                <ul className="flex items-center overflow-x-auto flex-1">
+              <div className="flex items-center overflow-x-auto -mx-4 px-4">
+                <ul className="flex items-center">
                   {topLevelCategories.map(cat => (
                     <li key={cat.id} className="flex-shrink-0 relative">
                       <Link
