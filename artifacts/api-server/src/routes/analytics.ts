@@ -530,6 +530,110 @@ router.get("/admin/analytics/summary", requireAdmin, async (req, res) => {
 
 const USER_EVENTS_MAX = 200;
 
+router.get("/admin/analytics/recent", requireAdmin, async (req, res) => {
+  try {
+    const includeAdmins = req.query.includeAdmins === "1";
+    const limitParam = Number(req.query.limit);
+    const limit =
+      Number.isInteger(limitParam) && limitParam > 0 && limitParam <= 200
+        ? limitParam
+        : 50;
+
+    const adminIds = includeAdmins ? [] : await fetchAdminEmployeeIds();
+    const adminFilter =
+      adminIds.length > 0
+        ? or(
+            isNull(analyticsEventsTable.employeeId),
+            notInArray(analyticsEventsTable.employeeId, adminIds),
+          )
+        : undefined;
+
+    const events = await db
+      .select({
+        id: analyticsEventsTable.id,
+        createdAt: analyticsEventsTable.createdAt,
+        eventType: analyticsEventsTable.eventType,
+        path: analyticsEventsTable.path,
+        categoryId: analyticsEventsTable.categoryId,
+        productId: analyticsEventsTable.productId,
+        sessionId: analyticsEventsTable.sessionId,
+        employeeId: analyticsEventsTable.employeeId,
+        metadata: analyticsEventsTable.metadata,
+      })
+      .from(analyticsEventsTable)
+      .where(adminFilter ?? sql`true`)
+      .orderBy(desc(analyticsEventsTable.createdAt))
+      .limit(limit);
+
+    const categoryIds = Array.from(
+      new Set(events.map((e) => e.categoryId).filter((v): v is number => v != null)),
+    );
+    const productIds = Array.from(
+      new Set(events.map((e) => e.productId).filter((v): v is number => v != null)),
+    );
+    const employeeIds = Array.from(
+      new Set(events.map((e) => e.employeeId).filter((v): v is string => v != null)),
+    );
+
+    const [categories, products, employeeNames] = await Promise.all([
+      categoryIds.length > 0
+        ? db
+            .select({ id: categoriesTable.id, name: categoriesTable.name })
+            .from(categoriesTable)
+            .where(inArray(categoriesTable.id, categoryIds))
+        : Promise.resolve([] as { id: number; name: string }[]),
+      productIds.length > 0
+        ? db
+            .select({
+              id: productsTable.id,
+              name: productsTable.name,
+              sku: productsTable.sku,
+            })
+            .from(productsTable)
+            .where(inArray(productsTable.id, productIds))
+        : Promise.resolve(
+            [] as { id: number; name: string; sku: string | null }[],
+          ),
+      employeeIds.length > 0
+        ? fetchEmployeeNames(employeeIds)
+        : Promise.resolve(new Map<string, string>()),
+    ]);
+
+    const catNameById = new Map(categories.map((c) => [c.id, c.name]));
+    const productById = new Map(products.map((p) => [p.id, p]));
+
+    res.json({
+      limit,
+      events: events.map((e) => {
+        const product =
+          e.productId != null ? productById.get(e.productId) : undefined;
+        return {
+          id: e.id,
+          createdAt: e.createdAt,
+          eventType: e.eventType,
+          path: e.path,
+          sessionId: e.sessionId,
+          employeeId: e.employeeId,
+          employeeName:
+            e.employeeId != null
+              ? employeeNames.get(e.employeeId) ?? `Employee #${e.employeeId}`
+              : null,
+          categoryId: e.categoryId,
+          categoryName:
+            e.categoryId != null ? catNameById.get(e.categoryId) ?? null : null,
+          productId: e.productId,
+          productName: product?.name ?? null,
+          productSku: product?.sku ?? null,
+          metadata: e.metadata,
+        };
+      }),
+    });
+  } catch (err) {
+    logger.error({ err }, "Failed to load recent activity");
+    res.status(500).json({ error: "Failed to load recent activity" });
+  }
+});
+
 router.get("/admin/analytics/user/:id", requireAdmin, async (req, res) => {
   try {
     const numericId = Number(req.params.id);

@@ -72,6 +72,27 @@ function fmtTimeAgo(iso: string | null) {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
+interface RecentEvent {
+  id: number;
+  createdAt: string;
+  eventType: string;
+  path: string | null;
+  sessionId: string;
+  employeeId: string | null;
+  employeeName: string | null;
+  categoryId: number | null;
+  categoryName: string | null;
+  productId: number | null;
+  productName: string | null;
+  productSku: string | null;
+  metadata: Record<string, unknown> | null;
+}
+
+interface RecentActivityResponse {
+  limit: number;
+  events: RecentEvent[];
+}
+
 interface UserActivityResponse {
   employeeId: string;
   employeeName: string;
@@ -274,6 +295,22 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
     refetchInterval: 30_000,
   });
 
+  const { data: recent } = useQuery<RecentActivityResponse>({
+    queryKey: ["adminAnalyticsRecent", includeAdmins],
+    queryFn: async () => {
+      const res = await fetch(
+        `/api/admin/analytics/recent?limit=50&includeAdmins=${includeAdmins ? "1" : "0"}`,
+        { headers: { "X-Employee-Id": employeeId } },
+      );
+      if (!res.ok) throw new Error("Failed to load recent activity");
+      return res.json();
+    },
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchInterval: 30_000,
+  });
+
   const maxDaily = useMemo(
     () => Math.max(1, ...((data?.dailyPageViews ?? []).map((d) => d.views))),
     [data],
@@ -373,6 +410,88 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
               </div>
             </div>
           )}
+
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">
+              Recent Activity{recent ? ` (${recent.events.length})` : ""}
+            </div>
+            {!recent ? (
+              <div className="text-sm text-gray-400 py-4 text-center bg-gray-50 rounded-lg">Loading…</div>
+            ) : recent.events.length === 0 ? (
+              <div className="text-sm text-gray-400 py-4 text-center bg-gray-50 rounded-lg">No activity yet.</div>
+            ) : (
+              <div className="border border-gray-100 rounded-lg overflow-hidden max-h-[420px] overflow-y-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 text-[11px] uppercase tracking-wide text-gray-400 font-semibold sticky top-0">
+                    <tr>
+                      <th className="px-3 py-2 text-left">Time</th>
+                      <th className="px-3 py-2 text-left">User</th>
+                      <th className="px-3 py-2 text-left">Event</th>
+                      <th className="px-3 py-2 text-left">Detail</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {recent.events.map((e) => {
+                      const detail = e.productName
+                        ? e.productName
+                        : e.categoryName
+                        ? e.categoryName
+                        : e.eventType === "search" &&
+                          e.metadata &&
+                          typeof (e.metadata as { query?: unknown }).query === "string"
+                        ? `"${(e.metadata as { query: string }).query}"`
+                        : e.path ?? "—";
+                      const subDetail = e.productSku ?? null;
+                      const userClickable = e.employeeId != null;
+                      return (
+                        <tr key={e.id} className="hover:bg-amber-50 align-top">
+                          <td className="px-3 py-2 text-gray-500 whitespace-nowrap text-xs" title={fmtAbsTime(e.createdAt)}>
+                            {fmtTimeAgo(e.createdAt)}
+                          </td>
+                          <td className="px-3 py-2 whitespace-nowrap">
+                            {userClickable ? (
+                              <button
+                                onClick={() =>
+                                  setSelectedUser({
+                                    employeeId: e.employeeId!,
+                                    employeeName:
+                                      e.employeeName ?? `Employee #${e.employeeId}`,
+                                  })
+                                }
+                                className="text-gray-900 hover:text-amber-700 text-left"
+                                title="View this user's recent activity"
+                              >
+                                {e.employeeName || `Employee #${e.employeeId}`}
+                              </button>
+                            ) : (
+                              <span className="text-gray-400 italic">Anonymous</span>
+                            )}
+                          </td>
+                          <td className="px-3 py-2 whitespace-nowrap">
+                            <span
+                              className={`inline-block px-2 py-0.5 rounded text-[11px] font-medium ${
+                                EVENT_TYPE_COLOR[e.eventType] ?? "bg-gray-100 text-gray-700"
+                              }`}
+                            >
+                              {EVENT_TYPE_LABEL[e.eventType] ?? e.eventType}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2">
+                            <div className="text-gray-900 break-words">{detail}</div>
+                            {subDetail && (
+                              <div className="text-[11px] text-gray-400 font-mono break-all mt-0.5">
+                                {subDetail}
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
 
           <div>
             <div className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">
