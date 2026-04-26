@@ -4,3 +4,4 @@ export * from "./product-attributes";
 export * from "./related-items";
 export * from "./app-settings";
 export * from "./analytics";
+export * from "./product-user-images";

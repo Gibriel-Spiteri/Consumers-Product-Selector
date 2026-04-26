@@ -26,7 +26,7 @@ const upload = multer({
   },
 });
 
-async function requireAdmin(req: Request, res: Response, next: NextFunction) {
+export async function requireAdmin(req: Request, res: Response, next: NextFunction) {
   const employeeId = req.headers["x-employee-id"] as string | undefined;
   if (!employeeId) {
     return res.status(401).json({ error: "Authentication required" });

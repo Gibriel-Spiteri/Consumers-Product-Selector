@@ -7,6 +7,8 @@ import authRouter from "./auth";
 import adminRouter from "./admin";
 import imageProxyRouter from "./imageProxy";
 import analyticsRouter from "./analytics";
+import storageRouter from "./storage";
+import productImagesRouter from "./productImages";
 
 const router: IRouter = Router();
 
@@ -18,5 +20,7 @@ router.use(estimatesRouter);
 router.use(adminRouter);
 router.use(imageProxyRouter);
 router.use(analyticsRouter);
+router.use(storageRouter);
+router.use(productImagesRouter);
 
 export default router;

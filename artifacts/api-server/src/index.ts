@@ -3,6 +3,7 @@ import { logger } from "./lib/logger";
 import { startScheduledSync, stopScheduledSync, loadPersistedSchedule } from "./lib/scheduler";
 import { loadPersistedSyncResult } from "./lib/syncService";
 import { startAnalyticsPurgeJob, stopAnalyticsPurgeJob } from "./lib/analyticsPurge";
+import { startUserImagePurgeJob, stopUserImagePurgeJob } from "./lib/userImagePurge";
 
 const rawPort = process.env["PORT"];
 
@@ -31,11 +32,13 @@ app.listen(port, (err) => {
     });
   });
   startAnalyticsPurgeJob();
+  startUserImagePurgeJob();
 
   const shutdown = () => {
     logger.info("Shutting down gracefully");
     stopScheduledSync();
     stopAnalyticsPurgeJob();
+    stopUserImagePurgeJob();
     process.exit(0);
   };
   process.on("SIGTERM", shutdown);
