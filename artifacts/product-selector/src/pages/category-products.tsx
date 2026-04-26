@@ -241,15 +241,15 @@ function GridCard({ p, onSelect, isAdmin }: { p: Product; onSelect: (p: Product)
       onClick={() => onSelect(p)}
       className="bg-white rounded-2xl overflow-hidden cursor-pointer group hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/8 transition-all duration-200 shadow-[0_1px_4px_rgba(0,0,0,0.06)]"
     >
-      <div className="bg-white h-[196px] flex items-center justify-center p-2">
+      <div className="bg-white h-[140px] sm:h-[196px] flex items-center justify-center p-2">
         <ProductImage
           imageUrl={p.imageUrl}
           name={p.name}
-          className="max-w-[180px] max-h-[180px]"
+          className="max-w-[140px] max-h-[140px] sm:max-w-[180px] sm:max-h-[180px]"
         />
       </div>
-      <div className="px-5 pb-5 pt-0">
-        <p className="text-[14px] font-medium text-gray-900 leading-snug line-clamp-2 min-h-[2.5rem] mb-2.5 group-hover:text-primary transition-colors">
+      <div className="px-3 sm:px-5 pb-4 sm:pb-5 pt-0">
+        <p className="text-[13px] sm:text-[14px] font-medium text-gray-900 leading-snug line-clamp-2 min-h-[2.25rem] sm:min-h-[2.5rem] mb-2 sm:mb-2.5 group-hover:text-primary transition-colors">
           {p.name}
         </p>
         {p.sku && (
@@ -257,7 +257,7 @@ function GridCard({ p, onSelect, isAdmin }: { p: Product; onSelect: (p: Product)
             <CopySkuButton sku={p.sku} />
           </div>
         )}
-        <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-end justify-between gap-2 flex-wrap">
           <div>
             {p.price ? (
               <PprPriceTooltip price={Number(p.price)} pprPriceReductionRetail={p.pprPriceReductionRetail} consumersPrice={p.consumersPrice} hasActivePpr={p.hasActivePpr}>
@@ -288,7 +288,7 @@ function GridCard({ p, onSelect, isAdmin }: { p: Product; onSelect: (p: Product)
 export function GridView({ products, onSelect }: { products: Product[]; onSelect: (p: Product) => void }) {
   const { isAdmin } = useAuth();
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
       {products.map(p => (
         <GridCard key={p.id} p={p} onSelect={onSelect} isAdmin={isAdmin} />
       ))}
@@ -723,7 +723,7 @@ export default function CategoryProducts() {
   const hasActiveFilters = activeFilters.size > 0 || inStockOnly || refineQuery.trim().length > 0;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10">
+    <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-6 sm:py-10">
 
       <ProductModal
         product={selectedProduct}
@@ -732,7 +732,7 @@ export default function CategoryProducts() {
       />
 
       {/* Page Header */}
-      <div className="mb-8">
+      <div className="mb-6 sm:mb-8">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-1 text-[12px] text-gray-400 mb-4 overflow-x-auto whitespace-nowrap">
           <Link href="/" className="hover:text-gray-600 transition-colors">Home</Link>
@@ -746,9 +746,9 @@ export default function CategoryProducts() {
           ))}
         </nav>
 
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 sm:gap-4">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 truncate">
               {path.length > 0 ? path[path.length - 1].name : "Products"}
             </h1>
             {!isLoadingProducts && allProducts.length > 0 && (
@@ -760,7 +760,7 @@ export default function CategoryProducts() {
             )}
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0 flex-wrap">
 
           <button
             onClick={() => setInStockOnly(!inStockOnly)}
@@ -849,8 +849,8 @@ export default function CategoryProducts() {
         </div>
       )}
 
-      <div className="flex items-center gap-3 flex-wrap mb-4">
-        <div className="flex-1 min-w-0">
+      <div className="flex items-start sm:items-center gap-3 flex-col sm:flex-row sm:flex-wrap mb-4">
+        <div className="flex-1 min-w-0 w-full sm:w-auto">
           <FacetBar
             facets={facets}
             activeFilters={activeFilters}
@@ -858,7 +858,7 @@ export default function CategoryProducts() {
             onClear={clearFilters}
           />
         </div>
-        <div className="relative w-52 shrink-0 ml-auto">
+        <div className="relative w-full sm:w-52 shrink-0 sm:ml-auto">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
