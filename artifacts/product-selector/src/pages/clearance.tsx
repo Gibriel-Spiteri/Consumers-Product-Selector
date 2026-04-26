@@ -50,6 +50,17 @@ function daysSince(raw: string | null | undefined): number | null {
   return Math.max(0, Math.floor((Date.now() - d.getTime()) / 86_400_000));
 }
 
+function monthsSince(raw: string | null | undefined): number | null {
+  const d = parseNetSuiteDate(raw);
+  if (!d) return null;
+  const now = new Date();
+  const months =
+    (now.getUTCFullYear() - d.getUTCFullYear()) * 12 +
+    (now.getUTCMonth() - d.getUTCMonth()) +
+    (now.getUTCDate() >= d.getUTCDate() ? 0 : -1);
+  return Math.max(0, months);
+}
+
 function formatNetSuiteDate(raw: string | null | undefined): string | null {
   const d = parseNetSuiteDate(raw);
   if (!d) return null;
@@ -274,7 +285,7 @@ function ListView({ products, onSelect, isAdmin }: { products: Product[]; onSele
                 <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 text-right w-[110px]">12mo Used</th>
               )}
               {isAdmin && (
-                <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 text-right w-[110px]">Days Listed</th>
+                <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 text-right w-[110px]">Months Listed</th>
               )}
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-emerald-600 text-right w-[120px]">Clearance</th>
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[80px]"></th>
@@ -312,12 +323,12 @@ function ListView({ products, onSelect, isAdmin }: { products: Product[]; onSele
                 {isAdmin && (
                   <td className="px-5 py-3 text-right whitespace-nowrap text-gray-700 tabular-nums">
                     {(() => {
-                      const days = daysSince(p.dateAdded);
-                      if (days == null) return <span className="text-gray-300">—</span>;
+                      const months = monthsSince(p.dateAdded);
+                      if (months == null) return <span className="text-gray-300">—</span>;
                       const formatted = formatNetSuiteDate(p.dateAdded);
                       return (
                         <span title={formatted ?? undefined}>
-                          {days}d
+                          {months}mo
                         </span>
                       );
                     })()}
