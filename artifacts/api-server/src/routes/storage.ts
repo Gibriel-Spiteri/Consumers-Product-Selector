@@ -1,5 +1,7 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { Readable } from "stream";
+import { eq } from "drizzle-orm";
+import { db, productUserImagesTable } from "@workspace/db";
 import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
 
 const router: IRouter = Router();
@@ -41,15 +43,26 @@ router.get("/storage/public-objects/*filePath", async (req: Request, res: Respon
 /**
  * GET /storage/objects/*
  *
- * Serve uploaded objects from PRIVATE_OBJECT_DIR.
- * Display For Sale silhouettes live here. They are non-sensitive (internal product
- * photos) so we do not gate this route — anyone with the path can fetch the image.
+ * Serve employee-uploaded Display For Sale silhouettes from PRIVATE_OBJECT_DIR.
+ * Only object keys recorded in product_user_images are servable; arbitrary
+ * private-dir paths are rejected to prevent enumeration of unrelated files.
  */
 router.get("/storage/objects/*path", async (req: Request, res: Response) => {
   try {
     const raw = req.params.path;
     const wildcardPath = Array.isArray(raw) ? raw.join("/") : raw;
     const objectPath = `/objects/${wildcardPath}`;
+
+    const known = await db
+      .select({ id: productUserImagesTable.id })
+      .from(productUserImagesTable)
+      .where(eq(productUserImagesTable.objectKey, objectPath))
+      .limit(1);
+    if (known.length === 0) {
+      res.status(404).json({ error: "Object not found" });
+      return;
+    }
+
     const objectFile = await objectStorageService.getObjectEntityFile(objectPath);
 
     const response = await objectStorageService.downloadObject(objectFile, 3600);
