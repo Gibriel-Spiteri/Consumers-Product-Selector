@@ -9,6 +9,7 @@ import {
 } from "@workspace/api-zod";
 import { MOCK_CATEGORIES, MOCK_PRODUCTS, MOCK_STOCK } from "../lib/mockData";
 import { fetchLiveInventory, fetchItemImages } from "../lib/netsuite";
+import { fetchUserImageMap, resolveImage } from "../lib/userImages";
 
 const router: IRouter = Router();
 
@@ -182,10 +183,14 @@ router.get("/categories/:categoryId/products", async (req, res) => {
     .where(and(inArray(productsTable.categoryId, descendantIds), notDiscontinued));
 
   const netsuiteIds = products.map((p) => p.netsuiteId).filter((id): id is string => id != null);
-  const liveInventory = await fetchLiveInventory(netsuiteIds);
+  const [liveInventory, userImages] = await Promise.all([
+    fetchLiveInventory(netsuiteIds),
+    fetchUserImageMap(products),
+  ]);
 
   const mapped = products.map((p) => {
     const liveQty = p.netsuiteId ? liveInventory.get(p.netsuiteId) : undefined;
+    const { imageUrl, imageSource } = resolveImage(p, userImages);
     return {
       id: p.id,
       name: p.salesdescription || p.name,
@@ -195,8 +200,9 @@ router.get("/categories/:categoryId/products", async (req, res) => {
       consumersPrice: p.consumersPrice ? parseFloat(p.consumersPrice) : null,
       categoryId: p.categoryId ?? null,
       netsuiteId: p.netsuiteId ?? null,
-      imageUrl: p.imageUrl ?? null,
-      fullImageUrl: p.fullImageUrl ?? null,
+      imageUrl,
+      fullImageUrl: imageSource === "user" ? imageUrl : (p.fullImageUrl ?? null),
+      imageSource,
       quantityAvailable: liveQty ?? p.quantityAvailable ?? null,
       hasActivePpr: p.hasActivePpr ?? false,
       pprName: p.pprName ?? null,
@@ -300,10 +306,14 @@ router.get("/products/search", async (req, res) => {
     ), notDiscontinued));
 
   const netsuiteIds = products.map((p) => p.netsuiteId).filter((id): id is string => id != null);
-  const liveInventory = await fetchLiveInventory(netsuiteIds);
+  const [liveInventory, userImages] = await Promise.all([
+    fetchLiveInventory(netsuiteIds),
+    fetchUserImageMap(products),
+  ]);
 
   const mapped = products.map((p) => {
     const liveQty = p.netsuiteId ? liveInventory.get(p.netsuiteId) : undefined;
+    const { imageUrl, imageSource } = resolveImage(p, userImages);
     return {
       id: p.id,
       name: p.salesdescription || p.name,
@@ -313,8 +323,9 @@ router.get("/products/search", async (req, res) => {
       consumersPrice: p.consumersPrice ? parseFloat(p.consumersPrice) : null,
       categoryId: p.categoryId ?? null,
       netsuiteId: p.netsuiteId ?? null,
-      imageUrl: p.imageUrl ?? null,
-      fullImageUrl: p.fullImageUrl ?? null,
+      imageUrl,
+      fullImageUrl: imageSource === "user" ? imageUrl : (p.fullImageUrl ?? null),
+      imageSource,
       quantityAvailable: liveQty ?? p.quantityAvailable ?? null,
       hasActivePpr: p.hasActivePpr ?? false,
       pprName: p.pprName ?? null,
@@ -360,10 +371,14 @@ router.get("/products/uncategorized", async (_req, res) => {
     .where(and(sql`${productsTable.categoryId} IS NULL`, notDiscontinued));
 
   const netsuiteIds = products.map((p) => p.netsuiteId).filter((id): id is string => id != null);
-  const liveInventory = await fetchLiveInventory(netsuiteIds);
+  const [liveInventory, userImages] = await Promise.all([
+    fetchLiveInventory(netsuiteIds),
+    fetchUserImageMap(products),
+  ]);
 
   const mapped = products.map((p) => {
     const liveQty = p.netsuiteId ? liveInventory.get(p.netsuiteId) : undefined;
+    const { imageUrl, imageSource } = resolveImage(p, userImages);
     return {
       id: p.id,
       name: p.salesdescription || p.name,
@@ -373,8 +388,9 @@ router.get("/products/uncategorized", async (_req, res) => {
       consumersPrice: p.consumersPrice ? parseFloat(p.consumersPrice) : null,
       categoryId: p.categoryId ?? null,
       netsuiteId: p.netsuiteId ?? null,
-      imageUrl: p.imageUrl ?? null,
-      fullImageUrl: p.fullImageUrl ?? null,
+      imageUrl,
+      fullImageUrl: imageSource === "user" ? imageUrl : (p.fullImageUrl ?? null),
+      imageSource,
       quantityAvailable: liveQty ?? p.quantityAvailable ?? null,
       hasActivePpr: p.hasActivePpr ?? false,
       pprName: p.pprName ?? null,
@@ -447,7 +463,10 @@ router.get("/products/clearance", async (_req, res) => {
     ));
 
   const netsuiteIds = products.map((p) => p.netsuiteId).filter((id): id is string => id != null);
-  const liveInventory = await fetchLiveInventory(netsuiteIds);
+  const [liveInventory, userImages] = await Promise.all([
+    fetchLiveInventory(netsuiteIds),
+    fetchUserImageMap(products),
+  ]);
 
   const categoryIds = [...new Set(products.map(p => p.categoryId).filter((id): id is number => id != null))];
   const categoryRows = categoryIds.length > 0
@@ -470,6 +489,7 @@ router.get("/products/clearance", async (_req, res) => {
   const mapped = products.map((p) => {
     const liveQty = p.netsuiteId ? liveInventory.get(p.netsuiteId) : undefined;
     const parent = p.categoryId ? catToParent.get(p.categoryId) : undefined;
+    const { imageUrl, imageSource } = resolveImage(p, userImages);
     return {
       id: p.id,
       name: p.salesdescription || p.name,
@@ -481,8 +501,9 @@ router.get("/products/clearance", async (_req, res) => {
       categoryParentId: parent?.parentId ?? null,
       categoryParentName: parent?.parentName ?? null,
       netsuiteId: p.netsuiteId ?? null,
-      imageUrl: p.imageUrl ?? null,
-      fullImageUrl: p.fullImageUrl ?? null,
+      imageUrl,
+      fullImageUrl: imageSource === "user" ? imageUrl : (p.fullImageUrl ?? null),
+      imageSource,
       quantityAvailable: liveQty ?? p.quantityAvailable ?? null,
       hasActivePpr: p.hasActivePpr ?? false,
       pprName: p.pprName ?? null,
@@ -508,7 +529,10 @@ router.get("/products/express-bath", async (_req, res) => {
     .where(and(sql`${productsTable.isExpressBath} = true`, notDiscontinued));
 
   const netsuiteIds = products.map((p) => p.netsuiteId).filter((id): id is string => id != null);
-  const liveInventory = await fetchLiveInventory(netsuiteIds);
+  const [liveInventory, userImages] = await Promise.all([
+    fetchLiveInventory(netsuiteIds),
+    fetchUserImageMap(products),
+  ]);
 
   const categoryIds = [...new Set(products.map(p => p.categoryId).filter((id): id is number => id != null))];
   const categoryRows = categoryIds.length > 0
@@ -531,6 +555,7 @@ router.get("/products/express-bath", async (_req, res) => {
   const mapped = products.map((p) => {
     const liveQty = p.netsuiteId ? liveInventory.get(p.netsuiteId) : undefined;
     const parent = p.categoryId ? catToParent.get(p.categoryId) : undefined;
+    const { imageUrl, imageSource } = resolveImage(p, userImages);
     return {
       id: p.id,
       name: p.salesdescription || p.name,
@@ -542,8 +567,9 @@ router.get("/products/express-bath", async (_req, res) => {
       categoryParentId: parent?.parentId ?? null,
       categoryParentName: parent?.parentName ?? null,
       netsuiteId: p.netsuiteId ?? null,
-      imageUrl: p.imageUrl ?? null,
-      fullImageUrl: p.fullImageUrl ?? null,
+      imageUrl,
+      fullImageUrl: imageSource === "user" ? imageUrl : (p.fullImageUrl ?? null),
+      imageSource,
       quantityAvailable: liveQty ?? p.quantityAvailable ?? null,
       hasActivePpr: p.hasActivePpr ?? false,
       pprName: p.pprName ?? null,
@@ -625,11 +651,18 @@ router.get("/products/:productId", async (req, res) => {
   const p = rows[0];
 
   const netsuiteIds = p.netsuiteId ? [p.netsuiteId] : [];
-  const [liveInventory, additionalImages] = await Promise.all([
+  const [liveInventory, additionalImages, userImages] = await Promise.all([
     fetchLiveInventory(netsuiteIds),
     fetchItemImages(p.netsuiteId, p.imageUrl),
+    fetchUserImageMap([p]),
   ]);
   const liveQty = p.netsuiteId ? liveInventory.get(p.netsuiteId) : undefined;
+  const { imageUrl, imageSource } = resolveImage(p, userImages);
+  const resolvedFull = imageSource === "user" ? imageUrl : (p.fullImageUrl ?? null);
+  const resolvedAdditional =
+    imageSource === "user" && imageUrl
+      ? [imageUrl]
+      : additionalImages;
 
   return res.json({
     product: {
@@ -642,9 +675,10 @@ router.get("/products/:productId", async (req, res) => {
       ourPrice: p.price ? parseFloat(p.price) : null,
       categoryId: p.categoryId ?? null,
       netsuiteId: p.netsuiteId ?? null,
-      imageUrl: p.imageUrl ?? null,
-      fullImageUrl: p.fullImageUrl ?? null,
-      additionalImages,
+      imageUrl,
+      fullImageUrl: resolvedFull,
+      imageSource,
+      additionalImages: resolvedAdditional,
       description: p.description ?? null,
       manufacturer: p.manufacturer ?? null,
       collection: p.collection ?? null,
@@ -698,11 +732,17 @@ router.get("/products/:productId/related", async (req, res) => {
   const productMap = new Map(relatedProducts.map(p => [p.netsuiteId, p]));
 
   const netsuiteIds = relatedProducts.map(p => p.netsuiteId).filter((id): id is string => id != null);
-  const liveInventory = await fetchLiveInventory(netsuiteIds);
+  const [liveInventory, userImages] = await Promise.all([
+    fetchLiveInventory(netsuiteIds),
+    fetchUserImageMap(relatedProducts),
+  ]);
 
   const items = related.map(r => {
     const p = productMap.get(r.relatedNetsuiteId);
     const liveQty = p?.netsuiteId ? liveInventory.get(p.netsuiteId) : undefined;
+    const resolved = p
+      ? resolveImage(p, userImages)
+      : { imageUrl: null, imageSource: null as null };
     return {
       id: p?.id ?? null,
       netsuiteId: r.relatedNetsuiteId,
@@ -711,8 +751,9 @@ router.get("/products/:productId/related", async (req, res) => {
       price: p?.price ? parseFloat(p.price) : (r.onlinePrice ? parseFloat(r.onlinePrice) : null),
       retailPrice: p?.retailPrice ? parseFloat(p.retailPrice) : null,
       consumersPrice: p?.consumersPrice ? parseFloat(p.consumersPrice) : null,
-      imageUrl: p?.imageUrl ?? null,
-      fullImageUrl: p?.fullImageUrl ?? null,
+      imageUrl: resolved.imageUrl,
+      fullImageUrl: resolved.imageSource === "user" ? resolved.imageUrl : (p?.fullImageUrl ?? null),
+      imageSource: resolved.imageSource,
       quantityAvailable: liveQty ?? p?.quantityAvailable ?? null,
       hasActivePpr: p?.hasActivePpr ?? false,
       pprName: p?.pprName ?? null,
@@ -757,10 +798,14 @@ router.get("/products/:productId/collection", async (req, res) => {
     );
 
   const netsuiteIds = matches.map(p => p.netsuiteId).filter((id): id is string => id != null);
-  const liveInventory = await fetchLiveInventory(netsuiteIds);
+  const [liveInventory, userImages] = await Promise.all([
+    fetchLiveInventory(netsuiteIds),
+    fetchUserImageMap(matches),
+  ]);
 
   const items = matches.map(p => {
     const liveQty = p.netsuiteId ? liveInventory.get(p.netsuiteId) : undefined;
+    const { imageUrl, imageSource } = resolveImage(p, userImages);
     return {
       id: p.id,
       netsuiteId: p.netsuiteId,
@@ -769,8 +814,9 @@ router.get("/products/:productId/collection", async (req, res) => {
       price: p.price ? parseFloat(p.price) : null,
       retailPrice: p.retailPrice ? parseFloat(p.retailPrice) : null,
       consumersPrice: p.consumersPrice ? parseFloat(p.consumersPrice) : null,
-      imageUrl: p.imageUrl ?? null,
-      fullImageUrl: p.fullImageUrl ?? null,
+      imageUrl,
+      fullImageUrl: imageSource === "user" ? imageUrl : (p.fullImageUrl ?? null),
+      imageSource,
       quantityAvailable: liveQty ?? p.quantityAvailable ?? null,
       hasActivePpr: p.hasActivePpr ?? false,
       pprName: p.pprName ?? null,

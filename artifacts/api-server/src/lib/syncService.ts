@@ -1,6 +1,7 @@
 import { db, appSettingsTable } from "@workspace/db";
-import { categoriesTable, productsTable, productAttributesTable, relatedItemsTable } from "@workspace/db";
-import { eq, notInArray, sql } from "drizzle-orm";
+import { categoriesTable, productsTable, productAttributesTable, relatedItemsTable, productUserImagesTable } from "@workspace/db";
+import { eq, inArray, notInArray, sql } from "drizzle-orm";
+import { objectStorageClient } from "./objectStorage";
 import {
   fetchNetSuiteCategories,
   fetchNetSuiteItems,
@@ -352,6 +353,12 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
         .delete(productsTable)
         .where(notInArray(productsTable.netsuiteId!, syncedProductNetsuiteIds));
       logger.info({ deleted: deletedProducts.rowCount ?? 0 }, "Removed stale products");
+    }
+
+    try {
+      await reconcileUserUploadedImages(syncedProductNetsuiteIds);
+    } catch (err) {
+      logger.error({ err }, "User-image reconciliation failed (non-fatal)");
     }
 
     setProgress("attributes", 84, "Fetching item attributes from NetSuite…");
