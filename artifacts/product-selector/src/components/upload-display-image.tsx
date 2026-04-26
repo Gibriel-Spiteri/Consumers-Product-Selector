@@ -115,7 +115,11 @@ export function UploadDisplayImage({
     try {
       const reqRes = await fetch(
         `/api/products/${encodeURIComponent(netsuiteId)}/image/request-upload`,
-        { method: "POST", headers: authHeaders(employee.id), body: "{}" }
+        {
+          method: "POST",
+          headers: authHeaders(employee.id),
+          body: JSON.stringify({ employeeId: employee.id }),
+        }
       );
       if (!reqRes.ok) {
         const e = await reqRes.json().catch(() => ({}));
@@ -135,7 +139,11 @@ export function UploadDisplayImage({
         {
           method: "POST",
           headers: authHeaders(employee.id),
-          body: JSON.stringify({ objectKey, byteSize: processedBlob.size }),
+          body: JSON.stringify({
+            employeeId: employee.id,
+            objectKey,
+            byteSize: processedBlob.size,
+          }),
         }
       );
       if (!confirmRes.ok) {

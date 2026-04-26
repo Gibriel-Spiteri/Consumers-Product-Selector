@@ -27,10 +27,28 @@ const upload = multer({
 });
 
 export async function requireEmployee(req: Request, res: Response, next: NextFunction) {
-  const employeeId = req.headers["x-employee-id"] as string | undefined;
-  if (!employeeId || !/^\d+$/.test(employeeId)) {
+  const headerId = req.headers["x-employee-id"];
+  const bodyId = (req.body && typeof req.body === "object")
+    ? (req.body as { employeeId?: unknown }).employeeId
+    : undefined;
+  const candidate =
+    typeof headerId === "string" && headerId
+      ? headerId
+      : typeof bodyId === "string" || typeof bodyId === "number"
+        ? String(bodyId)
+        : "";
+  if (!candidate || !/^\d+$/.test(candidate)) {
+    logger.warn(
+      {
+        url: req.originalUrl,
+        hasHeader: typeof headerId === "string" && headerId.length > 0,
+        headerNames: Object.keys(req.headers),
+      },
+      "requireEmployee rejected: missing/invalid employee id"
+    );
     return res.status(401).json({ error: "Authentication required" });
   }
+  const employeeId = candidate;
   try {
     const result = await executeSuiteQL<{
       id: string;
