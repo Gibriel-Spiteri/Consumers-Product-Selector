@@ -491,6 +491,7 @@ router.get("/products/clearance", async (_req, res) => {
       atpDate: p.atpDate ?? null,
       isClearance: p.noReorder === 1,
       twelveMonthUsage: p.twelveMonthUsage ?? null,
+      dateAdded: p.dateAdded ?? null,
     };
   });
 
