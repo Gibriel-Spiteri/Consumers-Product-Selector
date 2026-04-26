@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import { Search, Loader2, ChevronRight, ChevronDown, Package, Folders, Copy, Check, ClipboardList, LogOut, Settings, BookOpen, Flag } from "lucide-react";
+import { Search, Loader2, ChevronRight, ChevronDown, Package, Folders, Copy, Check, ClipboardList, LogOut, Settings, BookOpen, Flag, Menu, X } from "lucide-react";
 import { ReportIssueModal } from "@/components/report-issue-modal";
 import { useQuoteList } from "@/context/quote-list-context";
 import { useAuth } from "@/context/auth-context";
@@ -195,6 +195,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<number | null>(null);
   const [isHoveringNav, setIsHoveringNav] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [copiedSku, setCopiedSku] = useState<string | null>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
@@ -566,8 +567,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 Loading…
               </div>
             ) : (
-              <div className="flex items-center overflow-x-auto -mx-4 px-4">
-                <ul className="flex items-center">
+              <div className="flex items-center">
+                {/* Mobile hamburger toggle for categories */}
+                <button
+                  type="button"
+                  onClick={() => setMobileMenuOpen(o => !o)}
+                  aria-label={mobileMenuOpen ? "Close categories menu" : "Open categories menu"}
+                  aria-expanded={mobileMenuOpen}
+                  className="md:hidden flex-shrink-0 flex items-center justify-center h-[50px] w-[44px] -ml-2 text-gray-700 hover:text-gray-900 transition-colors"
+                >
+                  {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+                </button>
+
+                {/* Categories — desktop only */}
+                <ul className="hidden md:flex items-center overflow-x-auto flex-1">
                   {topLevelCategories.map(cat => (
                     <li key={cat.id} className="flex-shrink-0 relative">
                       <Link
@@ -584,41 +597,80 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     </li>
                   ))}
                 </ul>
-                {displaysForSaleCategory && (
+
+                {/* Colored shortcut tabs — scroll on mobile, natural on desktop */}
+                <div className="flex-1 md:flex-none flex items-center overflow-x-auto md:overflow-visible">
+                  {displaysForSaleCategory && (
+                    <Link
+                      href={categoryHref(displaysForSaleCategory)}
+                      onClick={() => { setIsHoveringNav(false); setActiveTab(null); setMobileMenuOpen(false); }}
+                      className="flex-shrink-0 flex items-center h-[50px] px-3 sm:px-4 font-semibold uppercase tracking-widest text-amber-600 hover:text-amber-700 transition-colors text-[12px] sm:text-[13px]"
+                    >
+                      Displays For Sale
+                    </Link>
+                  )}
                   <Link
-                    href={categoryHref(displaysForSaleCategory)}
-                    onClick={() => { setIsHoveringNav(false); setActiveTab(null); }}
-                    className="flex-shrink-0 flex items-center h-[50px] px-4 font-semibold uppercase tracking-widest text-amber-600 hover:text-amber-700 transition-colors text-[13px]"
+                    href="/express-bath"
+                    onClick={() => { setIsHoveringNav(false); setActiveTab(null); setMobileMenuOpen(false); }}
+                    className="flex-shrink-0 flex items-center h-[50px] px-3 sm:px-4 font-semibold uppercase tracking-widest text-blue-600 hover:text-blue-700 transition-colors text-[12px] sm:text-[13px]"
                   >
-                    Displays For Sale
+                    Express Bath
                   </Link>
-                )}
-                <Link
-                  href="/express-bath"
-                  onClick={() => { setIsHoveringNav(false); setActiveTab(null); }}
-                  className="flex-shrink-0 flex items-center h-[50px] px-4 font-semibold uppercase tracking-widest text-blue-600 hover:text-blue-700 transition-colors text-[13px]"
-                >
-                  Express Bath
-                </Link>
-                <Link
-                  href="/clearance"
-                  onClick={() => { setIsHoveringNav(false); setActiveTab(null); }}
-                  className="flex-shrink-0 flex items-center h-[50px] px-4 font-semibold uppercase tracking-widest text-emerald-600 hover:text-emerald-700 transition-colors text-[13px]"
-                >
-                  Clearance
-                </Link>
-                {internalCategory && (
                   <Link
-                    href={categoryOverviewHref(internalCategory)}
-                    onClick={() => { setIsHoveringNav(false); setActiveTab(null); }}
-                    className="flex-shrink-0 flex items-center h-[50px] px-4 font-semibold uppercase tracking-widest text-gray-500 hover:text-gray-700 transition-colors text-[13px]"
+                    href="/clearance"
+                    onClick={() => { setIsHoveringNav(false); setActiveTab(null); setMobileMenuOpen(false); }}
+                    className="flex-shrink-0 flex items-center h-[50px] px-3 sm:px-4 font-semibold uppercase tracking-widest text-emerald-600 hover:text-emerald-700 transition-colors text-[12px] sm:text-[13px]"
                   >
-                    Internal
+                    Clearance
                   </Link>
-                )}
+                  {internalCategory && (
+                    <Link
+                      href={categoryOverviewHref(internalCategory)}
+                      onClick={() => { setIsHoveringNav(false); setActiveTab(null); setMobileMenuOpen(false); }}
+                      className="flex-shrink-0 flex items-center h-[50px] px-3 sm:px-4 font-semibold uppercase tracking-widest text-gray-500 hover:text-gray-700 transition-colors text-[12px] sm:text-[13px]"
+                    >
+                      Internal
+                    </Link>
+                  )}
+                </div>
               </div>
             )}
           </div>
+
+          {/* Mobile categories drawer */}
+          <AnimatePresence>
+            {mobileMenuOpen && (
+              <>
+                <div
+                  className="md:hidden fixed inset-0 top-[115px] bg-black/20 z-30"
+                  onClick={() => setMobileMenuOpen(false)}
+                  aria-hidden
+                />
+                <motion.nav
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8, transition: { duration: 0.1 } }}
+                  transition={{ duration: 0.15, ease: "easeOut" }}
+                  className="md:hidden absolute top-full left-0 w-full bg-white border-b border-gray-200 shadow-xl shadow-black/5 max-h-[70vh] overflow-y-auto z-40"
+                >
+                  <ul className="divide-y divide-gray-100">
+                    {topLevelCategories.map(cat => (
+                      <li key={cat.id}>
+                        <Link
+                          href={categoryHref(cat)}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="flex items-center justify-between px-6 py-4 font-semibold uppercase tracking-widest text-gray-900 text-[13px] hover:bg-gray-50 active:bg-gray-100 transition-colors"
+                        >
+                          <span>{cat.name}</span>
+                          <ChevronRight size={16} className="text-gray-300" />
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </motion.nav>
+              </>
+            )}
+          </AnimatePresence>
 
           {/* Mega Menu */}
           <AnimatePresence>
