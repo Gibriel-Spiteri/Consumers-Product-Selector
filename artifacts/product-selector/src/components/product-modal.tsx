@@ -903,9 +903,12 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                                 ? new Date(Date.UTC(parseInt(iso[1], 10), parseInt(iso[2], 10) - 1, parseInt(iso[3], 10)))
                                 : new Date(raw);
                             if (isNaN(added.getTime())) return null;
-                            const days = Math.max(
+                            const now = new Date();
+                            const months = Math.max(
                               0,
-                              Math.floor((Date.now() - added.getTime()) / 86_400_000),
+                              (now.getUTCFullYear() - added.getUTCFullYear()) * 12 +
+                                (now.getUTCMonth() - added.getUTCMonth()) +
+                                (now.getUTCDate() >= added.getUTCDate() ? 0 : -1),
                             );
                             const formatted = added.toLocaleDateString("en-US", {
                               month: "short",
@@ -918,7 +921,7 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                                 <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Date Added</dt>
                                 <dd className="text-sm text-gray-800">
                                   {formatted}
-                                  <span className="text-gray-500"> · {days} {days === 1 ? "day" : "days"} ago</span>
+                                  <span className="text-gray-500"> · {months} {months === 1 ? "month" : "months"} ago</span>
                                 </dd>
                               </div>
                             );
