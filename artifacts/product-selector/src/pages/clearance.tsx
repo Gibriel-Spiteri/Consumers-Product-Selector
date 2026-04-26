@@ -29,42 +29,6 @@ interface Product {
   atpDate?: string | null;
   noReorder?: boolean;
   twelveMonthUsage?: number | null;
-  dateAdded?: string | null;
-}
-
-function parseNetSuiteDate(raw: string | null | undefined): Date | null {
-  if (!raw) return null;
-  const s = String(raw).trim();
-  if (!s) return null;
-  const us = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (us) return new Date(Date.UTC(parseInt(us[3], 10), parseInt(us[1], 10) - 1, parseInt(us[2], 10)));
-  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (iso) return new Date(Date.UTC(parseInt(iso[1], 10), parseInt(iso[2], 10) - 1, parseInt(iso[3], 10)));
-  const d = new Date(s);
-  return isNaN(d.getTime()) ? null : d;
-}
-
-function daysSince(raw: string | null | undefined): number | null {
-  const d = parseNetSuiteDate(raw);
-  if (!d) return null;
-  return Math.max(0, Math.floor((Date.now() - d.getTime()) / 86_400_000));
-}
-
-function monthsSince(raw: string | null | undefined): number | null {
-  const d = parseNetSuiteDate(raw);
-  if (!d) return null;
-  const now = new Date();
-  const months =
-    (now.getUTCFullYear() - d.getUTCFullYear()) * 12 +
-    (now.getUTCMonth() - d.getUTCMonth()) +
-    (now.getUTCDate() >= d.getUTCDate() ? 0 : -1);
-  return Math.max(0, months);
-}
-
-function formatNetSuiteDate(raw: string | null | undefined): string | null {
-  const d = parseNetSuiteDate(raw);
-  if (!d) return null;
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 }
 
 function TwelveMonthPill({ used }: { used: number | null | undefined }) {
@@ -284,9 +248,6 @@ function ListView({ products, onSelect, isAdmin }: { products: Product[]; onSele
               {isAdmin && (
                 <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 text-right w-[110px]">12mo Used</th>
               )}
-              {isAdmin && (
-                <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 text-right w-[110px]">Months Listed</th>
-              )}
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-emerald-600 text-right w-[120px]">Clearance</th>
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 w-[80px]"></th>
             </tr>
@@ -318,20 +279,6 @@ function ListView({ products, onSelect, isAdmin }: { products: Product[]; onSele
                 {isAdmin && (
                   <td className="px-5 py-3 text-right whitespace-nowrap text-gray-700 tabular-nums">
                     {p.twelveMonthUsage ?? 0}
-                  </td>
-                )}
-                {isAdmin && (
-                  <td className="px-5 py-3 text-right whitespace-nowrap text-gray-700 tabular-nums">
-                    {(() => {
-                      const months = monthsSince(p.dateAdded);
-                      if (months == null) return <span className="text-gray-300">—</span>;
-                      const formatted = formatNetSuiteDate(p.dateAdded);
-                      return (
-                        <span title={formatted ?? undefined}>
-                          {months}mo
-                        </span>
-                      );
-                    })()}
                   </td>
                 )}
                 <td className="px-5 py-3 text-right whitespace-nowrap">

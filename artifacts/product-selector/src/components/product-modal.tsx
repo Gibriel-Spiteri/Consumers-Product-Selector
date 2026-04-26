@@ -893,39 +893,6 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
                               </dd>
                             </div>
                           )}
-                          {isAdmin && isClearance && full?.dateAdded && (() => {
-                            const raw = String(full.dateAdded).trim();
-                            const us = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-                            const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
-                            const added = us
-                              ? new Date(Date.UTC(parseInt(us[3], 10), parseInt(us[1], 10) - 1, parseInt(us[2], 10)))
-                              : iso
-                                ? new Date(Date.UTC(parseInt(iso[1], 10), parseInt(iso[2], 10) - 1, parseInt(iso[3], 10)))
-                                : new Date(raw);
-                            if (isNaN(added.getTime())) return null;
-                            const now = new Date();
-                            const months = Math.max(
-                              0,
-                              (now.getUTCFullYear() - added.getUTCFullYear()) * 12 +
-                                (now.getUTCMonth() - added.getUTCMonth()) +
-                                (now.getUTCDate() >= added.getUTCDate() ? 0 : -1),
-                            );
-                            const formatted = added.toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                              timeZone: "UTC",
-                            });
-                            return (
-                              <div>
-                                <dt className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Date Added</dt>
-                                <dd className="text-sm text-gray-800">
-                                  {formatted}
-                                  <span className="text-gray-500"> · {months} {months === 1 ? "month" : "months"} ago</span>
-                                </dd>
-                              </div>
-                            );
-                          })()}
                         </dl>
                       </div>
                     </div>

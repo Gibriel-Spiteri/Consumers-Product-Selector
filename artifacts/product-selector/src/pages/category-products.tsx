@@ -335,7 +335,7 @@ function SortHeader({
   );
 }
 
-function ListRow({ p, onSelect, isAdmin }: { p: Product; onSelect: (p: Product) => void; isAdmin: boolean }) {
+function ListRow({ p, onSelect, isAdmin, showMonthsListed }: { p: Product; onSelect: (p: Product) => void; isAdmin: boolean; showMonthsListed: boolean }) {
   return (
     <tr
       onClick={() => onSelect(p)}
@@ -363,7 +363,7 @@ function ListRow({ p, onSelect, isAdmin }: { p: Product; onSelect: (p: Product) 
           <TwelveMonthPill used={p.twelveMonthUsage} />
         </td>
       )}
-      {isAdmin && (
+      {showMonthsListed && (
         <td className="px-5 py-3 text-right whitespace-nowrap text-gray-700 tabular-nums">
           {(() => {
             const months = monthsSince(p.dateAdded);
@@ -397,8 +397,9 @@ function ListRow({ p, onSelect, isAdmin }: { p: Product; onSelect: (p: Product) 
   );
 }
 
-export function ListView({ products, onSelect }: { products: Product[]; onSelect: (p: Product) => void }) {
+export function ListView({ products, onSelect, categoryId }: { products: Product[]; onSelect: (p: Product) => void; categoryId?: number | null }) {
   const { isAdmin } = useAuth();
+  const showMonthsListed = isAdmin && categoryId === 1829;
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
@@ -467,7 +468,7 @@ export function ListView({ products, onSelect }: { products: Product[]; onSelect
               {isAdmin && (
                 <SortHeader label="12mo Used" sortKey="twelveMonthUsage" active={sortKey === "twelveMonthUsage"} dir={sortDir} onSort={handleSort} className="w-[110px]" />
               )}
-              {isAdmin && (
+              {showMonthsListed && (
                 <SortHeader label="Months Listed" sortKey="monthsListed" active={sortKey === "monthsListed"} dir={sortDir} onSort={handleSort} className="text-right w-[120px]" align="right" />
               )}
               <SortHeader label="MSRP" sortKey="price" active={sortKey === "price"} dir={sortDir} onSort={handleSort} className="text-right w-[120px]" align="right" />
@@ -476,7 +477,7 @@ export function ListView({ products, onSelect }: { products: Product[]; onSelect
           </thead>
           <tbody className="divide-y divide-gray-50">
             {sorted.map(p => (
-              <ListRow key={p.id} p={p} onSelect={onSelect} isAdmin={isAdmin} />
+              <ListRow key={p.id} p={p} onSelect={onSelect} isAdmin={isAdmin} showMonthsListed={showMonthsListed} />
             ))}
           </tbody>
         </table>
@@ -917,7 +918,7 @@ export default function CategoryProducts() {
           )}
         </div>
       ) : view === "list" ? (
-        <ListView products={products} onSelect={setSelectedProduct} />
+        <ListView products={products} onSelect={setSelectedProduct} categoryId={id} />
       ) : (
         <GridView products={products} onSelect={setSelectedProduct} />
       )}
