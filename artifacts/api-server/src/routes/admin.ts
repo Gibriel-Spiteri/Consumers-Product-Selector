@@ -72,12 +72,15 @@ export async function requireEmployee(req: Request, res: Response, next: NextFun
   }
 }
 
-export async function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  const employeeId = req.headers["x-employee-id"] as string | undefined;
-  if (!employeeId) {
-    return res.status(401).json({ error: "Authentication required" });
-  }
+const ADMIN_CACHE_TTL_MS = 5 * 60 * 1000;
+const adminCache = new Map<string, { isAdmin: boolean; expires: number }>();
 
+export async function isAdminEmployee(employeeId: string | undefined | null): Promise<boolean> {
+  if (!employeeId || !/^-?\d+$/.test(String(employeeId))) return false;
+  const key = String(employeeId);
+  const now = Date.now();
+  const cached = adminCache.get(key);
+  if (cached && cached.expires > now) return cached.isAdmin;
   try {
     const result = await executeSuiteQL<{
       id: string;
@@ -88,16 +91,28 @@ export async function requireAdmin(req: Request, res: Response, next: NextFuncti
       `SELECT id, giveaccess, custentity_webstore_access, custentity_webstore_admin
        FROM Employee WHERE id = ${Number(employeeId)}`
     );
+    const isAdmin =
+      result.items.length > 0 &&
+      result.items[0].giveaccess === "T" &&
+      result.items[0].custentity_webstore_access === "T" &&
+      result.items[0].custentity_webstore_admin === "T";
+    adminCache.set(key, { isAdmin, expires: now + ADMIN_CACHE_TTL_MS });
+    return isAdmin;
+  } catch {
+    return false;
+  }
+}
 
-    if (
-      result.items.length === 0 ||
-      result.items[0].giveaccess !== "T" ||
-      result.items[0].custentity_webstore_access !== "T" ||
-      result.items[0].custentity_webstore_admin !== "T"
-    ) {
+export async function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  const employeeId = req.headers["x-employee-id"] as string | undefined;
+  if (!employeeId) {
+    return res.status(401).json({ error: "Authentication required" });
+  }
+  try {
+    const ok = await isAdminEmployee(employeeId);
+    if (!ok) {
       return res.status(403).json({ error: "Admin access required" });
     }
-
     next();
   } catch {
     return res.status(500).json({ error: "Authorization check failed" });

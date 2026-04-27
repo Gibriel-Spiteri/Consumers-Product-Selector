@@ -1,5 +1,5 @@
 import { db, productUserImagesTable } from "@workspace/db";
-import { inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 
 export const DISPLAYS_FOR_SALE_CATEGORY_ID = 1829;
 
@@ -50,6 +50,37 @@ export function objectKeyToUrl(objectKey: string): string {
     ? objectKey.slice("/objects/".length)
     : objectKey;
   return `/api/storage/objects/${trimmed}`;
+}
+
+export interface UserImageDetail {
+  uploadedByEmployeeId: string | null;
+  uploadedByEmployeeName: string | null;
+  uploadedAt: Date;
+}
+
+/**
+ * Fetch attribution / metadata for a single user-uploaded photo. Returns null
+ * when the product has no user image on file.
+ */
+export async function fetchUserImageDetail(
+  netsuiteId: string
+): Promise<UserImageDetail | null> {
+  const rows = await db
+    .select({
+      uploadedByEmployeeId: productUserImagesTable.uploadedByEmployeeId,
+      uploadedByEmployeeName: productUserImagesTable.uploadedByEmployeeName,
+      uploadedAt: productUserImagesTable.uploadedAt,
+    })
+    .from(productUserImagesTable)
+    .where(eq(productUserImagesTable.netsuiteId, netsuiteId))
+    .limit(1);
+  if (rows.length === 0) return null;
+  const r = rows[0];
+  return {
+    uploadedByEmployeeId: r.uploadedByEmployeeId,
+    uploadedByEmployeeName: r.uploadedByEmployeeName,
+    uploadedAt: r.uploadedAt,
+  };
 }
 
 /**

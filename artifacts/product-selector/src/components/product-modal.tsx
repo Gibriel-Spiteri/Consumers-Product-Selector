@@ -46,6 +46,8 @@ interface FullProduct extends Product {
   dateAdded?: string | null;
   features: string[] | null;
   additionalImages?: string[] | null;
+  userImageUploadedByName?: string | null;
+  userImageUploadedAt?: string | null;
 }
 
 function formatAtpDate(raw: string | null | undefined): string | null {
@@ -106,6 +108,19 @@ function getProductImageList(product: Product, additionalImages?: string[] | nul
   return images;
 }
 
+function formatUploadedAt(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return null;
+  return d.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 function ImageGallery({
   product,
   additionalImages,
@@ -118,6 +133,9 @@ function ImageGallery({
   isAdmin?: boolean;
 }) {
   const images = getProductImageList(product, additionalImages);
+  const fullProduct = product as Partial<FullProduct>;
+  const uploaderName = fullProduct.userImageUploadedByName ?? null;
+  const uploaderDate = formatUploadedAt(fullProduct.userImageUploadedAt);
   const queryClient = useQueryClient();
   const { employee } = useAuth();
   const [deleting, setDeleting] = useState(false);
@@ -295,6 +313,15 @@ function ImageGallery({
           </>
         )}
       </div>
+      {isAdmin && imageSource === "user" && (uploaderName || uploaderDate) && (
+        <div className="text-[11px] text-gray-500 px-1">
+          Photo by{" "}
+          <span className="font-medium text-gray-700">
+            {uploaderName ?? "Unknown employee"}
+          </span>
+          {uploaderDate && <> &middot; {uploaderDate}</>}
+        </div>
+      )}
       {visibleImages.length > 1 && (
         <div className="flex gap-1.5 overflow-x-auto pb-0.5">
           {visibleImages.map(({ src, i }) => (

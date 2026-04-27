@@ -9,7 +9,8 @@ import {
 } from "@workspace/api-zod";
 import { MOCK_CATEGORIES, MOCK_PRODUCTS, MOCK_STOCK } from "../lib/mockData";
 import { fetchLiveInventory, fetchItemImages } from "../lib/netsuite";
-import { fetchUserImageMap, resolveImage } from "../lib/userImages";
+import { fetchUserImageMap, fetchUserImageDetail, resolveImage } from "../lib/userImages";
+import { isAdminEmployee } from "./admin";
 
 const router: IRouter = Router();
 
@@ -663,6 +664,15 @@ router.get("/products/:productId", async (req, res) => {
       ? [imageUrl]
       : additionalImages;
 
+  const callerEmployeeId = req.headers["x-employee-id"];
+  const callerIsAdmin = await isAdminEmployee(
+    typeof callerEmployeeId === "string" ? callerEmployeeId : null
+  );
+  const userImageDetail =
+    callerIsAdmin && imageSource === "user" && p.netsuiteId
+      ? await fetchUserImageDetail(p.netsuiteId)
+      : null;
+
   return res.json({
     product: {
       id: p.id,
@@ -678,6 +688,8 @@ router.get("/products/:productId", async (req, res) => {
       fullImageUrl: resolvedFull,
       imageSource,
       additionalImages: resolvedAdditional,
+      userImageUploadedByName: userImageDetail?.uploadedByEmployeeName ?? null,
+      userImageUploadedAt: userImageDetail?.uploadedAt ?? null,
       description: p.description ?? null,
       manufacturer: p.manufacturer ?? null,
       collection: p.collection ?? null,
