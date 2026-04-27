@@ -625,8 +625,10 @@ function AddToListControls({ product, full }: { product: Product | null; full: F
 }
 
 export default function ProductModal({ product, categoryPath, onClose }: ProductModalProps) {
-  const { isAdmin } = useAuth();
+  const { isAdmin, employee } = useAuth();
   const [activeProduct, setActiveProduct] = useState<FullProduct | null>(null);
+
+  const employeeIdHeader = employee?.id ? { "X-Employee-Id": employee.id } : undefined;
 
   // Reset to the outer product whenever the modal opens a new item
   useEffect(() => {
@@ -640,9 +642,11 @@ export default function ProductModal({ product, categoryPath, onClose }: Product
   const resolvedId = activeProduct?.id ?? product?.id;
 
   const { data, isLoading } = useQuery<{ product: FullProduct }>({
-    queryKey: [`/api/products/${resolvedId}`],
+    queryKey: [`/api/products/${resolvedId}`, employee?.id ?? null],
     queryFn: async () => {
-      const res = await fetch(`/api/products/${resolvedId}`);
+      const res = await fetch(`/api/products/${resolvedId}`, {
+        headers: employeeIdHeader,
+      });
       if (!res.ok) throw new Error("Failed to load");
       return res.json();
     },
