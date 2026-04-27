@@ -59,7 +59,9 @@ export function UploadDisplayImage({
   const [open, setOpen] = useState(false);
   const [rawPreview, setRawPreview] = useState<string | null>(null);
   const [processedPreview, setProcessedPreview] = useState<string | null>(null);
+  const [originalBlob, setOriginalBlob] = useState<Blob | null>(null);
   const [processedBlob, setProcessedBlob] = useState<Blob | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState<"original" | "processed">("processed");
   const [stage, setStage] = useState<"idle" | "processing" | "ready" | "uploading" | "done">("idle");
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -69,7 +71,9 @@ export function UploadDisplayImage({
     if (processedPreview) URL.revokeObjectURL(processedPreview);
     setRawPreview(null);
     setProcessedPreview(null);
+    setOriginalBlob(null);
     setProcessedBlob(null);
+    setSelectedVariant("processed");
     setStage("idle");
     setError(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -97,8 +101,27 @@ export function UploadDisplayImage({
       return;
     }
     setError(null);
-    setRawPreview(URL.createObjectURL(file));
+    setRawPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
+    setProcessedPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    setOriginalBlob(null);
+    setProcessedBlob(null);
+    setSelectedVariant("processed");
     setStage("processing");
+
+    let origPng: Blob | null = null;
+    try {
+      origPng = await resizeToPng(file, MAX_OUTPUT_LONGEST_EDGE);
+      setOriginalBlob(origPng);
+    } catch (err) {
+      console.warn("Failed to encode original photo", err);
+    }
+
     try {
       const mod = await import("@imgly/background-removal");
       const removeBackground = mod.removeBackground ?? (mod as unknown as { default: typeof mod.removeBackground }).default;
@@ -109,13 +132,21 @@ export function UploadDisplayImage({
       setStage("ready");
     } catch (err) {
       console.error("Background removal failed", err);
-      setError(err instanceof Error ? err.message : "Background removal failed.");
-      setStage("idle");
+      if (origPng) {
+        setSelectedVariant("original");
+        setError("Background removal didn't work for this image. You can still upload the original.");
+        setStage("ready");
+      } else {
+        setError(err instanceof Error ? err.message : "Background removal failed.");
+        setStage("idle");
+      }
     }
   }, []);
 
   const handleSubmit = useCallback(async () => {
-    if (!processedBlob || !employee) return;
+    if (stage !== "ready") return;
+    const blobToUpload = selectedVariant === "processed" ? processedBlob : originalBlob;
+    if (!blobToUpload || !employee) return;
     setStage("uploading");
     setError(null);
     try {
@@ -138,7 +169,7 @@ export function UploadDisplayImage({
       const putRes = await fetch(uploadUrl, {
         method: "PUT",
         headers: { "Content-Type": "image/png" },
-        body: processedBlob,
+        body: blobToUpload,
       });
       if (!putRes.ok) throw new Error(`Upload to storage failed (${putRes.status})`);
 
@@ -150,7 +181,7 @@ export function UploadDisplayImage({
           body: JSON.stringify({
             employeeId: empId,
             objectKey,
-            byteSize: processedBlob.size,
+            byteSize: blobToUpload.size,
           }),
         }
       );
@@ -174,7 +205,11 @@ export function UploadDisplayImage({
       setError(err instanceof Error ? err.message : "Upload failed.");
       setStage("ready");
     }
-  }, [processedBlob, employee, netsuiteId, queryClient, onUploaded, close]);
+  }, [processedBlob, originalBlob, selectedVariant, employee, netsuiteId, queryClient, onUploaded, close]);
+
+  const canSave =
+    stage === "ready" &&
+    (selectedVariant === "processed" ? !!processedBlob : !!originalBlob);
 
   if (!employee) return null;
 
@@ -234,36 +269,83 @@ export function UploadDisplayImage({
             )}
 
             {rawPreview && (
-              <div className="grid grid-cols-2 gap-3">
-                <figure className="space-y-1">
-                  <figcaption className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Original</figcaption>
-                  <div className="aspect-square bg-gray-50 rounded-xl flex items-center justify-center overflow-hidden">
-                    <img src={rawPreview} alt="Original" className="max-w-full max-h-full object-contain" />
-                  </div>
-                </figure>
-                <figure className="space-y-1">
-                  <figcaption className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Cleaned</figcaption>
-                  <div
-                    className="aspect-square rounded-xl flex items-center justify-center overflow-hidden"
-                    style={{
-                      backgroundImage:
-                        "linear-gradient(45deg,#f3f4f6 25%,transparent 25%,transparent 75%,#f3f4f6 75%),linear-gradient(45deg,#f3f4f6 25%,transparent 25%,transparent 75%,#f3f4f6 75%)",
-                      backgroundSize: "12px 12px",
-                      backgroundPosition: "0 0,6px 6px",
-                    }}
+              <>
+                <p className="text-[11px] text-gray-500 mb-2">
+                  Tap an option to choose which version to save. Use the original for items
+                  that are hard to process automatically (mirrors, glass, reflective surfaces).
+                </p>
+                <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label="Choose photo version">
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={selectedVariant === "original"}
+                    onClick={() => setSelectedVariant("original")}
+                    disabled={!originalBlob || stage === "uploading"}
+                    className={cn(
+                      "text-left rounded-xl p-1 ring-2 transition-colors disabled:opacity-60",
+                      selectedVariant === "original"
+                        ? "ring-amber-500 bg-amber-50/40"
+                        : "ring-transparent hover:ring-gray-200"
+                    )}
                   >
-                    {stage === "processing" && (
-                      <div className="flex flex-col items-center gap-2 text-gray-400">
-                        <Loader2 className="animate-spin" size={20} />
-                        <span className="text-[11px]">Removing background…</span>
-                      </div>
+                    <div className="flex items-center justify-between mb-1 px-1">
+                      <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                        Original
+                      </span>
+                      {selectedVariant === "original" && (
+                        <Check size={12} className="text-amber-600" />
+                      )}
+                    </div>
+                    <div className="aspect-square bg-gray-50 rounded-lg flex items-center justify-center overflow-hidden">
+                      <img src={rawPreview} alt="Original" className="max-w-full max-h-full object-contain" />
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={selectedVariant === "processed"}
+                    onClick={() => processedBlob && setSelectedVariant("processed")}
+                    disabled={!processedBlob || stage === "uploading"}
+                    className={cn(
+                      "text-left rounded-xl p-1 ring-2 transition-colors disabled:opacity-60",
+                      selectedVariant === "processed"
+                        ? "ring-amber-500 bg-amber-50/40"
+                        : "ring-transparent hover:ring-gray-200"
                     )}
-                    {processedPreview && stage !== "processing" && (
-                      <img src={processedPreview} alt="Background removed" className="max-w-full max-h-full object-contain" />
-                    )}
-                  </div>
-                </figure>
-              </div>
+                  >
+                    <div className="flex items-center justify-between mb-1 px-1">
+                      <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                        Cleaned
+                      </span>
+                      {selectedVariant === "processed" && processedBlob && (
+                        <Check size={12} className="text-amber-600" />
+                      )}
+                    </div>
+                    <div
+                      className="aspect-square rounded-lg flex items-center justify-center overflow-hidden"
+                      style={{
+                        backgroundImage:
+                          "linear-gradient(45deg,#f3f4f6 25%,transparent 25%,transparent 75%,#f3f4f6 75%),linear-gradient(45deg,#f3f4f6 25%,transparent 25%,transparent 75%,#f3f4f6 75%)",
+                        backgroundSize: "12px 12px",
+                        backgroundPosition: "0 0,6px 6px",
+                      }}
+                    >
+                      {stage === "processing" && (
+                        <div className="flex flex-col items-center gap-2 text-gray-400">
+                          <Loader2 className="animate-spin" size={20} />
+                          <span className="text-[11px]">Removing background…</span>
+                        </div>
+                      )}
+                      {processedPreview && stage !== "processing" && (
+                        <img src={processedPreview} alt="Background removed" className="max-w-full max-h-full object-contain" />
+                      )}
+                      {!processedPreview && stage !== "processing" && (
+                        <span className="text-[11px] text-gray-400 px-2 text-center">Not available</span>
+                      )}
+                    </div>
+                  </button>
+                </div>
+              </>
             )}
 
             {error && (
@@ -293,17 +375,25 @@ export function UploadDisplayImage({
                 <button
                   type="button"
                   onClick={handleSubmit}
-                  disabled={stage !== "ready"}
+                  disabled={!canSave}
                   className={cn(
                     "inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors",
-                    stage === "ready"
+                    canSave
                       ? "bg-amber-500 text-white hover:bg-amber-600"
+                      : stage === "uploading" || stage === "done"
+                      ? "bg-amber-500 text-white"
                       : "bg-gray-100 text-gray-400 cursor-not-allowed"
                   )}
                 >
                   {stage === "uploading" && <Loader2 size={12} className="animate-spin" />}
                   {stage === "done" && <Check size={12} />}
-                  {stage === "uploading" ? "Uploading…" : stage === "done" ? "Saved" : "Save photo"}
+                  {stage === "uploading"
+                    ? "Uploading…"
+                    : stage === "done"
+                    ? "Saved"
+                    : selectedVariant === "original"
+                    ? "Save original"
+                    : "Save cleaned"}
                 </button>
               </div>
             </div>
