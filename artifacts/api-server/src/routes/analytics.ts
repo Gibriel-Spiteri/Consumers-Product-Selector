@@ -8,7 +8,7 @@ import {
   type InsertAnalyticsEvent,
 } from "@workspace/db";
 import { logger } from "../lib/logger";
-import { executeSuiteQL } from "../lib/netsuite";
+import { executeSuiteQL, netsuiteRequest, isNetSuiteConfigured } from "../lib/netsuite";
 
 const router: IRouter = Router();
 
@@ -728,6 +728,239 @@ router.get("/admin/analytics/user/:id", requireAdmin, async (req, res) => {
   } catch (err) {
     logger.error({ err, userId: req.params.id }, "Failed to load user activity");
     res.status(500).json({ error: "Failed to load user activity" });
+  }
+});
+
+const PRODUCT_ADDS_LIMIT = 200;
+const ESTIMATE_EVENTS_LIMIT = 50;
+
+router.get("/admin/analytics/product-adds/:productId", requireAdmin, async (req, res) => {
+  try {
+    const productId = Number(req.params.productId);
+    if (!Number.isInteger(productId) || productId <= 0) {
+      return res.status(400).json({ error: "Invalid productId" });
+    }
+    const range = (req.query.range as string) ?? "7d";
+    const days = range === "30d" ? 30 : range === "90d" ? 90 : 7;
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const includeAdmins = req.query.includeAdmins === "1";
+    const adminIds = includeAdmins ? [] : await fetchAdminEmployeeIds();
+
+    const filters = [
+      eq(analyticsEventsTable.productId, productId),
+      eq(analyticsEventsTable.eventType, "add_to_list"),
+      gte(analyticsEventsTable.createdAt, since),
+    ];
+    if (adminIds.length > 0) {
+      filters.push(
+        or(
+          isNull(analyticsEventsTable.employeeId),
+          notInArray(analyticsEventsTable.employeeId, adminIds),
+        )!,
+      );
+    }
+
+    const events = await db
+      .select({
+        id: analyticsEventsTable.id,
+        createdAt: analyticsEventsTable.createdAt,
+        employeeId: analyticsEventsTable.employeeId,
+        sessionId: analyticsEventsTable.sessionId,
+        metadata: analyticsEventsTable.metadata,
+      })
+      .from(analyticsEventsTable)
+      .where(and(...filters))
+      .orderBy(desc(analyticsEventsTable.createdAt))
+      .limit(PRODUCT_ADDS_LIMIT);
+
+    const productRow = await db
+      .select({ id: productsTable.id, name: productsTable.name, sku: productsTable.sku })
+      .from(productsTable)
+      .where(eq(productsTable.id, productId))
+      .limit(1);
+
+    const employeeIds = Array.from(
+      new Set(events.map((e) => e.employeeId).filter((v): v is string => v != null)),
+    );
+    const employeeNames = employeeIds.length > 0 ? await fetchEmployeeNames(employeeIds) : new Map();
+
+    res.json({
+      productId,
+      name: productRow[0]?.name ?? null,
+      sku: productRow[0]?.sku ?? null,
+      range: `${days}d`,
+      limit: PRODUCT_ADDS_LIMIT,
+      truncated: events.length === PRODUCT_ADDS_LIMIT,
+      events: events.map((e) => {
+        const meta = (e.metadata ?? {}) as Record<string, unknown>;
+        const qty = typeof meta.quantity === "number" ? meta.quantity : null;
+        return {
+          id: e.id,
+          createdAt: e.createdAt,
+          employeeId: e.employeeId,
+          employeeName:
+            e.employeeId && employeeNames.get(e.employeeId)
+              ? employeeNames.get(e.employeeId)!
+              : e.employeeId
+              ? `Employee #${e.employeeId}`
+              : null,
+          sessionId: e.sessionId,
+          quantity: qty,
+        };
+      }),
+    });
+  } catch (err) {
+    logger.error({ err, productId: req.params.productId }, "Failed to load product adds");
+    res.status(500).json({ error: "Failed to load product adds" });
+  }
+});
+
+router.get("/admin/analytics/estimate-detail/:estimateId", requireAdmin, async (req, res) => {
+  try {
+    const estimateId = Number(req.params.estimateId);
+    if (!Number.isInteger(estimateId) || estimateId <= 0) {
+      return res.status(400).json({ error: "Invalid estimateId" });
+    }
+
+    const events = await db
+      .select({
+        id: analyticsEventsTable.id,
+        createdAt: analyticsEventsTable.createdAt,
+        employeeId: analyticsEventsTable.employeeId,
+        sessionId: analyticsEventsTable.sessionId,
+        metadata: analyticsEventsTable.metadata,
+      })
+      .from(analyticsEventsTable)
+      .where(
+        and(
+          eq(analyticsEventsTable.eventType, "push_to_estimate"),
+          sql`(${analyticsEventsTable.metadata}->>'estimateId') = ${String(estimateId)}`,
+        ),
+      )
+      .orderBy(desc(analyticsEventsTable.createdAt))
+      .limit(ESTIMATE_EVENTS_LIMIT);
+
+    const employeeIds = Array.from(
+      new Set(events.map((e) => e.employeeId).filter((v): v is string => v != null)),
+    );
+    const employeeNames = employeeIds.length > 0 ? await fetchEmployeeNames(employeeIds) : new Map();
+
+    const enrichedEvents = events.map((e) => {
+      const meta = (e.metadata ?? {}) as Record<string, unknown>;
+      return {
+        id: e.id,
+        createdAt: e.createdAt,
+        employeeId: e.employeeId,
+        employeeName:
+          e.employeeId && employeeNames.get(e.employeeId)
+            ? employeeNames.get(e.employeeId)!
+            : e.employeeId
+            ? `Employee #${e.employeeId}`
+            : null,
+        sessionId: e.sessionId,
+        tranId: typeof meta.tranId === "string" ? meta.tranId : null,
+        itemCount: typeof meta.itemCount === "number" ? meta.itemCount : null,
+        lineCount: typeof meta.lineCount === "number" ? meta.lineCount : null,
+        totalValue: typeof meta.totalValue === "number" ? meta.totalValue : null,
+      };
+    });
+
+    let netsuite: {
+      tranId: string | null;
+      customerName: string | null;
+      status: string | null;
+      tranDate: string | null;
+      total: number | null;
+      items: Array<{
+        netsuiteId: number | null;
+        name: string | null;
+        sku: string | null;
+        quantity: number | null;
+        amount: number | null;
+      }>;
+    } | null = null;
+    let netsuiteError: string | null = null;
+
+    if (isNetSuiteConfigured()) {
+      try {
+        const ns = await netsuiteRequest<{
+          id?: number;
+          tranId?: string;
+          tranDate?: string;
+          status?: { id?: string; refName?: string } | string;
+          total?: number | string;
+          entity?: { refName?: string };
+          item?: {
+            items?: Array<{
+              item: { id: number; refName?: string };
+              quantity?: number;
+              amount?: number;
+            }>;
+          };
+        }>(`/estimate/${estimateId}?expandSubResources=true`);
+
+        const items = ns.item?.items ?? [];
+        const itemIds = Array.from(
+          new Set(items.map((it) => it.item?.id).filter((v): v is number => typeof v === "number")),
+        );
+        const dbItems = itemIds.length > 0
+          ? await db
+              .select({
+                id: productsTable.id,
+                netsuiteId: productsTable.netsuiteId,
+                name: productsTable.name,
+                sku: productsTable.sku,
+              })
+              .from(productsTable)
+              .where(inArray(productsTable.netsuiteId, itemIds.map(String)))
+          : [];
+        const byNetsuiteId = new Map(dbItems.map((p) => [p.netsuiteId, p]));
+
+        const statusLabel =
+          typeof ns.status === "object" && ns.status
+            ? ns.status.refName ?? ns.status.id ?? null
+            : typeof ns.status === "string"
+            ? ns.status
+            : null;
+
+        netsuite = {
+          tranId: ns.tranId ?? null,
+          customerName: ns.entity?.refName ?? null,
+          status: statusLabel,
+          tranDate: ns.tranDate ?? null,
+          total: typeof ns.total === "number"
+            ? ns.total
+            : typeof ns.total === "string"
+            ? parseFloat(ns.total)
+            : null,
+          items: items.map((it) => {
+            const matched = it.item?.id != null ? byNetsuiteId.get(String(it.item.id)) : undefined;
+            return {
+              netsuiteId: it.item?.id ?? null,
+              name: matched?.name ?? it.item?.refName ?? null,
+              sku: matched?.sku ?? null,
+              quantity: typeof it.quantity === "number" ? it.quantity : null,
+              amount: typeof it.amount === "number" ? it.amount : null,
+            };
+          }),
+        };
+      } catch (err) {
+        logger.warn({ err, estimateId }, "Failed to fetch estimate from NetSuite");
+        netsuiteError = "Could not load live estimate detail from NetSuite.";
+      }
+    } else {
+      netsuiteError = "NetSuite not configured.";
+    }
+
+    res.json({
+      estimateId,
+      events: enrichedEvents,
+      netsuite,
+      netsuiteError,
+    });
+  } catch (err) {
+    logger.error({ err, estimateId: req.params.estimateId }, "Failed to load estimate detail");
+    res.status(500).json({ error: "Failed to load estimate detail" });
   }
 });
 

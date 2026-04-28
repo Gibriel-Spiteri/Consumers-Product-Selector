@@ -272,12 +272,333 @@ function UserActivityModal({
   );
 }
 
+interface ProductAddsResponse {
+  productId: number;
+  name: string | null;
+  sku: string | null;
+  range: string;
+  limit: number;
+  truncated: boolean;
+  events: Array<{
+    id: number;
+    createdAt: string;
+    employeeId: string | null;
+    employeeName: string | null;
+    sessionId: string;
+    quantity: number | null;
+  }>;
+}
+
+interface EstimateDetailResponse {
+  estimateId: number;
+  events: Array<{
+    id: number;
+    createdAt: string;
+    employeeId: string | null;
+    employeeName: string | null;
+    sessionId: string;
+    tranId: string | null;
+    itemCount: number | null;
+    lineCount: number | null;
+    totalValue: number | null;
+  }>;
+  netsuite: {
+    tranId: string | null;
+    customerName: string | null;
+    status: string | null;
+    tranDate: string | null;
+    total: number | null;
+    items: Array<{
+      netsuiteId: number | null;
+      name: string | null;
+      sku: string | null;
+      quantity: number | null;
+      amount: number | null;
+    }>;
+  } | null;
+  netsuiteError: string | null;
+}
+
+function ProductAddsModal({
+  product,
+  range,
+  includeAdmins,
+  adminEmployeeId,
+  onClose,
+}: {
+  product: { productId: number; name: string; sku: string | null };
+  range: "7d" | "30d" | "90d";
+  includeAdmins: boolean;
+  adminEmployeeId: string;
+  onClose: () => void;
+}) {
+  const { data, isLoading, isError } = useQuery<ProductAddsResponse>({
+    queryKey: ["adminProductAdds", product.productId, range, includeAdmins],
+    queryFn: async () => {
+      const res = await fetch(
+        `/api/admin/analytics/product-adds/${product.productId}?range=${range}&includeAdmins=${includeAdmins ? "1" : "0"}`,
+        { headers: { "X-Employee-Id": adminEmployeeId } },
+      );
+      if (!res.ok) throw new Error("Failed to load product adds");
+      return res.json();
+    },
+  });
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  const events = data?.events ?? [];
+  const totalQty = events.reduce((sum, e) => sum + (e.quantity ?? 0), 0);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[85vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4 px-6 py-4 border-b border-gray-200">
+          <div className="min-w-0">
+            <h3 className="text-lg font-semibold text-gray-900 line-clamp-1">
+              {product.name}
+            </h3>
+            <p className="text-xs text-gray-500 mt-0.5 font-mono">
+              {product.sku ?? `Product #${product.productId}`}
+            </p>
+            {data && (
+              <p className="text-xs text-gray-500 mt-1">
+                {events.length} add{events.length === 1 ? "" : "s"} · {totalQty} units
+                {data.truncated ? ` (last ${data.limit})` : ""} · last {range}
+              </p>
+            )}
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 text-gray-400 hover:text-gray-700 rounded-md hover:bg-gray-100"
+            aria-label="Close"
+          >
+            <X size={18} />
+          </button>
+        </div>
+        <div className="overflow-auto flex-1">
+          {isLoading ? (
+            <div className="py-12 text-center text-sm text-gray-400">Loading…</div>
+          ) : isError ? (
+            <div className="py-12 text-center text-sm text-red-600">Failed to load adds.</div>
+          ) : events.length === 0 ? (
+            <div className="py-12 text-center text-sm text-gray-400">
+              No adds for this product in the selected range.
+            </div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 text-[11px] uppercase tracking-wide text-gray-400 font-semibold sticky top-0">
+                <tr>
+                  <th className="px-4 py-2 text-left">When</th>
+                  <th className="px-4 py-2 text-left">User</th>
+                  <th className="px-4 py-2 text-right">Qty</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {events.map((e) => (
+                  <tr key={e.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-2 text-gray-500 whitespace-nowrap">
+                      {fmtAbsTime(e.createdAt)}
+                    </td>
+                    <td className="px-4 py-2 text-gray-900">
+                      {e.employeeName ?? "Anonymous"}
+                      {e.employeeId && (
+                        <span className="text-[11px] text-gray-400 ml-1">#{e.employeeId}</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2 text-right text-gray-700">
+                      {e.quantity ?? "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EstimateDetailModal({
+  estimate,
+  adminEmployeeId,
+  onClose,
+}: {
+  estimate: { estimateId: number; tranId: string | null };
+  adminEmployeeId: string;
+  onClose: () => void;
+}) {
+  const { data, isLoading, isError } = useQuery<EstimateDetailResponse>({
+    queryKey: ["adminEstimateDetail", estimate.estimateId],
+    queryFn: async () => {
+      const res = await fetch(
+        `/api/admin/analytics/estimate-detail/${estimate.estimateId}`,
+        { headers: { "X-Employee-Id": adminEmployeeId } },
+      );
+      if (!res.ok) throw new Error("Failed to load estimate detail");
+      return res.json();
+    },
+  });
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  const events = data?.events ?? [];
+  const ns = data?.netsuite ?? null;
+  const tranIdShown = ns?.tranId ?? estimate.tranId ?? `#${estimate.estimateId}`;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[85vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4 px-6 py-4 border-b border-gray-200">
+          <div className="min-w-0">
+            <div className="text-xs uppercase tracking-wide text-gray-400 font-semibold">
+              Estimate (NetSuite ES#)
+            </div>
+            <h3 className="text-lg font-semibold text-emerald-700 mt-0.5">
+              {tranIdShown}
+            </h3>
+            <p className="text-xs text-gray-500 mt-1">
+              {ns?.customerName ? <>{ns.customerName} · </> : null}
+              {ns?.status ?? null}
+              {ns?.tranDate ? <> · {ns.tranDate}</> : null}
+              {ns?.total != null ? <> · {fmtUsd(ns.total)}</> : null}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 text-gray-400 hover:text-gray-700 rounded-md hover:bg-gray-100"
+            aria-label="Close"
+          >
+            <X size={18} />
+          </button>
+        </div>
+        <div className="overflow-auto flex-1 px-6 py-4 space-y-6">
+          {isLoading ? (
+            <div className="py-12 text-center text-sm text-gray-400">Loading…</div>
+          ) : isError ? (
+            <div className="py-12 text-center text-sm text-red-600">
+              Failed to load estimate detail.
+            </div>
+          ) : (
+            <>
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">
+                  Sent by
+                </div>
+                {events.length === 0 ? (
+                  <div className="text-sm text-gray-400">No tracked send events.</div>
+                ) : (
+                  <ul className="space-y-1.5">
+                    {events.map((e) => (
+                      <li key={e.id} className="text-sm flex items-center gap-3">
+                        <span className="text-gray-500 text-xs whitespace-nowrap">
+                          {fmtAbsTime(e.createdAt)}
+                        </span>
+                        <span className="text-gray-900">
+                          {e.employeeName ?? "Anonymous"}
+                          {e.employeeId && (
+                            <span className="text-[11px] text-gray-400 ml-1">#{e.employeeId}</span>
+                          )}
+                        </span>
+                        <span className="text-[11px] text-gray-400 ml-auto">
+                          {e.itemCount ?? "?"} items · {e.lineCount ?? "?"} lines · {fmtUsd(e.totalValue)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">
+                  Line items
+                </div>
+                {data?.netsuiteError ? (
+                  <div className="text-sm text-amber-700 bg-amber-50 rounded p-3">
+                    {data.netsuiteError}
+                  </div>
+                ) : !ns || ns.items.length === 0 ? (
+                  <div className="text-sm text-gray-400">No items found.</div>
+                ) : (
+                  <div className="border border-gray-100 rounded-lg overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50 text-[11px] uppercase tracking-wide text-gray-400 font-semibold">
+                        <tr>
+                          <th className="px-3 py-2 text-left">Item</th>
+                          <th className="px-3 py-2 text-right">Qty</th>
+                          <th className="px-3 py-2 text-right">Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {ns.items.map((it, idx) => (
+                          <tr key={idx} className="hover:bg-gray-50">
+                            <td className="px-3 py-2">
+                              <div className="text-gray-900 line-clamp-1">
+                                {it.name ?? `#${it.netsuiteId ?? "?"}`}
+                              </div>
+                              {it.sku && (
+                                <div className="text-[11px] text-gray-400 font-mono">{it.sku}</div>
+                              )}
+                            </td>
+                            <td className="px-3 py-2 text-right text-gray-700">
+                              {it.quantity ?? "—"}
+                            </td>
+                            <td className="px-3 py-2 text-right text-gray-700">
+                              {fmtUsd(it.amount)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AnalyticsSection({ employeeId }: { employeeId: string }) {
   const [range, setRange] = useState<"7d" | "30d" | "90d">("7d");
   const [includeAdmins, setIncludeAdmins] = useState(false);
   const [selectedUser, setSelectedUser] = useState<{
     employeeId: string;
     employeeName: string;
+  } | null>(null);
+  const [selectedAddedProduct, setSelectedAddedProduct] = useState<{
+    productId: number;
+    name: string;
+    sku: string | null;
+  } | null>(null);
+  const [selectedEstimate, setSelectedEstimate] = useState<{
+    estimateId: number;
+    tranId: string | null;
   } | null>(null);
   const { data, isLoading, isError, refetch, isFetching } = useQuery<AnalyticsSummary>({
     queryKey: ["adminAnalytics", range, includeAdmins],
@@ -626,17 +947,32 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                      {data.topAddedItems.map((p) => (
-                        <tr key={p.productId ?? p.name} className="hover:bg-gray-50">
-                          <td className="px-3 py-2">
-                            <div className="font-medium text-gray-900 line-clamp-1">{p.name}</div>
-                            {p.sku && <div className="text-[11px] text-gray-400 font-mono">{p.sku}</div>}
-                          </td>
-                          <td className="px-3 py-2 text-right text-amber-700 font-medium">{p.adds}</td>
-                          <td className="px-3 py-2 text-right text-gray-700">{p.qtyAdded}</td>
-                          <td className="px-3 py-2 text-right text-gray-700">{p.users}</td>
-                        </tr>
-                      ))}
+                      {data.topAddedItems.map((p) => {
+                        const clickable = p.productId != null;
+                        return (
+                          <tr
+                            key={p.productId ?? p.name}
+                            className={`hover:bg-gray-50 ${clickable ? "cursor-pointer" : ""}`}
+                            onClick={() => {
+                              if (p.productId != null) {
+                                setSelectedAddedProduct({
+                                  productId: p.productId,
+                                  name: p.name,
+                                  sku: p.sku,
+                                });
+                              }
+                            }}
+                          >
+                            <td className="px-3 py-2">
+                              <div className="font-medium text-gray-900 line-clamp-1">{p.name}</div>
+                              {p.sku && <div className="text-[11px] text-gray-400 font-mono">{p.sku}</div>}
+                            </td>
+                            <td className="px-3 py-2 text-right text-amber-700 font-medium">{p.adds}</td>
+                            <td className="px-3 py-2 text-right text-gray-700">{p.qtyAdded}</td>
+                            <td className="px-3 py-2 text-right text-gray-700">{p.users}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -664,26 +1000,43 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                      {data.recentEstimates.map((e, idx) => (
-                        <tr key={`${e.estimateId ?? "x"}-${idx}`} className="hover:bg-gray-50">
-                          <td className="px-3 py-2 text-gray-500 text-xs whitespace-nowrap">
-                            {fmtTimeAgo(e.createdAt)}
-                          </td>
-                          <td className="px-3 py-2 text-gray-700">
-                            {e.employeeName || (e.employeeId ? `#${e.employeeId}` : "Unknown")}
-                          </td>
-                          <td className="px-3 py-2 text-emerald-700 font-medium">
-                            {e.tranId ?? (e.estimateId != null ? `#${e.estimateId}` : "—")}
-                          </td>
-                          <td className="px-3 py-2 text-right text-gray-700">
-                            {e.itemCount ?? "—"}
-                            {e.lineCount != null && (
-                              <span className="text-[10px] text-gray-400 ml-1">({e.lineCount} lines)</span>
-                            )}
-                          </td>
-                          <td className="px-3 py-2 text-right text-gray-700">{fmtUsd(e.totalValue)}</td>
-                        </tr>
-                      ))}
+                      {data.recentEstimates.map((e, idx) => {
+                        const numericId =
+                          typeof e.estimateId === "number"
+                            ? e.estimateId
+                            : typeof e.estimateId === "string" && /^\d+$/.test(e.estimateId)
+                            ? Number(e.estimateId)
+                            : null;
+                        const clickable = numericId != null;
+                        return (
+                          <tr
+                            key={`${e.estimateId ?? "x"}-${idx}`}
+                            className={`hover:bg-gray-50 ${clickable ? "cursor-pointer" : ""}`}
+                            onClick={() => {
+                              if (numericId != null) {
+                                setSelectedEstimate({ estimateId: numericId, tranId: e.tranId });
+                              }
+                            }}
+                          >
+                            <td className="px-3 py-2 text-gray-500 text-xs whitespace-nowrap">
+                              {fmtTimeAgo(e.createdAt)}
+                            </td>
+                            <td className="px-3 py-2 text-gray-700">
+                              {e.employeeName || (e.employeeId ? `#${e.employeeId}` : "Unknown")}
+                            </td>
+                            <td className="px-3 py-2 text-emerald-700 font-medium">
+                              {e.tranId ?? (e.estimateId != null ? `#${e.estimateId}` : "—")}
+                            </td>
+                            <td className="px-3 py-2 text-right text-gray-700">
+                              {e.itemCount ?? "—"}
+                              {e.lineCount != null && (
+                                <span className="text-[10px] text-gray-400 ml-1">({e.lineCount} lines)</span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2 text-right text-gray-700">{fmtUsd(e.totalValue)}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -698,6 +1051,22 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
           user={selectedUser}
           adminEmployeeId={employeeId}
           onClose={() => setSelectedUser(null)}
+        />
+      )}
+      {selectedAddedProduct && (
+        <ProductAddsModal
+          product={selectedAddedProduct}
+          range={range}
+          includeAdmins={includeAdmins}
+          adminEmployeeId={employeeId}
+          onClose={() => setSelectedAddedProduct(null)}
+        />
+      )}
+      {selectedEstimate && (
+        <EstimateDetailModal
+          estimate={selectedEstimate}
+          adminEmployeeId={employeeId}
+          onClose={() => setSelectedEstimate(null)}
         />
       )}
     </div>
