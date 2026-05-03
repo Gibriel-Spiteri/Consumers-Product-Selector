@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/context/auth-context";
 import { useQuery } from "@tanstack/react-query";
-import { RefreshCw, Shield, ArrowLeft, BarChart3, X, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
+import { RefreshCw, Shield, ArrowLeft, BarChart3, X, ChevronUp, ChevronDown, ChevronsUpDown, Info } from "lucide-react";
 import { Link } from "wouter";
 
 interface AnalyticsSummary {
@@ -733,6 +733,11 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
           <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
             <BarChart3 size={18} className="text-amber-500" />
             Usage Analytics
+            <Info
+              size={14}
+              className="text-gray-400 hover:text-gray-600 cursor-default shrink-0"
+              title="Events are tracked for page views, category views, product opens, searches, adds to list, and estimate pushes. Home page visits are not tracked. Data is retained for 3 years — the purge job runs automatically every 24 hours and deletes events older than 3 years in batches. Admin activity is hidden by default but can be included using the toggle above."
+            />
           </h3>
           <p className="text-sm text-gray-500">Who is using the selector and what they're viewing.</p>
         </div>
