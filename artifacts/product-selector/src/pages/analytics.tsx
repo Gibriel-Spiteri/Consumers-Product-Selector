@@ -715,9 +715,23 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
             </div>
           </div>
 
-          {data.dailyPageViews.length > 0 && (
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Daily Page Views</div>
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs font-semibold uppercase tracking-wide text-gray-400">Daily Page Views</div>
+              {!includeAdmins && (
+                <div className="text-[11px] text-gray-400">
+                  Admin activity hidden &middot;{" "}
+                  <button
+                    type="button"
+                    onClick={() => setIncludeAdmins(true)}
+                    className="text-amber-600 hover:text-amber-700 font-medium underline-offset-2 hover:underline"
+                  >
+                    Include admins
+                  </button>
+                </div>
+              )}
+            </div>
+            {data.dailyPageViews.length > 0 ? (
               <div className="flex items-end gap-1 h-28 bg-gray-50 rounded-lg p-3">
                 {data.dailyPageViews.map((d) => (
                   <div key={d.day} className="flex-1 flex flex-col items-center justify-end" title={`${d.day}: ${d.views} views`}>
@@ -729,8 +743,17 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="h-28 bg-gray-50 rounded-lg p-3 flex items-center justify-center text-sm text-gray-400 text-center">
+                No page views in this range
+                {!includeAdmins && (
+                  <span className="ml-1">
+                    (admin activity is hidden &mdash; toggle <span className="font-medium">Include admins</span> above to see it).
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
 
           <div>
             <div className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">
