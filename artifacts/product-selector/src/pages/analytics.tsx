@@ -625,6 +625,7 @@ function SortTh({
 function AnalyticsSection({ employeeId }: { employeeId: string }) {
   const [range, setRange] = useState<"today" | "yesterday" | "7d" | "30d" | "90d">("7d");
   const [includeAdmins, setIncludeAdmins] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<{
     employeeId: string;
     employeeName: string;
@@ -733,11 +734,38 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
           <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
             <BarChart3 size={18} className="text-amber-500" />
             Usage Analytics
-            <Info
-              size={14}
-              className="text-gray-400 hover:text-gray-600 cursor-default shrink-0"
-              title="Events are tracked for page views, category views, product opens, searches, adds to list, and estimate pushes. Home page visits are not tracked. Data is retained for 3 years — the purge job runs automatically every 24 hours and deletes events older than 3 years in batches. Admin activity is hidden by default but can be included using the toggle above."
-            />
+            <span className="relative inline-flex">
+              <button
+                type="button"
+                onClick={() => setInfoOpen((v) => !v)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+                aria-label="About this data"
+              >
+                <Info size={14} />
+              </button>
+              {infoOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setInfoOpen(false)} />
+                  <div className="absolute left-0 top-6 z-20 w-80 rounded-lg border border-gray-200 bg-white p-4 shadow-lg text-xs text-gray-600 leading-relaxed">
+                    <div className="font-semibold text-gray-800 mb-2">About this data</div>
+                    <ul className="space-y-1.5 list-disc list-inside">
+                      <li>Tracks: category views, product opens, searches, adds to list, and estimate pushes.</li>
+                      <li>Home page visits are not tracked.</li>
+                      <li>Admin activity is hidden by default — use the <span className="font-medium">Include admins</span> toggle to see it.</li>
+                      <li>Data is kept for <span className="font-medium">3 years</span>.</li>
+                      <li>A background job runs every 24 hours and removes events older than 3 years.</li>
+                    </ul>
+                    <button
+                      type="button"
+                      onClick={() => setInfoOpen(false)}
+                      className="mt-3 text-amber-600 hover:text-amber-700 font-medium"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </>
+              )}
+            </span>
           </h3>
           <p className="text-sm text-gray-500">Who is using the selector and what they're viewing.</p>
         </div>
