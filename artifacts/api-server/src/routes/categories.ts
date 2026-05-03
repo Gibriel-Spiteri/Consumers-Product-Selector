@@ -298,7 +298,7 @@ router.get("/products/search", async (req, res) => {
 
   const words = q.trim().split(/\s+/).filter(Boolean);
   const wordFilters = words.map((w) => {
-    const stem = w.length >= 6 ? w.slice(0, w.length - 2) : w;
+    const stem = w.length >= 5 ? w.slice(0, Math.max(4, Math.floor(w.length * 0.75))) : w;
     return or(
       ilike(productsTable.name, `%${stem}%`),
       ilike(productsTable.sku, `%${stem}%`),
