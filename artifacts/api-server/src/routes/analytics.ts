@@ -326,17 +326,17 @@ router.get("/admin/analytics/summary", requireAdmin, async (req, res) => {
     const topCategoriesRaw = await db
       .select({
         categoryId: analyticsEventsTable.categoryId,
+        path: analyticsEventsTable.path,
         views: sql<number>`count(*)::int`,
       })
       .from(analyticsEventsTable)
       .where(
         and(
           baseWhere,
-          isNotNull(analyticsEventsTable.categoryId),
           eq(analyticsEventsTable.eventType, "category_view"),
         ),
       )
-      .groupBy(analyticsEventsTable.categoryId)
+      .groupBy(analyticsEventsTable.categoryId, analyticsEventsTable.path)
       .orderBy(desc(sql`count(*)`))
       .limit(20);
 
@@ -368,9 +368,17 @@ router.get("/admin/analytics/summary", requireAdmin, async (req, res) => {
       if (parts.length === 0) return `#${id}`;
       return parts.join(" › ");
     };
+    const pathToName: Record<string, string> = {
+      "/clearance": "Clearance",
+      "/express-bath": "Express Bath",
+      "/uncategorized": "Uncategorized",
+    };
     const topCategories = topCategoriesRaw.map((r) => ({
       categoryId: r.categoryId,
-      name: buildCategoryPath(r.categoryId),
+      name:
+        r.categoryId != null
+          ? buildCategoryPath(r.categoryId)
+          : (r.path != null ? (pathToName[r.path] ?? r.path) : "Other"),
       views: r.views,
     }));
 
