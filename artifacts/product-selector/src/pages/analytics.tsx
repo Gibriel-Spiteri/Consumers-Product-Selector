@@ -790,10 +790,10 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 text-[11px] uppercase tracking-wide text-gray-400 font-semibold sticky top-0">
                     <tr>
-                      <th className="px-3 py-2 text-left">Time</th>
-                      <th className="px-3 py-2 text-left">User</th>
-                      <th className="px-3 py-2 text-left">Event</th>
-                      <th className="px-3 py-2 text-left">Detail</th>
+                      <th className="px-3 py-2 text-left" title="When this event was recorded.">Time</th>
+                      <th className="px-3 py-2 text-left" title="The employee or anonymous visitor who triggered the event.">User</th>
+                      <th className="px-3 py-2 text-left" title="Type of action: page view, category view, product open, search, add to list, or push to estimate.">Event</th>
+                      <th className="px-3 py-2 text-left" title="Additional context for the event — the page path, category name, product name, or search term.">Detail</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
