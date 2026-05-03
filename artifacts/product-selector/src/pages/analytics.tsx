@@ -870,13 +870,13 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 text-[11px] uppercase tracking-wide text-gray-400 font-semibold">
                     <tr>
-                      <th className="px-3 py-2 text-left">User</th>
-                      <th className="px-3 py-2 text-right">Sessions</th>
-                      <th className="px-3 py-2 text-right">Page Views</th>
-                      <th className="px-3 py-2 text-right">Adds</th>
-                      <th className="px-3 py-2 text-right">Estimates</th>
-                      <th className="px-3 py-2 text-right">Events</th>
-                      <th className="px-3 py-2 text-right">Last Seen</th>
+                      <th className="px-3 py-2 text-left" title="The employee (or anonymous visitor) who used the selector. Click a row to drill into their activity.">User</th>
+                      <th className="px-3 py-2 text-right" title="Distinct browsing sessions in the selected range. A new session starts after a tab is closed or left idle.">Sessions</th>
+                      <th className="px-3 py-2 text-right" title="Total pages this user loaded (category, search, product, and other selector pages).">Page Views</th>
+                      <th className="px-3 py-2 text-right" title="Number of times this user added a product to their list.">Adds</th>
+                      <th className="px-3 py-2 text-right" title="Number of times this user pushed a list to a NetSuite estimate.">Estimates</th>
+                      <th className="px-3 py-2 text-right" title="All tracked actions in the range: page views, category views, product opens, searches, adds, and estimate pushes.">Events</th>
+                      <th className="px-3 py-2 text-right" title="Most recent tracked activity from this user.">Last Seen</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
