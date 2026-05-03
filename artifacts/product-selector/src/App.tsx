@@ -38,7 +38,7 @@ function AnalyticsTracker() {
     setAnalyticsIdentity(employee?.id ?? null);
   }, [employee]);
   useEffect(() => {
-    if (isBareCategoryUrl(location)) return;
+    if (location === "/" || isBareCategoryUrl(location)) return;
     trackPageView(location);
   }, [location]);
   return null;
