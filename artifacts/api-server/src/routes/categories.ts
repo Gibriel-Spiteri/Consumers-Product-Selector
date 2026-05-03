@@ -297,14 +297,15 @@ router.get("/products/search", async (req, res) => {
   }
 
   const words = q.trim().split(/\s+/).filter(Boolean);
-  const wordFilters = words.map((w) =>
-    or(
-      ilike(productsTable.name, `%${w}%`),
-      ilike(productsTable.sku, `%${w}%`),
-      ilike(productsTable.salesdescription, `%${w}%`),
-      ilike(productsTable.manufacturer, `%${w}%`),
-    )!
-  );
+  const wordFilters = words.map((w) => {
+    const stem = w.length >= 6 ? w.slice(0, w.length - 2) : w;
+    return or(
+      ilike(productsTable.name, `%${stem}%`),
+      ilike(productsTable.sku, `%${stem}%`),
+      ilike(productsTable.salesdescription, `%${stem}%`),
+      ilike(productsTable.manufacturer, `%${stem}%`),
+    )!;
+  });
   const products = await db
     .select()
     .from(productsTable)
