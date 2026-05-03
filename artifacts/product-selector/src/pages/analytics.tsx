@@ -733,17 +733,31 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
             </div>
             {data.dailyPageViews.length > 0 ? (
               <div className="bg-gray-50 rounded-lg pt-3 pb-2 px-3">
-                <div className="flex items-end gap-1 h-24">
-                  {data.dailyPageViews.map((d) => (
-                    <div
-                      key={d.day}
-                      className="flex-1 bg-amber-400 rounded-t-sm min-h-[2px]"
-                      style={{ height: `${(d.views / maxDaily) * 100}%` }}
-                      title={`${d.day}: ${d.views} views`}
-                    />
-                  ))}
+                <div className="flex gap-2">
+                  <div className="relative h-24 w-7 shrink-0 text-[9px] text-gray-400">
+                    <div className="absolute right-0 top-0 -translate-y-1/2 tabular-nums">{maxDaily}</div>
+                    <div className="absolute right-0 top-1/2 -translate-y-1/2 tabular-nums">{Math.round(maxDaily / 2)}</div>
+                    <div className="absolute right-0 bottom-0 translate-y-1/2 tabular-nums">0</div>
+                  </div>
+                  <div className="flex-1 relative">
+                    <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
+                      <div className="border-t border-gray-200" />
+                      <div className="border-t border-gray-200" />
+                      <div className="border-t border-gray-200" />
+                    </div>
+                    <div className="relative flex items-end gap-1 h-24">
+                      {data.dailyPageViews.map((d) => (
+                        <div
+                          key={d.day}
+                          className="flex-1 bg-amber-400 rounded-t-sm min-h-[2px]"
+                          style={{ height: `${(d.views / maxDaily) * 100}%` }}
+                          title={`${d.day}: ${d.views} views`}
+                        />
+                      ))}
+                    </div>
+                  </div>
                 </div>
-                <div className="flex gap-1 mt-1">
+                <div className="flex gap-1 mt-1 pl-9">
                   {data.dailyPageViews.map((d) => (
                     <div key={d.day} className="flex-1 text-[9px] text-gray-400 text-center whitespace-nowrap">
                       {d.day.slice(5)}
