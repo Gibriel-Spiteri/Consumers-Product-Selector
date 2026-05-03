@@ -738,7 +738,7 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
               <button
                 type="button"
                 onClick={() => setInfoOpen((v) => !v)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
                 aria-label="About this data"
               >
                 <Info size={14} />
