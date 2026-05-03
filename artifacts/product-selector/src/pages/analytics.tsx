@@ -327,7 +327,7 @@ function ProductAddsModal({
   onClose,
 }: {
   product: { productId: number; name: string; sku: string | null };
-  range: "7d" | "30d" | "90d";
+  range: "today" | "yesterday" | "7d" | "30d" | "90d";
   includeAdmins: boolean;
   adminEmployeeId: string;
   onClose: () => void;
@@ -585,7 +585,7 @@ function EstimateDetailModal({
 }
 
 function AnalyticsSection({ employeeId }: { employeeId: string }) {
-  const [range, setRange] = useState<"7d" | "30d" | "90d">("7d");
+  const [range, setRange] = useState<"today" | "yesterday" | "7d" | "30d" | "90d">("7d");
   const [includeAdmins, setIncludeAdmins] = useState(false);
   const [selectedUser, setSelectedUser] = useState<{
     employeeId: string;
@@ -661,13 +661,13 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
             Include admins
           </label>
           <div className="inline-flex bg-gray-100 rounded-lg p-1">
-            {(["7d", "30d", "90d"] as const).map((r) => (
+            {(["today", "yesterday", "7d", "30d", "90d"] as const).map((r) => (
               <button
                 key={r}
                 onClick={() => setRange(r)}
                 className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${range === r ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
               >
-                Last {r === "7d" ? "7 days" : r === "30d" ? "30 days" : "90 days"}
+                {r === "today" ? "Today" : r === "yesterday" ? "Yesterday" : r === "7d" ? "Last 7 days" : r === "30d" ? "Last 30 days" : "Last 90 days"}
               </button>
             ))}
           </div>

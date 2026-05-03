@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
-import { sql, and, gte, isNotNull, desc, eq, inArray, notInArray, or, isNull } from "drizzle-orm";
+import { sql, and, gte, lt, isNotNull, desc, eq, inArray, notInArray, or, isNull } from "drizzle-orm";
 import {
   db,
   analyticsEventsTable,
@@ -178,10 +178,22 @@ async function requireAdmin(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-function rangeToDays(range: unknown): number {
-  if (range === "30d") return 30;
-  if (range === "90d") return 90;
-  return 7;
+function rangeToWindow(range: unknown): { since: Date; until?: Date; label: string } {
+  const now = new Date();
+  const startOfToday = new Date(now);
+  startOfToday.setUTCHours(0, 0, 0, 0);
+
+  if (range === "today") {
+    return { since: startOfToday, label: "today" };
+  }
+  if (range === "yesterday") {
+    const startOfYesterday = new Date(startOfToday);
+    startOfYesterday.setUTCDate(startOfYesterday.getUTCDate() - 1);
+    return { since: startOfYesterday, until: startOfToday, label: "yesterday" };
+  }
+  if (range === "30d") return { since: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000), label: "30d" };
+  if (range === "90d") return { since: new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000), label: "90d" };
+  return { since: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000), label: "7d" };
 }
 
 interface NetSuiteEmployeeName {
@@ -230,8 +242,7 @@ async function fetchEmployeeNames(
 
 router.get("/admin/analytics/summary", requireAdmin, async (req, res) => {
   try {
-    const days = rangeToDays(req.query.range);
-    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const { since, until, label: rangeLabel } = rangeToWindow(req.query.range);
 
     const includeAdmins = req.query.includeAdmins === "1";
     const adminIds = includeAdmins ? [] : await fetchAdminEmployeeIds();
@@ -243,9 +254,13 @@ router.get("/admin/analytics/summary", requireAdmin, async (req, res) => {
           )
         : undefined;
 
-    const baseWhere = adminFilter
-      ? and(gte(analyticsEventsTable.createdAt, since), adminFilter)!
+    const timeFilter = until
+      ? and(gte(analyticsEventsTable.createdAt, since), lt(analyticsEventsTable.createdAt, until))
       : gte(analyticsEventsTable.createdAt, since);
+
+    const baseWhere = adminFilter
+      ? and(timeFilter, adminFilter)!
+      : timeFilter;
 
     const [totals] = await db
       .select({
@@ -506,7 +521,7 @@ router.get("/admin/analytics/summary", requireAdmin, async (req, res) => {
     });
 
     res.json({
-      range: `${days}d`,
+      range: rangeLabel,
       totals: {
         events: totals?.totalEvents ?? 0,
         sessions: totals?.totalSessions ?? 0,
@@ -740,9 +755,7 @@ router.get("/admin/analytics/product-adds/:productId", requireAdmin, async (req,
     if (!Number.isInteger(productId) || productId <= 0) {
       return res.status(400).json({ error: "Invalid productId" });
     }
-    const range = (req.query.range as string) ?? "7d";
-    const days = range === "30d" ? 30 : range === "90d" ? 90 : 7;
-    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const { since, until } = rangeToWindow(req.query.range);
     const includeAdmins = req.query.includeAdmins === "1";
     const adminIds = includeAdmins ? [] : await fetchAdminEmployeeIds();
 
@@ -750,6 +763,7 @@ router.get("/admin/analytics/product-adds/:productId", requireAdmin, async (req,
       eq(analyticsEventsTable.productId, productId),
       eq(analyticsEventsTable.eventType, "add_to_list"),
       gte(analyticsEventsTable.createdAt, since),
+      ...(until ? [lt(analyticsEventsTable.createdAt, until)] : []),
     ];
     if (adminIds.length > 0) {
       filters.push(
