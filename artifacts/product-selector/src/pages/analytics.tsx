@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/context/auth-context";
 import { useQuery } from "@tanstack/react-query";
-import { RefreshCw, Shield, ArrowLeft, BarChart3, X } from "lucide-react";
+import { RefreshCw, Shield, ArrowLeft, BarChart3, X, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 import { Link } from "wouter";
 
 interface AnalyticsSummary {
@@ -584,6 +584,44 @@ function EstimateDetailModal({
   );
 }
 
+type SortDir = "asc" | "desc";
+
+function SortTh({
+  label,
+  sortKey,
+  current,
+  onSort,
+  title,
+  align = "right",
+}: {
+  label: string;
+  sortKey: string;
+  current: { key: string; dir: SortDir };
+  onSort: (key: string) => void;
+  title?: string;
+  align?: "left" | "right";
+}) {
+  const active = current.key === sortKey;
+  return (
+    <th
+      className={`px-3 py-2 text-${align} cursor-pointer select-none hover:text-gray-700 group`}
+      title={title}
+      onClick={() => onSort(sortKey)}
+    >
+      <span className={`inline-flex items-center gap-0.5 ${align === "right" ? "justify-end" : "justify-start"}`}>
+        {label}
+        {active ? (
+          current.dir === "asc"
+            ? <ChevronUp size={11} className="text-amber-500 shrink-0" />
+            : <ChevronDown size={11} className="text-amber-500 shrink-0" />
+        ) : (
+          <ChevronsUpDown size={11} className="shrink-0 opacity-0 group-hover:opacity-50" />
+        )}
+      </span>
+    </th>
+  );
+}
+
 function AnalyticsSection({ employeeId }: { employeeId: string }) {
   const [range, setRange] = useState<"today" | "yesterday" | "7d" | "30d" | "90d">("7d");
   const [includeAdmins, setIncludeAdmins] = useState(false);
@@ -631,6 +669,57 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
     refetchOnWindowFocus: true,
     refetchInterval: 30_000,
   });
+
+  const [userSort, setUserSort] = useState<{ key: string; dir: SortDir }>({ key: "events", dir: "desc" });
+  const [recentSort, setRecentSort] = useState<{ key: string; dir: SortDir }>({ key: "time", dir: "desc" });
+
+  function handleUserSort(key: string) {
+    setUserSort((prev) => ({ key, dir: prev.key === key && prev.dir === "desc" ? "asc" : "desc" }));
+  }
+  function handleRecentSort(key: string) {
+    setRecentSort((prev) => ({ key, dir: prev.key === key && prev.dir === "desc" ? "asc" : "desc" }));
+  }
+
+  const sortedActiveUsers = useMemo(() => {
+    if (!data?.activeUsers) return [];
+    return [...data.activeUsers].sort((a, b) => {
+      let av: string | number, bv: string | number;
+      switch (userSort.key) {
+        case "name": av = (a.employeeName ?? "").toLowerCase(); bv = (b.employeeName ?? "").toLowerCase(); break;
+        case "sessions": av = a.sessions; bv = b.sessions; break;
+        case "pageViews": av = a.pageViews; bv = b.pageViews; break;
+        case "adds": av = a.addsToList; bv = b.addsToList; break;
+        case "estimates": av = a.pushesToEstimate; bv = b.pushesToEstimate; break;
+        case "lastSeen": av = new Date(a.lastSeen).getTime(); bv = new Date(b.lastSeen).getTime(); break;
+        default: av = a.events; bv = b.events;
+      }
+      if (av < bv) return userSort.dir === "asc" ? -1 : 1;
+      if (av > bv) return userSort.dir === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [data?.activeUsers, userSort]);
+
+  const sortedRecent = useMemo(() => {
+    if (!recent?.events) return [];
+    return [...recent.events].sort((a, b) => {
+      let av: string | number, bv: string | number;
+      switch (recentSort.key) {
+        case "user":
+          av = (a.employeeName ?? (a.employeeId ? `Employee #${a.employeeId}` : "")).toLowerCase();
+          bv = (b.employeeName ?? (b.employeeId ? `Employee #${b.employeeId}` : "")).toLowerCase();
+          break;
+        case "event": av = a.eventType; bv = b.eventType; break;
+        case "detail":
+          av = (a.productName ?? a.categoryName ?? a.path ?? "").toLowerCase();
+          bv = (b.productName ?? b.categoryName ?? b.path ?? "").toLowerCase();
+          break;
+        default: av = new Date(a.createdAt).getTime(); bv = new Date(b.createdAt).getTime();
+      }
+      if (av < bv) return recentSort.dir === "asc" ? -1 : 1;
+      if (av > bv) return recentSort.dir === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [recent?.events, recentSort]);
 
   const maxDaily = useMemo(
     () => Math.max(1, ...((data?.dailyPageViews ?? []).map((d) => d.views))),
@@ -790,14 +879,14 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 text-[11px] uppercase tracking-wide text-gray-400 font-semibold sticky top-0">
                     <tr>
-                      <th className="px-3 py-2 text-left" title="When this event was recorded.">Time</th>
-                      <th className="px-3 py-2 text-left" title="The employee or anonymous visitor who triggered the event.">User</th>
-                      <th className="px-3 py-2 text-left" title="Type of action: page view, category view, product open, search, add to list, or push to estimate.">Event</th>
-                      <th className="px-3 py-2 text-left" title="Additional context for the event — the page path, category name, product name, or search term.">Detail</th>
+                      <SortTh label="Time" sortKey="time" current={recentSort} onSort={handleRecentSort} align="left" title="When this event was recorded." />
+                      <SortTh label="User" sortKey="user" current={recentSort} onSort={handleRecentSort} align="left" title="The employee or anonymous visitor who triggered the event." />
+                      <SortTh label="Event" sortKey="event" current={recentSort} onSort={handleRecentSort} align="left" title="Type of action: page view, category view, product open, search, add to list, or push to estimate." />
+                      <SortTh label="Detail" sortKey="detail" current={recentSort} onSort={handleRecentSort} align="left" title="Additional context for the event — the page path, category name, product name, or search term." />
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
-                    {recent.events.map((e) => {
+                    {sortedRecent.map((e) => {
                       const detail = e.productName
                         ? e.productName
                         : e.categoryName
@@ -870,17 +959,17 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 text-[11px] uppercase tracking-wide text-gray-400 font-semibold">
                     <tr>
-                      <th className="px-3 py-2 text-left" title="The employee (or anonymous visitor) who used the selector. Click a row to drill into their activity.">User</th>
-                      <th className="px-3 py-2 text-right" title="Distinct browsing sessions in the selected range. A new session starts after a tab is closed or left idle.">Sessions</th>
-                      <th className="px-3 py-2 text-right" title="Total pages this user loaded (category, search, product, and other selector pages).">Page Views</th>
-                      <th className="px-3 py-2 text-right" title="Number of times this user added a product to their list.">Adds</th>
-                      <th className="px-3 py-2 text-right" title="Number of times this user pushed a list to a NetSuite estimate.">Estimates</th>
-                      <th className="px-3 py-2 text-right" title="All tracked actions in the range: page views, category views, product opens, searches, adds, and estimate pushes.">Events</th>
-                      <th className="px-3 py-2 text-right" title="Most recent tracked activity from this user.">Last Seen</th>
+                      <SortTh label="User" sortKey="name" current={userSort} onSort={handleUserSort} align="left" title="The employee (or anonymous visitor) who used the selector. Click a row to drill into their activity." />
+                      <SortTh label="Sessions" sortKey="sessions" current={userSort} onSort={handleUserSort} title="Distinct browsing sessions in the selected range. A new session starts after a tab is closed or left idle." />
+                      <SortTh label="Page Views" sortKey="pageViews" current={userSort} onSort={handleUserSort} title="Total pages this user loaded (category, search, product, and other selector pages)." />
+                      <SortTh label="Adds" sortKey="adds" current={userSort} onSort={handleUserSort} title="Number of times this user added a product to their list." />
+                      <SortTh label="Estimates" sortKey="estimates" current={userSort} onSort={handleUserSort} title="Number of times this user pushed a list to a NetSuite estimate." />
+                      <SortTh label="Events" sortKey="events" current={userSort} onSort={handleUserSort} title="All tracked actions in the range: page views, category views, product opens, searches, adds, and estimate pushes." />
+                      <SortTh label="Last Seen" sortKey="lastSeen" current={userSort} onSort={handleUserSort} title="Most recent tracked activity from this user." />
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
-                    {data.activeUsers.map((u) => {
+                    {sortedActiveUsers.map((u) => {
                       const clickable = u.employeeId != null;
                       return (
                         <tr
