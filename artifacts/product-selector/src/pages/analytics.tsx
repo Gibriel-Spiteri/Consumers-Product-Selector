@@ -732,16 +732,24 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
               )}
             </div>
             {data.dailyPageViews.length > 0 ? (
-              <div className="flex items-end gap-1 h-28 bg-gray-50 rounded-lg p-3">
-                {data.dailyPageViews.map((d) => (
-                  <div key={d.day} className="flex-1 flex flex-col items-center justify-end" title={`${d.day}: ${d.views} views`}>
+              <div className="bg-gray-50 rounded-lg pt-3 pb-2 px-3">
+                <div className="flex items-end gap-1 h-24">
+                  {data.dailyPageViews.map((d) => (
                     <div
-                      className="w-full bg-amber-400 rounded-t-sm"
-                      style={{ height: `${Math.max(2, (d.views / maxDaily) * 100)}%` }}
+                      key={d.day}
+                      className="flex-1 bg-amber-400 rounded-t-sm min-h-[2px]"
+                      style={{ height: `${(d.views / maxDaily) * 100}%` }}
+                      title={`${d.day}: ${d.views} views`}
                     />
-                    <div className="text-[9px] text-gray-400 mt-1 whitespace-nowrap">{d.day.slice(5)}</div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+                <div className="flex gap-1 mt-1">
+                  {data.dailyPageViews.map((d) => (
+                    <div key={d.day} className="flex-1 text-[9px] text-gray-400 text-center whitespace-nowrap">
+                      {d.day.slice(5)}
+                    </div>
+                  ))}
+                </div>
               </div>
             ) : (
               <div className="h-28 bg-gray-50 rounded-lg p-3 flex items-center justify-center text-sm text-gray-400 text-center">
