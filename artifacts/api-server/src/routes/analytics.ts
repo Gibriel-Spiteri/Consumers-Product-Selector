@@ -258,9 +258,11 @@ router.get("/admin/analytics/summary", requireAdmin, async (req, res) => {
       ? and(gte(analyticsEventsTable.createdAt, since), lt(analyticsEventsTable.createdAt, until))
       : gte(analyticsEventsTable.createdAt, since);
 
+    const notHomePage = sql`NOT (${analyticsEventsTable.eventType} = 'page_view' AND ${analyticsEventsTable.path} = '/')`;
+
     const baseWhere = adminFilter
-      ? and(timeFilter, adminFilter)!
-      : timeFilter;
+      ? and(timeFilter, adminFilter, notHomePage)!
+      : and(timeFilter, notHomePage)!;
 
     const [totals] = await db
       .select({
@@ -569,7 +571,9 @@ router.get("/admin/analytics/recent", requireAdmin, async (req, res) => {
       ? and(gte(analyticsEventsTable.createdAt, since), lt(analyticsEventsTable.createdAt, until))
       : gte(analyticsEventsTable.createdAt, since);
 
-    const whereClause = adminFilter ? and(timeFilter, adminFilter)! : timeFilter;
+    const notHomePage = sql`NOT (${analyticsEventsTable.eventType} = 'page_view' AND ${analyticsEventsTable.path} = '/')`;
+
+    const whereClause = adminFilter ? and(timeFilter, adminFilter, notHomePage)! : and(timeFilter, notHomePage)!;
 
     const events = await db
       .select({
