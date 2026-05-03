@@ -296,15 +296,19 @@ router.get("/products/search", async (req, res) => {
     return res.json(response);
   }
 
+  const words = q.trim().split(/\s+/).filter(Boolean);
+  const wordFilters = words.map((w) =>
+    or(
+      ilike(productsTable.name, `%${w}%`),
+      ilike(productsTable.sku, `%${w}%`),
+      ilike(productsTable.salesdescription, `%${w}%`),
+      ilike(productsTable.manufacturer, `%${w}%`),
+    )!
+  );
   const products = await db
     .select()
     .from(productsTable)
-    .where(and(or(
-      ilike(productsTable.name, `%${q}%`),
-      ilike(productsTable.sku, `%${q}%`),
-      ilike(productsTable.salesdescription, `%${q}%`),
-      ilike(productsTable.manufacturer, `%${q}%`),
-    ), notDiscontinued));
+    .where(and(...wordFilters, notDiscontinued));
 
   const netsuiteIds = products.map((p) => p.netsuiteId).filter((id): id is string => id != null);
   const [liveInventory, userImages] = await Promise.all([
