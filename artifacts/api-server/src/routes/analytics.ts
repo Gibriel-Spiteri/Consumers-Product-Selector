@@ -554,6 +554,8 @@ router.get("/admin/analytics/recent", requireAdmin, async (req, res) => {
         ? limitParam
         : 50;
 
+    const { since, until } = rangeToWindow(req.query.range);
+
     const adminIds = includeAdmins ? [] : await fetchAdminEmployeeIds();
     const adminFilter =
       adminIds.length > 0
@@ -562,6 +564,12 @@ router.get("/admin/analytics/recent", requireAdmin, async (req, res) => {
             notInArray(analyticsEventsTable.employeeId, adminIds),
           )
         : undefined;
+
+    const timeFilter = until
+      ? and(gte(analyticsEventsTable.createdAt, since), lt(analyticsEventsTable.createdAt, until))
+      : gte(analyticsEventsTable.createdAt, since);
+
+    const whereClause = adminFilter ? and(timeFilter, adminFilter)! : timeFilter;
 
     const events = await db
       .select({
@@ -576,7 +584,7 @@ router.get("/admin/analytics/recent", requireAdmin, async (req, res) => {
         metadata: analyticsEventsTable.metadata,
       })
       .from(analyticsEventsTable)
-      .where(adminFilter ?? sql`true`)
+      .where(whereClause)
       .orderBy(desc(analyticsEventsTable.createdAt))
       .limit(limit);
 

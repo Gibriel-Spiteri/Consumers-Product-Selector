@@ -617,10 +617,10 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
   });
 
   const { data: recent } = useQuery<RecentActivityResponse>({
-    queryKey: ["adminAnalyticsRecent", includeAdmins],
+    queryKey: ["adminAnalyticsRecent", range, includeAdmins],
     queryFn: async () => {
       const res = await fetch(
-        `/api/admin/analytics/recent?limit=50&includeAdmins=${includeAdmins ? "1" : "0"}`,
+        `/api/admin/analytics/recent?limit=50&range=${range}&includeAdmins=${includeAdmins ? "1" : "0"}`,
         { headers: { "X-Employee-Id": employeeId } },
       );
       if (!res.ok) throw new Error("Failed to load recent activity");
