@@ -178,8 +178,22 @@ async function requireAdmin(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-function rangeToWindow(range: unknown): { since: Date; until?: Date; label: string } {
+function rangeToWindow(
+  range: unknown,
+  sinceMs?: number,
+  untilMs?: number,
+): { since: Date; until?: Date; label: string } {
   const now = new Date();
+
+  // If the frontend sent explicit local-midnight timestamps, use them directly
+  if (sinceMs && Number.isFinite(sinceMs)) {
+    return {
+      since: new Date(sinceMs),
+      until: untilMs && Number.isFinite(untilMs) ? new Date(untilMs) : undefined,
+      label: typeof range === "string" ? range : "custom",
+    };
+  }
+
   const startOfToday = new Date(now);
   startOfToday.setUTCHours(0, 0, 0, 0);
 
@@ -242,7 +256,9 @@ async function fetchEmployeeNames(
 
 router.get("/admin/analytics/summary", requireAdmin, async (req, res) => {
   try {
-    const { since, until, label: rangeLabel } = rangeToWindow(req.query.range);
+    const sinceMs = Number(req.query.sinceMs) || undefined;
+    const untilMs = Number(req.query.untilMs) || undefined;
+    const { since, until, label: rangeLabel } = rangeToWindow(req.query.range, sinceMs, untilMs);
 
     const includeAdmins = req.query.includeAdmins === "1";
     const adminIds = includeAdmins ? [] : await fetchAdminEmployeeIds();
@@ -564,7 +580,9 @@ router.get("/admin/analytics/recent", requireAdmin, async (req, res) => {
         ? limitParam
         : 50;
 
-    const { since, until } = rangeToWindow(req.query.range);
+    const sinceMs2 = Number(req.query.sinceMs) || undefined;
+    const untilMs2 = Number(req.query.untilMs) || undefined;
+    const { since, until } = rangeToWindow(req.query.range, sinceMs2, untilMs2);
 
     const adminIds = includeAdmins ? [] : await fetchAdminEmployeeIds();
     const adminFilter =
@@ -775,7 +793,9 @@ router.get("/admin/analytics/product-adds/:productId", requireAdmin, async (req,
     if (!Number.isInteger(productId) || productId <= 0) {
       return res.status(400).json({ error: "Invalid productId" });
     }
-    const { since, until } = rangeToWindow(req.query.range);
+    const sinceMs3 = Number(req.query.sinceMs) || undefined;
+    const untilMs3 = Number(req.query.untilMs) || undefined;
+    const { since, until } = rangeToWindow(req.query.range, sinceMs3, untilMs3);
     const includeAdmins = req.query.includeAdmins === "1";
     const adminIds = includeAdmins ? [] : await fetchAdminEmployeeIds();
 

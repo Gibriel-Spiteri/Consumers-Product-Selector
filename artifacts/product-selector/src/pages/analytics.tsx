@@ -626,6 +626,19 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
   const [range, setRange] = useState<"today" | "yesterday" | "7d" | "30d" | "90d">("7d");
   const [includeAdmins, setIncludeAdmins] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
+
+  function localRangeParams(r: string): string {
+    if (r === "today") {
+      const since = new Date(); since.setHours(0, 0, 0, 0);
+      return `&sinceMs=${since.getTime()}`;
+    }
+    if (r === "yesterday") {
+      const until = new Date(); until.setHours(0, 0, 0, 0);
+      const since = new Date(until); since.setDate(since.getDate() - 1);
+      return `&sinceMs=${since.getTime()}&untilMs=${until.getTime()}`;
+    }
+    return "";
+  }
   const [selectedUser, setSelectedUser] = useState<{
     employeeId: string;
     employeeName: string;
@@ -643,7 +656,7 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
     queryKey: ["adminAnalytics", range, includeAdmins],
     queryFn: async () => {
       const res = await fetch(
-        `/api/admin/analytics/summary?range=${range}&includeAdmins=${includeAdmins ? "1" : "0"}`,
+        `/api/admin/analytics/summary?range=${range}&includeAdmins=${includeAdmins ? "1" : "0"}${localRangeParams(range)}`,
         { headers: { "X-Employee-Id": employeeId } },
       );
       if (!res.ok) throw new Error("Failed to load analytics");
@@ -659,7 +672,7 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
     queryKey: ["adminAnalyticsRecent", range, includeAdmins],
     queryFn: async () => {
       const res = await fetch(
-        `/api/admin/analytics/recent?limit=50&range=${range}&includeAdmins=${includeAdmins ? "1" : "0"}`,
+        `/api/admin/analytics/recent?limit=50&range=${range}&includeAdmins=${includeAdmins ? "1" : "0"}${localRangeParams(range)}`,
         { headers: { "X-Employee-Id": employeeId } },
       );
       if (!res.ok) throw new Error("Failed to load recent activity");
