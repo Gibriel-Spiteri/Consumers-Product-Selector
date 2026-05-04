@@ -459,15 +459,22 @@ router.get("/admin/analytics/summary", requireAdmin, async (req, res) => {
       };
     });
 
+    const useHourly = rangeLabel === "today" || rangeLabel === "yesterday";
     const dailyPageViews = await db
       .select({
-        day: sql<string>`to_char(date_trunc('day', ${analyticsEventsTable.createdAt}), 'YYYY-MM-DD')`,
+        day: useHourly
+          ? sql<string>`to_char(date_trunc('hour', ${analyticsEventsTable.createdAt}), 'YYYY-MM-DD"T"HH24:MI')`
+          : sql<string>`to_char(date_trunc('day', ${analyticsEventsTable.createdAt}), 'YYYY-MM-DD')`,
         views: sql<number>`count(*)::int`,
       })
       .from(analyticsEventsTable)
       .where(and(baseWhere, eq(analyticsEventsTable.eventType, "page_view")))
-      .groupBy(sql`date_trunc('day', ${analyticsEventsTable.createdAt})`)
-      .orderBy(sql`date_trunc('day', ${analyticsEventsTable.createdAt})`);
+      .groupBy(useHourly
+        ? sql`date_trunc('hour', ${analyticsEventsTable.createdAt})`
+        : sql`date_trunc('day', ${analyticsEventsTable.createdAt})`)
+      .orderBy(useHourly
+        ? sql`date_trunc('hour', ${analyticsEventsTable.createdAt})`
+        : sql`date_trunc('day', ${analyticsEventsTable.createdAt})`);
 
     const topAddedRaw = await db
       .select({

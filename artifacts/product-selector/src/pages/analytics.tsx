@@ -840,7 +840,7 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <div className="text-xs font-semibold uppercase tracking-wide text-gray-400">Daily Page Views</div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-gray-400">{(range === "today" || range === "yesterday") ? "Hourly Page Views" : "Daily Page Views"}</div>
               {!includeAdmins && (
                 <div className="text-[11px] text-gray-400">
                   Admin activity hidden &middot;{" "}
@@ -874,7 +874,7 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
                           key={d.day}
                           className="flex-1 bg-amber-400 rounded-t-sm min-h-[2px]"
                           style={{ height: `${(d.views / maxDaily) * 100}%` }}
-                          title={`${d.day}: ${d.views} views`}
+                          title={`${(range === "today" || range === "yesterday") && d.day.includes("T") ? (() => { const h = parseInt(d.day.slice(11,13),10); return (h===0?"12a":h<12?`${h}a`:h===12?"12p":`${h-12}p`) + ":00"; })() : d.day.slice(5)}: ${d.views} views`}
                         />
                       ))}
                     </div>
@@ -883,7 +883,12 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
                 <div className="flex gap-1 mt-1 pl-9">
                   {data.dailyPageViews.map((d) => (
                     <div key={d.day} className="flex-1 text-[9px] text-gray-400 text-center whitespace-nowrap">
-                      {d.day.slice(5)}
+                      {(range === "today" || range === "yesterday") && d.day.includes("T")
+                        ? (() => {
+                            const h = parseInt(d.day.slice(11, 13), 10);
+                            return h === 0 ? "12a" : h < 12 ? `${h}a` : h === 12 ? "12p" : `${h - 12}p`;
+                          })()
+                        : d.day.slice(5)}
                     </div>
                   ))}
                 </div>
