@@ -178,32 +178,53 @@ async function requireAdmin(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-function rangeToWindow(
-  range: unknown,
-  sinceMs?: number,
-  untilMs?: number,
-): { since: Date; until?: Date; label: string } {
-  const now = new Date();
+const ET_TZ = "America/New_York";
 
-  // If the frontend sent explicit local-midnight timestamps, use them directly
-  if (sinceMs && Number.isFinite(sinceMs)) {
-    return {
-      since: new Date(sinceMs),
-      until: untilMs && Number.isFinite(untilMs) ? new Date(untilMs) : undefined,
-      label: typeof range === "string" ? range : "custom",
-    };
+/**
+ * Returns the UTC Date that equals midnight of the given YYYY-MM-DD string in
+ * Eastern Time, correctly accounting for EST vs EDT (DST).
+ * Strategy: try both possible ET offsets (UTC-4 and UTC-5); verify by
+ * re-formatting the candidate back to ET and checking it reads "00:00".
+ */
+function etMidnight(dateStr: string): Date {
+  for (const offsetH of [4, 5]) {
+    const candidate = new Date(
+      `${dateStr}T${String(offsetH).padStart(2, "0")}:00:00Z`,
+    );
+    const etTime = new Intl.DateTimeFormat("en-US", {
+      timeZone: ET_TZ,
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(candidate);
+    if (etTime === "00:00") return candidate;
   }
+  // Fallback (shouldn't happen for valid dates)
+  return new Date(`${dateStr}T05:00:00Z`);
+}
 
-  const startOfToday = new Date(now);
-  startOfToday.setUTCHours(0, 0, 0, 0);
+/** Returns today's date string (YYYY-MM-DD) in Eastern Time. */
+function etTodayStr(now: Date): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: ET_TZ }).format(now);
+}
+
+/** Returns YYYY-MM-DD string daysAgo days before the given ET date string. */
+function etDateMinusDays(etStr: string, days: number): string {
+  const [y, m, d] = etStr.split("-").map(Number);
+  const shifted = new Date(Date.UTC(y, m - 1, d - days));
+  return shifted.toISOString().slice(0, 10);
+}
+
+function rangeToWindow(range: unknown): { since: Date; until?: Date; label: string } {
+  const now = new Date();
+  const todayET = etTodayStr(now);
 
   if (range === "today") {
-    return { since: startOfToday, label: "today" };
+    return { since: etMidnight(todayET), label: "today" };
   }
   if (range === "yesterday") {
-    const startOfYesterday = new Date(startOfToday);
-    startOfYesterday.setUTCDate(startOfYesterday.getUTCDate() - 1);
-    return { since: startOfYesterday, until: startOfToday, label: "yesterday" };
+    const yesterdayET = etDateMinusDays(todayET, 1);
+    return { since: etMidnight(yesterdayET), until: etMidnight(todayET), label: "yesterday" };
   }
   if (range === "30d") return { since: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000), label: "30d" };
   if (range === "90d") return { since: new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000), label: "90d" };
@@ -256,9 +277,7 @@ async function fetchEmployeeNames(
 
 router.get("/admin/analytics/summary", requireAdmin, async (req, res) => {
   try {
-    const sinceMs = Number(req.query.sinceMs) || undefined;
-    const untilMs = Number(req.query.untilMs) || undefined;
-    const { since, until, label: rangeLabel } = rangeToWindow(req.query.range, sinceMs, untilMs);
+    const { since, until, label: rangeLabel } = rangeToWindow(req.query.range);
 
     const includeAdmins = req.query.includeAdmins === "1";
     const adminIds = includeAdmins ? [] : await fetchAdminEmployeeIds();
@@ -580,9 +599,7 @@ router.get("/admin/analytics/recent", requireAdmin, async (req, res) => {
         ? limitParam
         : 50;
 
-    const sinceMs2 = Number(req.query.sinceMs) || undefined;
-    const untilMs2 = Number(req.query.untilMs) || undefined;
-    const { since, until } = rangeToWindow(req.query.range, sinceMs2, untilMs2);
+    const { since, until } = rangeToWindow(req.query.range);
 
     const adminIds = includeAdmins ? [] : await fetchAdminEmployeeIds();
     const adminFilter =
@@ -793,9 +810,7 @@ router.get("/admin/analytics/product-adds/:productId", requireAdmin, async (req,
     if (!Number.isInteger(productId) || productId <= 0) {
       return res.status(400).json({ error: "Invalid productId" });
     }
-    const sinceMs3 = Number(req.query.sinceMs) || undefined;
-    const untilMs3 = Number(req.query.untilMs) || undefined;
-    const { since, until } = rangeToWindow(req.query.range, sinceMs3, untilMs3);
+    const { since, until } = rangeToWindow(req.query.range);
     const includeAdmins = req.query.includeAdmins === "1";
     const adminIds = includeAdmins ? [] : await fetchAdminEmployeeIds();
 

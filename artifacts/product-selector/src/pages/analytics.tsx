@@ -627,18 +627,6 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
   const [includeAdmins, setIncludeAdmins] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
 
-  function localRangeParams(r: string): string {
-    if (r === "today") {
-      const since = new Date(); since.setHours(0, 0, 0, 0);
-      return `&sinceMs=${since.getTime()}`;
-    }
-    if (r === "yesterday") {
-      const until = new Date(); until.setHours(0, 0, 0, 0);
-      const since = new Date(until); since.setDate(since.getDate() - 1);
-      return `&sinceMs=${since.getTime()}&untilMs=${until.getTime()}`;
-    }
-    return "";
-  }
   const [selectedUser, setSelectedUser] = useState<{
     employeeId: string;
     employeeName: string;
@@ -656,7 +644,7 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
     queryKey: ["adminAnalytics", range, includeAdmins],
     queryFn: async () => {
       const res = await fetch(
-        `/api/admin/analytics/summary?range=${range}&includeAdmins=${includeAdmins ? "1" : "0"}${localRangeParams(range)}`,
+        `/api/admin/analytics/summary?range=${range}&includeAdmins=${includeAdmins ? "1" : "0"}`,
         { headers: { "X-Employee-Id": employeeId } },
       );
       if (!res.ok) throw new Error("Failed to load analytics");
@@ -672,7 +660,7 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
     queryKey: ["adminAnalyticsRecent", range, includeAdmins],
     queryFn: async () => {
       const res = await fetch(
-        `/api/admin/analytics/recent?limit=50&range=${range}&includeAdmins=${includeAdmins ? "1" : "0"}${localRangeParams(range)}`,
+        `/api/admin/analytics/recent?limit=50&range=${range}&includeAdmins=${includeAdmins ? "1" : "0"}`,
         { headers: { "X-Employee-Id": employeeId } },
       );
       if (!res.ok) throw new Error("Failed to load recent activity");
