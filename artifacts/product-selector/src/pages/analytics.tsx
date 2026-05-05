@@ -57,20 +57,6 @@ function fmtUsd(v: number | null) {
   return v.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 }
 
-function fmtTimeAgo(iso: string | null) {
-  if (!iso) return "—";
-  const ts = iso.endsWith("Z") ? iso : iso + "Z";
-  const date = new Date(ts);
-  const diffMs = Date.now() - date.getTime();
-  const min = Math.floor(diffMs / 60000);
-  if (min < 1) return "just now";
-  if (min < 60) return `${min}m ago`;
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}h ago`;
-  const d = Math.floor(hr / 24);
-  if (d < 30) return `${d}d ago`;
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
 
 interface RecentEvent {
   id: number;
@@ -131,14 +117,14 @@ const EVENT_TYPE_COLOR: Record<string, string> = {
   push_to_estimate: "bg-emerald-50 text-emerald-700",
 };
 
-function fmtAbsTime(iso: string) {
+function fmtAbsTime(iso: string | null) {
+  if (!iso) return "—";
   const ts = iso.endsWith("Z") ? iso : iso + "Z";
   return new Date(ts).toLocaleString("en-US", {
     month: "short",
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
-    second: "2-digit",
     hour12: true,
   });
 }
@@ -939,8 +925,8 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
                       const userClickable = e.employeeId != null;
                       return (
                         <tr key={e.id} className="hover:bg-amber-50 align-top">
-                          <td className="px-3 py-2 text-gray-500 whitespace-nowrap text-xs" title={fmtAbsTime(e.createdAt)}>
-                            {fmtTimeAgo(e.createdAt)}
+                          <td className="px-3 py-2 text-gray-500 whitespace-nowrap text-xs">
+                            {fmtAbsTime(e.createdAt)}
                           </td>
                           <td className="px-3 py-2 whitespace-nowrap">
                             {userClickable ? (
@@ -1032,7 +1018,7 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
                           <td className="px-3 py-2 text-right text-amber-700 font-medium">{u.addsToList}</td>
                           <td className="px-3 py-2 text-right text-emerald-700 font-medium">{u.pushesToEstimate}</td>
                           <td className="px-3 py-2 text-right text-gray-700">{u.events}</td>
-                          <td className="px-3 py-2 text-right text-gray-500">{fmtTimeAgo(u.lastSeen)}</td>
+                          <td className="px-3 py-2 text-right text-gray-500">{fmtAbsTime(u.lastSeen)}</td>
                         </tr>
                       );
                     })}
@@ -1192,7 +1178,7 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
                             }}
                           >
                             <td className="px-3 py-2 text-gray-500 text-xs whitespace-nowrap">
-                              {fmtTimeAgo(e.createdAt)}
+                              {fmtAbsTime(e.createdAt)}
                             </td>
                             <td className="px-3 py-2 text-gray-700">
                               {e.employeeName || (e.employeeId ? `#${e.employeeId}` : "Unknown")}
