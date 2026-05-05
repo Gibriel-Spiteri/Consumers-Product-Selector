@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, Link } from "wouter";
 import { getSearchProductsQueryOptions } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
@@ -13,6 +13,7 @@ export default function SearchPage() {
   const q = decodeURIComponent(query || '');
   const [modalProduct, setModalProduct] = useState<Product | null>(null);
   const [view, setView] = useState<"list" | "grid">("grid");
+  const trackedQueryRef = useRef<string | null>(null);
 
   const { data: productsData, isLoading } = useQuery({
     ...getSearchProductsQueryOptions({ q }),
@@ -23,6 +24,8 @@ export default function SearchPage() {
 
   useEffect(() => {
     if (!q || isLoading) return;
+    if (trackedQueryRef.current === q) return;
+    trackedQueryRef.current = q;
     trackSearch(q, products.length);
   }, [q, isLoading, products.length]);
 
