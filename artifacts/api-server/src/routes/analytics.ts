@@ -8,7 +8,13 @@ import {
   type InsertAnalyticsEvent,
 } from "@workspace/db";
 import { logger } from "../lib/logger";
-import { executeSuiteQL, netsuiteRequest, isNetSuiteConfigured } from "../lib/netsuite";
+import { netsuiteRequest, isNetSuiteConfigured } from "../lib/netsuite";
+import {
+  getAdminEmployeeIds,
+  getEmployeeNames,
+  getEmployeeByNetsuiteId,
+  isAdminRecord,
+} from "../lib/employees";
 
 const router: IRouter = Router();
 
@@ -138,13 +144,6 @@ router.post("/analytics/event", async (req, res) => {
   }
 });
 
-interface NetSuiteEmployeeRow {
-  id: string;
-  giveaccess: string;
-  custentity_webstore_access: string;
-  custentity_webstore_admin: string;
-}
-
 async function requireAdmin(req: Request, res: Response, next: NextFunction) {
   const raw = req.headers["x-employee-id"];
   const headerStr = Array.isArray(raw) ? raw[0] : raw;
@@ -160,16 +159,8 @@ async function requireAdmin(req: Request, res: Response, next: NextFunction) {
   }
   const safeId = Math.trunc(numericId);
   try {
-    const result = await executeSuiteQL<NetSuiteEmployeeRow>(
-      `SELECT id, giveaccess, custentity_webstore_access, custentity_webstore_admin
-       FROM Employee WHERE id = ${safeId}`,
-    );
-    if (
-      result.items.length === 0 ||
-      result.items[0].giveaccess !== "T" ||
-      result.items[0].custentity_webstore_access !== "T" ||
-      result.items[0].custentity_webstore_admin !== "T"
-    ) {
+    const emp = await getEmployeeByNetsuiteId(safeId);
+    if (!isAdminRecord(emp)) {
       return res.status(403).json({ error: "Admin access required" });
     }
     next();
@@ -231,24 +222,11 @@ function rangeToWindow(range: unknown): { since: Date; until?: Date; label: stri
   return { since: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000), label: "7d" };
 }
 
-interface NetSuiteEmployeeName {
-  id: string;
-  firstname: string | null;
-  lastname: string | null;
-}
-
-interface NetSuiteAdminIdRow {
-  id: string;
-}
-
 async function fetchAdminEmployeeIds(): Promise<string[]> {
   try {
-    const result = await executeSuiteQL<NetSuiteAdminIdRow>(
-      `SELECT id FROM Employee WHERE custentity_webstore_admin = 'T'`,
-    );
-    return result.items.map((r) => String(r.id));
+    return await getAdminEmployeeIds();
   } catch (err) {
-    logger.warn({ err }, "Failed to fetch admin employee ids from NetSuite");
+    logger.warn({ err }, "Failed to fetch admin employee ids from DB");
     return [];
   }
 }
@@ -256,23 +234,12 @@ async function fetchAdminEmployeeIds(): Promise<string[]> {
 async function fetchEmployeeNames(
   ids: string[],
 ): Promise<Map<string, string>> {
-  const out = new Map<string, string>();
-  const numericIds = ids
-    .map((id) => Number(id))
-    .filter((n) => Number.isInteger(n));
-  if (numericIds.length === 0) return out;
   try {
-    const result = await executeSuiteQL<NetSuiteEmployeeName>(
-      `SELECT id, firstname, lastname FROM Employee WHERE id IN (${numericIds.join(",")})`,
-    );
-    for (const row of result.items) {
-      const fullName = `${row.firstname ?? ""} ${row.lastname ?? ""}`.trim();
-      if (fullName) out.set(String(row.id), fullName);
-    }
+    return await getEmployeeNames(ids);
   } catch (err) {
-    logger.warn({ err }, "Failed to fetch employee names from NetSuite");
+    logger.warn({ err }, "Failed to fetch employee names from DB");
+    return new Map<string, string>();
   }
-  return out;
 }
 
 router.get("/admin/analytics/summary", requireAdmin, async (req, res) => {

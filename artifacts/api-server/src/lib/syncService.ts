@@ -1,5 +1,5 @@
 import { db, appSettingsTable } from "@workspace/db";
-import { categoriesTable, productsTable, productAttributesTable, relatedItemsTable, productUserImagesTable } from "@workspace/db";
+import { categoriesTable, productsTable, productAttributesTable, relatedItemsTable, productUserImagesTable, employeesTable, productImagesTable } from "@workspace/db";
 import { eq, inArray, notInArray, sql } from "drizzle-orm";
 import { objectStorageClient } from "./objectStorage";
 import {
@@ -14,9 +14,12 @@ import {
   fetchThreeMonthSales,
   computeAtpDate,
   isNetSuiteConfigured,
+  fetchNetSuiteEmployees,
+  fetchAllItemImages,
   type NetSuiteCategory,
 } from "./netsuite";
 import { logger } from "./logger";
+import { hashPassword, verifyPassword } from "./password";
 
 export interface SyncResult {
   success: boolean;
@@ -123,6 +126,9 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
   const syncStart = Date.now();
   try {
     logger.info("Starting NetSuite sync");
+
+    await syncEmployees();
+
     setProgress("categories", 5, "Fetching categories from NetSuite…");
 
     const nsCategories = await fetchNetSuiteCategories();
@@ -235,19 +241,17 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
     const openPoReceipts = await fetchOpenPoEarliestReceipts();
     let twelveMonthSalesMap = new Map<string, number>();
     let threeMonthSalesMap = new Map<string, number>();
-    const [twelveResult, threeResult] = await Promise.allSettled([
-      fetchTwelveMonthSales(),
-      fetchThreeMonthSales(),
-    ]);
-    if (twelveResult.status === "fulfilled") {
-      twelveMonthSalesMap = twelveResult.value;
-    } else {
-      logger.error({ err: twelveResult.reason?.message }, "Failed to fetch 12-month sales aggregation; continuing without it");
+    // Run the two sales aggregations sequentially (not in parallel) to keep
+    // NetSuite concurrency down.
+    try {
+      twelveMonthSalesMap = await fetchTwelveMonthSales();
+    } catch (err) {
+      logger.error({ err: err instanceof Error ? err.message : err }, "Failed to fetch 12-month sales aggregation; continuing without it");
     }
-    if (threeResult.status === "fulfilled") {
-      threeMonthSalesMap = threeResult.value;
-    } else {
-      logger.error({ err: threeResult.reason?.message }, "Failed to fetch 3-month sales aggregation; continuing without it");
+    try {
+      threeMonthSalesMap = await fetchThreeMonthSales();
+    } catch (err) {
+      logger.error({ err: err instanceof Error ? err.message : err }, "Failed to fetch 3-month sales aggregation; continuing without it");
     }
     const allCandidateItems = await fetchNetSuiteItems();
     const atpToday = new Date();
@@ -360,6 +364,9 @@ export async function syncFromNetSuite(syncedBy: string = "Scheduled"): Promise<
     } catch (err) {
       logger.error({ err }, "User-image reconciliation failed (non-fatal)");
     }
+
+    setProgress("images", 83, "Syncing product images…");
+    await syncProductImages();
 
     setProgress("attributes", 84, "Fetching item attributes from NetSuite…");
     try {
@@ -542,5 +549,133 @@ async function reconcileUserUploadedImages(syncedNetsuiteIds: string[]): Promise
     { removed: supersededRows.length, gcsDeleted: supersededRows.length - failed, gcsFailed: failed },
     "Removed user-image rows superseded by NetSuite images"
   );
+}
+
+/**
+ * Sync employees granted system access into the local employees table so logins
+ * and authorization checks never call NetSuite at request time. Webstore
+ * passwords are hashed with scrypt on ingest (plaintext is never stored); an
+ * unchanged password reuses the existing hash to avoid needless rehashing.
+ * Employees no longer returned (access revoked) are removed. Non-fatal: a
+ * failure logs and keeps the previously-synced rows.
+ */
+async function syncEmployees(): Promise<void> {
+  try {
+    const nsEmployees = await fetchNetSuiteEmployees();
+    logger.info({ count: nsEmployees.length }, "Fetched employees from NetSuite");
+
+    if (nsEmployees.length === 0) {
+      logger.warn("No employees returned from NetSuite; keeping existing employees");
+      return;
+    }
+
+    const existing = await db
+      .select({ netsuiteId: employeesTable.netsuiteId, passwordHash: employeesTable.passwordHash })
+      .from(employeesTable);
+    const existingHashByNsId = new Map<string, string | null>();
+    for (const e of existing) existingHashByNsId.set(e.netsuiteId, e.passwordHash);
+
+    const employeeRows: Array<typeof employeesTable.$inferInsert> = [];
+    for (const emp of nsEmployees) {
+      const plain = emp.webstorepassword ?? "";
+      let passwordHash: string | null = null;
+      if (plain) {
+        const priorHash = existingHashByNsId.get(String(emp.id)) ?? null;
+        passwordHash =
+          priorHash && (await verifyPassword(plain, priorHash))
+            ? priorHash
+            : await hashPassword(plain);
+      }
+      employeeRows.push({
+        netsuiteId: String(emp.id),
+        entityId: emp.entityid ?? null,
+        email: emp.email ?? null,
+        firstName: emp.firstname ?? null,
+        lastName: emp.lastname ?? null,
+        giveAccess: emp.giveaccess === "T",
+        webstoreAccess: emp.webstoreaccess === "T",
+        webstoreAdmin: emp.webstoreadmin === "T",
+        passwordHash,
+        locationId: emp.location ?? null,
+        locationName: emp.locationname ?? null,
+      });
+    }
+
+    const EMP_BATCH = 200;
+    for (let i = 0; i < employeeRows.length; i += EMP_BATCH) {
+      const batch = employeeRows.slice(i, i + EMP_BATCH);
+      await db
+        .insert(employeesTable)
+        .values(batch)
+        .onConflictDoUpdate({
+          target: employeesTable.netsuiteId,
+          set: {
+            entityId: sql`excluded.entity_id`,
+            email: sql`excluded.email`,
+            firstName: sql`excluded.first_name`,
+            lastName: sql`excluded.last_name`,
+            giveAccess: sql`excluded.give_access`,
+            webstoreAccess: sql`excluded.webstore_access`,
+            webstoreAdmin: sql`excluded.webstore_admin`,
+            passwordHash: sql`excluded.password_hash`,
+            locationId: sql`excluded.location_id`,
+            locationName: sql`excluded.location_name`,
+            updatedAt: new Date(),
+          },
+        });
+    }
+
+    const syncedEmployeeIds = employeeRows.map((r) => r.netsuiteId);
+    const deleted = await db
+      .delete(employeesTable)
+      .where(notInArray(employeesTable.netsuiteId, syncedEmployeeIds));
+    logger.info(
+      { synced: employeeRows.length, removed: deleted.rowCount ?? 0 },
+      "Synced employees"
+    );
+  } catch (err) {
+    logger.error({ err }, "Employee sync failed (non-fatal); keeping existing employees");
+  }
+}
+
+/**
+ * Replace the local product_images table with the full set of item images from
+ * NetSuite so per-product image lookups never hit NetSuite at request time.
+ * Rows arrive ordered per item, so a stable 0-based sortOrder is assigned per
+ * product. Guarded: an empty/failed fetch keeps the previously-synced images.
+ */
+async function syncProductImages(): Promise<void> {
+  try {
+    const nsImages = await fetchAllItemImages();
+    logger.info({ count: nsImages.length }, "Fetched product images from NetSuite");
+
+    if (nsImages.length === 0) {
+      logger.warn("No product images returned from NetSuite; keeping existing product_images");
+      return;
+    }
+
+    const seqByProduct = new Map<string, number>();
+    const imageRows = nsImages.map((img) => {
+      const seq = seqByProduct.get(img.productNetsuiteId) ?? 0;
+      seqByProduct.set(img.productNetsuiteId, seq + 1);
+      return {
+        productNetsuiteId: img.productNetsuiteId,
+        url: img.url,
+        displayOrder: img.displayOrder,
+        sortOrder: seq,
+      };
+    });
+
+    await db.transaction(async (tx) => {
+      await tx.delete(productImagesTable);
+      const IMG_BATCH = 500;
+      for (let i = 0; i < imageRows.length; i += IMG_BATCH) {
+        await tx.insert(productImagesTable).values(imageRows.slice(i, i + IMG_BATCH));
+      }
+    });
+    logger.info({ count: imageRows.length }, "Synced product images");
+  } catch (err) {
+    logger.error({ err }, "Product image sync failed (non-fatal); keeping existing product_images");
+  }
 }
 

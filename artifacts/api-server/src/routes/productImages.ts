@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { db, productsTable, productUserImagesTable } from "@workspace/db";
 import { ObjectStorageService, objectStorageClient } from "../lib/objectStorage";
 import { logger } from "../lib/logger";
-import { executeSuiteQL } from "../lib/netsuite";
+import { getEmployeeByNetsuiteId } from "../lib/employees";
 import { requireAdmin, requireEmployee } from "./admin";
 import { DISPLAYS_FOR_SALE_CATEGORY_ID, objectKeyToUrl } from "../lib/userImages";
 
@@ -18,13 +18,10 @@ const ALLOWED_CONTENT_TYPE = "image/png";
 
 async function fetchEmployeeName(employeeId: string): Promise<string | null> {
   try {
-    const result = await executeSuiteQL<{ entityid: string; firstname?: string; lastname?: string }>(
-      `SELECT entityid, firstname, lastname FROM Employee WHERE id = ${Number(employeeId)}`
-    );
-    if (result.items.length === 0) return null;
-    const r = result.items[0];
-    const composed = [r.firstname, r.lastname].filter(Boolean).join(" ").trim();
-    return composed || r.entityid || null;
+    const emp = await getEmployeeByNetsuiteId(employeeId);
+    if (!emp) return null;
+    const composed = [emp.firstName, emp.lastName].filter(Boolean).join(" ").trim();
+    return composed || emp.entityId || null;
   } catch (err) {
     logger.warn({ err, employeeId }, "Failed to fetch employee name");
     return null;

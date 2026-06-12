@@ -5,3 +5,5 @@ export * from "./related-items";
 export * from "./app-settings";
 export * from "./analytics";
 export * from "./product-user-images";
+export * from "./employees";
+export * from "./product-images";

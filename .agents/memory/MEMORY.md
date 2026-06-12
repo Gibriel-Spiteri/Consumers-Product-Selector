@@ -1,0 +1,1 @@
+- [api-server typecheck & @workspace/db dist](db-typecheck-dist.md) — rebuild `tsc -b lib/db` after schema export changes or typecheck reports "no exported member"; baseline typecheck is dirty (pre-existing TS7030 etc.), esbuild build ignores it.

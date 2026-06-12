@@ -1,6 +1,10 @@
 import { Router, type IRouter } from "express";
-import { executeSuiteQL } from "../lib/netsuite";
 import { logger } from "../lib/logger";
+import {
+  getEmployeeByEmail,
+  getEmployeeByNetsuiteId,
+} from "../lib/employees";
+import { verifyPassword } from "../lib/password";
 
 const router: IRouter = Router();
 
@@ -15,69 +19,48 @@ router.post("/auth/login", async (req, res) => {
       .json({ error: "Login must be performed over HTTPS" });
   }
 
-  const { email, password } = req.body;
+  const { email, password } = req.body ?? {};
 
   if (!email || !password) {
     return res.status(400).json({ error: "Email and password are required" });
   }
 
   try {
-    const result = await executeSuiteQL<{
-      id: string;
-      entityid: string;
-      email: string;
-      firstname: string;
-      lastname: string;
-      giveaccess: string;
-      custentity_webstorepassword: string;
-      custentity_webstore_access: string;
-      custentity_webstore_admin: string;
-      location: string | null;
-      locationname: string | null;
-    }>(
-      `SELECT
-        id, entityid, email, firstname, lastname,
-        giveaccess, custentity_webstorepassword, custentity_webstore_access,
-        custentity_webstore_admin,
-        location, BUILTIN.DF(location) AS locationname
-      FROM Employee
-      WHERE LOWER(email) = LOWER('${email.replace(/'/g, "''")}')`
-    );
+    const emp = await getEmployeeByEmail(String(email));
 
-    if (result.items.length === 0) {
+    if (!emp) {
       logger.info({ email }, "Login failed: employee not found");
       return res.status(401).json({ error: "Invalid email or password" });
     }
 
-    const emp = result.items[0];
-
-    if (emp.giveaccess !== "T") {
+    if (!emp.giveAccess) {
       logger.info({ email }, "Login failed: no system access");
       return res.status(403).json({ error: "Your account does not have system access" });
     }
 
-    if (emp.custentity_webstore_access !== "T") {
+    if (!emp.webstoreAccess) {
       logger.info({ email }, "Login failed: no webstore access");
       return res.status(403).json({ error: "Your account is not authorized to access the Product Selector" });
     }
 
-    if (emp.custentity_webstorepassword !== password) {
+    const passwordOk = await verifyPassword(String(password), emp.passwordHash);
+    if (!passwordOk) {
       logger.info({ email }, "Login failed: wrong password");
       return res.status(401).json({ error: "Invalid email or password" });
     }
 
-    logger.info({ email, employeeId: emp.id }, "Employee logged in");
+    logger.info({ email, employeeId: emp.netsuiteId }, "Employee logged in");
 
     res.json({
       employee: {
-        id: emp.id,
-        entityId: emp.entityid,
+        id: emp.netsuiteId,
+        entityId: emp.entityId,
         email: emp.email,
-        firstName: emp.firstname,
-        lastName: emp.lastname,
-        isAdmin: emp.custentity_webstore_admin === "T",
-        locationId: emp.location ?? null,
-        locationName: emp.locationname ?? null,
+        firstName: emp.firstName,
+        lastName: emp.lastName,
+        isAdmin: emp.webstoreAdmin,
+        locationId: emp.locationId ?? null,
+        locationName: emp.locationName ?? null,
       },
     });
   } catch (err: any) {
@@ -87,49 +70,33 @@ router.post("/auth/login", async (req, res) => {
 });
 
 router.post("/auth/verify", async (req, res) => {
-  const { employeeId } = req.body;
+  const { employeeId } = req.body ?? {};
 
   if (!employeeId) {
     return res.status(400).json({ valid: false });
   }
 
   try {
-    const result = await executeSuiteQL<{
-      id: string;
-      custentity_webstore_access: string;
-      custentity_webstore_admin: string;
-      giveaccess: string;
-      firstname: string;
-      lastname: string;
-      email: string;
-      entityid: string;
-      location: string | null;
-      locationname: string | null;
-    }>(
-      `SELECT id, custentity_webstore_access, custentity_webstore_admin, giveaccess, firstname, lastname, email, entityid,
-              location, BUILTIN.DF(location) AS locationname
-       FROM Employee WHERE id = ${Number(employeeId)}`
-    );
+    const emp = await getEmployeeByNetsuiteId(String(employeeId));
 
-    if (result.items.length === 0) {
+    if (!emp) {
       return res.json({ valid: false });
     }
 
-    const emp = result.items[0];
-    const valid = emp.giveaccess === "T" && emp.custentity_webstore_access === "T";
+    const valid = emp.giveAccess && emp.webstoreAccess;
 
     res.json({
       valid,
       employee: valid
         ? {
-            id: emp.id,
-            entityId: emp.entityid,
+            id: emp.netsuiteId,
+            entityId: emp.entityId,
             email: emp.email,
-            firstName: emp.firstname,
-            lastName: emp.lastname,
-            isAdmin: emp.custentity_webstore_admin === "T",
-            locationId: emp.location ?? null,
-            locationName: emp.locationname ?? null,
+            firstName: emp.firstName,
+            lastName: emp.lastName,
+            isAdmin: emp.webstoreAdmin,
+            locationId: emp.locationId ?? null,
+            locationName: emp.locationName ?? null,
           }
         : undefined,
     });

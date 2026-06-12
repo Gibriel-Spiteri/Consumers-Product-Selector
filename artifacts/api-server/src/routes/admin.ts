@@ -5,7 +5,11 @@ import fs from "fs";
 import { eq } from "drizzle-orm";
 import { db, appSettingsTable } from "@workspace/db";
 import { logger } from "../lib/logger";
-import { executeSuiteQL } from "../lib/netsuite";
+import {
+  getEmployeeByNetsuiteId,
+  hasEmployeeAccess,
+  isAdminRecord,
+} from "../lib/employees";
 
 const router: IRouter = Router();
 
@@ -51,19 +55,8 @@ export async function requireEmployee(req: Request, res: Response, next: NextFun
   }
   const employeeId = candidate;
   try {
-    const result = await executeSuiteQL<{
-      id: string;
-      giveaccess: string;
-      custentity_webstore_access: string;
-    }>(
-      `SELECT id, giveaccess, custentity_webstore_access
-       FROM Employee WHERE id = ${Number(employeeId)}`
-    );
-    if (
-      result.items.length === 0 ||
-      result.items[0].giveaccess !== "T" ||
-      result.items[0].custentity_webstore_access !== "T"
-    ) {
+    const emp = await getEmployeeByNetsuiteId(employeeId);
+    if (!hasEmployeeAccess(emp)) {
       return res.status(403).json({ error: "Employee access required" });
     }
     next();
@@ -72,32 +65,11 @@ export async function requireEmployee(req: Request, res: Response, next: NextFun
   }
 }
 
-const ADMIN_CACHE_TTL_MS = 5 * 60 * 1000;
-const adminCache = new Map<string, { isAdmin: boolean; expires: number }>();
-
 export async function isAdminEmployee(employeeId: string | undefined | null): Promise<boolean> {
   if (!employeeId || !/^-?\d+$/.test(String(employeeId))) return false;
-  const key = String(employeeId);
-  const now = Date.now();
-  const cached = adminCache.get(key);
-  if (cached && cached.expires > now) return cached.isAdmin;
   try {
-    const result = await executeSuiteQL<{
-      id: string;
-      giveaccess: string;
-      custentity_webstore_access: string;
-      custentity_webstore_admin: string;
-    }>(
-      `SELECT id, giveaccess, custentity_webstore_access, custentity_webstore_admin
-       FROM Employee WHERE id = ${Number(employeeId)}`
-    );
-    const isAdmin =
-      result.items.length > 0 &&
-      result.items[0].giveaccess === "T" &&
-      result.items[0].custentity_webstore_access === "T" &&
-      result.items[0].custentity_webstore_admin === "T";
-    adminCache.set(key, { isAdmin, expires: now + ADMIN_CACHE_TTL_MS });
-    return isAdmin;
+    const emp = await getEmployeeByNetsuiteId(employeeId);
+    return isAdminRecord(emp);
   } catch {
     return false;
   }

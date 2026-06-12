@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import jwt from "jsonwebtoken";
 import { logger } from "./logger";
+import { Semaphore } from "./concurrency";
 
 const NETSUITE_ACCOUNT_ID = process.env.NETSUITE_ACCOUNT_ID || "";
 const CLIENT_ID = process.env.NETSUITE_CLIENT_ID || "";
@@ -12,6 +13,22 @@ const CERTIFICATE_ID =
 const PRIVATE_KEY_PATH = path.resolve("certs/private_key.pem");
 
 let cachedToken: { accessToken: string; expiresAt: number } | null = null;
+
+// Global limiter for ALL outbound NetSuite HTTP calls. NetSuite enforces an
+// account-wide concurrency limit (shared across integrations), so every
+// SuiteQL/REST request funnels through this single semaphore. Token requests
+// are intentionally exempt (see getAccessToken) to avoid a deadlock where
+// queued requests hold every slot while waiting for a token that itself needs
+// a slot. Tune via NETSUITE_MAX_CONCURRENCY.
+const NETSUITE_MAX_CONCURRENCY = Math.max(
+  1,
+  Number(process.env.NETSUITE_MAX_CONCURRENCY) || 3
+);
+const netsuiteSemaphore = new Semaphore(NETSUITE_MAX_CONCURRENCY);
+
+// Single-flight guard: dedupes concurrent token refreshes so a burst of
+// requests triggers only one token round-trip instead of many.
+let tokenRefreshPromise: Promise<string> | null = null;
 
 function extractAccountId(): string {
   let raw = NETSUITE_ACCOUNT_ID.trim();
@@ -109,50 +126,65 @@ export async function getAccessToken(): Promise<string> {
     return cachedToken.accessToken;
   }
 
-  const tokenEndpoint = getTokenEndpoint();
-  const clientAssertion = createClientAssertion();
-
-  logger.info({ tokenEndpoint }, "Requesting OAuth2 M2M token from NetSuite");
-
-  const body = new URLSearchParams({
-    grant_type: "client_credentials",
-    client_assertion_type:
-      "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
-    client_assertion: clientAssertion,
-  });
-
-  const response = await fetch(tokenEndpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: body.toString(),
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    logger.error(
-      { status: response.status, body: errorBody },
-      "NetSuite M2M token request failed"
-    );
-    throw new Error(
-      `Failed to obtain access token (${response.status}): ${errorBody}`
-    );
+  // If a refresh is already underway, await it instead of starting a second
+  // token round-trip. Token requests are deliberately NOT routed through the
+  // request semaphore to avoid deadlocking against queued data requests.
+  if (tokenRefreshPromise) {
+    return tokenRefreshPromise;
   }
 
-  const data = (await response.json()) as {
-    access_token: string;
-    expires_in: number;
-    token_type: string;
-  };
+  tokenRefreshPromise = (async () => {
+    const tokenEndpoint = getTokenEndpoint();
+    const clientAssertion = createClientAssertion();
 
-  cachedToken = {
-    accessToken: data.access_token,
-    expiresAt: Date.now() + (data.expires_in || 3600) * 1000,
-  };
+    logger.info({ tokenEndpoint }, "Requesting OAuth2 M2M token from NetSuite");
 
-  logger.info("Successfully obtained NetSuite OAuth2 M2M access token");
-  return cachedToken.accessToken;
+    const body = new URLSearchParams({
+      grant_type: "client_credentials",
+      client_assertion_type:
+        "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+      client_assertion: clientAssertion,
+    });
+
+    const response = await fetch(tokenEndpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: body.toString(),
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      logger.error(
+        { status: response.status, body: errorBody },
+        "NetSuite M2M token request failed"
+      );
+      throw new Error(
+        `Failed to obtain access token (${response.status}): ${errorBody}`
+      );
+    }
+
+    const data = (await response.json()) as {
+      access_token: string;
+      expires_in: number;
+      token_type: string;
+    };
+
+    cachedToken = {
+      accessToken: data.access_token,
+      expiresAt: Date.now() + (data.expires_in || 3600) * 1000,
+    };
+
+    logger.info("Successfully obtained NetSuite OAuth2 M2M access token");
+    return cachedToken.accessToken;
+  })();
+
+  try {
+    return await tokenRefreshPromise;
+  } finally {
+    tokenRefreshPromise = null;
+  }
 }
 
 export function validateNetSuiteConfig(): { valid: boolean; missing: string[] } {
@@ -193,15 +225,17 @@ export async function netsuiteRequest<T>(
   const baseUrl = `${getBaseUrl()}/services/rest/record/v1`;
   const url = `${baseUrl}${urlPath}`;
 
-  const response = await fetch(url, {
-    method,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      prefer: "transient",
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  const response = await netsuiteSemaphore.run(() =>
+    fetch(url, {
+      method,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        prefer: "transient",
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    })
+  );
 
   if (!response.ok) {
     const text = await response.text();
@@ -237,15 +271,17 @@ export async function netsuiteCreate(
   const baseUrl = `${getBaseUrl()}/services/rest/record/v1`;
   const url = `${baseUrl}${urlPath}`;
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      prefer: "transient",
-    },
-    body: JSON.stringify(body),
-  });
+  const response = await netsuiteSemaphore.run(() =>
+    fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        prefer: "transient",
+      },
+      body: JSON.stringify(body),
+    })
+  );
 
   if (!response.ok) {
     const text = await response.text();
@@ -259,9 +295,6 @@ export async function netsuiteCreate(
   return match?.[1] ?? null;
 }
 
-const itemImagesCache = new Map<string, { at: number; urls: string[] }>();
-const ITEM_IMAGES_TTL_MS = 5 * 60 * 1000;
-
 // Encode a URL stored with literal spaces (as NetSuite stores them in the
 // customrecord_itemimg.url field) so it works in <img src>. Already-encoded
 // URLs (containing %20) are left alone.
@@ -271,63 +304,51 @@ function encodeImageUrl(raw: string): string {
   return raw.trim().replace(/ /g, "%20");
 }
 
+export interface NetSuiteItemImage {
+  productNetsuiteId: string;
+  url: string;
+  displayOrder: number | null;
+}
+
 /**
- * Fetch additional item images for an item from the NetSuite custom record
- * `customrecord_itemimg` (Item Attributes -> Item Image sublist on the item
- * record). Returns image URLs ordered by display order then record id.
+ * Bulk-fetch ALL active item images from the NetSuite custom record
+ * `customrecord_itemimg` in one paginated SuiteQL query. Used by the sync
+ * pipeline to populate the local product_images table so per-product image
+ * lookups never hit NetSuite at request time.
  *
- * If the item has no records, falls back to the provided base image URL.
+ * Rows come ordered by item, then display order, then record id, so a stable
+ * per-product sequence can be assigned downstream. Throws on failure so the
+ * caller can choose to keep the previously-synced images instead of wiping them.
  */
-export async function fetchItemImages(
-  netsuiteId: string | null,
-  fallbackImageUrl: string | null = null,
-): Promise<string[]> {
-  if (!netsuiteId) return fallbackImageUrl ? [fallbackImageUrl] : [];
+export async function fetchAllItemImages(): Promise<NetSuiteItemImage[]> {
+  const result = await executeSuiteQL<{
+    itemid: string | null;
+    id: string;
+    url: string | null;
+    displayorder: string | null;
+  }>(
+    `SELECT custrecord_itemimg_item AS itemid,
+            id,
+            custrecord_itemimg_url AS url,
+            custrecord_itemimg_displayorder AS displayorder
+     FROM customrecord_itemimg
+     WHERE isinactive = 'F' AND custrecord_itemimg_item IS NOT NULL
+     ORDER BY custrecord_itemimg_item,
+              NVL(TO_NUMBER(custrecord_itemimg_displayorder), 9999),
+              TO_NUMBER(id)`
+  );
 
-  const cached = itemImagesCache.get(netsuiteId);
-  if (cached && Date.now() - cached.at < ITEM_IMAGES_TTL_MS) {
-    return cached.urls.length ? cached.urls : (fallbackImageUrl ? [fallbackImageUrl] : []);
+  const out: NetSuiteItemImage[] = [];
+  for (const row of result.items) {
+    if (!row.itemid || !row.url) continue;
+    out.push({
+      productNetsuiteId: String(row.itemid),
+      url: encodeImageUrl(row.url),
+      displayOrder: row.displayorder != null ? Number(row.displayorder) : null,
+    });
   }
-
-  const safeId = netsuiteId.replace(/[^0-9]/g, "");
-  if (!safeId) return fallbackImageUrl ? [fallbackImageUrl] : [];
-
-  const urls: string[] = [];
-  let querySucceeded = false;
-  try {
-    const result = await executeSuiteQL<{
-      id: string;
-      custrecord_itemimg_url: string | null;
-      custrecord_itemimg_displayorder: string | null;
-    }>(
-      `SELECT id, custrecord_itemimg_url, custrecord_itemimg_displayorder
-       FROM customrecord_itemimg
-       WHERE custrecord_itemimg_item = ${safeId}
-         AND isinactive = 'F'
-       ORDER BY NVL(TO_NUMBER(custrecord_itemimg_displayorder), 9999), TO_NUMBER(id)`
-    );
-    querySucceeded = true;
-    const seen = new Set<string>();
-    for (const row of result.items) {
-      const raw = row.custrecord_itemimg_url;
-      if (!raw) continue;
-      const encoded = encodeImageUrl(raw);
-      if (seen.has(encoded)) continue;
-      seen.add(encoded);
-      urls.push(encoded);
-    }
-  } catch (err: any) {
-    logger.error({ netsuiteId, err: err.message }, "Failed to fetch item images from NetSuite");
-  }
-
-  // Only cache successful queries so transient SuiteQL failures don't
-  // suppress images for the full TTL window.
-  if (querySucceeded) {
-    itemImagesCache.set(netsuiteId, { at: Date.now(), urls });
-  }
-
-  if (urls.length === 0 && fallbackImageUrl) return [fallbackImageUrl];
-  return urls;
+  logger.info({ count: out.length }, "Fetched item images from NetSuite");
+  return out;
 }
 
 const SUITEQL_PAGE_SIZE = 1000;
@@ -343,15 +364,17 @@ export async function executeSuiteQL<T = any>(
     const token = await getAccessToken();
     const url = `${getBaseUrl()}/services/rest/query/v1/suiteql?limit=${SUITEQL_PAGE_SIZE}&offset=${offset}`;
 
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-        prefer: "transient",
-      },
-      body: JSON.stringify({ q: baseQuery }),
-    });
+    const response = await netsuiteSemaphore.run(() =>
+      fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          prefer: "transient",
+        },
+        body: JSON.stringify({ q: baseQuery }),
+      })
+    );
 
     if (!response.ok) {
       const text = await response.text();
@@ -681,10 +704,21 @@ export async function fetchNetSuiteItems(): Promise<NetSuiteItem[]> {
     logger.warn({ err }, "Failed to fetch kit items, continuing with inventory items only");
   }
 
-  const allItems = [
-    ...inventoryResult.items.map(mapItemRow),
-    ...kitItems.map(mapItemRow),
-  ];
+  const mappedInventory = inventoryResult.items.map(mapItemRow);
+  const mappedKits = kitItems.map(mapItemRow);
+
+  // Kit quantityAvailable is not stored on the KitItem record (the SuiteQL
+  // above returns NULL), so compute it from member availability and persist it
+  // during sync. This means kit stock never needs a live NetSuite lookup at
+  // request time.
+  if (mappedKits.length > 0) {
+    const kitInventory = await fetchAllKitInventory();
+    for (const kit of mappedKits) {
+      kit.quantityAvailable = kitInventory.get(kit.id) ?? 0;
+    }
+  }
+
+  const allItems = [...mappedInventory, ...mappedKits];
 
   logger.info({ inventory: inventoryResult.items.length, kits: kitItems.length, total: allItems.length }, "Fetched items from NetSuite");
 
@@ -943,51 +977,17 @@ export async function fetchItemBins(): Promise<Map<string, string>> {
   return binMap;
 }
 
-export async function fetchLiveInventory(
-  netsuiteIds: string[]
-): Promise<Map<string, number>> {
-  const inventoryMap = new Map<string, number>();
-  if (netsuiteIds.length === 0 || !isNetSuiteConfigured()) return inventoryMap;
-
-  try {
-    const idList = netsuiteIds.map((id) => `'${id}'`).join(",");
-
-    const invResult = await executeSuiteQL<{
-      id: string;
-      quantityavailable: string | null;
-    }>(
-      `SELECT id, quantityavailable FROM InventoryItem WHERE id IN (${idList})`
-    );
-
-    for (const row of invResult.items) {
-      inventoryMap.set(
-        String(row.id),
-        row.quantityavailable != null ? Number(row.quantityavailable) : 0
-      );
-    }
-
-    const missingIds = netsuiteIds.filter((id) => !inventoryMap.has(id));
-    if (missingIds.length > 0) {
-      const kitInventory = await fetchKitInventoryFromSearch(missingIds);
-      for (const [id, qty] of kitInventory) {
-        inventoryMap.set(id, qty);
-      }
-    }
-  } catch (err) {
-    logger.warn({ err }, "Live inventory lookup failed, falling back to cached data");
-  }
-
-  return inventoryMap;
-}
-
-async function fetchKitInventoryFromSearch(
-  netsuiteIds: string[]
-): Promise<Map<string, number>> {
+/**
+ * Computes available quantity for every kit item from its members. A kit's
+ * availability is the minimum over its members of
+ * floor(memberAvailable / memberQty). Runs as a single paginated SuiteQL query
+ * across ALL kit members (no id filter) so the sync can persist kit stock into
+ * the products table and serve it from the DB at request time.
+ */
+export async function fetchAllKitInventory(): Promise<Map<string, number>> {
   const kitMap = new Map<string, number>();
 
   try {
-    const idList = netsuiteIds.map((id) => `'${id}'`).join(",");
-
     const memberResult = await executeSuiteQL<{
       kitid: string;
       memberid: string;
@@ -1000,11 +1000,8 @@ async function fetchKitInventoryFromSearch(
         km.quantity,
         inv.quantityavailable AS memberqtyavailable
       FROM KitItemMember km
-      JOIN InventoryItem inv ON inv.id = km.item
-      WHERE km.parentitem IN (${idList})`
+      JOIN InventoryItem inv ON inv.id = km.item`
     );
-
-    logger.info({ rows: memberResult.items.length, sample: memberResult.items.slice(0, 5) }, "KitItemMember inventory query result");
 
     const kitMembers = new Map<string, Array<{ memberQty: number; available: number }>>();
     for (const row of memberResult.items) {
@@ -1029,14 +1026,45 @@ async function fetchKitInventoryFromSearch(
       kitMap.set(kitId, Math.max(0, kitAvailable));
     }
 
-    for (const id of netsuiteIds) {
-      if (!kitMap.has(id)) {
-        kitMap.set(id, 0);
-      }
-    }
+    logger.info({ count: kitMap.size }, "Computed kit inventory from NetSuite");
   } catch (err) {
-    logger.warn({ err }, "Kit inventory lookup failed");
+    logger.warn({ err }, "Kit inventory aggregation failed");
   }
 
   return kitMap;
+}
+
+export interface NetSuiteEmployee {
+  id: string;
+  entityid: string | null;
+  email: string | null;
+  firstname: string | null;
+  lastname: string | null;
+  giveaccess: string | null;
+  webstorepassword: string | null;
+  webstoreaccess: string | null;
+  webstoreadmin: string | null;
+  location: string | null;
+  locationname: string | null;
+}
+
+/**
+ * Fetch all employees granted system access. Includes the webstore password and
+ * webstore access flags so the sync can hash + store them locally; logins and
+ * authorization checks then read from the employees table without ever calling
+ * NetSuite. Throws on failure so the caller can keep previously-synced rows.
+ */
+export async function fetchNetSuiteEmployees(): Promise<NetSuiteEmployee[]> {
+  const result = await executeSuiteQL<NetSuiteEmployee>(
+    `SELECT id, entityid, email, firstname, lastname,
+            giveaccess,
+            custentity_webstorepassword AS webstorepassword,
+            custentity_webstore_access AS webstoreaccess,
+            custentity_webstore_admin AS webstoreadmin,
+            location,
+            BUILTIN.DF(location) AS locationname
+     FROM Employee
+     WHERE giveaccess = 'T'`
+  );
+  return result.items;
 }
