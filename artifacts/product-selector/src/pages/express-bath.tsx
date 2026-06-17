@@ -19,6 +19,8 @@ interface Product {
   categoryName?: string | null;
   categoryParentId?: number | null;
   categoryParentName?: string | null;
+  secondLevelCategoryId?: number | null;
+  secondLevelCategoryName?: string | null;
   netsuiteId?: string | null;
   imageUrl?: string | null;
   fullImageUrl?: string | null;
@@ -312,12 +314,12 @@ export default function ExpressBathPage() {
   const categoryChips = useMemo(() => {
     const map = new Map<number, { id: number; name: string; count: number }>();
     for (const p of products) {
-      if (p.categoryId != null && p.categoryName) {
-        const existing = map.get(p.categoryId);
+      if (p.secondLevelCategoryId != null && p.secondLevelCategoryName) {
+        const existing = map.get(p.secondLevelCategoryId);
         if (existing) {
           existing.count++;
         } else {
-          map.set(p.categoryId, { id: p.categoryId, name: p.categoryName, count: 1 });
+          map.set(p.secondLevelCategoryId, { id: p.secondLevelCategoryId, name: p.secondLevelCategoryName, count: 1 });
         }
       }
     }
@@ -325,7 +327,7 @@ export default function ExpressBathPage() {
   }, [products]);
 
   let filtered = products;
-  if (activeCategoryId) filtered = filtered.filter(p => p.categoryId === activeCategoryId);
+  if (activeCategoryId) filtered = filtered.filter(p => p.secondLevelCategoryId === activeCategoryId);
   if (inStockOnly) filtered = filtered.filter(p => (p.quantityAvailable ?? 0) >= 1);
   if (refineQuery.trim()) {
     const q = refineQuery.trim().toLowerCase();

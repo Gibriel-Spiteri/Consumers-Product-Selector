@@ -514,27 +514,24 @@ router.get("/products/express-bath", async (_req, res) => {
 
   const userImages = await fetchUserImageMap(products);
 
-  const categoryIds = [...new Set(products.map(p => p.categoryId).filter((id): id is number => id != null))];
-  const categoryRows = categoryIds.length > 0
-    ? await db.select({ id: categoriesTable.id, name: categoriesTable.name, parentId: categoriesTable.parentId }).from(categoriesTable).where(inArray(categoriesTable.id, categoryIds))
-    : [];
+  const allCategoryRows = await db.select({ id: categoriesTable.id, name: categoriesTable.name, level: categoriesTable.level, parentId: categoriesTable.parentId }).from(categoriesTable);
+  const catMap = new Map(allCategoryRows.map(c => [c.id, c]));
 
-  const parentIds = [...new Set(categoryRows.map(c => c.parentId).filter((id): id is number => id != null))];
-  const parentRows = parentIds.length > 0
-    ? await db.select({ id: categoriesTable.id, name: categoriesTable.name }).from(categoriesTable).where(inArray(categoriesTable.id, parentIds))
-    : [];
-  const parentMap = new Map(parentRows.map(p => [p.id, p.name]));
-
-  const catToParent = new Map<number, { parentId: number; parentName: string }>();
-  for (const c of categoryRows) {
-    if (c.parentId && parentMap.has(c.parentId)) {
-      catToParent.set(c.id, { parentId: c.parentId, parentName: parentMap.get(c.parentId)! });
+  function getLevel2Ancestor(catId: number | null): { id: number; name: string } | null {
+    if (!catId) return null;
+    let cat = catMap.get(catId);
+    while (cat) {
+      if (cat.level === 2) return { id: cat.id, name: cat.name };
+      if (!cat.parentId) return null;
+      cat = catMap.get(cat.parentId);
     }
+    return null;
   }
-  const catIdToName = new Map(categoryRows.map(c => [c.id, c.name]));
 
   const mapped = products.map((p) => {
-    const parent = p.categoryId ? catToParent.get(p.categoryId) : undefined;
+    const leafCat = p.categoryId ? catMap.get(p.categoryId) : undefined;
+    const parentCat = leafCat?.parentId ? catMap.get(leafCat.parentId) : undefined;
+    const lv2 = getLevel2Ancestor(p.categoryId ?? null);
     const { imageUrl, imageSource } = resolveImage(p, userImages);
     return {
       id: p.id,
@@ -544,9 +541,11 @@ router.get("/products/express-bath", async (_req, res) => {
       retailPrice: p.retailPrice ? parseFloat(p.retailPrice) : null,
       consumersPrice: p.consumersPrice ? parseFloat(p.consumersPrice) : null,
       categoryId: p.categoryId ?? null,
-      categoryName: p.categoryId ? (catIdToName.get(p.categoryId) ?? null) : null,
-      categoryParentId: parent?.parentId ?? null,
-      categoryParentName: parent?.parentName ?? null,
+      categoryName: leafCat?.name ?? null,
+      categoryParentId: parentCat?.id ?? null,
+      categoryParentName: parentCat?.name ?? null,
+      secondLevelCategoryId: lv2?.id ?? null,
+      secondLevelCategoryName: lv2?.name ?? null,
       netsuiteId: p.netsuiteId ?? null,
       imageUrl,
       fullImageUrl: imageSource === "user" ? imageUrl : (p.fullImageUrl ?? null),
