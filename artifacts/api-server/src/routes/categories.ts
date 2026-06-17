@@ -453,26 +453,22 @@ router.get("/products/clearance", async (_req, res) => {
 
   const userImages = await fetchUserImageMap(products);
 
-  const categoryIds = [...new Set(products.map(p => p.categoryId).filter((id): id is number => id != null))];
-  const categoryRows = categoryIds.length > 0
-    ? await db.select({ id: categoriesTable.id, name: categoriesTable.name, parentId: categoriesTable.parentId }).from(categoriesTable).where(inArray(categoriesTable.id, categoryIds))
-    : [];
+  const allClearanceCatRows = await db.select({ id: categoriesTable.id, name: categoriesTable.name, level: categoriesTable.level, parentId: categoriesTable.parentId }).from(categoriesTable);
+  const clearanceCatMap = new Map(allClearanceCatRows.map(c => [c.id, c]));
 
-  const parentIds = [...new Set(categoryRows.map(c => c.parentId).filter((id): id is number => id != null))];
-  const parentRows = parentIds.length > 0
-    ? await db.select({ id: categoriesTable.id, name: categoriesTable.name }).from(categoriesTable).where(inArray(categoriesTable.id, parentIds))
-    : [];
-  const parentMap = new Map(parentRows.map(p => [p.id, p.name]));
-
-  const catToParent = new Map<number, { parentId: number; parentName: string }>();
-  for (const c of categoryRows) {
-    if (c.parentId && parentMap.has(c.parentId)) {
-      catToParent.set(c.id, { parentId: c.parentId, parentName: parentMap.get(c.parentId)! });
+  function getClearanceLv2(catId: number | null): { id: number; name: string } | null {
+    if (!catId) return null;
+    let cat = clearanceCatMap.get(catId);
+    while (cat) {
+      if (cat.level === 2) return { id: cat.id, name: cat.name };
+      if (!cat.parentId) return null;
+      cat = clearanceCatMap.get(cat.parentId);
     }
+    return null;
   }
 
   const mapped = products.map((p) => {
-    const parent = p.categoryId ? catToParent.get(p.categoryId) : undefined;
+    const lv2 = getClearanceLv2(p.categoryId ?? null);
     const { imageUrl, imageSource } = resolveImage(p, userImages);
     return {
       id: p.id,
@@ -482,8 +478,8 @@ router.get("/products/clearance", async (_req, res) => {
       retailPrice: p.retailPrice ? parseFloat(p.retailPrice) : null,
       consumersPrice: p.consumersPrice ? parseFloat(p.consumersPrice) : null,
       categoryId: p.categoryId ?? null,
-      categoryParentId: parent?.parentId ?? null,
-      categoryParentName: parent?.parentName ?? null,
+      secondLevelCategoryId: lv2?.id ?? null,
+      secondLevelCategoryName: lv2?.name ?? null,
       netsuiteId: p.netsuiteId ?? null,
       imageUrl,
       fullImageUrl: imageSource === "user" ? imageUrl : (p.fullImageUrl ?? null),

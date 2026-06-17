@@ -16,8 +16,8 @@ interface Product {
   price: number | null;
   retailPrice?: number | null;
   categoryId?: number | null;
-  categoryParentId?: number | null;
-  categoryParentName?: string | null;
+  secondLevelCategoryId?: number | null;
+  secondLevelCategoryName?: string | null;
   netsuiteId?: string | null;
   imageUrl?: string | null;
   fullImageUrl?: string | null;
@@ -357,7 +357,7 @@ async function exportToExcel(filename: string, rows: Product[]) {
       image: "",
       sku: p.sku ?? "",
       name: p.name,
-      category: p.categoryParentName ?? "",
+      category: p.secondLevelCategoryName ?? "",
       qty: p.quantityAvailable ?? "",
       atp: p.atpDate ?? "",
       nro: p.noReorder ? "Yes" : "",
@@ -425,19 +425,14 @@ export default function ClearancePage() {
   const products = data?.products ?? [];
 
   const parentCategories = useMemo(() => {
-    const displayNames: Record<string, string> = {
-      "Bathroom Sinks": "Sinks",
-      "Toilets": "Fixtures",
-    };
     const map = new Map<number, { id: number; name: string; count: number }>();
     for (const p of products) {
-      if (p.categoryParentId && p.categoryParentName) {
-        const existing = map.get(p.categoryParentId);
+      if (p.secondLevelCategoryId != null && p.secondLevelCategoryName) {
+        const existing = map.get(p.secondLevelCategoryId);
         if (existing) {
           existing.count++;
         } else {
-          const label = displayNames[p.categoryParentName] ?? p.categoryParentName;
-          map.set(p.categoryParentId, { id: p.categoryParentId, name: label, count: 1 });
+          map.set(p.secondLevelCategoryId, { id: p.secondLevelCategoryId, name: p.secondLevelCategoryName, count: 1 });
         }
       }
     }
@@ -445,7 +440,7 @@ export default function ClearancePage() {
   }, [products]);
 
   let filtered = products;
-  if (activeCategoryId) filtered = filtered.filter(p => p.categoryParentId === activeCategoryId);
+  if (activeCategoryId) filtered = filtered.filter(p => p.secondLevelCategoryId === activeCategoryId);
   if (refineQuery.trim()) {
     const q = refineQuery.trim().toLowerCase();
     filtered = filtered.filter(p =>
@@ -455,8 +450,8 @@ export default function ClearancePage() {
   }
 
   filtered = [...filtered].sort((a, b) => {
-    const ac = a.categoryParentName ?? "\uffff";
-    const bc = b.categoryParentName ?? "\uffff";
+    const ac = a.secondLevelCategoryName ?? "\uffff";
+    const bc = b.secondLevelCategoryName ?? "\uffff";
     const byCat = ac.localeCompare(bc);
     if (byCat !== 0) return byCat;
     return (a.name ?? "").localeCompare(b.name ?? "");
