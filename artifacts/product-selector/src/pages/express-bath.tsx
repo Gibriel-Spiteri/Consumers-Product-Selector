@@ -16,6 +16,7 @@ interface Product {
   price: number | null;
   retailPrice?: number | null;
   categoryId?: number | null;
+  categoryName?: string | null;
   categoryParentId?: number | null;
   categoryParentName?: string | null;
   netsuiteId?: string | null;
@@ -308,20 +309,15 @@ export default function ExpressBathPage() {
 
   const products = data?.products ?? [];
 
-  const parentCategories = useMemo(() => {
-    const displayNames: Record<string, string> = {
-      "Bathroom Sinks": "Sinks",
-      "Toilets": "Fixtures",
-    };
+  const categoryChips = useMemo(() => {
     const map = new Map<number, { id: number; name: string; count: number }>();
     for (const p of products) {
-      if (p.categoryParentId && p.categoryParentName) {
-        const existing = map.get(p.categoryParentId);
+      if (p.categoryId != null && p.categoryName) {
+        const existing = map.get(p.categoryId);
         if (existing) {
           existing.count++;
         } else {
-          const label = displayNames[p.categoryParentName] ?? p.categoryParentName;
-          map.set(p.categoryParentId, { id: p.categoryParentId, name: label, count: 1 });
+          map.set(p.categoryId, { id: p.categoryId, name: p.categoryName, count: 1 });
         }
       }
     }
@@ -329,7 +325,7 @@ export default function ExpressBathPage() {
   }, [products]);
 
   let filtered = products;
-  if (activeCategoryId) filtered = filtered.filter(p => p.categoryParentId === activeCategoryId);
+  if (activeCategoryId) filtered = filtered.filter(p => p.categoryId === activeCategoryId);
   if (inStockOnly) filtered = filtered.filter(p => (p.quantityAvailable ?? 0) >= 1);
   if (refineQuery.trim()) {
     const q = refineQuery.trim().toLowerCase();
@@ -398,7 +394,7 @@ export default function ExpressBathPage() {
       </div>
 
       <div className="flex items-center gap-2 mb-6">
-        {parentCategories.length > 1 && (
+        {categoryChips.length > 1 && (
           <>
             <button
               onClick={() => setActiveCategoryId(null)}
@@ -414,7 +410,7 @@ export default function ExpressBathPage() {
                 {products.length}
               </span>
             </button>
-            {parentCategories.map(cat => (
+            {categoryChips.map(cat => (
               <button
                 key={cat.id}
                 onClick={() => setActiveCategoryId(activeCategoryId === cat.id ? null : cat.id)}

@@ -531,6 +531,7 @@ router.get("/products/express-bath", async (_req, res) => {
       catToParent.set(c.id, { parentId: c.parentId, parentName: parentMap.get(c.parentId)! });
     }
   }
+  const catIdToName = new Map(categoryRows.map(c => [c.id, c.name]));
 
   const mapped = products.map((p) => {
     const parent = p.categoryId ? catToParent.get(p.categoryId) : undefined;
@@ -543,6 +544,7 @@ router.get("/products/express-bath", async (_req, res) => {
       retailPrice: p.retailPrice ? parseFloat(p.retailPrice) : null,
       consumersPrice: p.consumersPrice ? parseFloat(p.consumersPrice) : null,
       categoryId: p.categoryId ?? null,
+      categoryName: p.categoryId ? (catIdToName.get(p.categoryId) ?? null) : null,
       categoryParentId: parent?.parentId ?? null,
       categoryParentName: parent?.parentName ?? null,
       netsuiteId: p.netsuiteId ?? null,
