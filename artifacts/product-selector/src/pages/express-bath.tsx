@@ -341,7 +341,7 @@ export default function ExpressBathPage() {
     return (
       <div className="max-w-screen-xl mx-auto px-6 py-16 flex flex-col items-center gap-3 text-gray-400">
         <Loader2 className="animate-spin" size={28} />
-        <p className="text-sm">Loading Express Bath items…</p>
+        <p className="text-sm">Loading Quick Ship Bath items…</p>
       </div>
     );
   }
@@ -351,14 +351,14 @@ export default function ExpressBathPage() {
       <nav className="flex items-center gap-1.5 text-[13px] text-gray-400 mb-6">
         <Link href="/" className="hover:text-gray-600 transition-colors">Home</Link>
         <ChevronRight size={12} />
-        <span className="text-blue-600 font-medium">Express Bath</span>
+        <span className="text-blue-600 font-medium">Quick Ship Bath</span>
       </nav>
 
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-blue-600">Express Bath</h1>
+          <h1 className="text-2xl font-bold text-blue-600">Quick Ship Bath</h1>
           <p className="text-sm text-gray-500 mt-1">
-            {filtered.length} item{filtered.length !== 1 ? "s" : ""} in the Express Bath program
+            {filtered.length} item{filtered.length !== 1 ? "s" : ""} in the Quick Ship Bath program
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -454,8 +454,8 @@ export default function ExpressBathPage() {
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-gray-400">
           <PackageX size={40} className="mb-3" />
-          <p className="text-lg font-medium text-gray-500">No Express Bath items</p>
-          <p className="text-sm mt-1">There are no products in the Express Bath program right now.</p>
+          <p className="text-lg font-medium text-gray-500">No Quick Ship Bath items</p>
+          <p className="text-sm mt-1">There are no products in the Quick Ship Bath program right now.</p>
         </div>
       ) : viewMode === "grid" ? (
         <GridView products={filtered} onSelect={setSelectedProduct} isAdmin={isAdmin} />

@@ -372,7 +372,7 @@ router.get("/admin/analytics/summary", requireAdmin, async (req, res) => {
     };
     const pathToName: Record<string, string> = {
       "/clearance": "Clearance",
-      "/express-bath": "Express Bath",
+      "/express-bath": "Quick Ship Bath",
       "/uncategorized": "Uncategorized",
     };
     const topCategories = topCategoriesRaw.map((r) => ({

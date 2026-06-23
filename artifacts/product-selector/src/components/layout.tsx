@@ -614,7 +614,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     onClick={() => { setIsHoveringNav(false); setActiveTab(null); }}
                     className="flex-shrink-0 flex items-center h-[50px] px-4 font-semibold uppercase tracking-widest text-blue-600 hover:text-blue-700 transition-colors text-[13px]"
                   >
-                    Express Bath
+                    Quick Ship Bath
                   </Link>
                   <Link
                     href="/clearance"
@@ -673,7 +673,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                         onClick={() => setMobileMenuOpen(false)}
                         className="flex items-center justify-between px-6 py-4 font-semibold uppercase tracking-widest text-blue-600 text-[13px] hover:bg-blue-50 active:bg-blue-100 transition-colors"
                       >
-                        <span>Express Bath</span>
+                        <span>Quick Ship Bath</span>
                         <ChevronRight size={16} className="text-blue-300" />
                       </Link>
                     </li>
