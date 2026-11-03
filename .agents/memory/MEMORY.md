@@ -1,2 +1,3 @@
 - [api-server typecheck & @workspace/db dist](db-typecheck-dist.md) — rebuild `tsc -b lib/db` after schema export changes or typecheck reports "no exported member"; baseline typecheck is dirty (pre-existing TS7030 etc.), esbuild build ignores it.
 - [api-server restart triggers a NetSuite sync](api-server-restart-sync.md) — boot runs an immediate live sync; api-server is build&start (no watch). Validate via typecheck, don't restart casually; frontend (Vite) hot-reloads.
+- [Special-order requirements](special-order-requirements.md) — Type choices belong to each product line’s Special Order Types subtab; never use one shared list.
