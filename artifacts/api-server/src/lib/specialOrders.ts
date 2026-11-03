@@ -32,6 +32,7 @@ export async function getSpecialOrderProductLines(fresh = false): Promise<Specia
     FROM customrecord_pl pl
     INNER JOIN item i ON i.custitem_prodline = pl.id
     WHERE pl.isinactive = 'F' AND i.isinactive = 'F' AND i.itemid LIKE 'SP-%'
+      AND UPPER(BUILTIN.DF(pl.custrecord_pl_type)) = 'INVENTORY'
       AND EXISTS (
         SELECT 1 FROM customrecord_specord_nondb_types st
         WHERE st.custrecord_specord_nondb_type_prodline = pl.id AND st.isinactive = 'F'
