@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { ChevronRight, Trash2, Minus, Plus, ClipboardList, Search, Loader2, Send, Check, AlertCircle, ImageOff, X } from "lucide-react";
-import { useQuoteList } from "@/context/quote-list-context";
+import { ChevronRight, Trash2, Minus, Plus, ClipboardList, Search, Loader2, Send, Check, AlertCircle, ImageOff, X, PackagePlus, Pencil } from "lucide-react";
+import { useAddEstimateItems } from "@workspace/api-client-react";
+import type { EstimateLineInput } from "@workspace/api-client-react";
+import SpecialOrderForm from "@/components/special-order-form";
+import { useQuoteList, type QuoteItem } from "@/context/quote-list-context";
 import { cn, fmtPrice } from "@/lib/utils";
 import { trackPushToEstimate } from "@/lib/analytics";
 
@@ -24,6 +27,84 @@ function ProductImage({ src, name }: { src: string | null; name: string }) {
     );
   }
   return <img src={src} alt={name} onError={() => setFailed(true)} className="w-full h-full object-contain" />;
+}
+
+function SpecialOrderRow({ item, editing, onEdit, onRemove, onQty }: {
+  item: QuoteItem;
+  editing: boolean;
+  onEdit: () => void;
+  onRemove: () => void;
+  onQty: (q: number) => void;
+}) {
+  const so = item.specialOrder!;
+  const id = item.productId;
+  return (
+    <tr className={cn("transition-colors align-top", editing ? "bg-amber-50/70" : "hover:bg-gray-50/50")} data-testid={`row-special-order-${id}`}>
+      <td className="px-5 py-3">
+        <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
+          <PackagePlus size={18} className="text-amber-500" />
+        </div>
+      </td>
+      <td className="px-5 py-3">
+        <div className="flex items-center gap-2 mb-1">
+          <p className="font-medium text-gray-900 text-[14px]">{so.productLineName}</p>
+          <span className="text-[10px] font-semibold uppercase tracking-widest bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">Special Order</span>
+        </div>
+        <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[12px]">
+          <dt className="text-gray-400">Type</dt><dd className="text-gray-700" data-testid={`text-so-type-${id}`}>{so.typeName}</dd>
+          <dt className="text-gray-400">Model</dt><dd className="text-gray-700 break-words" data-testid={`text-so-model-${id}`}>{so.model}</dd>
+          <dt className="text-gray-400">Color</dt><dd className="text-gray-700 break-words" data-testid={`text-so-color-${id}`}>{so.color}</dd>
+          <dt className="text-gray-400">Collection</dt><dd className="text-gray-700 break-words whitespace-pre-line" data-testid={`text-so-description-${id}`}>{so.description}</dd>
+        </dl>
+      </td>
+      <td className="px-5 py-3">
+        {item.sku ? <span className="font-mono text-[12px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded">{item.sku}</span> : <span className="text-gray-300">—</span>}
+      </td>
+      <td className="px-5 py-3 text-right whitespace-nowrap">
+        <span className="font-medium text-gray-900" data-testid={`text-so-list-price-${id}`}>${fmtPrice(so.listPrice)}</span>
+        <p className="text-[10px] uppercase tracking-widest text-gray-400">List</p>
+      </td>
+      <td className="px-5 py-3">
+        <div className="flex items-center justify-center">
+          <div className="flex items-center border border-gray-200 rounded-lg">
+            <button onClick={() => item.quantity > 1 && onQty(item.quantity - 1)} disabled={item.quantity <= 1} aria-label="Decrease quantity" className="px-2 py-1.5 hover:bg-gray-50 text-gray-500 transition-colors rounded-l-lg disabled:opacity-40">
+              <Minus size={12} />
+            </button>
+            <input
+              type="number"
+              min={1}
+              max={1000000}
+              aria-label={`Quantity for ${so.productLineName} ${so.model}`}
+              value={item.quantity}
+              onChange={e => {
+                const v = parseInt(e.target.value);
+                if (v >= 1 && v <= 1000000) onQty(v);
+              }}
+              className="w-12 text-center text-sm font-medium text-gray-900 border-x border-gray-200 py-1.5 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              data-testid={`input-so-qty-${id}`}
+            />
+            <button onClick={() => item.quantity < 1000000 && onQty(item.quantity + 1)} aria-label="Increase quantity" className="px-2 py-1.5 hover:bg-gray-50 text-gray-500 transition-colors rounded-r-lg">
+              <Plus size={12} />
+            </button>
+          </div>
+        </div>
+      </td>
+      <td className="px-5 py-3 text-right whitespace-nowrap">
+        <span className="font-semibold text-gray-900">${fmtPrice(so.listPrice * item.quantity)}</span>
+        <p className="text-[10px] uppercase tracking-widest text-gray-400">Ext. list</p>
+      </td>
+      <td className="px-5 py-3">
+        <div className="flex flex-col gap-1">
+          <button onClick={onEdit} aria-label="Edit special order" title="Edit special order" className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all" data-testid={`button-edit-so-${id}`}>
+            <Pencil size={14} />
+          </button>
+          <button onClick={onRemove} aria-label="Remove special order" title="Remove special order" className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" data-testid={`button-remove-so-${id}`}>
+            <X size={14} />
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
 }
 
 function EstimateSearch({ onPush, pushResult, setPushResult }: {
@@ -190,61 +271,86 @@ function EstimateSearch({ onPush, pushResult, setPushResult }: {
 }
 
 export default function QuoteListPage() {
-  const { items, removeItem, updateQuantity, clearList, totalItems, totalLineItems, grandTotal } = useQuoteList();
+  const { items, removeItem, updateQuantity, clearList, totalItems, grandTotal, addSpecialOrder, updateSpecialOrder, removeExactItems } = useQuoteList();
   const [pushResult, setPushResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [formMode, setFormMode] = useState<{ kind: "add" } | { kind: "edit"; item: QuoteItem } | null>(null);
+  const addEstimateItems = useAddEstimateItems();
 
   const itemsMissingNsId = items.filter(i => !i.netsuiteId);
+  const specialItems = items.filter(i => i.specialOrder);
+  const specialListTotal = specialItems.reduce((s, i) => s + (i.specialOrder?.listPrice ?? 0) * i.quantity, 0);
+
+  const describe = (snapshot: QuoteItem[], id: string) => {
+    const matches = snapshot.filter(i => String(i.netsuiteId) === String(id));
+    if (matches.length === 0) return `NetSuite ID ${id}`;
+    return matches.map(i => i.specialOrder ? `${i.specialOrder.productLineName} special order (${i.specialOrder.model})` : (i.sku ?? i.name)).join(", ");
+  };
 
   const handlePushToEstimate = async (estimateId: number, tranId: string) => {
-    const pushableItems = items.filter(i => i.netsuiteId);
-    if (pushableItems.length === 0) {
+    const snapshot = items.filter(i => i.netsuiteId);
+    if (snapshot.length === 0) {
       throw new Error("No items with valid NetSuite IDs to push");
     }
-    const payload = {
-      items: pushableItems.map(i => ({
-        netsuiteId: i.netsuiteId,
-        quantity: i.quantity,
-      })),
-    };
+    const payloadItems: EstimateLineInput[] = snapshot.map(i => ({
+      netsuiteId: i.netsuiteId,
+      quantity: i.quantity,
+      ...(i.specialOrder ? { specialOrder: { ...i.specialOrder } } : {}),
+    }));
 
-    const res = await fetch(`/api/estimates/${estimateId}/add-items`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      const invalidIds: string[] = data?.invalidNetsuiteIds ?? [];
+    let data;
+    try {
+      data = await addEstimateItems.mutateAsync({ estimateId, data: { items: payloadItems } });
+    } catch (err: any) {
+      const body = err?.data ?? {};
+      const invalidIds: string[] = Array.isArray(body?.invalidNetsuiteIds) ? body.invalidNetsuiteIds : [];
       if (invalidIds.length > 0) {
-        const skuList = invalidIds
-          .map(id => pushableItems.find(i => String(i.netsuiteId) === String(id))?.sku ?? `NetSuite ID ${id}`)
-          .join(", ");
-        throw new Error(`These items no longer exist in NetSuite and need to be removed from the list: ${skuList}`);
+        throw new Error(`These items no longer exist in NetSuite and need to be removed from the list: ${invalidIds.map(id => describe(snapshot, id)).join(", ")}`);
       }
-      throw new Error(data.error ?? "Failed to add items to estimate");
+      throw new Error((typeof body?.error === "string" && body.error) || err?.message || "Failed to add items to estimate");
     }
 
-    const skipped: string[] = data?.skippedNetsuiteIds ?? [];
-    const added = data?.itemsAdded ?? pushableItems.length;
-    let msg = `Successfully added ${added} item${added === 1 ? "" : "s"} to estimate ${tranId}`;
+    const skipped = (data?.skippedNetsuiteIds ?? []).map(String);
+    const pushed = snapshot.filter(i => !skipped.includes(String(i.netsuiteId)));
+    const added = data?.itemsAdded ?? pushed.length;
+    let msg = `Successfully added ${added} item${added === 1 ? "" : "s"} to estimate ${data?.tranId || tranId}`;
     if (skipped.length > 0) {
-      const skuList = skipped
-        .map(id => pushableItems.find(i => String(i.netsuiteId) === String(id))?.sku ?? `NetSuite ID ${id}`)
-        .join(", ");
-      msg += ` — skipped (no longer in NetSuite): ${skuList}`;
+      msg += ` — skipped (no longer in NetSuite, kept in your list): ${skipped.map(id => describe(snapshot, id)).join(", ")}`;
     }
     trackPushToEstimate({
       estimateId,
       tranId,
-      itemCount: pushableItems.reduce((sum, i) => sum + i.quantity, 0),
-      lineCount: pushableItems.length,
-      totalValue: pushableItems.reduce((sum, i) => sum + (i.price ?? 0) * i.quantity, 0),
+      itemCount: pushed.reduce((sum, i) => sum + i.quantity, 0),
+      lineCount: pushed.length,
+      totalValue: pushed.reduce((sum, i) => sum + (i.price ?? 0) * i.quantity, 0),
     });
     setPushResult({ success: true, message: msg });
-    clearList();
+    removeExactItems(pushed);
   };
+
+  const formPanel = formMode && (
+    <SpecialOrderForm
+      key={formMode.kind === "edit" ? formMode.item.productId : "add"}
+      initial={formMode.kind === "edit" ? formMode.item : undefined}
+      onCancel={() => setFormMode(null)}
+      onSubmit={input => {
+        if (formMode.kind === "edit") updateSpecialOrder(formMode.item.productId, input);
+        else addSpecialOrder(input);
+        setFormMode(null);
+      }}
+    />
+  );
+
+  const addSpecialButton = (
+    <button
+      onClick={() => setFormMode({ kind: "add" })}
+      disabled={formMode?.kind === "add"}
+      className="flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-medium text-gray-700 border border-gray-200 bg-white hover:bg-gray-50 rounded-xl transition-colors disabled:opacity-50"
+      data-testid="button-add-special-order"
+    >
+      <PackagePlus size={14} className="text-amber-500" />
+      Add Special Order
+    </button>
+  );
 
   return (
     <div className="max-w-5xl mx-auto px-4 lg:px-8 py-10">
@@ -254,13 +360,15 @@ export default function QuoteListPage() {
         <span className="text-gray-600">Quote List</span>
       </nav>
 
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900 flex items-center gap-2">
             <ClipboardList size={24} className="text-amber-500" />
             Quote List
           </h1>
         </div>
+        <div className="flex items-center gap-2">
+        {addSpecialButton}
         {items.length > 0 && (
           <button
             onClick={clearList}
@@ -270,6 +378,7 @@ export default function QuoteListPage() {
             Clear List
           </button>
         )}
+        </div>
       </div>
 
       {items.length === 0 ? (
@@ -286,6 +395,7 @@ export default function QuoteListPage() {
               </button>
             </div>
           )}
+          {formPanel}
           <div className="py-32 text-center bg-white rounded-2xl shadow-sm flex flex-col items-center">
             <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mb-5">
               {pushResult?.success ? (
@@ -312,6 +422,16 @@ export default function QuoteListPage() {
         </div>
       ) : (
         <div className="space-y-6">
+          {pushResult?.success && (
+            <div className="flex items-center gap-2 px-5 py-4 rounded-2xl text-sm font-medium bg-emerald-50 text-emerald-700 border border-emerald-200" role="status">
+              <Check size={16} className="shrink-0" />
+              <span>{pushResult.message}</span>
+              <button onClick={() => setPushResult(null)} aria-label="Dismiss message" className="ml-auto p-1 hover:opacity-70 transition-opacity">
+                <X size={14} />
+              </button>
+            </div>
+          )}
+          {formPanel}
           <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
@@ -327,7 +447,16 @@ export default function QuoteListPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {items.map(item => (
+                  {items.map(item => item.specialOrder ? (
+                    <SpecialOrderRow
+                      key={item.productId}
+                      item={item}
+                      editing={formMode?.kind === "edit" && formMode.item.productId === item.productId}
+                      onEdit={() => setFormMode({ kind: "edit", item })}
+                      onRemove={() => { removeItem(item.productId); if (formMode?.kind === "edit" && formMode.item.productId === item.productId) setFormMode(null); }}
+                      onQty={q => updateQuantity(item.productId, q)}
+                    />
+                  ) : (
                     <tr key={item.productId} className="hover:bg-gray-50/50 transition-colors">
                       <td className="px-5 py-3">
                         <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center overflow-hidden shrink-0">
@@ -401,7 +530,7 @@ export default function QuoteListPage() {
                 <tfoot>
                   <tr className="border-t-2 border-gray-200 bg-gray-50">
                     <td colSpan={4} className="px-5 py-4 text-right">
-                      <span className="text-[13px] font-semibold uppercase tracking-widest text-gray-500">Grand Total</span>
+                      <span className="text-[13px] font-semibold uppercase tracking-widest text-gray-500">{specialItems.length > 0 ? "Catalog Total" : "Grand Total"}</span>
                     </td>
                     <td className="px-5 py-4 text-center">
                       <span className="text-sm font-semibold text-gray-900">{totalItems} units</span>
@@ -411,14 +540,26 @@ export default function QuoteListPage() {
                     </td>
                     <td></td>
                   </tr>
+                  {specialItems.length > 0 && (
+                    <tr className="bg-amber-50/60">
+                      <td colSpan={5} className="px-5 py-3 text-right text-[12px] text-amber-800">
+                        Special orders: {specialItems.length} line{specialItems.length === 1 ? "" : "s"}, list amount ${fmtPrice(specialListTotal)} (not included above). Selling prices are finalized in NetSuite.
+                      </td>
+                      <td className="px-5 py-3 text-right text-sm font-medium text-amber-900 whitespace-nowrap">${fmtPrice(specialListTotal)} list</td>
+                      <td></td>
+                    </tr>
+                  )}
                 </tfoot>
               </table>
             </div>
           </div>
 
-          {pushResult && !pushResult.success && (
-            <div className="flex items-center gap-2 px-5 py-4 rounded-2xl text-sm font-medium bg-red-50 text-red-700 border border-red-200">
-              <AlertCircle size={16} />
+          {pushResult && (
+            <div className={cn(
+              "flex items-center gap-2 px-5 py-4 rounded-2xl text-sm font-medium border",
+              pushResult.success ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-red-50 text-red-700 border-red-200",
+            )}>
+              {pushResult.success ? <Check size={16} /> : <AlertCircle size={16} />}
               <span>{pushResult.message}</span>
               <button onClick={() => setPushResult(null)} className="ml-auto p-1 hover:opacity-70 transition-opacity">
                 <X size={14} />

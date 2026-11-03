@@ -1,6 +1,9 @@
 import { Router, type IRouter } from "express";
 import { executeSuiteQL, netsuiteRequest, isNetSuiteConfigured } from "../lib/netsuite";
 import { logger } from "../lib/logger";
+import {
+  EstimateItemsSchema, getSpecialOrderProductLines, getSpecialOrderTypes, specialOrderLine, SpecialOrderValidationError,
+} from "../lib/specialOrders";
 
 const router: IRouter = Router();
 
@@ -67,33 +70,17 @@ router.get("/estimates/search", async (req, res) => {
 
 router.post("/estimates/:estimateId/add-items", async (req, res) => {
   const estimateId = Number(req.params.estimateId);
-  if (isNaN(estimateId)) {
+  if (!Number.isSafeInteger(estimateId) || estimateId <= 0) {
     return res.status(400).json({ error: "Invalid estimate ID" });
   }
 
-  const { items } = req.body as {
-    items: Array<{ netsuiteId: string; quantity: number }>;
-  };
-
-  if (!items || !Array.isArray(items) || items.length === 0) {
-    return res.status(400).json({ error: "Items array is required" });
+  const parsed = EstimateItemsSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid quote items", details: parsed.error.issues });
   }
-
-  let validatedItems: Array<{ netsuiteId: number; quantity: number }>;
-  try {
-    validatedItems = items.map((item, idx) => {
-      const nsId = Number(item.netsuiteId);
-      const qty = Math.floor(Number(item.quantity));
-      if (isNaN(nsId) || nsId <= 0) {
-        throw new Error(`Invalid netsuiteId at index ${idx}`);
-      }
-      if (isNaN(qty) || qty < 1) {
-        throw new Error(`Invalid quantity at index ${idx}`);
-      }
-      return { netsuiteId: nsId, quantity: qty };
-    });
-  } catch (err: any) {
-    return res.status(400).json({ error: err.message });
+  const validatedItems = parsed.data.items;
+  if (validatedItems.some(item => !Number.isSafeInteger(Number(item.netsuiteId)))) {
+    return res.status(400).json({ error: "Invalid NetSuite item identifier" });
   }
 
   if (!isNetSuiteConfigured()) {
@@ -114,13 +101,11 @@ router.post("/estimates/:estimateId/add-items", async (req, res) => {
       };
     }>(`/estimate/${estimateId}?expandSubResources=true`);
 
-    const existingLines = existing.item?.items ?? [];
-
     // Pre-validate that every NetSuite item ID we're about to push still exists.
     const distinctIds = Array.from(new Set(validatedItems.map(i => i.netsuiteId)));
     const idList = distinctIds.join(",");
-    const check = await executeSuiteQL<{ id: string }>(
-      `SELECT id FROM item WHERE id IN (${idList})`
+    const check = await executeSuiteQL<{ id: string; itemid: string }>(
+      `SELECT id, itemid FROM item WHERE id IN (${idList}) AND isinactive = 'F'`
     );
     const validIds = new Set(check.items.map(r => String(r.id)));
     const invalidIds = distinctIds.filter(id => !validIds.has(String(id)));
@@ -133,19 +118,37 @@ router.post("/estimates/:estimateId/add-items", async (req, res) => {
       });
     }
 
-    const newLines = goodItems.map(item => ({
-      item: { id: item.netsuiteId },
-      quantity: item.quantity,
-    }));
-
-    const allLines = [
-      ...existingLines.map(line => ({
-        item: { id: line.item.id },
-        quantity: line.quantity,
-        line: line.line,
-      })),
-      ...newLines,
-    ];
+    // Resolve authoritative membership again when pushing, not just from client-supplied labels.
+    const productLines = goodItems.some(item => item.specialOrder)
+      ? await getSpecialOrderProductLines(true) : [];
+    const typesByLine = new Map<string, Awaited<ReturnType<typeof getSpecialOrderTypes>>>();
+    const newLines = [];
+    for (const item of goodItems) {
+      if (!item.specialOrder) {
+        const record = check.items.find(row => String(row.id) === item.netsuiteId);
+        if (record?.itemid.startsWith("SP-")) {
+          throw new SpecialOrderValidationError("Special-order items require their product line, Type and specifications");
+        }
+        newLines.push({ item: { id: item.netsuiteId }, quantity: item.quantity });
+        continue;
+      }
+      const details = item.specialOrder;
+      const productLine = productLines.find(line =>
+        line.id === details.productLineId && line.netsuiteItemId === item.netsuiteId);
+      if (!productLine) {
+        throw new SpecialOrderValidationError("This special-order product line/item is no longer available");
+      }
+      let types = typesByLine.get(productLine.id);
+      if (!types) {
+        types = await getSpecialOrderTypes(productLine.id, true);
+        typesByLine.set(productLine.id, types);
+      }
+      const type = types.find(t => t.id === details.typeId);
+      if (!type) {
+        throw new SpecialOrderValidationError("The selected special-order Type does not belong to this product line or is inactive");
+      }
+      newLines.push(specialOrderLine(item.netsuiteId, item.quantity, details, productLine, type));
+    }
 
     await netsuiteRequest(
       `/estimate/${estimateId}`,
@@ -153,7 +156,9 @@ router.post("/estimates/:estimateId/add-items", async (req, res) => {
       {
         custbody_weborder: true,
         item: {
-          items: allLines,
+          // PATCH merges the item sublist; unkeyed lines append. Do not resend
+          // existing lines or use ?replace=item, which can reset their custom fields/prices.
+          items: newLines,
         },
       }
     );
@@ -163,7 +168,7 @@ router.post("/estimates/:estimateId/add-items", async (req, res) => {
       "Added items to estimate"
     );
 
-    res.json({
+    return res.json({
       success: true,
       estimateId,
       tranId: existing.tranId,
@@ -171,8 +176,11 @@ router.post("/estimates/:estimateId/add-items", async (req, res) => {
       skippedNetsuiteIds: invalidIds,
     });
   } catch (err: any) {
+    if (err instanceof SpecialOrderValidationError) {
+      return res.status(400).json({ error: err.message });
+    }
     logger.error({ err, estimateId }, "Failed to add items to estimate");
-    res.status(500).json({
+    return res.status(500).json({
       error: "Failed to add items to estimate",
       detail: err?.message ?? "Unknown error",
     });

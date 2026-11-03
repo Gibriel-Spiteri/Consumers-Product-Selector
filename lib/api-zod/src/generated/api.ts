@@ -8,6 +8,135 @@
 import * as zod from "zod";
 
 /**
+ * @summary Active product lines with a special-order item and types
+ */
+export const GetSpecialOrderProductLinesResponseItem = zod.object({
+  id: zod.string(),
+  name: zod.string(),
+  netsuiteItemId: zod.string(),
+  sku: zod.string(),
+});
+export const GetSpecialOrderProductLinesResponse = zod.array(
+  GetSpecialOrderProductLinesResponseItem,
+);
+
+/**
+ * @summary Active special-order types for this product line
+ */
+export const getSpecialOrderTypesPathProductLineIdRegExp = new RegExp(
+  "^[1-9][0-9]\*$",
+);
+
+export const GetSpecialOrderTypesParams = zod.object({
+  productLineId: zod.coerce
+    .string()
+    .regex(getSpecialOrderTypesPathProductLineIdRegExp),
+});
+
+export const GetSpecialOrderTypesResponseItem = zod.object({
+  id: zod.string(),
+  name: zod.string(),
+  requiresAttachment: zod.boolean(),
+});
+export const GetSpecialOrderTypesResponse = zod.array(
+  GetSpecialOrderTypesResponseItem,
+);
+
+/**
+ * @summary Add catalog and special-order lines to an existing estimate
+ */
+
+export const AddEstimateItemsParams = zod.object({
+  estimateId: zod.coerce.number().min(1),
+});
+
+export const addEstimateItemsBodyItemsItemNetsuiteIdRegExp = new RegExp(
+  "^[1-9][0-9]\*$",
+);
+export const addEstimateItemsBodyItemsItemQuantityMax = 1000000;
+
+export const addEstimateItemsBodyItemsItemSpecialOrderProductLineIdRegExp =
+  new RegExp("^[1-9][0-9]\*$");
+export const addEstimateItemsBodyItemsItemSpecialOrderProductLineNameMax = 300;
+
+export const addEstimateItemsBodyItemsItemSpecialOrderTypeIdRegExp = new RegExp(
+  "^[1-9][0-9]\*$",
+);
+export const addEstimateItemsBodyItemsItemSpecialOrderTypeNameMax = 300;
+
+export const addEstimateItemsBodyItemsItemSpecialOrderModelMax = 300;
+
+export const addEstimateItemsBodyItemsItemSpecialOrderDescriptionMax = 4000;
+
+export const addEstimateItemsBodyItemsItemSpecialOrderColorMax = 300;
+
+export const addEstimateItemsBodyItemsItemSpecialOrderListPriceMin = 0;
+export const addEstimateItemsBodyItemsItemSpecialOrderListPriceMax = 99999999;
+
+export const addEstimateItemsBodyItemsMax = 500;
+
+export const AddEstimateItemsBody = zod.object({
+  items: zod
+    .array(
+      zod.object({
+        netsuiteId: zod
+          .string()
+          .regex(addEstimateItemsBodyItemsItemNetsuiteIdRegExp),
+        quantity: zod
+          .number()
+          .min(1)
+          .max(addEstimateItemsBodyItemsItemQuantityMax),
+        specialOrder: zod
+          .object({
+            productLineId: zod
+              .string()
+              .regex(
+                addEstimateItemsBodyItemsItemSpecialOrderProductLineIdRegExp,
+              ),
+            productLineName: zod
+              .string()
+              .min(1)
+              .max(addEstimateItemsBodyItemsItemSpecialOrderProductLineNameMax),
+            typeId: zod
+              .string()
+              .regex(addEstimateItemsBodyItemsItemSpecialOrderTypeIdRegExp),
+            typeName: zod
+              .string()
+              .min(1)
+              .max(addEstimateItemsBodyItemsItemSpecialOrderTypeNameMax),
+            model: zod
+              .string()
+              .min(1)
+              .max(addEstimateItemsBodyItemsItemSpecialOrderModelMax),
+            description: zod
+              .string()
+              .min(1)
+              .max(addEstimateItemsBodyItemsItemSpecialOrderDescriptionMax),
+            color: zod
+              .string()
+              .min(1)
+              .max(addEstimateItemsBodyItemsItemSpecialOrderColorMax),
+            listPrice: zod
+              .number()
+              .min(addEstimateItemsBodyItemsItemSpecialOrderListPriceMin)
+              .max(addEstimateItemsBodyItemsItemSpecialOrderListPriceMax),
+          })
+          .optional(),
+      }),
+    )
+    .min(1)
+    .max(addEstimateItemsBodyItemsMax),
+});
+
+export const AddEstimateItemsResponse = zod.object({
+  success: zod.boolean(),
+  estimateId: zod.number(),
+  tranId: zod.string(),
+  itemsAdded: zod.number(),
+  skippedNetsuiteIds: zod.array(zod.string()),
+});
+
+/**
  * Returns server health status
  * @summary Health check
  */

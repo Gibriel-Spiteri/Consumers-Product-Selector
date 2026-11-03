@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import { trackAddToList } from "@/lib/analytics";
+import type { SpecialOrderDetails } from "@workspace/api-client-react";
 
 export interface QuoteItem {
   productId: number;
@@ -9,6 +10,14 @@ export interface QuoteItem {
   price: number | null;
   imageUrl: string | null;
   quantity: number;
+  specialOrder?: SpecialOrderDetails;
+}
+
+export interface SpecialOrderInput {
+  netsuiteId: string;
+  sku: string | null;
+  quantity: number;
+  details: SpecialOrderDetails;
 }
 
 interface QuoteListContextType {
@@ -17,6 +26,9 @@ interface QuoteListContextType {
   removeItem: (productId: number) => void;
   updateQuantity: (productId: number, qty: number) => void;
   clearList: () => void;
+  addSpecialOrder: (input: SpecialOrderInput) => void;
+  updateSpecialOrder: (productId: number, input: SpecialOrderInput) => void;
+  removeExactItems: (snapshot: QuoteItem[]) => void;
   isInList: (productId: number) => boolean;
   getQuantity: (productId: number) => number;
   totalItems: number;
@@ -46,6 +58,20 @@ function saveToStorage(items: QuoteItem[]) {
   } catch {}
 }
 
+function toSpecialItem(productId: number, input: SpecialOrderInput): QuoteItem {
+  const d = input.details;
+  return {
+    productId,
+    netsuiteId: input.netsuiteId,
+    name: `${d.productLineName} Special Order`,
+    sku: input.sku,
+    price: null,
+    imageUrl: null,
+    quantity: input.quantity,
+    specialOrder: { ...d },
+  };
+}
+
 export function QuoteListProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<QuoteItem[]>(loadFromStorage);
 
@@ -71,13 +97,30 @@ export function QuoteListProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updateQuantity = useCallback((productId: number, qty: number) => {
-    if (qty < 1) return;
+    if (!Number.isInteger(qty) || qty < 1 || qty > 1000000) return;
     setItems(prev =>
       prev.map(i => (i.productId === productId ? { ...i, quantity: qty } : i))
     );
   }, []);
 
   const clearList = useCallback(() => setItems([]), []);
+
+  const addSpecialOrder = useCallback((input: SpecialOrderInput) => {
+    setItems(prev => {
+      const minId = prev.reduce((m, i) => Math.min(m, i.productId), 0);
+      const productId = Math.min(minId - 1, -Date.now());
+      return [...prev, toSpecialItem(productId, input)];
+    });
+  }, []);
+
+  const updateSpecialOrder = useCallback((productId: number, input: SpecialOrderInput) => {
+    setItems(prev => prev.map(i => (i.productId === productId && i.specialOrder ? toSpecialItem(productId, input) : i)));
+  }, []);
+
+  const removeExactItems = useCallback((snapshot: QuoteItem[]) => {
+    const keys = new Set(snapshot.map(i => JSON.stringify(i)));
+    setItems(prev => prev.filter(i => !keys.has(JSON.stringify(i))));
+  }, []);
 
   const isInList = useCallback(
     (productId: number) => items.some(i => i.productId === productId),
@@ -91,11 +134,11 @@ export function QuoteListProvider({ children }: { children: ReactNode }) {
 
   const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
   const totalLineItems = items.length;
-  const grandTotal = items.reduce((sum, i) => sum + (i.price ?? 0) * i.quantity, 0);
+  const grandTotal = items.reduce((sum, i) => sum + (i.specialOrder ? 0 : (i.price ?? 0) * i.quantity), 0);
 
   return (
     <QuoteListContext.Provider
-      value={{ items, addItem, removeItem, updateQuantity, clearList, isInList, getQuantity, totalItems, totalLineItems, grandTotal }}
+      value={{ items, addItem, removeItem, updateQuantity, clearList, addSpecialOrder, updateSpecialOrder, removeExactItems, isInList, getQuantity, totalItems, totalLineItems, grandTotal }}
     >
       {children}
     </QuoteListContext.Provider>

@@ -5,6 +5,83 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface SpecialOrderProductLine {
+  id: string;
+  name: string;
+  netsuiteItemId: string;
+  sku: string;
+}
+
+export interface SpecialOrderType {
+  id: string;
+  name: string;
+  requiresAttachment: boolean;
+}
+
+export interface SpecialOrderDetails {
+  /** @pattern ^[1-9][0-9]*$ */
+  productLineId: string;
+  /**
+   * @minLength 1
+   * @maxLength 300
+   */
+  productLineName: string;
+  /** @pattern ^[1-9][0-9]*$ */
+  typeId: string;
+  /**
+   * @minLength 1
+   * @maxLength 300
+   */
+  typeName: string;
+  /**
+   * @minLength 1
+   * @maxLength 300
+   */
+  model: string;
+  /**
+   * @minLength 1
+   * @maxLength 4000
+   */
+  description: string;
+  /**
+   * @minLength 1
+   * @maxLength 300
+   */
+  color: string;
+  /**
+   * @minimum 0
+   * @maximum 99999999
+   */
+  listPrice: number;
+}
+
+export interface EstimateLineInput {
+  /** @pattern ^[1-9][0-9]*$ */
+  netsuiteId: string;
+  /**
+   * @minimum 1
+   * @maximum 1000000
+   */
+  quantity: number;
+  specialOrder?: SpecialOrderDetails;
+}
+
+export interface EstimateItemsInput {
+  /**
+   * @minItems 1
+   * @maxItems 500
+   */
+  items: EstimateLineInput[];
+}
+
+export interface EstimateItemsResult {
+  success: boolean;
+  estimateId: number;
+  tranId: string;
+  itemsAdded: number;
+  skippedNetsuiteIds: string[];
+}
+
 export interface HealthStatus {
   status: string;
 }

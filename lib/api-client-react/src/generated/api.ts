@@ -18,21 +18,287 @@ import type {
 
 import type {
   CategoryTreeResponse,
+  EstimateItemsInput,
+  EstimateItemsResult,
   HealthStatus,
   NetSuiteStatus,
   ProductListResponse,
   SearchProductsParams,
+  SpecialOrderProductLine,
+  SpecialOrderType,
   SyncResponse,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
-import type { ErrorType } from "../custom-fetch";
+import type { ErrorType, BodyType } from "../custom-fetch";
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
 type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
+/**
+ * @summary Active product lines with a special-order item and types
+ */
+export const getGetSpecialOrderProductLinesUrl = () => {
+  return `/api/special-orders/product-lines`;
+};
+
+export const getSpecialOrderProductLines = async (
+  options?: RequestInit,
+): Promise<SpecialOrderProductLine[]> => {
+  return customFetch<SpecialOrderProductLine[]>(
+    getGetSpecialOrderProductLinesUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetSpecialOrderProductLinesQueryKey = () => {
+  return [`/api/special-orders/product-lines`] as const;
+};
+
+export const getGetSpecialOrderProductLinesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getSpecialOrderProductLines>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getSpecialOrderProductLines>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetSpecialOrderProductLinesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getSpecialOrderProductLines>>
+  > = ({ signal }) =>
+    getSpecialOrderProductLines({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getSpecialOrderProductLines>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetSpecialOrderProductLinesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getSpecialOrderProductLines>>
+>;
+export type GetSpecialOrderProductLinesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Active product lines with a special-order item and types
+ */
+
+export function useGetSpecialOrderProductLines<
+  TData = Awaited<ReturnType<typeof getSpecialOrderProductLines>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getSpecialOrderProductLines>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetSpecialOrderProductLinesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Active special-order types for this product line
+ */
+export const getGetSpecialOrderTypesUrl = (productLineId: string) => {
+  return `/api/special-orders/product-lines/${productLineId}/types`;
+};
+
+export const getSpecialOrderTypes = async (
+  productLineId: string,
+  options?: RequestInit,
+): Promise<SpecialOrderType[]> => {
+  return customFetch<SpecialOrderType[]>(
+    getGetSpecialOrderTypesUrl(productLineId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetSpecialOrderTypesQueryKey = (productLineId: string) => {
+  return [`/api/special-orders/product-lines/${productLineId}/types`] as const;
+};
+
+export const getGetSpecialOrderTypesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getSpecialOrderTypes>>,
+  TError = ErrorType<unknown>,
+>(
+  productLineId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getSpecialOrderTypes>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetSpecialOrderTypesQueryKey(productLineId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getSpecialOrderTypes>>
+  > = ({ signal }) =>
+    getSpecialOrderTypes(productLineId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!productLineId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getSpecialOrderTypes>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetSpecialOrderTypesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getSpecialOrderTypes>>
+>;
+export type GetSpecialOrderTypesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Active special-order types for this product line
+ */
+
+export function useGetSpecialOrderTypes<
+  TData = Awaited<ReturnType<typeof getSpecialOrderTypes>>,
+  TError = ErrorType<unknown>,
+>(
+  productLineId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getSpecialOrderTypes>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetSpecialOrderTypesQueryOptions(
+    productLineId,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Add catalog and special-order lines to an existing estimate
+ */
+export const getAddEstimateItemsUrl = (estimateId: number) => {
+  return `/api/estimates/${estimateId}/add-items`;
+};
+
+export const addEstimateItems = async (
+  estimateId: number,
+  estimateItemsInput: EstimateItemsInput,
+  options?: RequestInit,
+): Promise<EstimateItemsResult> => {
+  return customFetch<EstimateItemsResult>(getAddEstimateItemsUrl(estimateId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(estimateItemsInput),
+  });
+};
+
+export const getAddEstimateItemsMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof addEstimateItems>>,
+    TError,
+    { estimateId: number; data: BodyType<EstimateItemsInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof addEstimateItems>>,
+  TError,
+  { estimateId: number; data: BodyType<EstimateItemsInput> },
+  TContext
+> => {
+  const mutationKey = ["addEstimateItems"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof addEstimateItems>>,
+    { estimateId: number; data: BodyType<EstimateItemsInput> }
+  > = (props) => {
+    const { estimateId, data } = props ?? {};
+
+    return addEstimateItems(estimateId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AddEstimateItemsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof addEstimateItems>>
+>;
+export type AddEstimateItemsMutationBody = BodyType<EstimateItemsInput>;
+export type AddEstimateItemsMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Add catalog and special-order lines to an existing estimate
+ */
+export const useAddEstimateItems = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof addEstimateItems>>,
+    TError,
+    { estimateId: number; data: BodyType<EstimateItemsInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof addEstimateItems>>,
+  TError,
+  { estimateId: number; data: BodyType<EstimateItemsInput> },
+  TContext
+> => {
+  return useMutation(getAddEstimateItemsMutationOptions(options));
+};
 
 /**
  * Returns server health status

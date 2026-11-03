@@ -8,9 +8,15 @@
 
 export * from "./category";
 export * from "./categoryTreeResponse";
+export * from "./estimateItemsInput";
+export * from "./estimateItemsResult";
+export * from "./estimateLineInput";
 export * from "./healthStatus";
 export * from "./netSuiteStatus";
 export * from "./product";
 export * from "./productListResponse";
 export * from "./searchProductsParams";
+export * from "./specialOrderDetails";
+export * from "./specialOrderProductLine";
+export * from "./specialOrderType";
 export * from "./syncResponse";
