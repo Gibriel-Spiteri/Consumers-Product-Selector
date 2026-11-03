@@ -28,7 +28,7 @@ export interface SpecialOrderDetails {
   model: string;
   /**
    * @minLength 1
-   * @maxLength 4000
+   * @maxLength 300
    */
   description: string;
   /**

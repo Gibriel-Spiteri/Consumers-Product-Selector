@@ -214,7 +214,7 @@ components:
         description:
           type: string
           minLength: 1
-          maxLength: 4000
+          maxLength: 300
         color:
           type: string
           minLength: 1
@@ -262,6 +262,27 @@ components:
           type: array
           items:
             type: string
+        specialOrderLines:
+          type: array
+          description: Special-order lines as priced on the estimate (list price x product line multipliers, as NetSuite does)
+          items:
+            $ref: "#/components/schemas/SpecialOrderLineResult"
+    SpecialOrderLineResult:
+      type: object
+      required: [netsuiteId, model, quantity, listPrice, rate, amount]
+      properties:
+        netsuiteId:
+          type: string
+        model:
+          type: string
+        quantity:
+          type: integer
+        listPrice:
+          type: number
+        rate:
+          type: number
+        amount:
+          type: number
     HealthStatus:
       type: object
       properties:

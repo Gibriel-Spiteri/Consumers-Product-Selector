@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { SpecialOrderLineResult } from "./specialOrderLineResult";
 
 export interface EstimateItemsResult {
   success: boolean;
@@ -12,4 +13,6 @@ export interface EstimateItemsResult {
   tranId: string;
   itemsAdded: number;
   skippedNetsuiteIds: string[];
+  /** Special-order lines as priced on the estimate (list price x product line multipliers, as NetSuite does) */
+  specialOrderLines?: SpecialOrderLineResult[];
 }

@@ -314,7 +314,11 @@ export default function QuoteListPage() {
     const added = data?.itemsAdded ?? pushed.length;
     let msg = `Successfully added ${added} item${added === 1 ? "" : "s"} to estimate ${data?.tranId || tranId}`;
     if (skipped.length > 0) {
-      msg += ` — skipped (no longer in NetSuite, kept in your list): ${skipped.map(id => describe(snapshot, id)).join(", ")}`;
+      msg += ` - skipped (no longer in NetSuite, kept in your list):${skipped.map(id => describe(snapshot, id)).join(", ")}`;
+    }
+    const pricedSpecials = data?.specialOrderLines ?? [];
+    if (pricedSpecials.length > 0) {
+      msg += `. Special orders priced at ${pricedSpecials.map(l => `${l.model} $${fmtPrice(l.rate)}${l.quantity > 1 ? ` x ${l.quantity}` : ""}`).join(", ")}`;
     }
     trackPushToEstimate({
       estimateId,
@@ -543,7 +547,7 @@ export default function QuoteListPage() {
                   {specialItems.length > 0 && (
                     <tr className="bg-amber-50/60">
                       <td colSpan={5} className="px-5 py-3 text-right text-[12px] text-amber-800">
-                        Special orders: {specialItems.length} line{specialItems.length === 1 ? "" : "s"}, list amount ${fmtPrice(specialListTotal)} (not included above). Selling prices are finalized in NetSuite.
+                        Special orders: {specialItems.length} line{specialItems.length === 1 ? "" : "s"}, list amount ${fmtPrice(specialListTotal)} (not included above). Selling prices are calculated from the customer's Retail or CRD multipliers when pushed to an estimate.
                       </td>
                       <td className="px-5 py-3 text-right text-sm font-medium text-amber-900 whitespace-nowrap">${fmtPrice(specialListTotal)} list</td>
                       <td></td>

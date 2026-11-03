@@ -76,30 +76,158 @@ export async function getSpecialOrderTypes(productLineId: string, fresh = false)
   return data;
 }
 
+// Everything NetSuite itself reads when a special-order line is entered on an estimate: the product line
+// multipliers for the price, plus the item's drop-ship and commission earn-rate fields.
+export interface SpecialOrderPricing {
+  costMult: number;
+  retailMult: number;
+  crdMult: number;
+  dropShip: boolean;
+  earnRate: { retail: string | null; crd: string | null; cdRetail: string | null; cdCrd: string | null };
+}
+
+// Estimate header values the NetSuite UI prices with. customerCategory is the customer record's category
+// (salesorder.js re-reads it for the rate); estimateCategory is custbody_customer_category (earn rate).
+export interface EstimatePricingContext {
+  customerCategory: string | null;
+  estimateCategory: string | null;
+  location: string | null;
+}
+
+// salesorder.js reads multipliers with parseFloat(...) || 1, so blank or zero means 1.
+const multiplier = (value: unknown) => parseFloat(String(value ?? "")) || 1;
+const cents = (value: number) => Math.round(value * 100) / 100;
+// NetSuite's Model / Coll/Desc / Color columns are Free-Form Text (single line, 300 characters).
+const NS_TEXT_MAX = 300;
+const cleanText = (value: string) => value.replace(/[\u0000-\u001f\u007f]+/g, " ").trim();
+
+export async function getSpecialOrderPricing(itemIds: string[]): Promise<Map<string, SpecialOrderPricing>> {
+  const ids = [...new Set(itemIds.map(positiveId))];
+  const pricing = new Map<string, SpecialOrderPricing>();
+  if (ids.length === 0) return pricing;
+  const result = await executeSuiteQL<{
+    id: string; isdropshipitem: string | null; nsdropship: string | null;
+    earnret: string | null; earncrd: string | null; earncdret: string | null; earncdcrd: string | null;
+    costmult: string | null; retailmult: string | null; crdmult: string | null;
+  }>(`
+    SELECT i.id, i.isdropshipitem, i.custitem_ns_dropship AS nsdropship,
+      i.custitem_earnrate_retdisplay AS earnret, i.custitem_earnrate_crddisplay AS earncrd,
+      i.custitem_earnrate_cd_retail AS earncdret, i.custitem_earnrate_cd_crd AS earncdcrd,
+      pl.custrecord_pl_costinclfreightmult AS costmult, pl.custrecord_pl_price_mult_retail AS retailmult,
+      pl.custrecord_pl_price_mult_crd AS crdmult
+    FROM item i
+    INNER JOIN customrecord_pl pl ON pl.id = i.custitem_prodline
+    WHERE i.id IN (${ids.join(",")})
+  `);
+  for (const row of result.items) {
+    pricing.set(String(row.id), {
+      costMult: multiplier(row.costmult),
+      retailMult: multiplier(row.retailmult),
+      crdMult: multiplier(row.crdmult),
+      // The UI sets Is Drop Ship from the item's native flag (salesorder.js custbody_multisp), then
+      // Estimate_BeforeSubmit ticks it when custitem_ns_dropship is set. That user event does not run for
+      // REST saves, so apply both here.
+      dropShip: row.isdropshipitem === "T" || row.nsdropship === "T",
+      earnRate: { retail: row.earnret, crd: row.earncrd, cdRetail: row.earncdret, cdCrd: row.earncdcrd },
+    });
+  }
+  return pricing;
+}
+
+// salesorder.js SalesOrder_FieldChanged (custcol_list_selling_rate), the client script on estimates and sales
+// orders: Rate = ListRate * CostMultiplier * CustomerMultiplier, rounded to the cent. Customer category 1 is
+// Retail; every other category uses the CRD multiplier. Keep the multiplication order so floats match.
+export function specialOrderRate(listPrice: number, pricing: SpecialOrderPricing, customerCategory: string | null): number {
+  if (!(listPrice > 0)) return 0;
+  const customerMulti = customerCategory === "1" ? pricing.retailMult : pricing.crdMult;
+  return cents(listPrice * pricing.costMult * customerMulti);
+}
+
+// library.js GetItemCommissionRates, which the estimate client's validateLine writes to custcol_item_earn_rate.
+export function specialOrderEarnRate(pricing: SpecialOrderPricing, ctx: EstimatePricingContext): string | null {
+  const cabinetDirect = ctx.location === "14";
+  switch (ctx.estimateCategory) {
+    case "1": case "3": case "4": // RETAIL, RFQ, REFERRAL
+      return cabinetDirect ? pricing.earnRate.cdRetail : pricing.earnRate.retail;
+    case "2": // CRD
+      return cabinetDirect ? pricing.earnRate.cdCrd : pricing.earnRate.crd;
+    default:
+      return null;
+  }
+}
+
 export function specialOrderLine(
   itemId: string,
   quantity: number,
   details: SpecialOrderDetails,
   productLine: SpecialOrderProductLine,
   type: TypeRecord,
+  pricing: SpecialOrderPricing,
+  ctx: EstimatePricingContext,
 ) {
   if (productLine.id !== details.productLineId || productLine.netsuiteItemId !== itemId || type.id !== details.typeId) {
     throw new SpecialOrderValidationError("The special-order item, product line and Type do not match");
   }
-  if (![details.model, details.description, details.color].every(s => s.trim())) {
+  const model = cleanText(details.model), description = cleanText(details.description), color = cleanText(details.color);
+  if (![model, description, color].every(Boolean)) {
     throw new SpecialOrderValidationError("Model, Collection / Description and Color are required");
   }
+  if ([model, description, color].some(s => s.length > NS_TEXT_MAX)) {
+    throw new SpecialOrderValidationError(`Model, Collection / Description and Color must each be ${NS_TEXT_MAX} characters or fewer`);
+  }
+  const rate = specialOrderRate(details.listPrice, pricing, ctx.customerCategory);
+  const earnRate = specialOrderEarnRate(pricing, ctx);
   return {
     item: { id: itemId },
     quantity,
+    rate,
+    amount: cents(rate * quantity),
+    custcol_list_selling_rate: details.listPrice,
+    custcol_list_selling_amt: cents(details.listPrice * quantity),
+    custcol_isdropship: pricing.dropShip,
+    ...(earnRate ? { custcol_item_earn_rate: earnRate } : {}),
+    // Per Order Form = No, as the Item Options popup sends it.
+    custcol_specord_perorderform: { id: "2" },
+    // The fields below are transaction item options. REST stores them blank when sent like this; the route
+    // writes them through the line's `options` string (fillSpecialOrderOptions). Kept for readability.
     custcol_specord_prodline: { id: productLine.id },
     custcol_specord_type: { id: type.id },
-    ...(type.classId ? { custcol_specord_class: { id: type.classId } } : {}),
-    custcol_specord_model: details.model.trim(),
-    custcol_specord_style: details.description.trim(),
-    custcol_specord_color: details.color.trim(),
-    custcol_list_selling_rate: details.listPrice,
-    custcol_list_selling_amt: Math.round(details.listPrice * quantity * 100) / 100,
+    // 2026-11-03: no longer sent. The NetSuite UI never sets the Class option (blank on every SP line since
+    // 2025, line class stays the item's 17), and the estimate client copies it into the line class on the next edit.
+    // ...(type.classId ? { custcol_specord_class: { id: type.classId } } : {}),
+    custcol_specord_model: model,
+    custcol_specord_style: description,
+    custcol_specord_color: color,
+    // 2026-11-03: replaced by the rate/amount above. Leaving the rate to NetSuite's price level gave $0.00,
+    // because every SP item's price levels are 0; NetSuite only prices SP lines in its client scripts.
     // List Price is not a selling rate. Leave NetSuite's price level/rate sourcing intact.
   };
+}
+
+// NetSuite's `options` line string: entries of FIELDID ^C mandatory ^C label ^C value [^C text], joined by ^D.
+const OPTION_FIELD = "\u0003";
+const OPTION_ENTRY = "\u0004";
+
+// Fill the special-order item options into the template NetSuite generated for the line, so labels and the
+// other options stay exactly as NetSuite set them.
+export function fillSpecialOrderOptions(template: string, details: SpecialOrderDetails, type: SpecialOrderType): string {
+  const values: Record<string, string[]> = {
+    CUSTCOL_SPECORD_TYPE: [type.id, cleanText(type.name)],
+    CUSTCOL_SPECORD_MODEL: [cleanText(details.model)],
+    CUSTCOL_SPECORD_STYLE: [cleanText(details.description)],
+    CUSTCOL_SPECORD_COLOR: [cleanText(details.color)],
+  };
+  const filled = new Set<string>();
+  const entries = template.split(OPTION_ENTRY).map(entry => {
+    const parts = entry.split(OPTION_FIELD);
+    const value = values[parts[0]];
+    if (!value || parts.length < 3) return entry;
+    filled.add(parts[0]);
+    return [...parts.slice(0, 3), ...value].join(OPTION_FIELD);
+  });
+  const missing = Object.keys(values).filter(id => !filled.has(id));
+  if (missing.length > 0) {
+    throw new Error(`NetSuite did not offer the special-order options ${missing.join(", ")} on this line`);
+  }
+  return entries.join(OPTION_ENTRY);
 }

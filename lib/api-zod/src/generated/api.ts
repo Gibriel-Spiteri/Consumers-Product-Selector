@@ -66,7 +66,7 @@ export const addEstimateItemsBodyItemsItemSpecialOrderTypeNameMax = 300;
 
 export const addEstimateItemsBodyItemsItemSpecialOrderModelMax = 300;
 
-export const addEstimateItemsBodyItemsItemSpecialOrderDescriptionMax = 4000;
+export const addEstimateItemsBodyItemsItemSpecialOrderDescriptionMax = 300;
 
 export const addEstimateItemsBodyItemsItemSpecialOrderColorMax = 300;
 
@@ -134,6 +134,21 @@ export const AddEstimateItemsResponse = zod.object({
   tranId: zod.string(),
   itemsAdded: zod.number(),
   skippedNetsuiteIds: zod.array(zod.string()),
+  specialOrderLines: zod
+    .array(
+      zod.object({
+        netsuiteId: zod.string(),
+        model: zod.string(),
+        quantity: zod.number(),
+        listPrice: zod.number(),
+        rate: zod.number(),
+        amount: zod.number(),
+      }),
+    )
+    .optional()
+    .describe(
+      "Special-order lines as priced on the estimate (list price x product line multipliers, as NetSuite does)",
+    ),
 });
 
 /**

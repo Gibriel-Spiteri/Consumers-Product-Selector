@@ -2,7 +2,8 @@ import { Router, type IRouter } from "express";
 import { executeSuiteQL, netsuiteRequest, isNetSuiteConfigured } from "../lib/netsuite";
 import { logger } from "../lib/logger";
 import {
-  EstimateItemsSchema, getSpecialOrderProductLines, getSpecialOrderTypes, specialOrderLine, SpecialOrderValidationError,
+  EstimateItemsSchema, fillSpecialOrderOptions, getSpecialOrderPricing, getSpecialOrderProductLines, getSpecialOrderTypes,
+  positiveId, specialOrderLine, SpecialOrderValidationError,
 } from "../lib/specialOrders";
 
 const router: IRouter = Router();
@@ -91,6 +92,9 @@ router.post("/estimates/:estimateId/add-items", async (req, res) => {
     const existing = await netsuiteRequest<{
       id: number;
       tranId: string;
+      entity?: { id: string };
+      custbody_customer_category?: { id: string };
+      location?: { id: string };
       item?: {
         items?: Array<{
           item: { id: number };
@@ -119,10 +123,31 @@ router.post("/estimates/:estimateId/add-items", async (req, res) => {
     }
 
     // Resolve authoritative membership again when pushing, not just from client-supplied labels.
-    const productLines = goodItems.some(item => item.specialOrder)
+    const hasSpecialOrders = goodItems.some(item => item.specialOrder);
+    const productLines = hasSpecialOrders
       ? await getSpecialOrderProductLines(true) : [];
+    // Price special orders the way NetSuite's estimate client does (see specialOrderLine).
+    const pricing = hasSpecialOrders
+      ? await getSpecialOrderPricing(goodItems.filter(item => item.specialOrder).map(item => item.netsuiteId))
+      : new Map();
+    let customerCategory: string | null = null;
+    if (hasSpecialOrders && existing.entity?.id) {
+      const customer = await executeSuiteQL<{ category: string | null }>(
+        `SELECT category FROM customer WHERE id = ${positiveId(String(existing.entity.id))}`
+      );
+      customerCategory = customer.items[0]?.category != null ? String(customer.items[0].category) : null;
+    }
+    const pricingContext = {
+      customerCategory: customerCategory ?? existing.custbody_customer_category?.id ?? null,
+      estimateCategory: existing.custbody_customer_category?.id ?? null,
+      location: existing.location?.id ?? null,
+    };
     const typesByLine = new Map<string, Awaited<ReturnType<typeof getSpecialOrderTypes>>>();
     const newLines = [];
+    const specialOrders: Array<{
+      index: number; netsuiteId: string; quantity: number; details: NonNullable<(typeof goodItems)[number]["specialOrder"]>;
+      type: Awaited<ReturnType<typeof getSpecialOrderTypes>>[number]; rate: number; amount: number;
+    }> = [];
     for (const item of goodItems) {
       if (!item.specialOrder) {
         const record = check.items.find(row => String(row.id) === item.netsuiteId);
@@ -147,7 +172,15 @@ router.post("/estimates/:estimateId/add-items", async (req, res) => {
       if (!type) {
         throw new SpecialOrderValidationError("The selected special-order Type does not belong to this product line or is inactive");
       }
-      newLines.push(specialOrderLine(item.netsuiteId, item.quantity, details, productLine, type));
+      const itemPricing = pricing.get(item.netsuiteId);
+      if (!itemPricing) {
+        throw new SpecialOrderValidationError("This special-order item has no product line pricing in NetSuite");
+      }
+      const line = specialOrderLine(item.netsuiteId, item.quantity, details, productLine, type, itemPricing, pricingContext);
+      specialOrders.push({
+        index: newLines.length, netsuiteId: item.netsuiteId, quantity: item.quantity, details, type, rate: line.rate, amount: line.amount,
+      });
+      newLines.push(line);
     }
 
     await netsuiteRequest(
@@ -163,6 +196,44 @@ router.post("/estimates/:estimateId/add-items", async (req, res) => {
       }
     );
 
+    if (specialOrders.length > 0) try {
+      // Type, Model, Coll/Desc and Color are item options, which REST only takes through each line's
+      // `options` string. Read the lines just added, fill NetSuite's own option template, write it back.
+      const existingLineIds = new Set((existing.item?.items ?? []).map(line => String(line.line)));
+      const after = await netsuiteRequest<{ items: Array<{ line: number; item: { id: string }; options?: string }> }>(
+        `/estimate/${estimateId}/item?expandSubResources=true`
+      );
+      const added = after.items.filter(line => !existingLineIds.has(String(line.line)));
+      const optionUpdates = specialOrders.map(so => {
+        const line = added[so.index];
+        if (!line || String(line.item.id) !== so.netsuiteId || typeof line.options !== "string") {
+          throw new Error(`Special-order line for item ${so.netsuiteId} was not found on the estimate after adding it`);
+        }
+        return { line: line.line, options: fillSpecialOrderOptions(line.options, so.details, so.type) };
+      });
+      await netsuiteRequest(`/estimate/${estimateId}`, "PATCH", { item: { items: optionUpdates } });
+
+      // NetSuite accepts an options string it cannot parse without an error, so confirm the values stored.
+      const stored = await executeSuiteQL<{ id: string; type: string | null; model: string | null }>(`
+        SELECT id, custcol_specord_type AS type, custcol_specord_model AS model
+        FROM transactionline
+        WHERE transaction = ${estimateId} AND id IN (${optionUpdates.map(u => positiveId(String(u.line))).join(",")})
+      `);
+      const missing = optionUpdates.filter(u => !stored.items.some(row =>
+        String(row.id) === String(u.line) && row.type != null && row.model != null));
+      if (missing.length > 0) {
+        throw new Error(`Special-order Type/Model did not save on estimate line(s) ${missing.map(u => u.line).join(", ")}`);
+      }
+    } catch (err: any) {
+      // The lines are already on the estimate, so a retry would duplicate them.
+      logger.error({ err, estimateId }, "Added items but could not save special-order options");
+      return res.status(502).json({
+        error: `The items were added to ${existing.tranId}, but the special-order Type, Model, Description and Color did not save. ` +
+          "Fill them in on the estimate in NetSuite; do not push these items again.",
+        detail: err?.message ?? "Unknown error",
+      });
+    }
+
     logger.info(
       { estimateId, tranId: existing.tranId, newItemCount: goodItems.length, skipped: invalidIds },
       "Added items to estimate"
@@ -174,6 +245,10 @@ router.post("/estimates/:estimateId/add-items", async (req, res) => {
       tranId: existing.tranId,
       itemsAdded: goodItems.length,
       skippedNetsuiteIds: invalidIds,
+      specialOrderLines: specialOrders.map(so => ({
+        netsuiteId: so.netsuiteId, model: so.details.model.trim(), quantity: so.quantity,
+        listPrice: so.details.listPrice, rate: so.rate, amount: so.amount,
+      })),
     });
   } catch (err: any) {
     if (err instanceof SpecialOrderValidationError) {

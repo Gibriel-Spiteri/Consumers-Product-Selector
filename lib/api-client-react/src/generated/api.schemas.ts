@@ -40,7 +40,7 @@ export interface SpecialOrderDetails {
   model: string;
   /**
    * @minLength 1
-   * @maxLength 4000
+   * @maxLength 300
    */
   description: string;
   /**
@@ -74,12 +74,23 @@ export interface EstimateItemsInput {
   items: EstimateLineInput[];
 }
 
+export interface SpecialOrderLineResult {
+  netsuiteId: string;
+  model: string;
+  quantity: number;
+  listPrice: number;
+  rate: number;
+  amount: number;
+}
+
 export interface EstimateItemsResult {
   success: boolean;
   estimateId: number;
   tranId: string;
   itemsAdded: number;
   skippedNetsuiteIds: string[];
+  /** Special-order lines as priced on the estimate (list price x product line multipliers, as NetSuite does) */
+  specialOrderLines?: SpecialOrderLineResult[];
 }
 
 export interface HealthStatus {
