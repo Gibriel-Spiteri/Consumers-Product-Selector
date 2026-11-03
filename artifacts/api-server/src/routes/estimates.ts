@@ -5,8 +5,18 @@ import {
   EstimateItemsSchema, fillSpecialOrderOptions, getSpecialOrderPricing, getSpecialOrderProductLines, getSpecialOrderTypes,
   positiveId, specialOrderLine, SpecialOrderValidationError,
 } from "../lib/specialOrders";
+import { requireEmployee } from "../lib/session";
 
 const router: IRouter = Router();
+// Estimates are NetSuite customer data and writes: signed-in staff only.
+router.use("/estimates", requireEmployee);
+
+// NetSuite's own error text ("detail") when there is one, for the message staff see.
+function netsuiteReason(err: any): string {
+  const message = String(err?.message ?? "");
+  const detail = message.match(/"detail"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+  return detail ? JSON.parse(`"${detail[1]}"`) : message.slice(0, 300);
+}
 
 router.get("/estimates/search", async (req, res) => {
   const q = (req.query.q as string || "").trim();
@@ -255,8 +265,16 @@ router.post("/estimates/:estimateId/add-items", async (req, res) => {
       return res.status(400).json({ error: err.message });
     }
     logger.error({ err, estimateId }, "Failed to add items to estimate");
+    // Everything in this try runs before or as the add itself, so on a 429 nothing was added.
+    if (/ 429 /.test(String(err?.message))) {
+      return res.status(503).json({
+        error: "NetSuite is busy right now, so nothing was added. Wait a few seconds and push again.",
+        detail: err?.message ?? "Unknown error",
+      });
+    }
     return res.status(500).json({
-      error: "Failed to add items to estimate",
+      // 2026-11-03: say why, instead of only "Failed to add items to estimate".
+      error: `Failed to add items to estimate: ${netsuiteReason(err)}`,
       detail: err?.message ?? "Unknown error",
     });
   }

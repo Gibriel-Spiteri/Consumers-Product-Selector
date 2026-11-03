@@ -30,6 +30,23 @@ const netsuiteSemaphore = new Semaphore(NETSUITE_MAX_CONCURRENCY);
 // requests triggers only one token round-trip instead of many.
 let tokenRefreshPromise: Promise<string> | null = null;
 
+// NetSuite answers 429 CONCURRENCY_LIMIT_EXCEEDED when the account-wide limit
+// (shared with every other integration) is full. The request is blocked, not
+// run, so it is safe to retry, writes included. Without this, one busy moment
+// (e.g. the sync that starts after every deploy) failed dropdowns and pushes.
+const RETRY_429_DELAYS_MS = [1000, 2000, 4000, 8000];
+
+export async function fetchNetSuite(url: string, init: RequestInit): Promise<Response> {
+  for (let attempt = 0; ; attempt++) {
+    const response = await netsuiteSemaphore.run(() => fetch(url, init));
+    const delay = RETRY_429_DELAYS_MS[attempt];
+    if (response.status !== 429 || delay === undefined) return response;
+    await response.text().catch(() => "");
+    logger.warn({ url, attempt: attempt + 1 }, "NetSuite concurrency limit hit; retrying");
+    await new Promise(resolve => setTimeout(resolve, delay + Math.floor(Math.random() * 250)));
+  }
+}
+
 function extractAccountId(): string {
   let raw = NETSUITE_ACCOUNT_ID.trim();
   raw = raw.replace(/^https?:\/\//, "");
@@ -66,7 +83,7 @@ function normalizePem(input: string): string {
   return `${header}\n${wrapped}\n${footer}\n`;
 }
 
-function getPrivateKey(): string {
+export function getPrivateKey(): string {
   const envKey = process.env.NETSUITE_PRIVATE_KEY;
   if (envKey && envKey.trim().length > 0) {
     return normalizePem(envKey);
@@ -225,17 +242,15 @@ export async function netsuiteRequest<T>(
   const baseUrl = `${getBaseUrl()}/services/rest/record/v1`;
   const url = `${baseUrl}${urlPath}`;
 
-  const response = await netsuiteSemaphore.run(() =>
-    fetch(url, {
-      method,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-        prefer: "transient",
-      },
-      body: body ? JSON.stringify(body) : undefined,
-    })
-  );
+  const response = await fetchNetSuite(url, {
+    method,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      prefer: "transient",
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
 
   if (!response.ok) {
     const text = await response.text();
@@ -271,17 +286,15 @@ export async function netsuiteCreate(
   const baseUrl = `${getBaseUrl()}/services/rest/record/v1`;
   const url = `${baseUrl}${urlPath}`;
 
-  const response = await netsuiteSemaphore.run(() =>
-    fetch(url, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-        prefer: "transient",
-      },
-      body: JSON.stringify(body),
-    })
-  );
+  const response = await fetchNetSuite(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      prefer: "transient",
+    },
+    body: JSON.stringify(body),
+  });
 
   if (!response.ok) {
     const text = await response.text();
@@ -364,17 +377,15 @@ export async function executeSuiteQL<T = any>(
     const token = await getAccessToken();
     const url = `${getBaseUrl()}/services/rest/query/v1/suiteql?limit=${SUITEQL_PAGE_SIZE}&offset=${offset}`;
 
-    const response = await netsuiteSemaphore.run(() =>
-      fetch(url, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-          prefer: "transient",
-        },
-        body: JSON.stringify({ q: baseQuery }),
-      })
-    );
+    const response = await fetchNetSuite(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        prefer: "transient",
+      },
+      body: JSON.stringify({ q: baseQuery }),
+    });
 
     if (!response.ok) {
       const text = await response.text();

@@ -5,6 +5,7 @@ import {
   getEmployeeByNetsuiteId,
 } from "../lib/employees";
 import { verifyPassword } from "../lib/password";
+import { bearerToken, signSession, verifySession } from "../lib/session";
 
 const router: IRouter = Router();
 
@@ -52,6 +53,7 @@ router.post("/auth/login", async (req, res) => {
     logger.info({ email, employeeId: emp.netsuiteId }, "Employee logged in");
 
     res.json({
+      token: signSession(emp.netsuiteId),
       employee: {
         id: emp.netsuiteId,
         entityId: emp.entityId,
@@ -70,10 +72,17 @@ router.post("/auth/login", async (req, res) => {
 });
 
 router.post("/auth/verify", async (req, res) => {
-  const { employeeId } = req.body ?? {};
-
+  // 2026-11-03: the employee comes from the signed sign-in token, not from an
+  // id the browser sends (anyone could send any id). Browsers signed in before
+  // this have no token and are asked to sign in again once.
+  // const { employeeId } = req.body ?? {};
+  //
+  // if (!employeeId) {
+  //   return res.status(400).json({ valid: false });
+  // }
+  const employeeId = verifySession(bearerToken(req));
   if (!employeeId) {
-    return res.status(400).json({ valid: false });
+    return res.json({ valid: false });
   }
 
   try {
@@ -87,6 +96,8 @@ router.post("/auth/verify", async (req, res) => {
 
     res.json({
       valid,
+      // Fresh token on every app load, so active users stay signed in.
+      ...(valid ? { token: signSession(emp.netsuiteId) } : {}),
       employee: valid
         ? {
             id: emp.netsuiteId,

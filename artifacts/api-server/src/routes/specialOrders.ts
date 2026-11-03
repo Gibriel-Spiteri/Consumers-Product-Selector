@@ -3,8 +3,10 @@ import { isNetSuiteConfigured } from "../lib/netsuite";
 import {
   getSpecialOrderProductLines, getSpecialOrderTypes, positiveId, SpecialOrderValidationError,
 } from "../lib/specialOrders";
+import { requireEmployee } from "../lib/session";
 
 const router: IRouter = Router();
+router.use("/special-orders", requireEmployee);
 router.use("/special-orders", (_req, res, next) => {
   if (!isNetSuiteConfigured()) {
     res.status(503).json({ error: "NetSuite not configured" });

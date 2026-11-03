@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import { setAuthTokenGetter } from "@workspace/api-client-react";
 
 interface Employee {
   id: string;
@@ -26,6 +27,33 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 const STORAGE_KEY = "ps_auth";
 const VIEW_KEY = "ps_view_as_non_admin";
+// Signed sign-in token from /api/auth/login; the server requires it for NetSuite estimates.
+const TOKEN_KEY = "ps_session";
+
+function readToken(): string | null {
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writeToken(token: string | null | undefined) {
+  try {
+    if (token) localStorage.setItem(TOKEN_KEY, token);
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    // ignore storage errors
+  }
+}
+
+// Every generated API hook sends the token; plain fetch calls use authHeaders().
+setAuthTokenGetter(readToken);
+
+export function authHeaders(): Record<string, string> {
+  const token = readToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [employee, setEmployee] = useState<Employee | null>(null);
@@ -54,6 +82,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
       return;
     }
+    // Signed in before sign-in tokens existed: sign in once more.
+    if (!readToken()) {
+      localStorage.removeItem(STORAGE_KEY);
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const data = JSON.parse(stored) as Employee;
@@ -65,15 +99,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       fetch("/api/auth/verify", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ employeeId: data.id }),
       })
         .then(r => r.json())
         .then(result => {
           if (result.valid && result.employee) {
             setEmployee(result.employee);
+            writeToken(result.token ?? readToken());
           } else {
             localStorage.removeItem(STORAGE_KEY);
+            writeToken(null);
           }
         })
         .catch(() => {
@@ -102,6 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setEmployee(data.employee);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data.employee));
+      writeToken(data.token);
       setViewAsNonAdmin(true);
       return { success: true };
     } catch {
@@ -112,6 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     setEmployee(null);
     localStorage.removeItem(STORAGE_KEY);
+    writeToken(null);
     setViewAsNonAdmin(false);
   }, [setViewAsNonAdmin]);
 

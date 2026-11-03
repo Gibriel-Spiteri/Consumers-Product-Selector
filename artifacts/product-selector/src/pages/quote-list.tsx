@@ -5,6 +5,7 @@ import { useAddEstimateItems } from "@workspace/api-client-react";
 import type { EstimateLineInput } from "@workspace/api-client-react";
 import SpecialOrderForm from "@/components/special-order-form";
 import { useQuoteList, type QuoteItem } from "@/context/quote-list-context";
+import { authHeaders } from "@/context/auth-context";
 import { cn, fmtPrice } from "@/lib/utils";
 import { trackPushToEstimate } from "@/lib/analytics";
 
@@ -124,12 +125,13 @@ function EstimateSearch({ onPush, pushResult, setPushResult }: {
     setSelected(null);
     setPushResult(null);
     try {
-      const res = await fetch(`/api/estimates/search?q=${encodeURIComponent(query.trim())}`);
+      const res = await fetch(`/api/estimates/search?q=${encodeURIComponent(query.trim())}`, { headers: authHeaders() });
       const data = await res.json();
       if (res.ok) {
         setResults(data.estimates ?? []);
       } else {
         setResults([]);
+        if (typeof data?.error === "string") setPushResult({ success: false, message: data.error });
       }
     } catch {
       setResults([]);
