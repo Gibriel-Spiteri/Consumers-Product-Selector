@@ -15,6 +15,16 @@ List Price is entered manually.
 
 **How to apply:** Accept the entered list price; do not invent a multiplier or treat it as a confirmed selling price.
 
+**Superseded 2026-11-03 (Gib Spiteri, NetSuite developer):** the selling price is NOT left to NetSuite. Every SP item's price levels are 0, so a line pushed without a rate lands at $0.00, and NetSuite only prices special orders in its browser scripts (no server script re-prices them). The app now applies NetSuite's own formula, from `salesorder.js` (field change on `custcol_list_selling_rate`) and the Item Options popup (`itemoptions.js`):
+
+- Rate = List Price x product line `custrecord_pl_costinclfreightmult` x (customer category 1 = Retail: `custrecord_pl_price_mult_retail`, any other category: `custrecord_pl_price_mult_crd`), rounded to the cent. A blank or zero multiplier counts as 1.
+- Amount = Rate x Quantity. List Amount = List Price x Quantity.
+- Is Drop Ship = item `isdropshipitem` or `custitem_ns_dropship`. Per Order Form = No. Earn rate from the item's earn-rate display fields (Cabinet Direct, location 14, uses the CD ones).
+- Do not set the Class option (`custcol_specord_class`); NetSuite leaves it blank.
+- Type, Model, Coll/Desc and Color are transaction item options. REST ignores them as plain line fields, so they are written through the line's `options` string after the lines are added, then checked.
+
+**How to apply:** keep `specialOrderRate` and the options write-back in `artifacts/api-server/src/lib/specialOrders.ts` matching NetSuite. If the formula changes in NetSuite, change it here too.
+
 Limit special-order product lines to PRODUCT LINE TYPE = INVENTORY.
 
 **Why:** The user explicitly requested this restriction.
