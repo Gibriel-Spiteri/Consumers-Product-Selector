@@ -624,7 +624,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     Clearance
                   </Link>
                   <Link
-                    href="/list?specialOrder=1"
+                    href="/special-order"
                     onClick={() => { setIsHoveringNav(false); setActiveTab(null); }}
                     className="flex-shrink-0 flex items-center h-[50px] px-4 font-semibold uppercase tracking-widest text-[#7B4DA8] hover:text-[#7B4DA8] transition-colors text-[13px]"
                   >
@@ -696,7 +696,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     </li>
                     <li>
                       <Link
-                        href="/list?specialOrder=1"
+                        href="/special-order"
                         onClick={() => setMobileMenuOpen(false)}
                         className="flex items-center justify-between px-6 py-4 font-semibold uppercase tracking-widest text-[#7B4DA8] text-[13px] hover:bg-purple-50 transition-colors"
                       >

@@ -3,6 +3,12 @@ name: Special-order quote requirements
 description: User-specified source and scope of special-order entry choices.
 ---
 
+The Special Order section is not a quote list; it must be a separate page.
+
+**Why:** The user corrected navigation that opened the Quote List when selecting Special Order.
+
+**How to apply:** Keep special-order entry and its category filters separate from the Quote List. Adding an item can still put it in the quote list.
+
 Special-order Type choices come from the Special Order Types subtab of the product line record and are unique for each product line.
 
 **Why:** The user explicitly identified this as the source; Delta's choices must not be hardcoded or reused for other product lines.
