@@ -21,7 +21,7 @@ export default function SpecialOrderCategories({ categories, selected, onSelect 
   return (
     <section aria-label="Special-order categories">
       <div className="flex items-center justify-between gap-3 mb-3">
-        <h2 className="text-sm font-semibold text-gray-800">Browse by category</h2>
+        <h2 className="text-[15px] font-semibold text-gray-800">Browse by category</h2>
         <button
           type="button"
           aria-pressed={!selected}
