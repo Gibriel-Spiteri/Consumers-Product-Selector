@@ -1,0 +1,458 @@
+{
+  "v": 1,
+  "header": {
+    "pageTitle": "Vendor Site Special Orders",
+    "eyebrow": "Consumers Kitchen & Bath · Product Selector guide",
+    "title": "From a product on a vendor's website to a priced special-order line on the estimate",
+    "lede": "Where each step happens: on the vendor's own website with the customer, in the Consumers Quote Helper browser extension (Edge or Chrome), in the Product Selector on the sales PC, and in NetSuite. Click any numbered box to read its exact buttons.",
+    "meta": "Mapped from the code on 11/4/2026: Product Selector Special Order page, Quote List and the Consumers Quote Helper extension 1.0.0."
+  },
+  "lanes": {
+    "VS": {
+      "name": "Vendor website",
+      "who": "customer, in a new tab",
+      "tone": "ok"
+    },
+    "EX": {
+      "name": "Quote Helper",
+      "who": "Edge or Chrome extension",
+      "tone": "auto"
+    },
+    "PS": {
+      "name": "Product Selector",
+      "who": "sales rep, signed in",
+      "tone": "accent"
+    },
+    "NS": {
+      "name": "NetSuite",
+      "who": "the Estimate"
+    }
+  },
+  "parts": [
+    {
+      "id": "p1",
+      "title": "Vendor site to estimate",
+      "intro": "The customer picks products on the vendor's own website; the Quote Helper extension carries each pick to the Product Selector, where the rep finishes it as a special order and pushes it to the estimate.",
+      "caption": "Read top to bottom. The dashed arrow is optional (adding more products). A dashed round box sends you to another way of doing the step.",
+      "cols": [
+        [
+          "VS",
+          180
+        ],
+        [
+          "EX",
+          180
+        ],
+        [
+          "PS",
+          180
+        ],
+        [
+          "NS",
+          180
+        ]
+      ],
+      "lanes": [
+        [
+          "VS",
+          [
+            "VS"
+          ]
+        ],
+        [
+          "EX",
+          [
+            "EX"
+          ]
+        ],
+        [
+          "PS",
+          [
+            "PS"
+          ]
+        ],
+        [
+          "NS",
+          [
+            "NS"
+          ]
+        ]
+      ],
+      "stages": [
+        {
+          "r0": 1,
+          "r1": 2,
+          "num": "1",
+          "name": "Set up"
+        },
+        {
+          "r0": 3,
+          "r1": 4,
+          "num": "2",
+          "name": "Open the vendor site"
+        },
+        {
+          "r0": 5,
+          "r1": 8,
+          "num": "3",
+          "name": "Customer picks products"
+        },
+        {
+          "r0": 9,
+          "r1": 12,
+          "num": "4",
+          "name": "Rep finishes each pick"
+        },
+        {
+          "r0": 13,
+          "r1": 15,
+          "num": "5",
+          "name": "Push to the estimate"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "x_install",
+          "num": 1,
+          "row": 1,
+          "col": "EX",
+          "kind": "action",
+          "lane": "EX",
+          "label": "Once per PC, ahead of time: install the Quote Helper",
+          "detail": "In Edge go to edge://extensions (Chrome: chrome://extensions), turn on Developer mode, click Load unpacked and choose the consumers-quote-helper folder. Pin Consumers Quote Helper from the puzzle icon if you like."
+        },
+        {
+          "id": "s_signin",
+          "num": 2,
+          "row": 1,
+          "col": "PS",
+          "kind": "start",
+          "lane": "PS",
+          "label": "Sign in to the Product Selector",
+          "detail": "Sign in with your NetSuite email and webstore password on the same PC and browser that has the Quote Helper."
+        },
+        {
+          "id": "a_sites",
+          "num": 3,
+          "row": 2,
+          "col": "EX",
+          "kind": "auto",
+          "lane": "EX",
+          "label": "Helper turns on for the vendor sites",
+          "detail": "The Product Selector sends every special-order product line's website (the PRD page's website link in NetSuite). The helper works only on those vendor domains and does nothing on other sites."
+        },
+        {
+          "id": "n_cat",
+          "num": 4,
+          "row": 3,
+          "col": "PS",
+          "kind": "action",
+          "lane": "PS",
+          "label": "Click SPECIAL ORDER, then a category",
+          "detail": "In the menu click SPECIAL ORDER. Under Browse by category pick one, for example Plumbing: Faucets. The PRODUCT LINES cards for that category show."
+        },
+        {
+          "id": "n_card",
+          "num": 5,
+          "row": 4,
+          "col": "PS",
+          "kind": "action",
+          "lane": "PS",
+          "label": "Click a product line card: Shop vendor site",
+          "detail": "Each card with a website says Shop vendor site. Clicking it opens the vendor's website in a new tab, for the customer to browse."
+        },
+        {
+          "id": "n_browse",
+          "num": 6,
+          "row": 5,
+          "col": "VS",
+          "kind": "action",
+          "lane": "VS",
+          "label": "Customer opens a product on the vendor site",
+          "detail": "The customer browses the vendor's site as usual and opens the product page they want."
+        },
+        {
+          "id": "d_button",
+          "num": 7,
+          "row": 6,
+          "col": "VS",
+          "kind": "decision",
+          "lane": "VS",
+          "label": "Add to Consumers Quote button shows?",
+          "detail": "The button shows at the bottom right on product pages the helper can read (the page's own product data: model, name, color, price)."
+        },
+        {
+          "id": "l_hand",
+          "num": null,
+          "row": 6,
+          "col": "EX",
+          "kind": "link",
+          "lane": null,
+          "label": "Type it in Add Special Order instead (step 14)",
+          "detail": "If the page has no product data the helper cannot read it. Note the model and price and enter them in the Add Special Order form on the Special Order page."
+        },
+        {
+          "id": "n_add",
+          "num": 8,
+          "row": 7,
+          "col": "VS",
+          "kind": "action",
+          "lane": "VS",
+          "label": "Pick the option and quantity, click Add to quote",
+          "detail": "Click Add to Consumers Quote. Choose the Option (color or finish) if there are several, check Model, Color / finish, Price on this site and Quantity, then click Add to quote."
+        },
+        {
+          "id": "a_wait",
+          "num": 9,
+          "row": 8,
+          "col": "EX",
+          "kind": "auto",
+          "lane": "EX",
+          "label": "Pick waits in the helper for the sales rep",
+          "detail": "The panel says Added to your Consumers quote. N items waiting for your sales rep. The toolbar icon shows the count; its popup lists the waiting items and has Clear waiting items."
+        },
+        {
+          "id": "a_listed",
+          "num": 10,
+          "row": 9,
+          "col": "PS",
+          "kind": "auto",
+          "lane": "PS",
+          "label": "SPECIAL ORDER shows a count; picks listed",
+          "detail": "A blue count shows next to SPECIAL ORDER in the menu. The Special Order page lists them under Picked on vendor websites, with the vendor's picture, model, color, price, quantity and a link back to the page."
+        },
+        {
+          "id": "n_use",
+          "num": 11,
+          "row": 10,
+          "col": "PS",
+          "kind": "action",
+          "lane": "PS",
+          "label": "Click Use on a pick",
+          "detail": "Use loads the pick into the Add Special Order form. The X next to it removes the pick instead."
+        },
+        {
+          "id": "a_fill",
+          "num": 12,
+          "row": 11,
+          "col": "PS",
+          "kind": "auto",
+          "lane": "PS",
+          "label": "Form fills in: product line, model, description, color, list price",
+          "detail": "Quantity too. The product line is filled in when only one line uses that vendor's website; otherwise the note says which ones to pick from (for example FOREMOST BATH or FOREMOST T&S DOORS)."
+        },
+        {
+          "id": "n_type",
+          "num": 14,
+          "row": 12,
+          "col": "PS",
+          "kind": "action",
+          "lane": "PS",
+          "label": "Choose the Type, check the list price, click Add to List",
+          "detail": "Pick the Type for the product line. Check the List Price: a vendor site can show a sale price (Delta Outlet items, for example). Price As starts on Retail. Add to List puts it on the Quote List."
+        },
+        {
+          "id": "a_cleared",
+          "num": 13,
+          "row": 12,
+          "col": "EX",
+          "kind": "auto",
+          "lane": "EX",
+          "label": "Pick cleared from the helper",
+          "detail": "Once added, the pick leaves the helper's waiting list and the counts go down."
+        },
+        {
+          "id": "n_search",
+          "num": 15,
+          "row": 13,
+          "col": "PS",
+          "kind": "action",
+          "lane": "PS",
+          "label": "Quote List: type 3 digits of the estimate, select it",
+          "detail": "Under Push to NetSuite Estimate type at least 3 digits of the estimate number (the ES is optional). The search runs by itself; click the open estimate."
+        },
+        {
+          "id": "n_push",
+          "num": 16,
+          "row": 14,
+          "col": "PS",
+          "kind": "action",
+          "lane": "PS",
+          "label": "Click Push Items to Estimate",
+          "detail": "If the estimate's customer is the other type (Retail or CRD) than a line's Price As, a note says it will be priced at the estimate's type."
+        },
+        {
+          "id": "e_done",
+          "num": 17,
+          "row": 15,
+          "col": "NS",
+          "kind": "end",
+          "lane": "NS",
+          "label": "Special-order lines on the estimate, priced as in NetSuite",
+          "detail": "Each line gets list price x the product line's multipliers for the estimate's customer (Retail or CRD), with its Type, Model, Coll/Desc and Color."
+        }
+      ],
+      "edges": [
+        {
+          "from": "s_signin",
+          "to": "a_sites",
+          "mode": "down",
+          "label": "",
+          "opt": {}
+        },
+        {
+          "from": "s_signin",
+          "to": "n_cat",
+          "mode": "down",
+          "label": "",
+          "opt": {}
+        },
+        {
+          "from": "n_cat",
+          "to": "n_card",
+          "mode": "down",
+          "label": "",
+          "opt": {}
+        },
+        {
+          "from": "n_card",
+          "to": "n_browse",
+          "mode": "down",
+          "label": "",
+          "opt": {}
+        },
+        {
+          "from": "n_browse",
+          "to": "d_button",
+          "mode": "down",
+          "label": "",
+          "opt": {}
+        },
+        {
+          "from": "d_button",
+          "to": "n_add",
+          "mode": "down",
+          "label": "Yes",
+          "opt": {}
+        },
+        {
+          "from": "d_button",
+          "to": "l_hand",
+          "mode": "side",
+          "label": "No",
+          "opt": {}
+        },
+        {
+          "from": "n_add",
+          "to": "a_wait",
+          "mode": "down",
+          "label": "",
+          "opt": {}
+        },
+        {
+          "from": "a_wait",
+          "to": "n_browse",
+          "mode": "chan",
+          "label": "add another",
+          "opt": {
+            "dash": true,
+            "exit": "left",
+            "x": "VS.l+6",
+            "enter": "left",
+            "lab": [
+              "mid",
+              4,
+              0
+            ]
+          }
+        },
+        {
+          "from": "a_wait",
+          "to": "a_listed",
+          "mode": "down",
+          "label": "",
+          "opt": {}
+        },
+        {
+          "from": "a_listed",
+          "to": "n_use",
+          "mode": "down",
+          "label": "",
+          "opt": {}
+        },
+        {
+          "from": "n_use",
+          "to": "a_fill",
+          "mode": "down",
+          "label": "",
+          "opt": {}
+        },
+        {
+          "from": "a_fill",
+          "to": "n_type",
+          "mode": "down",
+          "label": "",
+          "opt": {}
+        },
+        {
+          "from": "n_type",
+          "to": "a_cleared",
+          "mode": "side",
+          "label": "",
+          "opt": {}
+        },
+        {
+          "from": "n_type",
+          "to": "n_search",
+          "mode": "down",
+          "label": "",
+          "opt": {}
+        },
+        {
+          "from": "n_search",
+          "to": "n_push",
+          "mode": "down",
+          "label": "",
+          "opt": {}
+        },
+        {
+          "from": "n_push",
+          "to": "e_done",
+          "mode": "down",
+          "label": "",
+          "opt": {}
+        }
+      ]
+    }
+  ],
+  "gapsIntro": "What this process needs that the app or the helper does not do yet.",
+  "gaps": [
+    {
+      "title": "Only Delta and Kohler pages have been checked.",
+      "text": "The helper reads the product data a vendor page carries. The other product lines' sites (Brizo, Elkay, Franke, TOTO, Top Knobs and more) still need a look; a site without it gets no button, and the rep types the item in."
+    },
+    {
+      "title": "Picks stay in one browser.",
+      "text": "The helper keeps picks on the PC where they were made. A customer browsing on their own phone or tablet cannot send picks, and the extension does not run on an iPad."
+    },
+    {
+      "title": "Picks are not tied to a customer.",
+      "text": "Everything added on a PC lands in one waiting list. If two customers use the same PC, the rep has to tell their picks apart."
+    },
+    {
+      "title": "The Type is not suggested.",
+      "text": "The rep picks the special-order Type every time; the vendor's own category (Kitchen Faucets, Bath Sinks) is not used to suggest one."
+    },
+    {
+      "title": "The helper is installed by hand.",
+      "text": "It is loaded on each PC with Load unpacked. Publishing it unlisted on Edge Add-ons would let IT push it to every showroom PC and update it automatically."
+    }
+  ],
+  "tips": [
+    "After installing the helper, open the Product Selector once while signed in so it gets the current vendor sites.",
+    "The helper's toolbar icon shows how many picks are waiting; its popup lists them and can clear them.",
+    "When a vendor's website changes, update the product line's website on its PRD page in NetSuite; the helper follows the next time the Product Selector is open.",
+    "A vendor site can show a sale price. The list price is what counts, so always check it before Add to List."
+  ],
+  "footer": "Vendor site special orders · Mapped from the code (Product Selector Special Order page and Quote List, Consumers Quote Helper extension 1.0.0) on 11/4/2026."
+}
