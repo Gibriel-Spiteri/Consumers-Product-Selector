@@ -27,7 +27,12 @@
     if (event.source !== window || event.origin !== location.origin) return;
     const data = event.data;
     if (!data || data.source !== FROM_PAGE) return;
-    if (data.type === "request-picks") sendPicks();
+    // if (data.type === "request-picks") sendPicks();
+    // The page asks once it is listening (after sign-in), which can be after the extension-ready sent at load.
+    if (data.type === "request-picks") {
+      toPage("extension-ready", { version: chrome.runtime.getManifest().version });
+      sendPicks();
+    }
     if (data.type === "pick-done" && typeof data.id === "string") ask({ type: "pick-done", id: data.id }).then(sendPicks);
     if (data.type === "vendor-sites" && Array.isArray(data.sites)) ask({ type: "vendor-sites", sites: data.sites.slice(0, 1000) });
   });

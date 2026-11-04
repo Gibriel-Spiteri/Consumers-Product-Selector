@@ -23,7 +23,8 @@ What the extension holds and where it runs:
 
 ## What it reads
 
-In this order, stopping at the first that gives a product:
+The helper reads the page when it loads and again each time the button is clicked (configurators and option pickers change the page without loading a new one). In this order, stopping at the first that gives a product:
+0. **A site rule** for sites that need their own (`SITE_RULES` in `vendor.js`): Fleurco's configurator.
 1. **schema.org JSON-LD** `Product` / `ProductGroup` (each variant becomes an option). A barcode in `mpn` (Flusso's UPC) is skipped for the model in `sku`.
 2. **schema.org microdata** (`itemtype=".../Product"`), only when there is no JSON-LD product.
 3. **Open Graph** product tags (`og:type` product, `product:price:amount`).
@@ -52,14 +53,20 @@ Checked on 11/4/2026 in Chrome, one product page per product line:
 | Icera | yes | yes | page text |
 | Strategic Brands | yes | no (sign-in) | page text |
 | Franke | Article Number (`115.0731.726`) | no | page text |
-| Fleurco | no: the model appears only after every configurator choice | no | customer types it |
+| Fleurco | yes (`NHS160-25-40R-79`), once every configurator choice is made, Mix & Match Kit included | yes | site rule (the total under the options) |
 | Avance | no: door-style pages only | no | customer types it |
 
 When a vendor redesigns its site, open one of its product pages and check the panel; the unit tests hold one fixture per page shape.
 
-## Install for testing (Load unpacked)
+## Staff download (Product Selector)
 
-You need the `consumers-quote-helper` folder (in this repo, or unzipped from `consumers-quote-helper-<version>.zip`).
+Signed-in staff get it from the Product Selector: click your name (top right) and choose **Quote Helper**, or the **Get the Quote Helper** link on the Special Order page.
+- The page says whether this browser has the extension and whether it is out of date, has a **Download** button and the install and update steps for Edge and Chrome.
+- The API server zips `browser-extension/consumers-quote-helper` on request (`GET /api/quote-helper/download`, signed-in employees only; `GET /api/quote-helper` gives the version). So a merged change to the extension reaches staff with the next Republish of the Repl; bump `version` in `manifest.json` so the page tells older installs to update.
+
+## Install (Load unpacked)
+
+You need the `consumers-quote-helper` folder (from the staff download, from this repo, or unzipped from `consumers-quote-helper-<version>.zip`). Keep it where it will stay: the browser loads the extension from that folder.
 
 **Microsoft Edge**
 1. Go to `edge://extensions`.
@@ -81,7 +88,7 @@ After the first install, open the Product Selector once (signed in), so the exte
 - **Recommended:** publish it as an unlisted extension on **Microsoft Edge Add-ons** (Partner Center) and, if needed, the **Chrome Web Store**.
   - The browsers then update it automatically.
   - IT can force-install it with the Edge `ExtensionInstallForcelist` policy, through Intune or Group Policy.
-- **Quick option:** Load unpacked on each PC, as above. Edge may show a "developer mode extensions" reminder. To update, replace the folder and click **Reload** on `edge://extensions`.
+- **Quick option (today):** staff download it from the Product Selector and Load unpacked on each PC, as above. Edge may show a "developer mode extensions" reminder. To update, download again, extract over the folder and click **Reload** on `edge://extensions`.
 
 ## Files
 

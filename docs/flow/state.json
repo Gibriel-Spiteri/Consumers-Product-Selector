@@ -5,7 +5,7 @@
     "eyebrow": "Consumers Kitchen & Bath · Product Selector guide",
     "title": "From a product on a vendor's website to a priced special-order line on the estimate",
     "lede": "Where each step happens: on the vendor's own website with the customer, in the Consumers Quote Helper browser extension (Edge or Chrome), in the Product Selector on the sales PC, and in NetSuite. Click any numbered box to read its exact buttons.",
-    "meta": "Mapped from the code on 11/4/2026: Product Selector Special Order page, Quote List and the Consumers Quote Helper extension 1.1.0."
+    "meta": "Mapped from the code on 11/4/2026: Product Selector Special Order page, Quote List and the Consumers Quote Helper extension 1.2.0."
   },
   "lanes": {
     "VS": {
@@ -119,7 +119,7 @@
           "kind": "action",
           "lane": "EX",
           "label": "Once per PC, ahead of time: install the Quote Helper",
-          "detail": "In Edge go to edge://extensions (Chrome: chrome://extensions), turn on Developer mode, click Load unpacked and choose the consumers-quote-helper folder. Pin Consumers Quote Helper from the puzzle icon if you like."
+          "detail": "In the Product Selector, click your name, then Quote Helper, and click Download. Extract the zip, go to edge://extensions (Chrome: chrome://extensions), turn on Developer mode, click Load unpacked and choose the consumers-quote-helper folder. The Quote Helper page then says it is installed, and later tells you when there is a newer version."
         },
         {
           "id": "s_signin",
@@ -179,7 +179,7 @@
           "kind": "decision",
           "lane": "VS",
           "label": "Helper read the item from the page?",
-          "detail": "The Add to Consumers Quote button shows at the bottom right on every page of a product line's vendor site. On a product page the helper fills in the model, name and usually the price: from the page's product data, or from the model and price printed next to the product name."
+          "detail": "The Add to Consumers Quote button shows at the bottom right on every page of a product line's vendor site, and reads the page again on each click. On a product page the helper fills in the model, name and usually the price: from the page's product data, or from the model and price printed next to the product name. On Fleurco it reads the model and total once every configurator choice is made."
         },
         {
           "id": "l_hand",
@@ -189,7 +189,7 @@
           "kind": "action",
           "lane": "EX",
           "label": "Customer types the model and color in the panel",
-          "detail": "A page with nothing to read (Fleurco's shower door configurator, Avance's door styles) opens the panel with the page's name and a blank Model, under the note We could not read this item from the page. Type the model number and color shown on it."
+          "detail": "A page with nothing to read (Avance's door styles, or Fleurco's shower door configurator before every choice is made) opens the panel with the page's name and a blank Model, with a note saying what to do. Type the model number and color shown on the page."
         },
         {
           "id": "n_add",
@@ -435,8 +435,8 @@
   "gapsIntro": "What this process needs that the app or the helper does not do yet.",
   "gaps": [
     {
-      "title": "Fleurco and Avance pages have nothing to read.",
-      "text": "The helper reads the item on 14 of the 16 vendor sites. Fleurco's configurator and Avance's door-style pages show no model number, so the customer types it in the panel. Elkay, Franke, Richelieu and Strategic Brands show no price; the rep enters the list price."
+      "title": "Avance pages have nothing to read.",
+      "text": "The helper reads the item on 15 of the 16 vendor sites. Avance's pages are door styles with no model numbers, so the customer types the model in the panel. Elkay, Franke, Richelieu and Strategic Brands show no price; the rep enters the list price."
     },
     {
       "title": "Picks stay in one browser.",
@@ -451,15 +451,15 @@
       "text": "The rep picks the special-order Type every time; the vendor's own category (Kitchen Faucets, Bath Sinks) is not used to suggest one."
     },
     {
-      "title": "The helper is installed by hand.",
-      "text": "It is loaded on each PC with Load unpacked. Publishing it unlisted on Edge Add-ons would let IT push it to every showroom PC and update it automatically."
+      "title": "The helper is still loaded by hand on each PC.",
+      "text": "Staff download it from the Product Selector (their name, then Quote Helper) and load it with Load unpacked; updates are a new download and Reload. Publishing it unlisted on Edge Add-ons would let IT push it to every showroom PC and update it automatically."
     }
   ],
   "tips": [
-    "After installing the helper, open the Product Selector once while signed in so it gets the current vendor sites.",
+    "After installing the helper, open the Product Selector once while signed in so it gets the current vendor sites. The Quote Helper page (your name, then Quote Helper) shows whether this browser has it and if it is up to date.",
     "The helper's toolbar icon shows how many picks are waiting; its popup lists them and can clear them.",
     "When a vendor's website changes, update the product line's website on its PRD page in NetSuite; the helper follows the next time the Product Selector is open.",
     "A vendor site can show a sale price. The list price is what counts, so always check it before Add to List."
   ],
-  "footer": "Vendor site special orders · Mapped from the code (Product Selector Special Order page and Quote List, Consumers Quote Helper extension 1.1.0) on 11/4/2026."
+  "footer": "Vendor site special orders · Mapped from the code (Product Selector Special Order page and Quote List, Consumers Quote Helper extension 1.2.0) on 11/4/2026."
 }

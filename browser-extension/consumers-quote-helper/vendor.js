@@ -71,6 +71,42 @@
   let selected = -1;
   let manual = false; // nothing readable on the page: the customer types the model in
   let lastUrl = "";
+  const MANUAL_HINT = f.manualHint.textContent;
+
+  // Visible text of the first element matching a selector, and the label of a checked radio button.
+  const textOf = sel => {
+    const el = document.querySelector(sel);
+    return el && el.getClientRects().length ? el.textContent.replace(/\s+/g, " ").trim() : "";
+  };
+  const checkedLabel = name => {
+    const r = document.querySelector(`input[name="${name}"]:checked`);
+    const label = r && (r.closest("label") || (r.id && document.querySelector(`label[for="${CSS.escape(r.id)}"]`)));
+    return label ? label.textContent.replace(/\s+/g, " ").trim() : "";
+  };
+
+  // Vendor sites that need their own rule, by main domain.
+  const SITE_RULES = {
+    // Fleurco's shower door configurator (2026-11-04) prints the model number and total only once every choice is
+    // made, Mix & Match Kit included, under the options: "NHS160-25-40R-79 Total : $1821 (USD)". There is no h1.
+    "fleurco.com": {
+      model: () => textOf(".product-total .product-sku"),
+      price: () => (textOf(".product-total").match(/\$\s?(\d[\d,]*(?:\.\d{2})?)/) || [])[1],
+      color: () => checkedLabel("rdoHardwareFinish"),
+      name: () => [textOf(".product-page .title"), checkedLabel("rdoGlassType")].filter(Boolean).join(", "),
+      hint: "Choose every option on the page, Mix & Match Kit included, until the model number shows under them. Then click Add to Consumers Quote again, or type the model here.",
+    },
+  };
+  const siteRule = SITE_RULES[X.registrableDomain(location.hostname)] || null;
+
+  function siteItem() {
+    if (!siteRule) return null;
+    const model = X.text(siteRule.model());
+    if (!model) return null;
+    return {
+      name: X.text(siteRule.name()) || document.title, model, color: X.text(siteRule.color()),
+      price: X.number(siteRule.price()), currency: "USD", priceIsList: false, imageUrl: "",
+    };
+  }
 
   // The page's schema.org Product microdata (Top Knobs), shaped like a JSON-LD Product for extract.js.
   function microdata() {
@@ -124,6 +160,8 @@
   async function detect() {
     const live = readPage();
     let found = live.found;
+    const site = siteItem();
+    if (site) found = { items: [site], selected: 0 };
     if (!found.items.length) found = await readFromServer();
     manual = !found.items.length;
     // 1.0.0: the button showed only on pages with product data.
@@ -160,6 +198,7 @@
     });
     f.variantWrap.style.display = items.length > 1 ? "" : "none";
     f.manualHint.hidden = !manual;
+    f.manualHint.textContent = (siteRule && siteRule.hint) || MANUAL_HINT;
     f.variant.value = String(Math.max(selected, 0));
     f.qty.value = "1";
     msg.hidden = true;
@@ -211,7 +250,19 @@
     }
   }
 
-  fab.addEventListener("click", openPanel);
+  // fab.addEventListener("click", openPanel);
+  // Read the page again on each click: configurators (Fleurco) and option pickers change it without a page load.
+  let reading = false;
+  fab.addEventListener("click", async () => {
+    if (reading) return;
+    reading = true;
+    try {
+      await detect();
+    } finally {
+      reading = false;
+    }
+    openPanel();
+  });
   $(".x").addEventListener("click", closePanel);
   $(".cancel").addEventListener("click", closePanel);
   f.variant.addEventListener("change", () => show(Number(f.variant.value)));
