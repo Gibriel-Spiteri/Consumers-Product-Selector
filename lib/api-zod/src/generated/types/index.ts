@@ -19,5 +19,6 @@ export * from "./searchProductsParams";
 export * from "./specialOrderDetails";
 export * from "./specialOrderLineResult";
 export * from "./specialOrderProductLine";
+export * from "./specialOrderProductLineCategoriesItem";
 export * from "./specialOrderType";
 export * from "./syncResponse";

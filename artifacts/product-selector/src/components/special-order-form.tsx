@@ -44,6 +44,7 @@ export default function SpecialOrderForm({ initial, onSubmit, onCancel }: {
 }) {
   const so = initial?.specialOrder;
   const [selectedItemId, setSelectedItemId] = useState(initial?.netsuiteId ?? "");
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [typeId, setTypeId] = useState(so?.typeId ?? "");
   const [quantity, setQuantity] = useState(String(initial?.quantity ?? 1));
   // Typed specs only; an order-form line's "Per Attached Order Form" is not carried into the inputs.
@@ -58,6 +59,19 @@ export default function SpecialOrderForm({ initial, onSubmit, onCancel }: {
 
   const lines = useGetSpecialOrderProductLines({ query: { queryKey: getGetSpecialOrderProductLinesQueryKey(), ...specialOrderLookupRetry } });
   const line = lines.data?.find(l => l.netsuiteItemId === selectedItemId);
+  const categories = Array.from(new Map(
+    (lines.data ?? []).flatMap(l => l.categories ?? []).map(c => [c.id, c] as const)
+  ).values()).sort((a, b) => a.name.localeCompare(b.name));
+  const visibleLines = (lines.data ?? []).filter(l =>
+    !selectedCategory || l.categories?.some(c => c.id === selectedCategory)
+  );
+  const selectCategory = (id: string) => {
+    setSelectedCategory(id);
+    if (line && id && !line.categories?.some(c => c.id === id)) {
+      setSelectedItemId("");
+      setTypeId("");
+    }
+  };
   const productLineId = line?.id ?? "";
   const types = useGetSpecialOrderTypes(productLineId, {
     query: { enabled: !!productLineId, queryKey: getGetSpecialOrderTypesQueryKey(productLineId), ...specialOrderLookupRetry },
@@ -127,6 +141,29 @@ export default function SpecialOrderForm({ initial, onSubmit, onCancel }: {
         <p className="text-[13px] text-gray-400">Choose a product line first, then its type. The selling price is list price x the product line's multipliers, the same as NetSuite.</p>
       </div>
 
+      {categories.length > 0 && (
+        <div className="px-6 py-4 border-b border-gray-100">
+          <div className={labelCls}>Categories</div>
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Special-order categories">
+            {[{ id: "", name: "All" }, ...categories].map(category => (
+              <button
+                key={category.id}
+                type="button"
+                aria-pressed={selectedCategory === category.id}
+                onClick={() => selectCategory(category.id)}
+                className={cn(
+                  "rounded-full border px-3 py-2 text-[12px] font-medium transition-colors",
+                  selectedCategory === category.id
+                    ? "border-[#7B4DA8] bg-[#7B4DA8] text-white"
+                    : "border-gray-200 text-[#7B4DA8] hover:bg-purple-50"
+                )}
+              >
+                {category.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="px-6 py-5 grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label htmlFor="so-line" className={labelCls}>Product Line</label>
@@ -141,8 +178,8 @@ export default function SpecialOrderForm({ initial, onSubmit, onCancel }: {
             </div>
           ) : (
             <select id="so-line" value={selectedItemId} onChange={e => { setSelectedItemId(e.target.value); setTypeId(""); }} className={inputCls} {...aria("productLine")} data-testid="select-product-line">
-              <option value="">{lines.data?.length ? "Select a product line" : "No product lines available"}</option>
-              {lines.data?.map(l => <option key={l.netsuiteItemId} value={l.netsuiteItemId}>{l.name}</option>)}
+              <option value="">{visibleLines.length ? "Select a product line" : "No product lines available"}</option>
+              {visibleLines.map(l => <option key={l.netsuiteItemId} value={l.netsuiteItemId}>{l.name}</option>)}
             </select>
           )}
           {staleLine && <p className="mt-1 text-[12px] text-amber-700">"{so?.productLineName}" is no longer available. Choose another product line.</p>}

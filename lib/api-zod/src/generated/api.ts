@@ -15,6 +15,12 @@ export const GetSpecialOrderProductLinesResponseItem = zod.object({
   name: zod.string(),
   netsuiteItemId: zod.string(),
   sku: zod.string(),
+  categories: zod.array(
+    zod.object({
+      id: zod.string(),
+      name: zod.string(),
+    }),
+  ),
   costMultiplier: zod
     .number()
     .describe(

@@ -28,11 +28,12 @@ export function positiveId(value: unknown): string {
 export async function getSpecialOrderProductLines(fresh = false): Promise<SpecialOrderProductLine[]> {
   if (!fresh && productLinesCache && productLinesCache.expires > Date.now()) return productLinesCache.data;
   const result = await executeSuiteQL<{
-    id: string; name: string; itemid: string; sku: string; costmult: string | null; retailmult: string | null; crdmult: string | null;
+    id: string; name: string; itemid: string; sku: string; costmult: string | null; retailmult: string | null; crdmult: string | null; categoryids: string | null;
   }>(`
     SELECT pl.id, pl.name, i.id AS itemid, i.itemid AS sku,
       pl.custrecord_pl_costinclfreightmult AS costmult, pl.custrecord_pl_price_mult_retail AS retailmult,
-      pl.custrecord_pl_price_mult_crd AS crdmult
+      pl.custrecord_pl_price_mult_crd AS crdmult,
+      pl.custrecord_pl_prd_category AS categoryids
     FROM customrecord_pl pl
     INNER JOIN item i ON i.custitem_prodline = pl.id
     WHERE pl.isinactive = 'F' AND i.isinactive = 'F' AND i.itemid LIKE 'SP-%'
@@ -43,6 +44,10 @@ export async function getSpecialOrderProductLines(fresh = false): Promise<Specia
       )
     ORDER BY pl.name, i.itemid
   `);
+  const categoryResult = await executeSuiteQL<{ id: string; name: string }>(
+    "SELECT id, name FROM customlist_prd_category ORDER BY name"
+  );
+  const categoryNames = new Map(categoryResult.items.map(c => [String(c.id), c.name]));
   // Do not silently pick an arbitrary special-order item when a product line has several.
   const counts = new Map<string, number>();
   for (const row of result.items) counts.set(String(row.id), (counts.get(String(row.id)) ?? 0) + 1);
@@ -51,6 +56,11 @@ export async function getSpecialOrderProductLines(fresh = false): Promise<Specia
     name: counts.get(String(row.id))! > 1 ? `${row.name} (${row.sku})` : row.name,
     netsuiteItemId: String(row.itemid),
     sku: row.sku,
+    categories: String(row.categoryids ?? "").split(",").map(id => id.trim()).filter(Boolean).map(id => {
+      const name = categoryNames.get(id);
+      if (!name) throw new SpecialOrderValidationError(`Unknown product-line category ${id}`);
+      return { id, name };
+    }),
     // For the quote list's selling price; the push itself re-reads them (getSpecialOrderPricing).
     costMultiplier: multiplier(row.costmult),
     retailMultiplier: multiplier(row.retailmult),

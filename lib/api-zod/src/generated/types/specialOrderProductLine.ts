@@ -5,12 +5,14 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { SpecialOrderProductLineCategoriesItem } from "./specialOrderProductLineCategoriesItem";
 
 export interface SpecialOrderProductLine {
   id: string;
   name: string;
   netsuiteItemId: string;
   sku: string;
+  categories: SpecialOrderProductLineCategoriesItem[];
   /** Product line Cost Incl. Freight multiplier (custrecord_pl_costinclfreightmult); blank or zero is sent as 1, as NetSuite treats it */
   costMultiplier: number;
   /** Product line Retail price multiplier (custrecord_pl_price_mult_retail); blank or zero is sent as 1 */
