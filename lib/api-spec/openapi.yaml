@@ -179,6 +179,10 @@ components:
           type: string
         sku:
           type: string
+        logoUrl:
+          type: string
+          nullable: true
+          description: NetSuite product-line logo image from custrecord_pl_logo
         categories:
           type: array
           items:

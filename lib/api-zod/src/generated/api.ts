@@ -15,6 +15,10 @@ export const GetSpecialOrderProductLinesResponseItem = zod.object({
   name: zod.string(),
   netsuiteItemId: zod.string(),
   sku: zod.string(),
+  logoUrl: zod
+    .string()
+    .nullish()
+    .describe("NetSuite product-line logo image from custrecord_pl_logo"),
   categories: zod.array(
     zod.object({
       id: zod.string(),

@@ -10,6 +10,7 @@ import type { PriceBasis, QuoteItem, SpecialOrderInput } from "@/context/quote-l
 import { cn, fmtPrice } from "@/lib/utils";
 import { specialOrderPrices } from "@/lib/special-order-pricing";
 import { specialOrderLookupRetry } from "@/lib/special-order-query";
+import ProductLineLogos from "@/components/product-line-logos";
 
 // NetSuite's Model / Coll/Desc / Color columns are Free-Form Text, 300 characters each.
 const LIMITS = { model: 300, color: 300, description: 300 };
@@ -162,6 +163,7 @@ export default function SpecialOrderForm({ initial, onSubmit, onCancel, categori
   return (
     <>
       {categoriesAboveForm && categoryFilters}
+      {categoriesAboveForm && selectedCategory && <ProductLineLogos lines={visibleLines} />}
       <form onSubmit={submit} noValidate className="bg-white rounded-2xl border border-gray-100 shadow-sm animate-in fade-in slide-in-from-top-2 duration-200" data-testid="form-special-order" aria-label={initial ? "Edit special order" : "Add special order"}>
       <div className="px-6 py-5 border-b border-gray-100">
         <h3 className="font-semibold text-gray-900 text-[15px] mb-1">{initial ? "Edit Special Order" : "Add Special Order"}</h3>

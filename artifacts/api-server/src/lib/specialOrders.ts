@@ -1,6 +1,6 @@
 import type { SpecialOrderDetails, SpecialOrderProductLine, SpecialOrderType } from "@workspace/api-zod";
 import { AddEstimateItemsBody } from "@workspace/api-zod";
-import { executeSuiteQL } from "./netsuite";
+import { executeSuiteQL, getBaseUrl } from "./netsuite";
 
 type TypeRecord = SpecialOrderType & { classId: string | null };
 const TTL = 5 * 60 * 1000;
@@ -28,14 +28,15 @@ export function positiveId(value: unknown): string {
 export async function getSpecialOrderProductLines(fresh = false): Promise<SpecialOrderProductLine[]> {
   if (!fresh && productLinesCache && productLinesCache.expires > Date.now()) return productLinesCache.data;
   const result = await executeSuiteQL<{
-    id: string; name: string; itemid: string; sku: string; costmult: string | null; retailmult: string | null; crdmult: string | null; categoryids: string | null;
+    id: string; name: string; itemid: string; sku: string; costmult: string | null; retailmult: string | null; crdmult: string | null; categoryids: string | null; logourl: string | null;
   }>(`
     SELECT pl.id, pl.name, i.id AS itemid, i.itemid AS sku,
       pl.custrecord_pl_costinclfreightmult AS costmult, pl.custrecord_pl_price_mult_retail AS retailmult,
       pl.custrecord_pl_price_mult_crd AS crdmult,
-      pl.custrecord_pl_prd_category AS categoryids
+      pl.custrecord_pl_prd_category AS categoryids, logo.url AS logourl
     FROM customrecord_pl pl
     INNER JOIN item i ON i.custitem_prodline = pl.id
+    LEFT JOIN file logo ON logo.id = pl.custrecord_pl_logo
     WHERE pl.isinactive = 'F' AND i.isinactive = 'F' AND i.itemid LIKE 'SP-%'
       AND UPPER(BUILTIN.DF(pl.custrecord_pl_type)) = 'INVENTORY'
       AND EXISTS (
@@ -56,6 +57,9 @@ export async function getSpecialOrderProductLines(fresh = false): Promise<Specia
     name: counts.get(String(row.id))! > 1 ? `${row.name} (${row.sku})` : row.name,
     netsuiteItemId: String(row.itemid),
     sku: row.sku,
+    logoUrl: row.logourl
+      ? new URL(row.logourl, getBaseUrl().replace(".suitetalk.api.netsuite.com", ".app.netsuite.com")).href
+      : null,
     categories: String(row.categoryids ?? "").split(",").map(id => id.trim()).filter(Boolean).map(id => {
       const name = categoryNames.get(id);
       if (!name) throw new SpecialOrderValidationError(`Unknown product-line category ${id}`);

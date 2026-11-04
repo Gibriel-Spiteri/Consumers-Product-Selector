@@ -12,6 +12,8 @@ export interface SpecialOrderProductLine {
   name: string;
   netsuiteItemId: string;
   sku: string;
+  /** NetSuite product-line logo image from custrecord_pl_logo */
+  logoUrl?: string | null;
   categories: SpecialOrderProductLineCategoriesItem[];
   /** Product line Cost Incl. Freight multiplier (custrecord_pl_costinclfreightmult); blank or zero is sent as 1, as NetSuite treats it */
   costMultiplier: number;
