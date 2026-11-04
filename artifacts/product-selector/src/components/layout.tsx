@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import { Search, Loader2, ChevronRight, ChevronDown, Package, Folders, Copy, Check, ClipboardList, LogOut, Settings, BookOpen, Flag, Menu, X } from "lucide-react";
+import { Search, Loader2, ChevronRight, ChevronDown, Package, Folders, Copy, Check, ClipboardList, LogOut, Settings, BookOpen, Flag, Menu, X, Puzzle } from "lucide-react";
 import { ReportIssueModal } from "@/components/report-issue-modal";
 import { useQuoteList } from "@/context/quote-list-context";
 import { useVendorPicks } from "@/context/vendor-picks-context";
@@ -191,6 +191,15 @@ function EmployeeBadge() {
               Admin
             </Link>
           )}
+          <Link
+            href="/quote-helper"
+            onClick={() => setOpen(false)}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+            data-testid="link-quote-helper"
+          >
+            <Puzzle size={14} />
+            Quote Helper
+          </Link>
           <button
             onClick={() => { setOpen(false); logout(); }}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors"

@@ -14,6 +14,7 @@ import ClearancePage from "@/pages/clearance";
 import ExpressBathPage from "@/pages/express-bath";
 import QuoteListPage from "@/pages/quote-list";
 import SpecialOrderPage from "@/pages/special-order";
+import QuoteHelperPage from "@/pages/quote-helper";
 import AdminPage from "@/pages/admin";
 import AnalyticsPage from "@/pages/analytics";
 import LoginPage from "@/pages/login";
@@ -85,6 +86,7 @@ function App() {
                   <Route path="/express-bath" component={ExpressBathPage} />
                   <Route path="/list" component={QuoteListPage} />
                   <Route path="/special-order" component={SpecialOrderPage} />
+                  <Route path="/quote-helper" component={QuoteHelperPage} />
                   <Route path="/admin/analytics" component={AnalyticsPage} />
                   <Route path="/admin" component={AdminPage} />
                   <Route component={NotFound} />
