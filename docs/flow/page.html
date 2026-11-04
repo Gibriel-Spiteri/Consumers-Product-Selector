@@ -1,0 +1,1142 @@
+<title>Vendor Site Special Orders</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@400;500;600&display=swap">
+<style id="cc-style">/* Layout: a working document - title, a shape key, wide swimlane charts (they scroll sideways on small screens), then the
+   numbered steps the charts link to, what is not built yet, and tips. Editors get an Edit mode (sticky bar, fields under each
+   chart, drag in the charts, a panel at the bottom for the selection) that republishes the page from its data. */
+:root {
+  --bg: #f3f5f9;
+  --surface: #ffffff;
+  --ink: #15213b;
+  --muted: #586379;
+  --line: #c8d0de;
+  --lane-a: #eaeff8;
+  --lane-b: #f6f8fc;
+  --node: #ffffff;
+  --node-stroke: #8593ae;
+  --auto: #e2e9f5;
+  --accent: #1f4fd1;
+  --accent-soft: #e4ebff;
+  --ok: #15803d;
+  --ok-soft: #dcf5e4;
+  --gap: #b45309;
+  --gap-soft: #fff3e2;
+  --edge: #4b5875;
+  --badge: #15213b;
+  --badge-ink: #ffffff;
+  --font-display: "Archivo", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-cond: "IBM Plex Sans Condensed", "Arial Narrow", "Roboto Condensed", "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c1322; --surface: #121b2e; --ink: #e4e9f3; --muted: #9ba7be; --line: #2a3752;
+    --lane-a: #142038; --lane-b: #101a2c; --node: #17223a; --node-stroke: #60709a; --auto: #1d2a47;
+    --accent: #7ea4ff; --accent-soft: #1b2b55; --ok: #4ade80; --ok-soft: #133222; --gap: #f5a524; --gap-soft: #2e2211;
+    --edge: #a9b5cc; --badge: #dfe6f3; --badge-ink: #0c1322; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0c1322; --surface: #121b2e; --ink: #e4e9f3; --muted: #9ba7be; --line: #2a3752;
+  --lane-a: #142038; --lane-b: #101a2c; --node: #17223a; --node-stroke: #60709a; --auto: #1d2a47;
+  --accent: #7ea4ff; --accent-soft: #1b2b55; --ok: #4ade80; --ok-soft: #133222; --gap: #f5a524; --gap-soft: #2e2211;
+  --edge: #a9b5cc; --badge: #dfe6f3; --badge-ink: #0c1322; color-scheme: dark;
+}
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.55; }
+.page { max-width: 1360px; margin: 0 auto; padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 34px; }
+header.top { display: grid; gap: 10px; max-width: 900px; }
+.eyebrow { font-family: var(--font-cond); font-weight: 600; font-size: 12.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--accent); }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(28px, 4.2vw, 42px); line-height: 1.08; margin: 0; text-wrap: balance; letter-spacing: -.01em; }
+h2 { font-family: var(--font-display); font-weight: 700; font-size: 23px; margin: 0; text-wrap: balance; }
+h3 { font-family: var(--font-display); font-weight: 600; font-size: 17px; margin: 0; display: flex; align-items: baseline; gap: 10px; }
+.lede { font-size: 17px; color: var(--muted); max-width: 66ch; margin: 0; }
+.meta { font-family: var(--font-cond); font-size: 13px; color: var(--muted); }
+/* key */
+.key { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; font-family: var(--font-cond); font-size: 13.5px; color: var(--ink); }
+.key .k { display: inline-flex; align-items: center; gap: 8px; }
+.key svg { flex: none; }
+/* figures */
+figure { margin: 0; display: grid; gap: 12px; }
+.fig-head { display: grid; gap: 4px; }
+.fig-head p { margin: 0; color: var(--muted); max-width: 80ch; }
+.scroller { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); -webkit-overflow-scrolling: touch; width: fit-content; max-width: 100%; }
+.scroller:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+figcaption { font-size: 13.5px; color: var(--muted); max-width: 90ch; }
+.swim { display: block; }
+.swim .lane-a { fill: var(--lane-a); }
+.swim .lane-b { fill: var(--lane-b); }
+.swim .lhead { font-family: var(--font-display); font-weight: 700; font-size: 14px; fill: var(--ink); }
+.swim .lsub { font-family: var(--font-cond); font-size: 11.5px; fill: var(--muted); }
+.swim .hrule { stroke: var(--line); stroke-width: 1.5; }
+.swim .srule { stroke: var(--line); stroke-width: 1; stroke-dasharray: 2 4; }
+.swim .snum { font-family: var(--font-display); font-weight: 700; font-size: 22px; fill: var(--accent); }
+.swim .sname { font-family: var(--font-cond); font-weight: 600; font-size: 12.5px; fill: var(--ink); }
+.swim .shape { stroke-width: 1.4; }
+.swim .k-act { fill: var(--node); stroke: var(--node-stroke); }
+.swim .k-auto { fill: var(--auto); stroke: var(--node-stroke); }
+.swim .k-dec { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.6; }
+.swim .k-end { fill: var(--ok-soft); stroke: var(--ok); stroke-width: 1.6; }
+.swim .k-opt { fill: var(--node); stroke: var(--node-stroke); stroke-dasharray: 5 4; }
+.swim .k-gap { fill: var(--gap-soft); stroke: var(--gap); stroke-width: 1.6; stroke-dasharray: 6 4; }
+.swim .k-link { fill: var(--surface); stroke: var(--accent); stroke-width: 1.6; stroke-dasharray: 3 3; }
+.swim .nlbl { font-family: var(--font-cond); font-weight: 500; font-size: 12px; fill: var(--ink); }
+.swim .badge circle { fill: var(--badge); }
+.swim .badge text { font-family: var(--font-cond); font-weight: 600; font-size: 10.5px; fill: var(--badge-ink); }
+.swim .badge-gap circle { fill: var(--gap); }
+.swim .edge { fill: none; stroke: var(--edge); stroke-width: 1.4; }
+.swim .edge-opt { stroke-dasharray: 4 4; }
+.swim .ahead { fill: var(--edge); }
+.swim .elbl { font-family: var(--font-cond); font-size: 11px; font-weight: 500; fill: var(--muted); paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; }
+.swim a.node-link { cursor: pointer; }
+.swim a.node-link:hover .shape, .swim a.node-link:focus .shape { stroke-width: 2.6; }
+.swim a.node-link:focus { outline: none; }
+.swim a.node-link:focus-visible .shape { stroke: var(--accent); stroke-width: 3; }
+/* steps */
+.steps { display: grid; gap: 22px; }
+.steps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 22px 28px; align-items: start; }
+.stage { display: grid; gap: 10px; min-width: 0; }
+.snum-h { font-size: 20px; color: var(--accent); }
+.stage ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.stage li { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px 11px; display: grid; gap: 3px; scroll-margin-top: 24px; }
+.stage li:target { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.li-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-family: var(--font-cond); font-size: 12px; }
+.li-head::before { content: attr(data-n); }
+.stage ol { counter-reset: none; }
+.li-title { margin: 0; font-weight: 600; font-size: 15px; }
+.li-detail { margin: 0; color: var(--muted); font-size: 14px; }
+.chip { display: inline-block; border-radius: 999px; padding: 1px 9px; font-weight: 600; background: var(--lane-a); color: var(--ink); border: 1px solid var(--line); }
+.chip-accent { background: var(--accent-soft); border-color: var(--accent); }
+.chip-auto { background: var(--auto); }
+.chip-ok { background: var(--ok-soft); border-color: var(--ok); }
+.tag { display: inline-block; border-radius: 4px; padding: 0 6px; font-weight: 600; color: var(--accent); border: 1px solid var(--accent); }
+.tag-gap { color: var(--gap); border-color: var(--gap); }
+.tag-opt { color: var(--muted); border-color: var(--line); }
+.num { font-family: var(--font-display); font-weight: 700; color: var(--accent); min-width: 22px; }
+/* gaps and tips */
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 28px; align-items: start; }
+.panel { display: grid; gap: 12px; min-width: 0; }
+.panel ol, .panel ul { margin: 0; padding-left: 1.3em; display: grid; gap: 8px; }
+.panel li { padding-left: 2px; }
+.panel li strong { font-weight: 600; }
+.gapnote { border-left: 4px solid var(--gap); padding: 2px 0 2px 12px; color: var(--muted); margin: 0; }
+footer { font-family: var(--font-cond); font-size: 13px; color: var(--muted); }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+/* the top band behind the sticky edit bar on phones */
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--surface); }
+.top-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.btn { font: 600 14px var(--font-body); border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 8px; padding: 7px 14px; cursor: pointer; }
+.btn:hover:not(:disabled) { border-color: var(--accent); }
+.btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.btn:disabled { opacity: .6; cursor: default; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.btn-small { font-size: 13px; padding: 4px 10px; }
+.btn-armed { border-color: var(--gap); color: var(--gap); }
+.draft { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; border: 1px solid var(--accent); background: var(--accent-soft); border-radius: 10px; padding: 8px 12px; font-size: 14px; }
+.editbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--surface); border-bottom: 1px solid var(--line); box-shadow: 0 2px 12px rgba(10, 20, 40, .08); }
+.editbar-in, .edit-hint { max-width: 1360px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.editbar-in { padding-block: 10px 4px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.edit-hint { padding-block: 0 10px; margin-top: 0; margin-bottom: 0; color: var(--muted); font-size: 13.5px; }
+.status { color: var(--muted); font-size: 13.5px; }
+.status-warn { color: var(--gap); font-weight: 600; }
+.spacer { flex: 1; }
+.in { width: 100%; box-sizing: border-box; font: 15px var(--font-body); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 7px; padding: 7px 9px; min-width: 0; }
+textarea.in { resize: vertical; line-height: 1.45; }
+.in:focus { outline: 2px solid var(--accent); outline-offset: 1px; background: var(--surface); }
+.in-title { font: 700 22px var(--font-display); }
+.field { display: grid; gap: 4px; min-width: 0; }
+.field > span { font: 600 12px var(--font-cond); color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+.ed-block { display: grid; gap: 12px; }
+.lanes-ed { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 10px; }
+.lane-ed { display: grid; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.ed-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 22px 28px; align-items: start; }
+.ed-card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 8px; scroll-margin-top: 120px; }
+.ed-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 180px); gap: 8px; }
+.arrows { display: grid; gap: 6px; }
+.arrow-row { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: center; font: 13px var(--font-cond); color: var(--muted); }
+.ed-list { display: grid; gap: 10px; }
+.ed-item { display: grid; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.ed-actions { display: flex; justify-content: flex-end; gap: 8px; }
+@media (max-width: 560px) { .ed-row { grid-template-columns: 1fr; } }
+/* chart editing: boxes snap to the grid, arrows show handles when selected, a panel at the bottom edits the selection */
+.chart-tools { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; }
+.chart-tools .hint, .insp-head .hint { color: var(--muted); font-size: 13.5px; }
+.swim .rgrid { stroke: var(--line); stroke-width: 1; stroke-dasharray: 1 5; }
+.swim.editing .node { cursor: grab; touch-action: none; }
+.swim.editing .node:focus { outline: none; }
+.swim.editing .node:focus-visible .shape { stroke: var(--accent); stroke-width: 3; }
+.swim .sel-ring { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 4 3; }
+.swim .node.drop-ok .shape { stroke: var(--ok); stroke-width: 3.2; }
+.swim .e-hit { fill: none; stroke: transparent; stroke-width: 14; pointer-events: stroke; cursor: pointer; touch-action: none; }
+.swim .ewrap.sel .edge { stroke: var(--accent); stroke-width: 2.4; }
+.swim .ewrap.sel .elbl { fill: var(--accent); }
+.swim .ewrap.dim { opacity: .25; }
+.swim.editing .elbl { cursor: move; touch-action: none; }
+.swim .hdl { fill: var(--surface); stroke: var(--accent); stroke-width: 2; cursor: grab; touch-action: none; }
+.swim .hdl-x { cursor: ew-resize; }
+.swim .hdl-y { cursor: ns-resize; }
+.swim .hdl-link { cursor: crosshair; touch-action: none; }
+.swim .hdl-link circle { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
+.swim .hdl-link text { fill: var(--surface); font: 700 15px var(--font-body); pointer-events: none; }
+.swim .ghost { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 5 4; pointer-events: none; }
+.swim .rowctl { cursor: pointer; touch-action: none; }
+.swim .rowctl circle { fill: var(--surface); stroke: var(--node-stroke); stroke-width: 1.2; }
+.swim .rowctl text { fill: var(--muted); font: 600 13px var(--font-body); pointer-events: none; }
+.swim .rowctl:hover circle { stroke: var(--accent); stroke-width: 2; }
+.swim .rowctl:hover text { fill: var(--accent); }
+.swim .sgrip { stroke: var(--accent); stroke-width: 7; stroke-linecap: round; opacity: .35; cursor: row-resize; touch-action: none; }
+.swim .sgrip:hover { opacity: .85; }
+.dragging, .dragging * { cursor: grabbing !important; -webkit-user-select: none; user-select: none; }
+.insp { position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; background: var(--surface); border-top: 1px solid var(--line); box-shadow: 0 -4px 18px rgba(10, 20, 40, .12);
+  padding: 10px max(16px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.insp-in { max-width: 1360px; margin: 0 auto; display: grid; gap: 8px; }
+.insp-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.insp-row { display: flex; flex-wrap: wrap; align-items: end; gap: 8px 10px; }
+.insp-row .field { flex: 1 1 190px; }
+.insp-warn { flex-basis: 100%; margin: 0; }
+.check { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; padding-bottom: 8px; }
+.check input { width: 16px; height: 16px; accent-color: var(--accent); }
+body.insp-open { padding-bottom: 210px; }
+</style>
+<div id="app"><div class="page"><header class="top"><div class="top-row"><div class="eyebrow">Consumers Kitchen &amp; Bath · Product Selector guide</div><button id="cc-edit" class="btn" data-action="edit" type="button" hidden>Edit page</button></div><div id="cc-draft" class="draft" hidden><span id="cc-draft-msg">You have unsaved edits to this page from earlier in this tab.</span><button class="btn btn-small" data-action="restore-draft" type="button">Keep editing them</button><button class="btn btn-small" data-action="drop-draft" type="button">Throw them away</button></div><h1>From a product on a vendor&#39;s website to a priced special-order line on the estimate</h1><p class="lede">Where each step happens: on the vendor&#39;s own website with the customer, in the Consumers Quote Helper browser extension (Edge or Chrome), in the Product Selector on the sales PC, and in NetSuite. Click any numbered box to read its exact buttons.</p><div class="meta">Mapped from the code on 11/4/2026: Product Selector Special Order page, Quote List and the Consumers Quote Helper extension 1.0.0.</div></header>
+<div class="key" aria-label="Shape key"><span class="k"><svg width="34" height="20" aria-hidden="true"><rect x="1" y="2" width="32" height="16" rx="5" fill="var(--node)" stroke="var(--node-stroke)" stroke-width="1.4"/></svg>A step you take</span><span class="k"><svg width="38" height="20" aria-hidden="true"><polygon points="7,2 31,2 37,10 31,18 7,18 1,10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/></svg>A decision</span><span class="k"><svg width="34" height="20" aria-hidden="true"><rect x="1" y="2" width="32" height="16" rx="2" fill="var(--auto)" stroke="var(--node-stroke)" stroke-width="1.4"/></svg>Happens by itself</span><span class="k"><svg width="34" height="20" aria-hidden="true"><rect x="1" y="2" width="32" height="16" rx="5" fill="var(--node)" stroke="var(--node-stroke)" stroke-width="1.4" stroke-dasharray="5 4"/></svg>Optional</span><span class="k"><svg width="34" height="20" aria-hidden="true"><rect x="1" y="2" width="32" height="16" rx="8" fill="var(--ok-soft)" stroke="var(--ok)" stroke-width="1.5"/></svg>Start or finish</span><span class="k"><svg width="34" height="20" aria-hidden="true"><rect x="1" y="2" width="32" height="16" rx="5" fill="var(--gap-soft)" stroke="var(--gap)" stroke-width="1.5" stroke-dasharray="6 4"/></svg>Not in the app yet</span><span class="k"><svg width="34" height="20" aria-hidden="true"><rect x="1" y="2" width="32" height="16" rx="8" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="3 3"/></svg>Go to another step</span></div>
+<figure><div class="fig-head"><h2>Vendor site to estimate</h2><p>The customer picks products on the vendor&#39;s own website; the Quote Helper extension carries each pick to the Product Selector, where the rep finishes it as a special order and pushes it to the estimate.</p></div><div class="scroller" id="fig-0" tabindex="0" role="region" aria-label="Vendor site to estimate, flow chart, scrolls sideways"><svg class="swim" viewBox="0 0 856 1382" width="856" height="1382" role="img" aria-label="Vendor site to estimate. The customer picks products on the vendor&#39;s own website; the Quote Helper extension carries each pick to the Product Selector, where the rep finishes it as a special order and pushes it to the estimate." xmlns="http://www.w3.org/2000/svg">
+<defs><marker id="ah1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ahead" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+<rect class="lane-a" x="118.0" y="0" width="180.0" height="1382"/>
+<text class="lhead" x="208.0" y="26" text-anchor="middle">Vendor website</text>
+<text class="lsub" x="208.0" y="44" text-anchor="middle">customer, in a new tab</text>
+<rect class="lane-b" x="298.0" y="0" width="180.0" height="1382"/>
+<text class="lhead" x="388.0" y="26" text-anchor="middle">Quote Helper</text>
+<text class="lsub" x="388.0" y="44" text-anchor="middle">Edge or Chrome extension</text>
+<rect class="lane-a" x="478.0" y="0" width="180.0" height="1382"/>
+<text class="lhead" x="568.0" y="26" text-anchor="middle">Product Selector</text>
+<text class="lsub" x="568.0" y="44" text-anchor="middle">sales rep, signed in</text>
+<rect class="lane-b" x="658.0" y="0" width="180.0" height="1382"/>
+<text class="lhead" x="748.0" y="26" text-anchor="middle">NetSuite</text>
+<text class="lsub" x="748.0" y="44" text-anchor="middle">the Estimate</text>
+<line class="hrule" x1="0" y1="66" x2="856" y2="66"/>
+<text class="snum" x="14" y="106.0">1</text>
+<text class="sname" x="14" y="126.0">Set up</text>
+<line class="srule" x1="0" y1="247.0" x2="856" y2="247.0"/>
+<text class="snum" x="14" y="278.0">2</text>
+<text class="sname" x="14" y="298.0">Open the</text>
+<text class="sname" x="14" y="313.0">vendor site</text>
+<line class="srule" x1="0" y1="419.0" x2="856" y2="419.0"/>
+<text class="snum" x="14" y="450.0">3</text>
+<text class="sname" x="14" y="470.0">Customer</text>
+<text class="sname" x="14" y="485.0">picks</text>
+<text class="sname" x="14" y="500.0">products</text>
+<line class="srule" x1="0" y1="763.0" x2="856" y2="763.0"/>
+<text class="snum" x="14" y="794.0">4</text>
+<text class="sname" x="14" y="814.0">Rep finishes</text>
+<text class="sname" x="14" y="829.0">each pick</text>
+<line class="srule" x1="0" y1="1107.0" x2="856" y2="1107.0"/>
+<text class="snum" x="14" y="1138.0">5</text>
+<text class="sname" x="14" y="1158.0">Push to the</text>
+<text class="sname" x="14" y="1173.0">estimate</text>
+<path class="edge" d="M568.0,142.0 L568.0,162.0 Q568.0,169.0 561.0,169.0 L394.5,169.0 Q388.0,169.0 388.0,175.5 L388.0,182.0" marker-end="url(#ah1)"/>
+<path class="edge" d="M568.0,142.0 L568.0,268.0" marker-end="url(#ah1)"/>
+<path class="edge" d="M568.0,314.0 L568.0,346.5" marker-end="url(#ah1)"/>
+<path class="edge" d="M568.0,407.5 L568.0,413.5 Q568.0,419.5 562.0,419.5 L214.5,419.5 Q208.0,419.5 208.0,426.0 L208.0,432.5" marker-end="url(#ah1)"/>
+<path class="edge" d="M208.0,493.5 L208.0,526.0" marker-end="url(#ah1)"/>
+<path class="edge" d="M208.0,572.0 L208.0,604.5" marker-end="url(#ah1)"/><text class="elbl" x="214.0" y="585.0" text-anchor="start">Yes</text>
+<path class="edge" d="M282.0,549.0 L318.0,549.0" marker-end="url(#ah1)"/><text class="elbl" x="300.0" y="543.0" text-anchor="middle">No</text>
+<path class="edge" d="M208.0,665.5 L208.0,671.5 Q208.0,677.5 214.0,677.5 L381.5,677.5 Q388.0,677.5 388.0,684.0 L388.0,690.5" marker-end="url(#ah1)"/>
+<path class="edge edge-opt" d="M318.0,721.0 L131.0,721.0 Q124.0,721.0 124.0,714.0 L124.0,470.0 Q124.0,463.0 131.0,463.0 L138.0,463.0" marker-end="url(#ah1)"/><text class="elbl" x="128.0" y="592.0" text-anchor="start">add another</text>
+<path class="edge" d="M388.0,751.5 L388.0,764.0 Q388.0,771.0 395.0,771.0 L561.5,771.0 Q568.0,771.0 568.0,777.5 L568.0,784.0" marker-end="url(#ah1)"/>
+<path class="edge" d="M568.0,830.0 L568.0,871.0" marker-end="url(#ah1)"/>
+<path class="edge" d="M568.0,915.0 L568.0,941.0" marker-end="url(#ah1)"/>
+<path class="edge" d="M568.0,1017.0 L568.0,1034.5" marker-end="url(#ah1)"/>
+<path class="edge" d="M498.0,1065.0 L458.0,1065.0" marker-end="url(#ah1)"/>
+<path class="edge" d="M568.0,1095.5 L568.0,1120.5" marker-end="url(#ah1)"/>
+<path class="edge" d="M568.0,1181.5 L568.0,1214.0" marker-end="url(#ah1)"/>
+<path class="edge" d="M568.0,1260.0 L568.0,1272.5 Q568.0,1279.5 575.0,1279.5 L741.5,1279.5 Q748.0,1279.5 748.0,1286.0 L748.0,1292.5" marker-end="url(#ah1)"/>
+<a href="#step-1" class="node-link" aria-label="Step 1: Once per PC, ahead of time: install the Quote Helper"><title>In Edge go to edge://extensions (Chrome: chrome://extensions), turn on Developer mode, click Load unpacked and choose the consumers-quote-helper folder. Pin Consumers Quote Helper from the puzzle icon if you like.</title><rect class="shape k-act" x="318.0" y="88.5" width="140.0" height="61.0" rx="9.0"/><text class="nlbl" text-anchor="middle"><tspan x="388.0" y="108.0">Once per PC, ahead of</tspan><tspan x="388.0" y="123.0">time: install the</tspan><tspan x="388.0" y="138.0">Quote Helper</tspan></text><g class="badge"><circle cx="321.0" cy="91.5" r="9.5"/><text x="321.0" y="95.1" text-anchor="middle">1</text></g></a>
+<a href="#step-2" class="node-link" aria-label="Step 2: Sign in to the Product Selector"><title>Sign in with your NetSuite email and webstore password on the same PC and browser that has the Quote Helper.</title><rect class="shape k-end" x="498.0" y="96.0" width="140.0" height="46.0" rx="23.0"/><text class="nlbl" text-anchor="middle"><tspan x="568.0" y="115.5">Sign in to the</tspan><tspan x="568.0" y="130.5">Product Selector</tspan></text><g class="badge"><circle cx="501.0" cy="99.0" r="9.5"/><text x="501.0" y="102.6" text-anchor="middle">2</text></g></a>
+<a href="#step-3" class="node-link" aria-label="Step 3: Helper turns on for the vendor sites"><title>The Product Selector sends every special-order product line&#39;s website (the PRD page&#39;s website link in NetSuite). The helper works only on those vendor domains and does nothing on other sites.</title><rect class="shape k-auto" x="318.0" y="182.0" width="140.0" height="46.0" rx="3.0"/><text class="nlbl" text-anchor="middle"><tspan x="388.0" y="201.5">Helper turns on for</tspan><tspan x="388.0" y="216.5">the vendor sites</tspan></text><g class="badge"><circle cx="321.0" cy="185.0" r="9.5"/><text x="321.0" y="188.6" text-anchor="middle">3</text></g></a>
+<a href="#step-4" class="node-link" aria-label="Step 4: Click SPECIAL ORDER, then a category"><title>In the menu click SPECIAL ORDER. Under Browse by category pick one, for example Plumbing: Faucets. The PRODUCT LINES cards for that category show.</title><rect class="shape k-act" x="498.0" y="268.0" width="140.0" height="46.0" rx="9.0"/><text class="nlbl" text-anchor="middle"><tspan x="568.0" y="287.5">Click SPECIAL ORDER,</tspan><tspan x="568.0" y="302.5">then a category</tspan></text><g class="badge"><circle cx="501.0" cy="271.0" r="9.5"/><text x="501.0" y="274.6" text-anchor="middle">4</text></g></a>
+<a href="#step-5" class="node-link" aria-label="Step 5: Click a product line card: Shop vendor site"><title>Each card with a website says Shop vendor site. Clicking it opens the vendor&#39;s website in a new tab, for the customer to browse.</title><rect class="shape k-act" x="498.0" y="346.5" width="140.0" height="61.0" rx="9.0"/><text class="nlbl" text-anchor="middle"><tspan x="568.0" y="366.0">Click a product line</tspan><tspan x="568.0" y="381.0">card: Shop vendor</tspan><tspan x="568.0" y="396.0">site</tspan></text><g class="badge"><circle cx="501.0" cy="349.5" r="9.5"/><text x="501.0" y="353.1" text-anchor="middle">5</text></g></a>
+<a href="#step-6" class="node-link" aria-label="Step 6: Customer opens a product on the vendor site"><title>The customer browses the vendor&#39;s site as usual and opens the product page they want.</title><rect class="shape k-act" x="138.0" y="432.5" width="140.0" height="61.0" rx="9.0"/><text class="nlbl" text-anchor="middle"><tspan x="208.0" y="452.0">Customer opens a</tspan><tspan x="208.0" y="467.0">product on the vendor</tspan><tspan x="208.0" y="482.0">site</tspan></text><g class="badge"><circle cx="141.0" cy="435.5" r="9.5"/><text x="141.0" y="439.1" text-anchor="middle">6</text></g></a>
+<a href="#step-7" class="node-link" aria-label="Step 7: Add to Consumers Quote button shows?"><title>The button shows at the bottom right on product pages the helper can read (the page&#39;s own product data: model, name, color, price).</title><polygon class="shape k-dec" points="148.0,526.0 268.0,526.0 282.0,549.0 268.0,572.0 148.0,572.0 134.0,549.0"/><text class="nlbl" text-anchor="middle"><tspan x="208.0" y="545.5">Add to Consumers</tspan><tspan x="208.0" y="560.5">Quote button shows?</tspan></text><g class="badge"><circle cx="137.0" cy="529.0" r="9.5"/><text x="137.0" y="532.6" text-anchor="middle">7</text></g></a>
+<g><rect class="shape k-link" x="318.0" y="518.5" width="140.0" height="61.0" rx="30.5"/><text class="nlbl" text-anchor="middle"><tspan x="388.0" y="538.0">Type it in Add</tspan><tspan x="388.0" y="553.0">Special Order instead</tspan><tspan x="388.0" y="568.0">(step 14)</tspan></text></g>
+<a href="#step-8" class="node-link" aria-label="Step 8: Pick the option and quantity, click Add to quote"><title>Click Add to Consumers Quote. Choose the Option (color or finish) if there are several, check Model, Color / finish, Price on this site and Quantity, then click Add to quote.</title><rect class="shape k-act" x="138.0" y="604.5" width="140.0" height="61.0" rx="9.0"/><text class="nlbl" text-anchor="middle"><tspan x="208.0" y="624.0">Pick the option and</tspan><tspan x="208.0" y="639.0">quantity, click Add</tspan><tspan x="208.0" y="654.0">to quote</tspan></text><g class="badge"><circle cx="141.0" cy="607.5" r="9.5"/><text x="141.0" y="611.1" text-anchor="middle">8</text></g></a>
+<a href="#step-9" class="node-link" aria-label="Step 9: Pick waits in the helper for the sales rep"><title>The panel says Added to your Consumers quote. N items waiting for your sales rep. The toolbar icon shows the count; its popup lists the waiting items and has Clear waiting items.</title><rect class="shape k-auto" x="318.0" y="690.5" width="140.0" height="61.0" rx="3.0"/><text class="nlbl" text-anchor="middle"><tspan x="388.0" y="710.0">Pick waits in the</tspan><tspan x="388.0" y="725.0">helper for the sales</tspan><tspan x="388.0" y="740.0">rep</tspan></text><g class="badge"><circle cx="321.0" cy="693.5" r="9.5"/><text x="321.0" y="697.1" text-anchor="middle">9</text></g></a>
+<a href="#step-10" class="node-link" aria-label="Step 10: SPECIAL ORDER shows a count; picks listed"><title>A blue count shows next to SPECIAL ORDER in the menu. The Special Order page lists them under Picked on vendor websites, with the vendor&#39;s picture, model, color, price, quantity and a link back to the page.</title><rect class="shape k-auto" x="498.0" y="784.0" width="140.0" height="46.0" rx="3.0"/><text class="nlbl" text-anchor="middle"><tspan x="568.0" y="803.5">SPECIAL ORDER shows a</tspan><tspan x="568.0" y="818.5">count; picks listed</tspan></text><g class="badge"><circle cx="501.0" cy="787.0" r="9.5"/><text x="501.0" y="790.6" text-anchor="middle">10</text></g></a>
+<a href="#step-11" class="node-link" aria-label="Step 11: Click Use on a pick"><title>Use loads the pick into the Add Special Order form. The X next to it removes the pick instead.</title><rect class="shape k-act" x="498.0" y="871.0" width="140.0" height="44.0" rx="9.0"/><text class="nlbl" text-anchor="middle"><tspan x="568.0" y="897.0">Click Use on a pick</tspan></text><g class="badge"><circle cx="501.0" cy="874.0" r="9.5"/><text x="501.0" y="877.6" text-anchor="middle">11</text></g></a>
+<a href="#step-12" class="node-link" aria-label="Step 12: Form fills in: product line, model, description, color, list price"><title>Quantity too. The product line is filled in when only one line uses that vendor&#39;s website; otherwise the note says which ones to pick from (for example FOREMOST BATH or FOREMOST T&amp;S DOORS).</title><rect class="shape k-auto" x="498.0" y="941.0" width="140.0" height="76.0" rx="3.0"/><text class="nlbl" text-anchor="middle"><tspan x="568.0" y="960.5">Form fills in:</tspan><tspan x="568.0" y="975.5">product line, model,</tspan><tspan x="568.0" y="990.5">description, color,</tspan><tspan x="568.0" y="1005.5">list price</tspan></text><g class="badge"><circle cx="501.0" cy="944.0" r="9.5"/><text x="501.0" y="947.6" text-anchor="middle">12</text></g></a>
+<a href="#step-14" class="node-link" aria-label="Step 14: Choose the Type, check the list price, click Add to List"><title>Pick the Type for the product line. Check the List Price: a vendor site can show a sale price (Delta Outlet items, for example). Price As starts on Retail. Add to List puts it on the Quote List.</title><rect class="shape k-act" x="498.0" y="1034.5" width="140.0" height="61.0" rx="9.0"/><text class="nlbl" text-anchor="middle"><tspan x="568.0" y="1054.0">Choose the Type,</tspan><tspan x="568.0" y="1069.0">check the list price,</tspan><tspan x="568.0" y="1084.0">click Add to List</tspan></text><g class="badge"><circle cx="501.0" cy="1037.5" r="9.5"/><text x="501.0" y="1041.1" text-anchor="middle">14</text></g></a>
+<a href="#step-13" class="node-link" aria-label="Step 13: Pick cleared from the helper"><title>Once added, the pick leaves the helper&#39;s waiting list and the counts go down.</title><rect class="shape k-auto" x="318.0" y="1042.0" width="140.0" height="46.0" rx="3.0"/><text class="nlbl" text-anchor="middle"><tspan x="388.0" y="1061.5">Pick cleared from the</tspan><tspan x="388.0" y="1076.5">helper</tspan></text><g class="badge"><circle cx="321.0" cy="1045.0" r="9.5"/><text x="321.0" y="1048.6" text-anchor="middle">13</text></g></a>
+<a href="#step-15" class="node-link" aria-label="Step 15: Quote List: type 3 digits of the estimate, select it"><title>Under Push to NetSuite Estimate type at least 3 digits of the estimate number (the ES is optional). The search runs by itself; click the open estimate.</title><rect class="shape k-act" x="498.0" y="1120.5" width="140.0" height="61.0" rx="9.0"/><text class="nlbl" text-anchor="middle"><tspan x="568.0" y="1140.0">Quote List: type 3</tspan><tspan x="568.0" y="1155.0">digits of the</tspan><tspan x="568.0" y="1170.0">estimate, select it</tspan></text><g class="badge"><circle cx="501.0" cy="1123.5" r="9.5"/><text x="501.0" y="1127.1" text-anchor="middle">15</text></g></a>
+<a href="#step-16" class="node-link" aria-label="Step 16: Click Push Items to Estimate"><title>If the estimate&#39;s customer is the other type (Retail or CRD) than a line&#39;s Price As, a note says it will be priced at the estimate&#39;s type.</title><rect class="shape k-act" x="498.0" y="1214.0" width="140.0" height="46.0" rx="9.0"/><text class="nlbl" text-anchor="middle"><tspan x="568.0" y="1233.5">Click Push Items to</tspan><tspan x="568.0" y="1248.5">Estimate</tspan></text><g class="badge"><circle cx="501.0" cy="1217.0" r="9.5"/><text x="501.0" y="1220.6" text-anchor="middle">16</text></g></a>
+<a href="#step-17" class="node-link" aria-label="Step 17: Special-order lines on the estimate, priced as in NetSuite"><title>Each line gets list price x the product line&#39;s multipliers for the estimate&#39;s customer (Retail or CRD), with its Type, Model, Coll/Desc and Color.</title><rect class="shape k-end" x="678.0" y="1292.5" width="140.0" height="61.0" rx="30.5"/><text class="nlbl" text-anchor="middle"><tspan x="748.0" y="1312.0">Special-order lines</tspan><tspan x="748.0" y="1327.0">on the estimate,</tspan><tspan x="748.0" y="1342.0">priced as in NetSuite</tspan></text><g class="badge"><circle cx="681.0" cy="1295.5" r="9.5"/><text x="681.0" y="1299.1" text-anchor="middle">17</text></g></a>
+</svg></div><figcaption>Read top to bottom. The dashed arrow is optional (adding more products). A dashed round box sends you to another way of doing the step.</figcaption></figure>
+<section class="steps" aria-labelledby="steps-h"><h2 id="steps-h">Step by step</h2><div class="steps-grid"><section class="stage"><h3><span class="snum-h">1</span>Set up</h3><ol start="1"><li id="step-1"><div class="li-head"><span class="num">1</span><span class="chip chip-auto">Quote Helper</span></div><p class="li-title">Once per PC, ahead of time: install the Quote Helper</p><p class="li-detail">In Edge go to edge://extensions (Chrome: chrome://extensions), turn on Developer mode, click Load unpacked and choose the consumers-quote-helper folder. Pin Consumers Quote Helper from the puzzle icon if you like.</p></li><li id="step-2"><div class="li-head"><span class="num">2</span><span class="chip chip-accent">Product Selector</span></div><p class="li-title">Sign in to the Product Selector</p><p class="li-detail">Sign in with your NetSuite email and webstore password on the same PC and browser that has the Quote Helper.</p></li><li id="step-3"><div class="li-head"><span class="num">3</span><span class="chip chip-auto">Quote Helper</span></div><p class="li-title">Helper turns on for the vendor sites</p><p class="li-detail">The Product Selector sends every special-order product line&#39;s website (the PRD page&#39;s website link in NetSuite). The helper works only on those vendor domains and does nothing on other sites.</p></li></ol></section>
+<section class="stage"><h3><span class="snum-h">2</span>Open the vendor site</h3><ol start="4"><li id="step-4"><div class="li-head"><span class="num">4</span><span class="chip chip-accent">Product Selector</span></div><p class="li-title">Click SPECIAL ORDER, then a category</p><p class="li-detail">In the menu click SPECIAL ORDER. Under Browse by category pick one, for example Plumbing: Faucets. The PRODUCT LINES cards for that category show.</p></li><li id="step-5"><div class="li-head"><span class="num">5</span><span class="chip chip-accent">Product Selector</span></div><p class="li-title">Click a product line card: Shop vendor site</p><p class="li-detail">Each card with a website says Shop vendor site. Clicking it opens the vendor&#39;s website in a new tab, for the customer to browse.</p></li></ol></section>
+<section class="stage"><h3><span class="snum-h">3</span>Customer picks products</h3><ol start="6"><li id="step-6"><div class="li-head"><span class="num">6</span><span class="chip chip-ok">Vendor website</span></div><p class="li-title">Customer opens a product on the vendor site</p><p class="li-detail">The customer browses the vendor&#39;s site as usual and opens the product page they want.</p></li><li id="step-7"><div class="li-head"><span class="num">7</span><span class="chip chip-ok">Vendor website</span><span class="tag">Decision</span></div><p class="li-title">Add to Consumers Quote button shows?</p><p class="li-detail">The button shows at the bottom right on product pages the helper can read (the page&#39;s own product data: model, name, color, price).</p></li><li id="step-8"><div class="li-head"><span class="num">8</span><span class="chip chip-ok">Vendor website</span></div><p class="li-title">Pick the option and quantity, click Add to quote</p><p class="li-detail">Click Add to Consumers Quote. Choose the Option (color or finish) if there are several, check Model, Color / finish, Price on this site and Quantity, then click Add to quote.</p></li><li id="step-9"><div class="li-head"><span class="num">9</span><span class="chip chip-auto">Quote Helper</span></div><p class="li-title">Pick waits in the helper for the sales rep</p><p class="li-detail">The panel says Added to your Consumers quote. N items waiting for your sales rep. The toolbar icon shows the count; its popup lists the waiting items and has Clear waiting items.</p></li></ol></section>
+<section class="stage"><h3><span class="snum-h">4</span>Rep finishes each pick</h3><ol start="10"><li id="step-10"><div class="li-head"><span class="num">10</span><span class="chip chip-accent">Product Selector</span></div><p class="li-title">SPECIAL ORDER shows a count; picks listed</p><p class="li-detail">A blue count shows next to SPECIAL ORDER in the menu. The Special Order page lists them under Picked on vendor websites, with the vendor&#39;s picture, model, color, price, quantity and a link back to the page.</p></li><li id="step-11"><div class="li-head"><span class="num">11</span><span class="chip chip-accent">Product Selector</span></div><p class="li-title">Click Use on a pick</p><p class="li-detail">Use loads the pick into the Add Special Order form. The X next to it removes the pick instead.</p></li><li id="step-12"><div class="li-head"><span class="num">12</span><span class="chip chip-accent">Product Selector</span></div><p class="li-title">Form fills in: product line, model, description, color, list price</p><p class="li-detail">Quantity too. The product line is filled in when only one line uses that vendor&#39;s website; otherwise the note says which ones to pick from (for example FOREMOST BATH or FOREMOST T&amp;S DOORS).</p></li><li id="step-13"><div class="li-head"><span class="num">13</span><span class="chip chip-auto">Quote Helper</span></div><p class="li-title">Pick cleared from the helper</p><p class="li-detail">Once added, the pick leaves the helper&#39;s waiting list and the counts go down.</p></li><li id="step-14"><div class="li-head"><span class="num">14</span><span class="chip chip-accent">Product Selector</span></div><p class="li-title">Choose the Type, check the list price, click Add to List</p><p class="li-detail">Pick the Type for the product line. Check the List Price: a vendor site can show a sale price (Delta Outlet items, for example). Price As starts on Retail. Add to List puts it on the Quote List.</p></li></ol></section>
+<section class="stage"><h3><span class="snum-h">5</span>Push to the estimate</h3><ol start="15"><li id="step-15"><div class="li-head"><span class="num">15</span><span class="chip chip-accent">Product Selector</span></div><p class="li-title">Quote List: type 3 digits of the estimate, select it</p><p class="li-detail">Under Push to NetSuite Estimate type at least 3 digits of the estimate number (the ES is optional). The search runs by itself; click the open estimate.</p></li><li id="step-16"><div class="li-head"><span class="num">16</span><span class="chip chip-accent">Product Selector</span></div><p class="li-title">Click Push Items to Estimate</p><p class="li-detail">If the estimate&#39;s customer is the other type (Retail or CRD) than a line&#39;s Price As, a note says it will be priced at the estimate&#39;s type.</p></li><li id="step-17"><div class="li-head"><span class="num">17</span><span class="chip">NetSuite</span></div><p class="li-title">Special-order lines on the estimate, priced as in NetSuite</p><p class="li-detail">Each line gets list price x the product line&#39;s multipliers for the estimate&#39;s customer (Retail or CRD), with its Type, Model, Coll/Desc and Color.</p></li></ol></section></div></section>
+<div class="two"><section class="panel" aria-labelledby="gaps-h"><h2 id="gaps-h">Not in the app yet</h2><p class="gapnote">What this process needs that the app or the helper does not do yet.</p><ol><li><strong>Only Delta and Kohler pages have been checked.</strong> The helper reads the product data a vendor page carries. The other product lines&#39; sites (Brizo, Elkay, Franke, TOTO, Top Knobs and more) still need a look; a site without it gets no button, and the rep types the item in.</li><li><strong>Picks stay in one browser.</strong> The helper keeps picks on the PC where they were made. A customer browsing on their own phone or tablet cannot send picks, and the extension does not run on an iPad.</li><li><strong>Picks are not tied to a customer.</strong> Everything added on a PC lands in one waiting list. If two customers use the same PC, the rep has to tell their picks apart.</li><li><strong>The Type is not suggested.</strong> The rep picks the special-order Type every time; the vendor&#39;s own category (Kitchen Faucets, Bath Sinks) is not used to suggest one.</li><li><strong>The helper is installed by hand.</strong> It is loaded on each PC with Load unpacked. Publishing it unlisted on Edge Add-ons would let IT push it to every showroom PC and update it automatically.</li></ol></section><section class="panel" aria-labelledby="tips-h"><h2 id="tips-h">Good to know</h2><ul><li>After installing the helper, open the Product Selector once while signed in so it gets the current vendor sites.</li><li>The helper&#39;s toolbar icon shows how many picks are waiting; its popup lists them and can clear them.</li><li>When a vendor&#39;s website changes, update the product line&#39;s website on its PRD page in NetSuite; the helper follows the next time the Product Selector is open.</li><li>A vendor site can show a sale price. The list price is what counts, so always check it before Add to List.</li></ul></section></div>
+<footer>Vendor site special orders · Mapped from the code (Product Selector Special Order page and Quote List, Consumers Quote Helper extension 1.0.0) on 11/4/2026.</footer></div></div>
+<script type="application/json" id="cc-state">{"v":1,"header":{"pageTitle":"Vendor Site Special Orders","eyebrow":"Consumers Kitchen & Bath · Product Selector guide","title":"From a product on a vendor's website to a priced special-order line on the estimate","lede":"Where each step happens: on the vendor's own website with the customer, in the Consumers Quote Helper browser extension (Edge or Chrome), in the Product Selector on the sales PC, and in NetSuite. Click any numbered box to read its exact buttons.","meta":"Mapped from the code on 11/4/2026: Product Selector Special Order page, Quote List and the Consumers Quote Helper extension 1.0.0."},"lanes":{"VS":{"name":"Vendor website","who":"customer, in a new tab","tone":"ok"},"EX":{"name":"Quote Helper","who":"Edge or Chrome extension","tone":"auto"},"PS":{"name":"Product Selector","who":"sales rep, signed in","tone":"accent"},"NS":{"name":"NetSuite","who":"the Estimate"}},"parts":[{"id":"p1","title":"Vendor site to estimate","intro":"The customer picks products on the vendor's own website; the Quote Helper extension carries each pick to the Product Selector, where the rep finishes it as a special order and pushes it to the estimate.","caption":"Read top to bottom. The dashed arrow is optional (adding more products). A dashed round box sends you to another way of doing the step.","cols":[["VS",180],["EX",180],["PS",180],["NS",180]],"lanes":[["VS",["VS"]],["EX",["EX"]],["PS",["PS"]],["NS",["NS"]]],"stages":[{"r0":1,"r1":2,"num":"1","name":"Set up"},{"r0":3,"r1":4,"num":"2","name":"Open the vendor site"},{"r0":5,"r1":8,"num":"3","name":"Customer picks products"},{"r0":9,"r1":12,"num":"4","name":"Rep finishes each pick"},{"r0":13,"r1":15,"num":"5","name":"Push to the estimate"}],"nodes":[{"id":"x_install","num":1,"row":1,"col":"EX","kind":"action","lane":"EX","label":"Once per PC, ahead of time: install the Quote Helper","detail":"In Edge go to edge://extensions (Chrome: chrome://extensions), turn on Developer mode, click Load unpacked and choose the consumers-quote-helper folder. Pin Consumers Quote Helper from the puzzle icon if you like."},{"id":"s_signin","num":2,"row":1,"col":"PS","kind":"start","lane":"PS","label":"Sign in to the Product Selector","detail":"Sign in with your NetSuite email and webstore password on the same PC and browser that has the Quote Helper."},{"id":"a_sites","num":3,"row":2,"col":"EX","kind":"auto","lane":"EX","label":"Helper turns on for the vendor sites","detail":"The Product Selector sends every special-order product line's website (the PRD page's website link in NetSuite). The helper works only on those vendor domains and does nothing on other sites."},{"id":"n_cat","num":4,"row":3,"col":"PS","kind":"action","lane":"PS","label":"Click SPECIAL ORDER, then a category","detail":"In the menu click SPECIAL ORDER. Under Browse by category pick one, for example Plumbing: Faucets. The PRODUCT LINES cards for that category show."},{"id":"n_card","num":5,"row":4,"col":"PS","kind":"action","lane":"PS","label":"Click a product line card: Shop vendor site","detail":"Each card with a website says Shop vendor site. Clicking it opens the vendor's website in a new tab, for the customer to browse."},{"id":"n_browse","num":6,"row":5,"col":"VS","kind":"action","lane":"VS","label":"Customer opens a product on the vendor site","detail":"The customer browses the vendor's site as usual and opens the product page they want."},{"id":"d_button","num":7,"row":6,"col":"VS","kind":"decision","lane":"VS","label":"Add to Consumers Quote button shows?","detail":"The button shows at the bottom right on product pages the helper can read (the page's own product data: model, name, color, price)."},{"id":"l_hand","num":null,"row":6,"col":"EX","kind":"link","lane":null,"label":"Type it in Add Special Order instead (step 14)","detail":"If the page has no product data the helper cannot read it. Note the model and price and enter them in the Add Special Order form on the Special Order page."},{"id":"n_add","num":8,"row":7,"col":"VS","kind":"action","lane":"VS","label":"Pick the option and quantity, click Add to quote","detail":"Click Add to Consumers Quote. Choose the Option (color or finish) if there are several, check Model, Color / finish, Price on this site and Quantity, then click Add to quote."},{"id":"a_wait","num":9,"row":8,"col":"EX","kind":"auto","lane":"EX","label":"Pick waits in the helper for the sales rep","detail":"The panel says Added to your Consumers quote. N items waiting for your sales rep. The toolbar icon shows the count; its popup lists the waiting items and has Clear waiting items."},{"id":"a_listed","num":10,"row":9,"col":"PS","kind":"auto","lane":"PS","label":"SPECIAL ORDER shows a count; picks listed","detail":"A blue count shows next to SPECIAL ORDER in the menu. The Special Order page lists them under Picked on vendor websites, with the vendor's picture, model, color, price, quantity and a link back to the page."},{"id":"n_use","num":11,"row":10,"col":"PS","kind":"action","lane":"PS","label":"Click Use on a pick","detail":"Use loads the pick into the Add Special Order form. The X next to it removes the pick instead."},{"id":"a_fill","num":12,"row":11,"col":"PS","kind":"auto","lane":"PS","label":"Form fills in: product line, model, description, color, list price","detail":"Quantity too. The product line is filled in when only one line uses that vendor's website; otherwise the note says which ones to pick from (for example FOREMOST BATH or FOREMOST T&S DOORS)."},{"id":"n_type","num":14,"row":12,"col":"PS","kind":"action","lane":"PS","label":"Choose the Type, check the list price, click Add to List","detail":"Pick the Type for the product line. Check the List Price: a vendor site can show a sale price (Delta Outlet items, for example). Price As starts on Retail. Add to List puts it on the Quote List."},{"id":"a_cleared","num":13,"row":12,"col":"EX","kind":"auto","lane":"EX","label":"Pick cleared from the helper","detail":"Once added, the pick leaves the helper's waiting list and the counts go down."},{"id":"n_search","num":15,"row":13,"col":"PS","kind":"action","lane":"PS","label":"Quote List: type 3 digits of the estimate, select it","detail":"Under Push to NetSuite Estimate type at least 3 digits of the estimate number (the ES is optional). The search runs by itself; click the open estimate."},{"id":"n_push","num":16,"row":14,"col":"PS","kind":"action","lane":"PS","label":"Click Push Items to Estimate","detail":"If the estimate's customer is the other type (Retail or CRD) than a line's Price As, a note says it will be priced at the estimate's type."},{"id":"e_done","num":17,"row":15,"col":"NS","kind":"end","lane":"NS","label":"Special-order lines on the estimate, priced as in NetSuite","detail":"Each line gets list price x the product line's multipliers for the estimate's customer (Retail or CRD), with its Type, Model, Coll/Desc and Color."}],"edges":[{"from":"s_signin","to":"a_sites","mode":"down","label":"","opt":{}},{"from":"s_signin","to":"n_cat","mode":"down","label":"","opt":{}},{"from":"n_cat","to":"n_card","mode":"down","label":"","opt":{}},{"from":"n_card","to":"n_browse","mode":"down","label":"","opt":{}},{"from":"n_browse","to":"d_button","mode":"down","label":"","opt":{}},{"from":"d_button","to":"n_add","mode":"down","label":"Yes","opt":{}},{"from":"d_button","to":"l_hand","mode":"side","label":"No","opt":{}},{"from":"n_add","to":"a_wait","mode":"down","label":"","opt":{}},{"from":"a_wait","to":"n_browse","mode":"chan","label":"add another","opt":{"dash":true,"exit":"left","x":"VS.l+6","enter":"left","lab":["mid",4,0]}},{"from":"a_wait","to":"a_listed","mode":"down","label":"","opt":{}},{"from":"a_listed","to":"n_use","mode":"down","label":"","opt":{}},{"from":"n_use","to":"a_fill","mode":"down","label":"","opt":{}},{"from":"a_fill","to":"n_type","mode":"down","label":"","opt":{}},{"from":"n_type","to":"a_cleared","mode":"side","label":"","opt":{}},{"from":"n_type","to":"n_search","mode":"down","label":"","opt":{}},{"from":"n_search","to":"n_push","mode":"down","label":"","opt":{}},{"from":"n_push","to":"e_done","mode":"down","label":"","opt":{}}]}],"gapsIntro":"What this process needs that the app or the helper does not do yet.","gaps":[{"title":"Only Delta and Kohler pages have been checked.","text":"The helper reads the product data a vendor page carries. The other product lines' sites (Brizo, Elkay, Franke, TOTO, Top Knobs and more) still need a look; a site without it gets no button, and the rep types the item in."},{"title":"Picks stay in one browser.","text":"The helper keeps picks on the PC where they were made. A customer browsing on their own phone or tablet cannot send picks, and the extension does not run on an iPad."},{"title":"Picks are not tied to a customer.","text":"Everything added on a PC lands in one waiting list. If two customers use the same PC, the rep has to tell their picks apart."},{"title":"The Type is not suggested.","text":"The rep picks the special-order Type every time; the vendor's own category (Kitchen Faucets, Bath Sinks) is not used to suggest one."},{"title":"The helper is installed by hand.","text":"It is loaded on each PC with Load unpacked. Publishing it unlisted on Edge Add-ons would let IT push it to every showroom PC and update it automatically."}],"tips":["After installing the helper, open the Product Selector once while signed in so it gets the current vendor sites.","The helper's toolbar icon shows how many picks are waiting; its popup lists them and can clear them.","When a vendor's website changes, update the product line's website on its PRD page in NetSuite; the helper follows the next time the Product Selector is open.","A vendor site can show a sale price. The list price is what counts, so always check it before Add to List."],"footer":"Vendor site special orders · Mapped from the code (Product Selector Special Order page and Quote List, Consumers Quote Helper extension 1.0.0) on 11/4/2026."}</script>
+<script id="cc-script">/* Swimlane flow chart page: renders the page (one or more swimlane charts, the numbered steps, what is not built yet, tips) from
+   the data in #cc-state. People who can edit the artifact get Edit page: they change the wording and box types, drag boxes,
+   arrow bends, arrow labels and stage lines, add and remove rows, renumber steps, and Save, which republishes the whole page
+   from the data (the artifact capability). Runs in Node too, to pre-render (scripts/build.js). */
+(function () {
+  'use strict';
+  var GUT = 118, NW = 140, HEADH = 66, RH = 86;
+  var SKELETON = '<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>';
+  var headHtml = function (s) { return '<title>' + esc((s.header && s.header.pageTitle) || 'Flow chart') + '</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@400;500;600&display=swap">\n'; };
+  var KINDS = [['action', 'A step you take'], ['decision', 'A decision'], ['auto', 'Happens by itself'], ['optional', 'Optional'], ['start', 'Start'], ['end', 'Finish'], ['gap', 'Not in the app yet']];
+  var KIND_CLASS = { action: 'k-act', auto: 'k-auto', decision: 'k-dec', start: 'k-end', end: 'k-end', optional: 'k-opt', gap: 'k-gap', link: 'k-link' };
+  var ROUTES = [['down', 'Down, then across'], ['side', 'Straight across'], ['rdown', 'Across, then down'], ['chan', 'Around the side']];
+  var LABEL_MAX = 70;
+  // The flow (which box leads to which) is fixed in the page: editors move and reword, but cannot draw, reconnect or remove
+  // arrows, or add or remove boxes. Change the flow in state.json and rebuild. false lets editors change it in the page.
+  var LOCK_FLOW = true;
+
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+  var f1 = function (n) { return (Math.round(n * 10) / 10).toFixed(1); };
+  var wrap = function (text, width) {
+    var lines = [], line = '';
+    String(text || '').split(/\s+/).filter(Boolean).forEach(function (w) {
+      if (!line) line = w;
+      else if (line.length + 1 + w.length <= width) line += ' ' + w;
+      else { lines.push(line); line = w; }
+    });
+    if (line) lines.push(line);
+    return lines.length ? lines : [''];
+  };
+  var columns = function (spec) {
+    var xs = {}, x = GUT;
+    spec.forEach(function (c) { xs[c[0]] = [x, x + c[1]]; x += c[1]; });
+    return { xs: xs, width: x };
+  };
+  var geom = function (cols, n) {
+    var x = cols[n.col], cx = (x[0] + x[1]) / 2, cy = HEADH + 10 + (n.row - 1) * RH + RH / 2;
+    var lines = wrap(n.label, n.kind === 'decision' ? 20 : 21), w = NW + (n.kind === 'decision' ? 8 : 0), h = Math.max(44, 15 * lines.length + 16);
+    return { n: n, lines: lines, cx: cx, cy: cy, w: w, h: h, l: cx - w / 2, r: cx + w / 2, t: cy - h / 2, b: cy + h / 2 };
+  };
+  var xref = function (cols, spec) {
+    var m = /^(\w+)\.(l|r|c)([+-]\d+)?$/.exec(spec || ''), x = m && cols[m[1]], off = m ? Number(m[3] || 0) : 0;
+    if (!x) return GUT;
+    return (m[2] === 'l' ? x[0] : m[2] === 'r' ? x[1] : (x[0] + x[1]) / 2) + off;
+  };
+  // Where everything in one chart sits. Editing adds an empty row at the bottom to drop boxes into, and room on the right
+  // for the row buttons.
+  var layout = function (part, ed) {
+    var c = columns(part.cols), G = {}, rows = 0, last = part.stages[part.stages.length - 1];
+    part.nodes.forEach(function (n) { G[n.id] = geom(c.xs, n); rows = Math.max(rows, n.row); });
+    rows = Math.max(rows, last ? last.r1 : 0) + (ed ? 1 : 0);
+    return { cols: c.xs, width: c.width, G: G, rows: rows, W: c.width + (ed ? 44 : 18), H: HEADH + 10 + rows * RH + 16 };
+  };
+
+  // ------------------------------------------------------------------ the swimlane chart
+  var nodeSvg = function (g, ed) {
+    var n = g.n, kind = n.kind, cls = KIND_CLASS[kind] || 'k-act', out = [];
+    if (kind === 'decision') {
+      var k = 14, pts = [[g.l + k, g.t], [g.l + g.w - k, g.t], [g.l + g.w, g.cy], [g.l + g.w - k, g.t + g.h], [g.l + k, g.t + g.h], [g.l, g.cy]];
+      out.push('<polygon class="shape ' + cls + '" points="' + pts.map(function (p) { return f1(p[0]) + ',' + f1(p[1]); }).join(' ') + '"/>');
+    } else {
+      var rx = (kind === 'start' || kind === 'end' || kind === 'link') ? g.h / 2 : (kind === 'auto' ? 3 : 9);
+      out.push('<rect class="shape ' + cls + '" x="' + f1(g.l) + '" y="' + f1(g.t) + '" width="' + f1(g.w) + '" height="' + f1(g.h) + '" rx="' + f1(rx) + '"/>');
+    }
+    var ty = g.cy - (g.lines.length - 1) * 7.5 + 4;
+    out.push('<text class="nlbl" text-anchor="middle">' + g.lines.map(function (s, i) { return '<tspan x="' + f1(g.cx) + '" y="' + f1(ty + i * 15) + '">' + esc(s) + '</tspan>'; }).join('') + '</text>');
+    if (n.num != null) {
+      var bx = g.l + 3, by = g.t + 3;
+      out.push('<g class="badge' + (kind === 'gap' ? ' badge-gap' : '') + '"><circle cx="' + f1(bx) + '" cy="' + f1(by) + '" r="9.5"/><text x="' + f1(bx) + '" y="' + f1(by + 3.6) + '" text-anchor="middle">' + n.num + '</text></g>');
+    }
+    if (ed) {
+      var on = ed.sel && ed.sel.type === 'node' && ed.sel.id === n.id;
+      var ring = on ? '<rect class="sel-ring" x="' + f1(g.l - 5) + '" y="' + f1(g.t - 5) + '" width="' + f1(g.w + 10) + '" height="' + f1(g.h + 10) + '" rx="12"/>' : '';
+      return '<g class="node' + (on ? ' sel' : '') + '" data-node="' + esc(n.id) + '" tabindex="0" role="button" aria-label="' + esc((n.num != null ? 'Step ' + n.num + ': ' : '') + n.label) + '. Drag to move it, or press the arrow keys.">' + ring + out.join('') + '</g>';
+    }
+    if (n.num != null) return '<a href="#step-' + n.num + '" class="node-link" aria-label="Step ' + n.num + ': ' + esc(n.label) + '"><title>' + esc(n.detail || '') + '</title>' + out.join('') + '</a>';
+    return '<g>' + out.join('') + '</g>';
+  };
+  // the points an arrow runs through, where its label sits, and the segment that can be dragged ("bend")
+  var edgeGeom = function (cols, G, e) {
+    var s = G[e.from], d = G[e.to], o = e.opt || {}, pts, mid, bend = null;
+    if (!s || !d) return null;
+    if (e.mode === 'down') {
+      if (Math.abs(s.cx - d.cx) < 1) pts = [[s.cx, s.b], [d.cx, d.t]];
+      else {
+        var yt = (o.turn === 'early' ? s.b + 13 : d.t - 13) + (o.dy || 0);
+        pts = [[s.cx, s.b], [s.cx, yt], [d.cx, yt], [d.cx, d.t]];
+        bend = { x: (s.cx + d.cx) / 2, y: yt, axis: 'y' };
+      }
+      mid = [s.cx + 6, s.b + 13];
+    } else if (e.mode === 'side') {
+      pts = d.cx > s.cx ? [[s.r, s.cy], [d.l, d.cy]] : [[s.l, s.cy], [d.r, d.cy]];
+      mid = [(pts[0][0] + pts[1][0]) / 2, s.cy - 6];
+    } else if (e.mode === 'rdown') {
+      pts = [[s.r, s.cy], [d.cx, s.cy], [d.cx, d.t]];
+      mid = [s.r + 8, s.cy - 6];
+    } else {                                         // 'chan': out a side, along a channel, in a side
+      var X = xref(cols, o.x), sx = o.exit === 'left' ? s.l : s.r, ex = o.enter === 'left' ? d.l : d.r;
+      pts = [[sx, s.cy], [X, s.cy], [X, d.cy], [ex, d.cy]];
+      mid = [X, (s.cy + d.cy) / 2];
+      bend = { x: X, y: (s.cy + d.cy) / 2, axis: 'x' };
+    }
+    var lab = null;
+    if (e.label) {
+      var lp = o.lab, x, y, anchor = 'start';
+      if (!lp) { x = mid[0]; y = mid[1]; if (e.mode === 'side') anchor = 'middle'; }
+      else if (typeof lp[0] === 'string') {
+        var ref = { exit: pts[1], mid: mid, end: pts[pts.length - 2], start: pts[0] }[lp[0]] || pts[0];
+        x = ref[0] + lp[1]; y = ref[1] + lp[2];
+        if (lp[3]) anchor = lp[3]; else if (e.mode === 'side' && lp[0] === 'mid') anchor = 'middle';
+      } else { x = pts[0][0] + lp[0]; y = pts[0][1] + lp[1]; }
+      lab = [x, y, anchor];
+    }
+    return { pts: pts, lab: lab, bend: bend };
+  };
+  var pathD = function (pts) {                                  // arrows turn with small rounded corners
+    var d = 'M' + f1(pts[0][0]) + ',' + f1(pts[0][1]);
+    for (var i = 1; i < pts.length; i++) {
+      var p = pts[i], a = pts[i - 1], b = pts[i + 1];
+      if (b) {
+        var l1 = Math.hypot(p[0] - a[0], p[1] - a[1]), l2 = Math.hypot(b[0] - p[0], b[1] - p[1]), r = Math.min(7, l1 / 2, l2 / 2);
+        if (r >= 1) {
+          d += ' L' + f1(p[0] - (p[0] - a[0]) / l1 * r) + ',' + f1(p[1] - (p[1] - a[1]) / l1 * r) +
+            ' Q' + f1(p[0]) + ',' + f1(p[1]) + ' ' + f1(p[0] + (b[0] - p[0]) / l2 * r) + ',' + f1(p[1] + (b[1] - p[1]) / l2 * r);
+          continue;
+        }
+      }
+      d += ' L' + f1(p[0]) + ',' + f1(p[1]);
+    }
+    return d;
+  };
+  var edgeSvg = function (cols, G, e, marker, ei, ed) {
+    var eg = edgeGeom(cols, G, e), o = e.opt || {};
+    if (!eg) return '';
+    var d = pathD(eg.pts), out = '<path class="edge' + (o.dash ? ' edge-opt' : '') + '" d="' + d + '" marker-end="url(#' + marker + ')"/>';
+    if (eg.lab) out += '<text class="elbl"' + (ed ? ' data-elabel="' + ei + '"' : '') + ' x="' + f1(eg.lab[0]) + '" y="' + f1(eg.lab[1]) + '" text-anchor="' + eg.lab[2] + '">' + esc(e.label) + '</text>';
+    if (!ed) return out;
+    var on = ed.sel && ed.sel.type === 'edge' && ed.sel.ei === ei;
+    return '<g class="ewrap' + (on ? ' sel' : '') + '" data-edge="' + ei + '"><path class="e-hit" d="' + d + '"/>' + out + '</g>';
+  };
+  var stageOf = function (part, n) { return part.stages.filter(function (s) { return s.r0 <= n.row && n.row <= s.r1; })[0]; };
+  // edit mode: + and - at the right edge insert a row or remove an empty one
+  var rowsSvg = function (part, L) {
+    var o = [], x = L.W - 22;
+    for (var r = 1; r < L.rows; r++) {
+      var y0 = HEADH + 10 + (r - 1) * RH, st = stageOf(part, { row: r });
+      o.push('<g class="rowctl" data-row="add" data-r="' + r + '" role="button" aria-label="Insert an empty row above row ' + r + '"><title>Insert an empty row here</title><circle cx="' + x + '" cy="' + f1(y0) + '" r="8"/><text x="' + x + '" y="' + f1(y0 + 4.5) + '" text-anchor="middle">+</text></g>');
+      if (!part.nodes.some(function (n) { return n.row === r; }) && (!st || st.r1 > st.r0)) {
+        o.push('<g class="rowctl" data-row="del" data-r="' + r + '" role="button" aria-label="Remove empty row ' + r + '"><title>Remove this empty row</title><circle cx="' + x + '" cy="' + f1(y0 + RH / 2) + '" r="8"/><text x="' + x + '" y="' + f1(y0 + RH / 2 + 4.5) + '" text-anchor="middle">−</text></g>');
+      }
+    }
+    return o.join('');
+  };
+  // edit mode: the handles of whatever is selected
+  var handlesSvg = function (part, L, sel) {
+    if (!sel) return '';
+    if (sel.type === 'node') {
+      var g = L.G[sel.id];
+      if (!g || LOCK_FLOW) return '';
+      return '<g class="hdl-link" data-h="link" role="button" aria-label="Draw an arrow from this box"><title>Drag onto another box to draw an arrow</title><circle cx="' + f1(g.r + 10) + '" cy="' + f1(g.cy) + '" r="9"/><text x="' + f1(g.r + 10) + '" y="' + f1(g.cy + 4.5) + '" text-anchor="middle">+</text></g>';
+    }
+    var e = part.edges[sel.ei], eg = e && edgeGeom(L.cols, L.G, e);
+    if (!eg) return '';
+    var a = eg.pts[0], b = eg.pts[eg.pts.length - 1], out = '';
+    if (eg.bend) out += '<rect class="hdl hdl-bend hdl-' + eg.bend.axis + '" data-h="bend" x="' + f1(eg.bend.x - 6) + '" y="' + f1(eg.bend.y - 6) + '" width="12" height="12" rx="2"><title>Drag to move this part of the arrow</title></rect>';
+    if (LOCK_FLOW) return out;                                   // the ends stay on their boxes
+    out += '<circle class="hdl" data-h="tail" cx="' + f1(a[0]) + '" cy="' + f1(a[1]) + '" r="6"><title>Drag onto another box to change where the arrow starts</title></circle>';
+    out += '<circle class="hdl" data-h="head" cx="' + f1(b[0]) + '" cy="' + f1(b[1]) + '" r="6"><title>Drag onto another box to change where the arrow ends</title></circle>';
+    return out;
+  };
+  var figureSvg = function (part, lanes, marker, ed) {
+    var L = layout(part, ed), cols = L.cols, G = L.G, height = L.H, W = L.W, o = [];
+    o.push('<svg class="swim' + (ed ? ' editing' : '') + '" viewBox="0 0 ' + W + ' ' + height + '" width="' + W + '" height="' + height + '" role="img" aria-label="' + esc(part.title + '. ' + part.intro) + '" xmlns="http://www.w3.org/2000/svg">');
+    o.push('<defs><marker id="' + marker + '" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ahead" d="M0,0 L10,5 L0,10 z"/></marker></defs>');
+    part.lanes.forEach(function (ln, i) {
+      var x0 = cols[ln[1][0]][0], x1 = cols[ln[1][ln[1].length - 1]][1], info = lanes[ln[0]] || { name: ln[0], who: '' };
+      o.push('<rect class="' + (i % 2 ? 'lane-b' : 'lane-a') + '" x="' + f1(x0) + '" y="0" width="' + f1(x1 - x0) + '" height="' + height + '"/>');
+      o.push('<text class="lhead" x="' + f1((x0 + x1) / 2) + '" y="26" text-anchor="middle">' + esc(info.name) + '</text>');
+      o.push('<text class="lsub" x="' + f1((x0 + x1) / 2) + '" y="44" text-anchor="middle">' + esc(info.who) + '</text>');
+    });
+    o.push('<line class="hrule" x1="0" y1="' + HEADH + '" x2="' + W + '" y2="' + HEADH + '"/>');
+    if (ed) for (var r = 2; r <= L.rows; r++) o.push('<line class="rgrid" x1="' + GUT + '" y1="' + (HEADH + 10 + (r - 1) * RH - 1) + '" x2="' + L.width + '" y2="' + (HEADH + 10 + (r - 1) * RH - 1) + '"/>');
+    part.stages.forEach(function (st, si) {
+      var y0 = HEADH + 10 + (st.r0 - 1) * RH;
+      if (st.r0 > 1) o.push('<line class="srule" x1="0" y1="' + f1(y0 - 1) + '" x2="' + W + '" y2="' + f1(y0 - 1) + '"/>');
+      if (ed && si > 0) o.push('<line class="sgrip" data-stage="' + si + '" x1="6" y1="' + f1(y0 - 1) + '" x2="' + (GUT - 12) + '" y2="' + f1(y0 - 1) + '"><title>Drag up or down to change where this stage starts</title></line>');
+      o.push('<text class="snum" x="14" y="' + f1(y0 + 30) + '">' + esc(st.num) + '</text>');
+      wrap(st.name, 13).forEach(function (ln, i) { o.push('<text class="sname" x="14" y="' + f1(y0 + 50 + i * 15) + '">' + esc(ln) + '</text>'); });
+    });
+    part.edges.forEach(function (e, ei) { o.push(edgeSvg(cols, G, e, marker, ei, ed)); });
+    part.nodes.forEach(function (n) { o.push(nodeSvg(G[n.id], ed)); });
+    if (ed) o.push(rowsSvg(part, L) + handlesSvg(part, L, ed.sel));
+    o.push('</svg>');
+    return o.join('\n');
+  };
+
+  // ------------------------------------------------------------------ the page, read mode
+  var KEY_HTML = '<div class="key" aria-label="Shape key">' +
+    '<span class="k"><svg width="34" height="20" aria-hidden="true"><rect x="1" y="2" width="32" height="16" rx="5" fill="var(--node)" stroke="var(--node-stroke)" stroke-width="1.4"/></svg>A step you take</span>' +
+    '<span class="k"><svg width="38" height="20" aria-hidden="true"><polygon points="7,2 31,2 37,10 31,18 7,18 1,10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/></svg>A decision</span>' +
+    '<span class="k"><svg width="34" height="20" aria-hidden="true"><rect x="1" y="2" width="32" height="16" rx="2" fill="var(--auto)" stroke="var(--node-stroke)" stroke-width="1.4"/></svg>Happens by itself</span>' +
+    '<span class="k"><svg width="34" height="20" aria-hidden="true"><rect x="1" y="2" width="32" height="16" rx="5" fill="var(--node)" stroke="var(--node-stroke)" stroke-width="1.4" stroke-dasharray="5 4"/></svg>Optional</span>' +
+    '<span class="k"><svg width="34" height="20" aria-hidden="true"><rect x="1" y="2" width="32" height="16" rx="8" fill="var(--ok-soft)" stroke="var(--ok)" stroke-width="1.5"/></svg>Start or finish</span>' +
+    '<span class="k"><svg width="34" height="20" aria-hidden="true"><rect x="1" y="2" width="32" height="16" rx="5" fill="var(--gap-soft)" stroke="var(--gap)" stroke-width="1.5" stroke-dasharray="6 4"/></svg>Not in the app yet</span>' +
+    '<span class="k"><svg width="34" height="20" aria-hidden="true"><rect x="1" y="2" width="32" height="16" rx="8" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="3 3"/></svg>Go to another step</span></div>';
+  var tagFor = function (kind) {
+    return kind === 'gap' ? '<span class="tag tag-gap">Not in the app yet</span>' : kind === 'decision' ? '<span class="tag">Decision</span>' : kind === 'optional' ? '<span class="tag tag-opt">Optional</span>' : '';
+  };
+  var toneClass = function (l) { return l && l.tone ? ' chip-' + esc(l.tone) : ''; };   // lanes may set tone: accent, auto or ok
+  var byNum = function (a, b) { return a.num - b.num; };
+  var stepsRead = function (part, lanes) {
+    return part.stages.map(function (st) {
+      var items = part.nodes.filter(function (n) { return n.num != null && stageOf(part, n) === st; }).sort(byNum);
+      if (!items.length) return '';
+      return '<section class="stage"><h3><span class="snum-h">' + esc(st.num) + '</span>' + esc(st.name) + '</h3><ol start="' + items[0].num + '">' +
+        items.map(function (n) {
+          return '<li id="step-' + n.num + '"><div class="li-head"><span class="num">' + n.num + '</span><span class="chip' + toneClass(lanes[n.lane]) + '">' + esc((lanes[n.lane] || {}).name || n.lane) + '</span>' + tagFor(n.kind) + '</div>' +
+            '<p class="li-title">' + esc(n.label) + '</p><p class="li-detail">' + esc(n.detail) + '</p></li>';
+        }).join('') + '</ol></section>';
+    }).join('\n');
+  };
+  var renderRead = function (s) {
+    var h = s.header, o = [];
+    o.push('<div class="page"><header class="top"><div class="top-row"><div class="eyebrow">' + esc(h.eyebrow) + '</div>' +
+      '<button id="cc-edit" class="btn" data-action="edit" type="button" hidden>Edit page</button></div>' +
+      '<div id="cc-draft" class="draft" hidden><span id="cc-draft-msg">You have unsaved edits to this page from earlier in this tab.</span>' +
+      '<button class="btn btn-small" data-action="restore-draft" type="button">Keep editing them</button><button class="btn btn-small" data-action="drop-draft" type="button">Throw them away</button></div>' +
+      '<h1>' + esc(h.title) + '</h1><p class="lede">' + esc(h.lede) + '</p><div class="meta">' + esc(h.meta) + '</div></header>');
+    o.push(KEY_HTML);
+    s.parts.forEach(function (p, i) {
+      o.push('<figure><div class="fig-head"><h2>' + esc(p.title) + '</h2><p>' + esc(p.intro) + '</p></div>' +
+        '<div class="scroller" id="fig-' + i + '" tabindex="0" role="region" aria-label="' + esc(p.title) + ', flow chart, scrolls sideways">' + figureSvg(p, s.lanes, 'ah' + (i + 1)) + '</div>' +
+        '<figcaption>' + esc(p.caption) + '</figcaption></figure>');
+    });
+    o.push('<section class="steps" aria-labelledby="steps-h"><h2 id="steps-h">Step by step</h2><div class="steps-grid">' +
+      s.parts.map(function (p) { return stepsRead(p, s.lanes); }).join('\n') + '</div></section>');
+    o.push('<div class="two"><section class="panel" aria-labelledby="gaps-h"><h2 id="gaps-h">Not in the app yet</h2><p class="gapnote">' + esc(s.gapsIntro) + '</p><ol>' +
+      s.gaps.map(function (g) { return '<li><strong>' + esc(g.title) + '</strong> ' + esc(g.text) + '</li>'; }).join('') + '</ol></section>' +
+      '<section class="panel" aria-labelledby="tips-h"><h2 id="tips-h">Good to know</h2><ul>' + s.tips.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul></section></div>');
+    o.push('<footer>' + esc(s.footer) + '</footer></div>');
+    return o.join('\n');
+  };
+
+  // ------------------------------------------------------------------ the page, edit mode
+  var input = function (path, value, extra) { return '<input class="in" data-path="' + path + '" value="' + esc(value) + '"' + (extra || '') + '>'; };
+  var area = function (path, value, rows) { return '<textarea class="in" data-path="' + path + '" rows="' + (rows || 3) + '">' + esc(value) + '</textarea>'; };
+  var field = function (label, html) { return '<label class="field"><span>' + esc(label) + '</span>' + html + '</label>'; };
+  var options = function (list, cur) { return list.map(function (k) { return '<option value="' + esc(k[0]) + '"' + (k[0] === cur ? ' selected' : '') + '>' + esc(k[1]) + '</option>'; }).join(''); };
+  var stepsEdit = function (part, pi, lanes) {
+    return part.stages.map(function (st, si) {
+      var items = part.nodes.map(function (n, ni) { return [n, ni]; }).filter(function (x) { return x[0].num != null && stageOf(part, x[0]) === st; }).sort(function (a, b) { return a[0].num - b[0].num; });
+      return '<section class="stage"><h3><span class="snum-h">' + esc(st.num) + '</span></h3>' + field('Stage name', input('parts.' + pi + '.stages.' + si + '.name', st.name)) +
+        items.map(function (x) {
+          var n = x[0], ni = x[1], base = 'parts.' + pi + '.nodes.' + ni;
+          var outs = part.edges.map(function (e, ei) { return [e, ei]; }).filter(function (y) { return y[0].from === n.id; });
+          var toName = function (id) { var t = part.nodes.filter(function (m) { return m.id === id; })[0]; return t ? (t.num != null ? 'to step ' + t.num : 'to "' + t.label + '"') : 'to ?'; };
+          return '<div class="ed-card" id="step-' + n.num + '"><div class="li-head"><span class="num">' + n.num + '</span><span class="chip' + toneClass(lanes[n.lane]) + '">' + esc((lanes[n.lane] || {}).name || n.lane) + '</span></div>' +
+            '<div class="ed-row">' + field('Box text (keep it short)', input(base + '.label', n.label, ' maxlength="' + LABEL_MAX + '"')) +
+            field('Type', '<select class="in" data-path="' + base + '.kind">' + options(KINDS, n.kind) + '</select>') + '</div>' +
+            field('Details: what to click, what to expect', area(base + '.detail', n.detail, 3)) +
+            (outs.length ? '<div class="arrows">' + outs.map(function (y) {
+              return '<label class="arrow-row"><span>Arrow ' + esc(toName(y[0].to)) + '</span>' + input('parts.' + pi + '.edges.' + y[1] + '.label', y[0].label, ' placeholder="no label" maxlength="40"') + '</label>';
+            }).join('') + '</div>' : '') + '</div>';
+        }).join('') + '</section>';
+    }).join('\n');
+  };
+  var renderEdit = function (s, sel) {
+    var h = s.header, o = [];
+    o.push('<div class="editbar" role="region" aria-label="Editing"><div class="editbar-in"><strong>Editing this page</strong><span id="cc-status" class="status">No changes yet</span><span class="spacer"></span>' +
+      '<button id="cc-undo" class="btn" data-action="undo" type="button" disabled>Undo</button>' +
+      '<button class="btn" data-action="discard" type="button">Discard changes</button><button class="btn btn-primary" data-action="save" type="button">Save changes</button></div>' +
+      '<p class="edit-hint">' + (LOCK_FLOW ? 'Drag boxes, arrow bends and arrow labels in the charts, or click one to change it. Arrows always join the same boxes. ' :
+        'Drag boxes, arrows and arrow labels in the charts, or click one to change it. ') + 'The wording is under each chart and the charts update as you type. Everyone sees the page as you leave it once you save.</p></div>');
+    o.push('<div class="page"><section class="ed-block" aria-label="Page heading">' +
+      field('Small heading', input('header.eyebrow', h.eyebrow)) + field('Title', area('header.title', h.title, 2)) +
+      field('Introduction', area('header.lede', h.lede, 3)) + field('Note under the introduction', input('header.meta', h.meta)) + '</section>');
+    o.push('<section class="ed-block" aria-labelledby="lanes-h"><h2 id="lanes-h">Columns (where a step happens)</h2><div class="lanes-ed">' +
+      Object.keys(s.lanes).map(function (k) { return '<div class="lane-ed">' + field('Column name', input('lanes.' + k + '.name', s.lanes[k].name)) + field('Under it', input('lanes.' + k + '.who', s.lanes[k].who)) + '</div>'; }).join('') + '</div></section>');
+    o.push(KEY_HTML);
+    s.parts.forEach(function (p, i) {
+      o.push('<figure><div class="fig-head">' + field('Part title', input('parts.' + i + '.title', p.title)) + field('Part introduction', area('parts.' + i + '.intro', p.intro, 2)) + '</div>' +
+        '<div class="chart-tools">' + (LOCK_FLOW ? '' : '<button class="btn btn-small" data-action="add-box" data-p="' + i + '" type="button">+ Add a box</button>') +
+        '<button class="btn btn-small" data-action="renumber" type="button" title="Numbers every step again, row by row and left to right, across both charts. Mentions like &quot;step 4&quot; in the text follow.">Renumber steps</button>' +
+        '<span class="hint">Drag a box to move it. Click an arrow to ' + (LOCK_FLOW ? 'reshape' : 'reshape or reconnect') + ' it. The round + and− at the right edge add and remove rows; the blue bars at the left move where a stage starts.</span></div>' +
+        '<div class="scroller" id="fig-' + i + '" tabindex="0" role="region" aria-label="' + esc(p.title) + ', flow chart, scrolls sideways">' + figureSvg(p, s.lanes, 'ah' + (i + 1), { sel: sel && sel.pi === i ? sel : null }) + '</div>' +
+        field('Caption under the chart', input('parts.' + i + '.caption', p.caption)) + '</figure>');
+      o.push('<div class="ed-steps">' + stepsEdit(p, i, s.lanes) + '</div>');
+    });
+    o.push('<div class="two"><section class="panel" aria-labelledby="gaps-h"><h2 id="gaps-h">Not in the app yet</h2>' + field('Introduction', area('gapsIntro', s.gapsIntro, 2)) + '<div class="ed-list">' +
+      s.gaps.map(function (g, i) {
+        return '<div class="ed-item">' + field('Gap ' + (i + 1), input('gaps.' + i + '.title', g.title)) + area('gaps.' + i + '.text', g.text, 2) +
+          '<div class="ed-actions"><button class="btn btn-small" data-action="del-gap" data-i="' + i + '" type="button">Remove</button></div></div>';
+      }).join('') + '</div><div><button class="btn" data-action="add-gap" type="button">+ Add a gap</button></div></section>' +
+      '<section class="panel" aria-labelledby="tips-h"><h2 id="tips-h">Good to know</h2><div class="ed-list">' +
+      s.tips.map(function (t, i) {
+        return '<div class="ed-item">' + field('Tip ' + (i + 1), area('tips.' + i, t, 2)) + '<div class="ed-actions"><button class="btn btn-small" data-action="del-tip" data-i="' + i + '" type="button">Remove</button></div></div>';
+      }).join('') + '</div><div><button class="btn" data-action="add-tip" type="button">+ Add a tip</button></div></section></div>');
+    o.push(field('Footer', input('footer', s.footer)) + '</div>');
+    o.push('<div id="cc-insp" class="insp" role="region" aria-label="Selected box or arrow" hidden></div>');
+    return o.join('\n');
+  };
+  var renderPage = function (s, editing, sel) { return editing ? renderEdit(s, sel) : renderRead(s); };
+  var stateJson = function (s) { return JSON.stringify(s).replace(/</g, '\\u003c'); };
+
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { renderPage: renderPage, stateJson: stateJson, SKELETON: SKELETON, headHtml: headHtml, layout: layout, edgeGeom: edgeGeom };
+    return;
+  }
+
+  // ------------------------------------------------------------------ in the viewer
+  var app = document.getElementById('app'), stateEl = document.getElementById('cc-state');
+  if (!app || !stateEl) return;
+  var SAVED_JSON = stateEl.textContent, saved = JSON.parse(SAVED_JSON), state = JSON.parse(SAVED_JSON);
+  var SAVED_CANON = JSON.stringify(saved);                     // drafts are kept in this form, so they compare equal
+  var hash = function (str) { var h = 5381; for (var i = 0; i < str.length; i++) h = (h * 33 + str.charCodeAt(i)) | 0; return (h >>> 0).toString(36); };
+  var BASE = hash(SAVED_CANON);                                // which saved version a draft started from
+  var DRAFT_KEY = 'cc-flow-draft', editing = false, dirty = false, saving = false, canEdit = false, art = null, figT = 0, draftT = 0;
+  var sel = null, drag = null, hist = [], textSnap = false, autoT = 0;
+
+  var store = {
+    get: function () { try { return sessionStorage.getItem(DRAFT_KEY); } catch (e) { return null; } },
+    set: function (v) { try { sessionStorage.setItem(DRAFT_KEY, v); } catch (e) { } },
+    drop: function () { try { sessionStorage.removeItem(DRAFT_KEY); } catch (e) { } }
+  };
+  var readDraft = function () {
+    var raw = store.get();
+    if (!raw) return null;
+    try {
+      var d = JSON.parse(raw);
+      if (d && d.parts) d = { base: null, s: d };                 // the first editable version stored the bare data
+      return d && d.s && d.s.parts ? d : null;
+    } catch (e) { return null; }
+  };
+  var stash = function () { store.set(JSON.stringify({ base: BASE, s: state })); };
+  var $ = function (id) { return document.getElementById(id); };
+  var status = ['No changes yet', false];                     // the edit bar is redrawn often; its message is kept here
+  var setStatus = function (msg, warn) { status = [msg, !!warn]; var el = $('cc-status'); if (el) { el.textContent = msg; el.classList.toggle('status-warn', !!warn); } };
+  var chrome = function () {
+    var b = $('cc-edit'); if (b) b.hidden = !canEdit;
+    var d = readDraft(), banner = $('cc-draft'), msg = $('cc-draft-msg');
+    if (!d || JSON.stringify(d.s) === SAVED_CANON) { if (store.get()) store.drop(); d = null; }
+    if (banner) banner.hidden = !(canEdit && !editing && d);
+    if (msg && d) msg.textContent = d.base === BASE ? 'You have unsaved edits to this page from earlier in this tab.' :
+      'You have unsaved edits from earlier in this tab, made before someone saved this newer version. Saving yours replaces their changes.';
+  };
+  var jump = function (fn) {                                   // scroll at once, not with the page's smooth scrolling
+    var h = document.documentElement, was = h.style.scrollBehavior;
+    h.style.scrollBehavior = 'auto'; fn(); h.style.scrollBehavior = was;
+  };
+  var undoState = function () { var b = $('cc-undo'); if (b) b.disabled = !hist.length; };
+  var show = function (keep) {
+    var y = window.scrollY, xs = state.parts.map(function (p, i) { var el = $('fig-' + i); return el ? el.scrollLeft : 0; });
+    app.innerHTML = renderPage(state, editing, sel);
+    chrome(); drawInspector(); undoState();
+    if (editing) setStatus(status[0], status[1]);
+    if (keep) jump(function () { window.scrollTo(0, y); xs.forEach(function (x, i) { var el = $('fig-' + i); if (el) el.scrollLeft = x; }); });
+  };
+  var focusNode = function (id, scroll) { var el = app.querySelector('.swim [data-node="' + id + '"]'); if (el && el.focus) el.focus({ preventScroll: !scroll }); };
+  var drawFigures = function () {
+    var f = document.activeElement, fid = f && f.getAttribute && f.getAttribute('data-node');
+    state.parts.forEach(function (p, i) { var el = $('fig-' + i); if (el) el.innerHTML = figureSvg(p, state.lanes, 'ah' + (i + 1), editing ? { sel: sel && sel.pi === i ? sel : null } : null); });
+    if (fid && sel && sel.type === 'node' && sel.id === fid) focusNode(fid, false);   // only the selected box keeps focus
+  };
+  var setPath = function (obj, path, value) {
+    var keys = path.split('.'), o = obj;
+    for (var i = 0; i < keys.length - 1; i++) o = o[/^\d+$/.test(keys[i]) ? Number(keys[i]) : keys[i]];
+    var last = keys[keys.length - 1];
+    o[/^\d+$/.test(last) ? Number(last) : last] = value;
+  };
+  var changed = function (redraw) {
+    dirty = true; setStatus('Unsaved changes');
+    if (redraw) { clearTimeout(figT); figT = setTimeout(function () { if (!drag) drawFigures(); }, 120); }
+    clearTimeout(draftT); draftT = setTimeout(stash, 600);
+  };
+
+  // ---------------------------------------------------------------- chart edits: boxes snap to a column and a row
+  var nodeById = function (p, id) { return p.nodes.filter(function (n) { return n.id === id; })[0]; };
+  var laneOf = function (p, col) { var l = p.lanes.filter(function (x) { return x[1].indexOf(col) >= 0; })[0]; return l ? l[0] : null; };
+  var boxCols = function (p) { return p.cols.filter(function (c) { return c[1] >= NW; }).map(function (c) { return c[0]; }); };
+  var taken = function (p, col, row, except) { return p.nodes.some(function (n) { return n.id !== except && n.col === col && n.row === row; }); };
+  var place = function (p, n, col, row) { n.col = col; n.row = row; if (n.kind !== 'link') n.lane = laneOf(p, col); };
+  var cellAt = function (p, L, x, y) {
+    var best = null, bd = Infinity;
+    boxCols(p).forEach(function (c) { var r = L.cols[c], dd = Math.abs(x - (r[0] + r[1]) / 2); if (dd < bd) { bd = dd; best = c; } });
+    return { col: best, row: Math.max(1, Math.min(L.rows, Math.floor((y - HEADH - 10) / RH) + 1)) };
+  };
+  var nodeAt = function (p, L, x, y, except) {
+    for (var i = p.nodes.length - 1; i >= 0; i--) {
+      var n = p.nodes[i], g = L.G[n.id];
+      if (n.id !== except && x >= g.l - 6 && x <= g.r + 6 && y >= g.t - 6 && y <= g.b + 6) return n;
+    }
+    return null;
+  };
+  // the last stage always reaches the lowest box, so every box is listed under a stage
+  var normalize = function (p) {
+    var last = p.stages[p.stages.length - 1], maxRow = 0;
+    p.nodes.forEach(function (n) { maxRow = Math.max(maxRow, n.row); });
+    if (last) last.r1 = Math.max(last.r0, maxRow);
+  };
+  var colRef = function (p, L, x) {                            // a channel's x, kept relative to a column
+    var best = p.cols[0][0];
+    p.cols.forEach(function (c) { if (x >= L.cols[c[0]][0]) best = c[0]; });
+    var off = Math.round(x - L.cols[best][0]);
+    return best + '.l' + (off < 0 ? '' : '+') + off;
+  };
+  var routeOk = function (e, L) {                              // does the arrow's shape still fit where its boxes are?
+    var s = L.G[e.from], d = L.G[e.to], o = e.opt || {};
+    if (!s || !d) return false;
+    if (e.mode === 'down') return d.t > s.b + 8;
+    if (e.mode === 'side') return Math.abs(s.cy - d.cy) < 1;
+    if (e.mode === 'rdown') return d.t > s.cy + 8 && d.cx > s.r + 4;
+    var X = xref(L.cols, o.x);                                 // 'chan': its upright part runs outside the sides it uses
+    return (o.exit === 'left' ? X <= s.l : X >= s.r) && (o.enter === 'left' ? X <= d.l : X >= d.r);
+  };
+  var aroundSide = function (p, L, e) {
+    var s = L.G[e.from], d = L.G[e.to], o = e.opt = e.opt || {}, left = (s.cx + d.cx) / 2 < (GUT + L.width) / 2;
+    e.mode = 'chan'; o.exit = o.enter = left ? 'left' : 'right';
+    o.x = colRef(p, L, left ? Math.min(s.l, d.l) - 5 : Math.max(s.r, d.r) + 5);
+  };
+  var autoRoute = function (p, L, e) {                         // a fresh shape that fits where the two boxes are
+    var s = L.G[e.from], d = L.G[e.to], o = e.opt = e.opt || {};
+    ['turn', 'dy', 'x', 'exit', 'enter', 'lab'].forEach(function (k) { delete o[k]; });
+    if (!s || !d) return;
+    if (d.t > s.b + 8) e.mode = 'down';
+    else if (Math.abs(s.cy - d.cy) < 1) e.mode = 'side';
+    else aroundSide(p, L, e);
+  };
+  var fixRoutes = function (p, id) {                           // arrows of a moved box keep their shape while it still fits
+    var L = layout(p, true);
+    p.edges.forEach(function (e) { if ((e.from === id || e.to === id) && !routeOk(e, L)) autoRoute(p, L, e); });
+  };
+  var newId = function () {
+    var id, all = {};
+    state.parts.forEach(function (p) { p.nodes.forEach(function (n) { all[n.id] = 1; }); });
+    do { id = 'b' + Math.floor(Math.random() * 1e6).toString(36); } while (all[id]);
+    return id;
+  };
+
+  // one undo step per chart edit; text fields add one when you start typing in them
+  var remember = function (before) {
+    if (before === JSON.stringify(state)) return false;
+    hist.push(before); if (hist.length > 60) hist.shift();
+    textSnap = true;                                           // typing after this gets its own undo step
+    return true;
+  };
+  var snapText = function () { if (textSnap) { textSnap = false; hist.push(JSON.stringify(state)); if (hist.length > 60) hist.shift(); undoState(); } };
+  var commit = function (full) {
+    state.parts.forEach(normalize);
+    changed(false);
+    if (full) show(true); else { drawFigures(); drawInspector(); undoState(); }
+  };
+  var change = function (fn, full) {
+    var before = JSON.stringify(state);
+    fn();
+    state.parts.forEach(normalize);
+    if (!remember(before)) { drawFigures(); drawInspector(); return false; }
+    commit(typeof full === 'function' ? full() : full);
+    return true;
+  };
+  var undo = function () {
+    if (!hist.length) return;
+    state = JSON.parse(hist.pop()); sel = null;
+    dirty = JSON.stringify(state) !== SAVED_CANON;
+    show(true);
+    setStatus(dirty ? 'Unsaved changes' : 'No changes yet');
+    if (dirty) stash(); else store.drop();
+  };
+  var isSel = function (type, pi, key) { return !!sel && sel.type === type && sel.pi === pi && (type === 'node' ? sel.id === key : sel.ei === key); };
+  var select = function (s) { sel = s; drawFigures(); drawInspector(); };
+  var removeSel = function () {
+    if (!sel) return;
+    var s = sel, p = state.parts[s.pi];
+    sel = null;
+    change(function () {
+      if (s.type === 'edge') p.edges.splice(s.ei, 1);
+      else {
+        p.nodes = p.nodes.filter(function (n) { return n.id !== s.id; });
+        p.edges = p.edges.filter(function (e) { return e.from !== s.id && e.to !== s.id; });
+      }
+    }, true);
+    setStatus(s.type === 'edge' ? 'Arrow removed. Undo brings it back.' : 'Box removed, with its arrows. Undo brings them back.');
+  };
+  var moveNode = function (pi, id, col, row) {                 // keyboard moves; returns whether the box moved
+    var p = state.parts[pi], n = nodeById(p, id), st0 = n && stageOf(p, n), lane0 = n && n.lane;
+    if (!n) return false;
+    return change(function () { place(p, n, col, row); fixRoutes(p, id); }, function () { return stageOf(p, n) !== st0 || n.lane !== lane0; });
+  };
+  var nudge = function (dx, dy) {
+    var p = state.parts[sel.pi], n = nodeById(p, sel.id);
+    if (!n) return;
+    var cols = boxCols(p), ci = cols.indexOf(n.col), r = n.row, L = layout(p, true), id = n.id;
+    do { ci += dx; r += dy; } while (ci >= 0 && ci < cols.length && r >= 1 && r <= L.rows && taken(p, cols[ci], r, id));
+    if (ci < 0 || ci >= cols.length || r < 1 || r > L.rows) return;
+    moveNode(sel.pi, id, cols[ci], r);
+    focusNode(id, true);
+  };
+  var addBox = function (pi) {
+    var p = state.parts[pi], L = layout(p, true), cols = boxCols(p), at = null, num = 0;
+    var from = sel && sel.type === 'node' && sel.pi === pi ? nodeById(p, sel.id) : null;
+    for (var r = from ? from.row + 1 : L.rows; !at && r <= L.rows + 1; r++) {
+      (from ? [from.col] : []).concat(cols).some(function (c) { if (!taken(p, c, r)) { at = { col: c, row: r }; return true; } return false; });
+    }
+    if (!at) return;
+    state.parts.forEach(function (q) { q.nodes.forEach(function (n) { if (n.num != null) num = Math.max(num, n.num); }); });
+    var id = newId();
+    change(function () {
+      p.nodes.push({ id: id, num: num + 1, row: at.row, col: at.col, kind: 'action', label: 'New step', lane: laneOf(p, at.col), detail: '' });
+      sel = { type: 'node', pi: pi, id: id };
+    }, true);
+    setStatus('Box added as step ' + (num + 1) + '. Drag it into place, then write its text.');
+    var el = app.querySelector('.swim [data-node="' + id + '"]');
+    if (el && el.scrollIntoView) el.scrollIntoView({ block: 'center', inline: 'center' });
+  };
+  // numbers every step row by row, left to right, across the charts; "step N" in any text follows its step
+  var renumber = function () {
+    var did = change(function () {
+      var map = {}, k = 0;
+      state.parts.forEach(function (p) {
+        var order = p.cols.map(function (c) { return c[0]; });
+        p.nodes.filter(function (n) { return n.num != null; })
+          .sort(function (a, b) { return a.row - b.row || order.indexOf(a.col) - order.indexOf(b.col); })
+          .forEach(function (n) { map[n.num] = ++k; n.num = k; });
+      });
+      var fix = function (str) { return str.replace(/\b([Ss]teps?) (\d+)\b/g, function (all, w, d) { return map[d] ? w + ' ' + map[d] : all; }); };
+      var walk = function (o) { Object.keys(o).forEach(function (key) { var v = o[key]; if (typeof v === 'string') o[key] = fix(v); else if (v && typeof v === 'object') walk(v); }); };
+      walk(state);
+    }, true);
+    setStatus(did ? 'Steps renumbered. Undo puts the old numbers back.' : 'The steps are already numbered in chart order.');
+  };
+  var rowOp = function (pi, op, r) {
+    var p = state.parts[pi];
+    change(function () {
+      if (op === 'add') {
+        p.nodes.forEach(function (n) { if (n.row >= r) n.row++; });
+        p.stages.forEach(function (s) { if (s.r0 > r) s.r0++; if (s.r1 >= r) s.r1++; });
+        return;
+      }
+      var st = stageOf(p, { row: r });
+      if (p.nodes.some(function (n) { return n.row === r; }) || (st && st.r0 === st.r1)) return;
+      p.nodes.forEach(function (n) { if (n.row > r) n.row--; });
+      p.stages.forEach(function (s) { if (s.r0 > r) s.r0--; if (s.r1 >= r) s.r1--; });
+    }, true);
+  };
+
+  // ---------------------------------------------------------------- the panel for what is selected
+  var boxName = function (n) { return n.num != null ? 'Step ' + n.num + ': ' + n.label : n.label; };
+  var shortName = function (n) { return n ? (n.num != null ? 'step ' + n.num : '"' + n.label + '"') : '?'; };
+  var inspHtml = function () {
+    var p = state.parts[sel.pi], base = 'parts.' + sel.pi, head, rows;
+    if (!p) return '';
+    if (sel.type === 'node') {
+      var ni = p.nodes.indexOf(nodeById(p, sel.id)), n = p.nodes[ni];
+      if (!n) return '';
+      head = '<strong>' + esc(n.num != null ? 'Step ' + n.num : 'Box') + '</strong><span class="hint">Drag the box to move it, or use the arrow keys.' + (LOCK_FLOW ? '' : ' Drag the blue + onto another box to draw an arrow.') + '</span>';
+      rows = field('Box text', input(base + '.nodes.' + ni + '.label', n.label, ' maxlength="' + LABEL_MAX + '"')) +
+        (n.kind !== 'link' ? field('Type', '<select class="in" data-path="' + base + '.nodes.' + ni + '.kind">' + options(KINDS, n.kind) + '</select>') : '') +
+        (LOCK_FLOW ? '' : field('Draw an arrow to', '<select class="in" data-act="arrow-to"><option value="">Pick a box</option>' +
+          p.nodes.filter(function (m) { return m.id !== n.id; }).map(function (m) { return '<option value="' + esc(m.id) + '">' + esc(boxName(m)) + '</option>'; }).join('') + '</select>') +
+        '<button class="btn" data-action="del-sel" type="button">Remove box</button>');
+    } else {
+      var e = p.edges[sel.ei];
+      if (!e) return '';
+      var o = e.opt || {}, L = layout(p, true);
+      head = '<strong>Arrow</strong><span class="hint">From ' + esc(shortName(nodeById(p, e.from)) + ' to ' + shortName(nodeById(p, e.to))) + '. ' + (LOCK_FLOW ? 'Drag the square to move the bend, or the label to move the label.' : 'Drag a round end onto another box to reconnect it, the square to move the bend, the label to move the label.') + '</span>';
+      rows = field('Label', input(base + '.edges.' + sel.ei + '.label', e.label, ' placeholder="no label" maxlength="40"')) +
+        field('Shape', '<select class="in" data-act="route">' + options(ROUTES, e.mode) + '</select>') +
+        (e.mode === 'chan' ? field('Leaves', '<select class="in" data-act="exit">' + options([['right', 'on the right'], ['left', 'on the left']], o.exit === 'left' ? 'left' : 'right') + '</select>') +
+          field('Comes in', '<select class="in" data-act="enter">' + options([['right', 'on the right'], ['left', 'on the left']], o.enter === 'left' ? 'left' : 'right') + '</select>') : '') +
+        '<label class="check"><input type="checkbox" data-act="dash"' + (o.dash ? ' checked' : '') + '> Dashed</label>' +
+        (LOCK_FLOW ? '' : '<button class="btn" data-action="del-sel" type="button">Remove arrow</button>') +
+        (routeOk(e, L) ? '' : '<p class="status status-warn insp-warn">This shape does not fit where the boxes are now. Try Around the side.</p>');
+    }
+    return '<div class="insp-in"><div class="insp-head">' + head + '<span class="spacer"></span><button class="btn btn-small" data-action="close-insp" type="button">Done</button></div><div class="insp-row">' + rows + '</div></div>';
+  };
+  function drawInspector() {
+    var el = $('cc-insp'), html = editing && sel ? inspHtml() : '';
+    if (el) { el.innerHTML = html; el.hidden = !html; }
+    document.body.classList.toggle('insp-open', !!html);
+  }
+  var inspAct = function (act, t) {
+    var p = state.parts[sel.pi], pi = sel.pi;
+    if (act === 'arrow-to') {
+      var from = sel.id, to = t.value;
+      if (!to || LOCK_FLOW) return;
+      change(function () {
+        p.edges.push({ from: from, to: to, mode: 'down', label: '', opt: {} });
+        autoRoute(p, layout(p, true), p.edges[p.edges.length - 1]);
+        sel = { type: 'edge', pi: pi, ei: p.edges.length - 1 };
+      }, true);
+      return;
+    }
+    var e = p.edges[sel.ei];
+    if (!e) return;
+    change(function () {
+      var o = e.opt = e.opt || {}, L = layout(p, true), s = L.G[e.from], d = L.G[e.to];
+      if (act === 'route') {
+        ['turn', 'dy', 'x', 'exit', 'enter', 'lab'].forEach(function (k) { delete o[k]; });
+        if (t.value === 'chan') aroundSide(p, L, e); else e.mode = t.value;
+      } else if (act === 'exit' || act === 'enter') {
+        o[act] = t.value;
+        if (o.exit === o.enter) o.x = colRef(p, L, o.exit === 'left' ? Math.min(s.l, d.l) - 5 : Math.max(s.r, d.r) + 5);
+      } else if (act === 'dash') o.dash = t.checked;
+    }, false);
+  };
+
+  // ---------------------------------------------------------------- dragging in the charts
+  var svgPt = function (pi, cx, cy) {
+    var svg = app.querySelector('#fig-' + pi + ' svg'), m = svg && svg.getScreenCTM();
+    if (!m) return { x: 0, y: 0 };
+    var q = svg.createSVGPoint(); q.x = cx; q.y = cy; q = q.matrixTransform(m.inverse());
+    return { x: q.x, y: q.y };
+  };
+  var startDrag = function (d) {
+    var p = state.parts[d.pi], L = layout(p, true);
+    if (d.kind === 'node') {
+      var n = nodeById(p, d.id);
+      d.stage0 = stageOf(p, n); d.lane0 = n.lane;
+      d.routes = p.edges.filter(function (e) { return e.from === d.id || e.to === d.id; }).map(function (e) { return [e, JSON.stringify({ mode: e.mode, opt: e.opt })]; });
+    } else if (d.kind === 'label') {
+      var eg = edgeGeom(L.cols, L.G, p.edges[d.ei]), q = svgPt(d.pi, d.x0, d.y0);
+      d.p0 = eg.pts[0]; d.anchor = eg.lab[2]; d.off = [q.x - eg.lab[0], q.y - eg.lab[1]];
+    } else if (d.kind === 'head' || d.kind === 'tail' || d.kind === 'link') {
+      if (d.kind === 'link') { var g = L.G[d.id]; d.fixed = [g.r + 10, g.cy]; d.except = d.id; }
+      else {
+        var e = p.edges[d.ei], eg2 = edgeGeom(L.cols, L.G, e);
+        d.fixed = d.kind === 'head' ? eg2.pts[0] : eg2.pts[eg2.pts.length - 1];
+        d.except = d.kind === 'head' ? e.from : e.to;
+      }
+    }
+  };
+  var ghostFor = function (d) {                                 // the dashed line that follows the pointer
+    var svg = app.querySelector('#fig-' + d.pi + ' svg');
+    if (!svg) return null;
+    if (!d.ghost || !svg.contains(d.ghost)) {
+      d.ghost = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      d.ghost.setAttribute('class', 'ghost');
+      if (d.kind !== 'tail') d.ghost.setAttribute('marker-end', 'url(#ah' + (d.pi + 1) + ')');
+      svg.appendChild(d.ghost);
+      var w = d.kind === 'link' ? null : svg.querySelector('[data-edge="' + d.ei + '"]');
+      if (w) w.classList.add('dim');
+    }
+    return d.ghost;
+  };
+  var moveDrag = function (cx, cy) {
+    var d = drag;
+    if (!d) return;
+    if (!d.moved) {
+      if (Math.abs(cx - d.x0) + Math.abs(cy - d.y0) < 5) return;
+      d.moved = true; app.classList.add('dragging');
+    }
+    if (d.kind === 'row') return;
+    var p = state.parts[d.pi], L = layout(p, true), pt = svgPt(d.pi, cx, cy), e;
+    if (d.kind === 'node') {
+      var n = nodeById(p, d.id), c = cellAt(p, L, pt.x, pt.y);
+      if (!n || (c.col === n.col && c.row === n.row) || taken(p, c.col, c.row, n.id)) return;
+      place(p, n, c.col, c.row);
+      d.routes.forEach(function (x) { var o = JSON.parse(x[1]); x[0].mode = o.mode; x[0].opt = o.opt; });
+      fixRoutes(p, n.id);
+      drawFigures();
+    } else if (d.kind === 'label') {
+      e = p.edges[d.ei]; e.opt = e.opt || {};
+      e.opt.lab = ['start', Math.round(pt.x - d.off[0] - d.p0[0]), Math.round(pt.y - d.off[1] - d.p0[1]), d.anchor];
+      drawFigures();
+    } else if (d.kind === 'bend') {
+      e = p.edges[d.ei]; e.opt = e.opt || {};
+      var s = L.G[e.from], t = L.G[e.to];
+      if (e.mode === 'chan') e.opt.x = colRef(p, L, Math.max(4, Math.min(L.W - 4, pt.x)));
+      else {
+        var y = t.t > s.b + 12 ? Math.max(s.b + 6, Math.min(t.t - 6, pt.y)) : pt.y;
+        e.opt.turn = 'early'; e.opt.dy = Math.round(y - (s.b + 13));
+      }
+      drawFigures();
+    } else if (d.kind === 'stage') {
+      var st = p.stages[d.si], prev = p.stages[d.si - 1], r = Math.round((pt.y - HEADH - 10) / RH) + 1;
+      r = Math.max(prev.r0 + 1, Math.min(st.r1, r));
+      if (r !== st.r0) { st.r0 = r; prev.r1 = r - 1; drawFigures(); }
+    } else {                                                    // head, tail, link: the box under the pointer lights up
+      var tgt = nodeAt(p, L, pt.x, pt.y, d.except), gh = ghostFor(d), a = d.kind === 'tail' ? [pt.x, pt.y] : d.fixed, b = d.kind === 'tail' ? d.fixed : [pt.x, pt.y];
+      if (gh) gh.setAttribute('d', 'M' + f1(a[0]) + ',' + f1(a[1]) + ' L' + f1(b[0]) + ',' + f1(b[1]));
+      d.target = tgt ? tgt.id : null;
+      Array.prototype.forEach.call(app.querySelectorAll('.swim .drop-ok'), function (x) { x.classList.remove('drop-ok'); });
+      if (tgt) { var el = app.querySelector('#fig-' + d.pi + ' [data-node="' + tgt.id + '"]'); if (el) el.classList.add('drop-ok'); }
+    }
+  };
+  var endDrag = function (ok) {
+    var d = drag;
+    drag = null; app.classList.remove('dragging');
+    if (autoT) { cancelAnimationFrame(autoT); autoT = 0; }
+    if (!d) return;
+    if (!ok) { state = JSON.parse(d.before); drawFigures(); drawInspector(); return; }
+    var p = state.parts[d.pi];
+    if (d.kind === 'row') { if (!d.moved) rowOp(d.pi, d.op, d.r); return; }
+    if (!d.moved) { drawFigures(); return; }                    // a click: the selection already shows
+    if (d.kind === 'head' || d.kind === 'tail' || d.kind === 'link') {
+      if (d.target) {
+        if (d.kind === 'link') { p.edges.push({ from: d.id, to: d.target, mode: 'down', label: '', opt: {} }); sel = { type: 'edge', pi: d.pi, ei: p.edges.length - 1 }; }
+        else p.edges[d.ei][d.kind === 'head' ? 'to' : 'from'] = d.target;
+        autoRoute(p, layout(p, true), p.edges[sel.ei]);
+      }
+      state.parts.forEach(normalize);
+      if (remember(d.before)) commit(true); else drawFigures();
+      return;
+    }
+    state.parts.forEach(normalize);
+    var full = d.kind === 'stage';
+    if (d.kind === 'node') { var n = nodeById(p, d.id); full = !n || stageOf(p, n) !== d.stage0 || n.lane !== d.lane0; }
+    if (remember(d.before)) commit(full); else drawFigures();
+  };
+  // near the top or bottom of the window, or the sides of the chart, the page scrolls along with a drag
+  var autoScroll = function () {
+    autoT = 0;
+    var d = drag;
+    if (!d || !d.moved) return;
+    var top = 110, bot = window.innerHeight - 40, ib = $('cc-insp'), sc = $('fig-' + d.pi), vy = 0, vx = 0;
+    if (ib && !ib.hidden) bot = Math.min(bot, ib.getBoundingClientRect().top - 24);
+    if (d.cy < top) vy = -Math.min(20, 4 + (top - d.cy) / 3); else if (d.cy > bot) vy = Math.min(20, 4 + (d.cy - bot) / 3);
+    if (sc) { var r = sc.getBoundingClientRect(); if (d.cx < r.left + 36) vx = -12; else if (d.cx > r.right - 36) vx = 12; }
+    var y0 = window.scrollY, x0 = sc ? sc.scrollLeft : 0;
+    if (vy) jump(function () { window.scrollBy(0, vy); });
+    if (vx && sc) sc.scrollLeft += vx;
+    if (window.scrollY !== y0 || (sc && sc.scrollLeft !== x0)) { moveDrag(d.cx, d.cy); autoT = requestAnimationFrame(autoScroll); }
+  };
+
+  app.addEventListener('pointerdown', function (ev) {
+    if (!editing || drag || ev.button > 0) return;
+    var t = ev.target, sc = t.closest && t.closest('.scroller'), svg = t.closest && t.closest('svg.swim');
+    if (!sc || !svg) return;
+    var pi = Number(sc.id.slice(4));
+    var h = t.closest('[data-h]'), rc = t.closest('[data-row]'), sg = t.closest('[data-stage]'), lb = t.closest('[data-elabel]'), nd = t.closest('[data-node]'), ew = t.closest('[data-edge]');
+    var d = { pi: pi, x0: ev.clientX, y0: ev.clientY, cx: ev.clientX, cy: ev.clientY, moved: false, before: JSON.stringify(state) };
+    if (h && sel) {
+      d.kind = h.getAttribute('data-h'); d.id = sel.id; d.ei = sel.ei;
+      if (LOCK_FLOW && d.kind !== 'bend') return;                // only a bend can be dragged while the flow is locked
+    }
+    else if (rc) { d.kind = 'row'; d.op = rc.getAttribute('data-row'); d.r = Number(rc.getAttribute('data-r')); }
+    else if (sg) { d.kind = 'stage'; d.si = Number(sg.getAttribute('data-stage')); }
+    else if (lb) { d.kind = 'label'; d.ei = Number(lb.getAttribute('data-elabel')); if (!isSel('edge', pi, d.ei)) select({ type: 'edge', pi: pi, ei: d.ei }); }
+    else if (nd) { d.kind = 'node'; d.id = nd.getAttribute('data-node'); if (!isSel('node', pi, d.id)) select({ type: 'node', pi: pi, id: d.id }); focusNode(d.id, false); }
+    else if (ew) { ev.preventDefault(); var ei = Number(ew.getAttribute('data-edge')); if (!isSel('edge', pi, ei)) select({ type: 'edge', pi: pi, ei: ei }); return; }
+    else { if (sel) select(null); return; }
+    ev.preventDefault();
+    drag = d;
+    try { sc.setPointerCapture(ev.pointerId); } catch (x) { }
+    startDrag(d);
+  });
+  window.addEventListener('pointermove', function (ev) {
+    if (!drag) return;
+    drag.cx = ev.clientX; drag.cy = ev.clientY;
+    moveDrag(ev.clientX, ev.clientY);
+    if (drag && drag.moved && drag.kind !== 'row' && !autoT) autoT = requestAnimationFrame(autoScroll);
+  });
+  window.addEventListener('pointerup', function () { if (drag) endDrag(true); });
+  window.addEventListener('pointercancel', function () { if (drag) endDrag(false); });
+  document.addEventListener('keydown', function (ev) {
+    if (!editing) return;
+    var t = ev.target, typing = t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName);
+    if ((ev.ctrlKey || ev.metaKey) && !ev.shiftKey && !ev.altKey && (ev.key === 'z' || ev.key === 'Z')) { if (typing) return; ev.preventDefault(); undo(); return; }
+    if (typing) return;
+    if (ev.key === 'Escape') { if (drag) endDrag(false); else if (sel) select(null); return; }
+    if (!sel || drag) return;
+    var onChart = t === document.body || (t.closest && t.closest('.swim'));
+    if ((ev.key === 'Delete' || ev.key === 'Backspace') && onChart) { ev.preventDefault(); if (!LOCK_FLOW) removeSel(); return; }
+    var dir = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[ev.key];
+    if (dir && sel.type === 'node' && onChart) { ev.preventDefault(); nudge(dir[0], dir[1]); }
+  });
+
+  // ---------------------------------------------------------------- fields and buttons
+  app.addEventListener('focusin', function (e) {
+    var t = e.target;
+    if (!editing || !t || !t.getAttribute) return;
+    if (t.getAttribute('data-path')) { textSnap = true; return; }
+    var nd = t.closest && t.closest('.swim [data-node]'), sc = nd && nd.closest('.scroller');
+    if (nd && sc && !drag) { var pi = Number(sc.id.slice(4)), id = nd.getAttribute('data-node'); if (!isSel('node', pi, id)) select({ type: 'node', pi: pi, id: id }); }
+  });
+  var syncFields = function (t, path) {                        // the panel and the step cards can show the same field
+    Array.prototype.forEach.call(app.querySelectorAll('[data-path="' + path + '"]'), function (x) { if (x !== t) x.value = t.value; });
+  };
+  app.addEventListener('input', function (e) {
+    var t = e.target, path = t && t.getAttribute && t.getAttribute('data-path');
+    if (!editing || !path) return;
+    snapText();
+    setPath(state, path, t.value);
+    syncFields(t, path);
+    changed(/^(parts|lanes)\./.test(path));
+  });
+  app.addEventListener('change', function (e) {
+    var t = e.target, act = t && t.getAttribute && t.getAttribute('data-act'), path = t && t.getAttribute && t.getAttribute('data-path');
+    if (!editing) return;
+    if (act) { if (sel) inspAct(act, t); return; }
+    if (!path || t.tagName !== 'SELECT') return;
+    snapText();
+    setPath(state, path, t.value);
+    syncFields(t, path);
+    changed(true);
+  });
+  var buildDoc = function (s) {
+    var style = $('cc-style').textContent, script = $('cc-script').textContent, close = '</' + 'script>';
+    return SKELETON + '\n' + headHtml(s) + '<style id="cc-style">' + style + '</style>\n<div id="app">' + renderPage(s, false) + '</div>\n' +
+      '<script type="application/json" id="cc-state">' + stateJson(s) + close + '\n<script id="cc-script">' + script + close + '\n\n</body></html>';
+  };
+  var save = function () {
+    if (!art || saving) return;
+    saving = true; setStatus('Saving…');
+    state.parts.forEach(normalize);
+    Array.prototype.forEach.call(document.querySelectorAll('[data-action="save"], [data-action="discard"]'), function (b) { b.disabled = true; });
+    stash();                                                  // kept for this tab if the save loses to someone else's
+    art.publish(buildDoc(state)).then(function () {
+      dirty = false; setStatus('Saved. Loading the new version…');
+    }, function (e) {
+      saving = false;
+      Array.prototype.forEach.call(document.querySelectorAll('[data-action="save"], [data-action="discard"]'), function (b) { b.disabled = false; });
+      var c = e && e.code;
+      if (c === 'conflict') setStatus('Someone saved a newer version first. It is loading now; your edits come back as "Keep editing them".', true);
+      else if (c === 'not_writer' || c === 'not_granted' || c === 'not_declared' || c === 'consent_required' || c === 'capability_disabled' || c === 'capability_removed') {
+        canEdit = false; setStatus('This page is read-only for you, so changes cannot be saved.', true);
+      } else if (c === 'rate_limited') setStatus('Saved too often. Wait a minute, then save again.', true);
+      else if (c === 'too_large') setStatus('The page is too large to save. Shorten some text, then save again.', true);
+      else setStatus('Could not save. Try again in a moment.', true);
+    });
+  };
+
+  app.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-action]');
+    if (!b) return;
+    var a = b.getAttribute('data-action'), i = Number(b.getAttribute('data-i'));
+    if (a === 'edit') { if (!canEdit) return; editing = true; sel = null; hist = []; status = ['No changes yet', false]; show(); window.scrollTo(0, 0); return; }
+    if (a === 'restore-draft') { var d = readDraft(); if (!d) return; state = d.s; editing = true; dirty = true; sel = null; hist = []; show(); setStatus('Unsaved changes'); return; }
+    if (a === 'drop-draft') { store.drop(); chrome(); return; }
+    if (a === 'save') { save(); return; }
+    if (a === 'discard') {
+      if (dirty && !b.classList.contains('btn-armed')) {         // a second click confirms (the viewer shows no dialogs)
+        b.classList.add('btn-armed'); b.textContent = 'Click again to discard';
+        setTimeout(function () { b.classList.remove('btn-armed'); b.textContent = 'Discard changes'; }, 3000);
+        return;
+      }
+      state = JSON.parse(SAVED_JSON); editing = false; dirty = false; sel = null; hist = []; store.drop(); show(); return;
+    }
+    if (a === 'undo') { undo(); return; }
+    if (a === 'add-box') { if (!LOCK_FLOW) addBox(Number(b.getAttribute('data-p'))); return; }
+    if (a === 'renumber') { renumber(); return; }
+    if (a === 'del-sel') { if (!LOCK_FLOW) removeSel(); return; }
+    if (a === 'close-insp') { select(null); return; }
+    var fn = { 'add-gap': function () { state.gaps.push({ title: 'New gap', text: '' }); }, 'del-gap': function () { state.gaps.splice(i, 1); },
+      'add-tip': function () { state.tips.push(''); }, 'del-tip': function () { state.tips.splice(i, 1); } }[a];
+    if (fn) change(fn, true);
+  });
+
+  // Only people who can edit the artifact get Edit page; everyone else sees the page as published.
+  if (window.claude && typeof window.claude.use === 'function') {
+    Promise.all([window.claude.use('artifact'), window.claude.use('user')]).then(function (r) {
+      art = r[0];
+      if (!art || !r[1]) return false;
+      return r[1].canEdit();
+    }).then(function (ok) {
+      canEdit = !!ok;
+      chrome();                                                  // also drops a draft our own save made current
+    }, function () { });
+  }
+})();
+</script>
