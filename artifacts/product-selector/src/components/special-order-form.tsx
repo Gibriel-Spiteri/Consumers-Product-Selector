@@ -11,6 +11,7 @@ import { cn, fmtPrice } from "@/lib/utils";
 import { specialOrderPrices } from "@/lib/special-order-pricing";
 import { specialOrderLookupRetry } from "@/lib/special-order-query";
 import ProductLineLogos from "@/components/product-line-logos";
+import SpecialOrderCategories from "@/components/special-order-categories";
 
 // NetSuite's Model / Coll/Desc / Color columns are Free-Form Text, 300 characters each.
 const LIMITS = { model: 300, color: 300, description: 300 };
@@ -138,25 +139,7 @@ export default function SpecialOrderForm({ initial, onSubmit, onCancel, categori
 
   const categoryFilters = categories.length > 0 && (
         <div className={categoriesAboveForm ? "mb-6" : "px-6 py-4 border-b border-gray-100"}>
-          <div className={labelCls}>Categories</div>
-          <div className="flex flex-wrap gap-2" role="group" aria-label="Special-order categories">
-            {[{ id: "", name: "All" }, ...categories].map(category => (
-              <button
-                key={category.id}
-                type="button"
-                aria-pressed={selectedCategory === category.id}
-                onClick={() => selectCategory(category.id)}
-                className={cn(
-                  "rounded-full border px-3 py-2 text-[12px] font-medium transition-colors",
-                  selectedCategory === category.id
-                    ? "border-[#7B4DA8] bg-[#7B4DA8] text-white"
-                    : "border-gray-200 text-[#7B4DA8] hover:bg-purple-50"
-                )}
-              >
-                {category.name}
-              </button>
-            ))}
-          </div>
+          <SpecialOrderCategories categories={categories} selected={selectedCategory} onSelect={selectCategory} />
         </div>
       );
 
