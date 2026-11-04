@@ -5,8 +5,9 @@ Lets a customer pick products on a vendor's own website (Delta, Kohler, Brizo, .
 ## How it works
 
 1. **Open a vendor site.** In the Product Selector, go to **Special Order** and pick a category. Then click a product line card ("Shop vendor site"); it opens the vendor's website, as the PRD page links it (`custrecord_pl_prd_website`), in a new tab.
-2. **Add a product.** On a vendor product page the extension shows an **Add to Consumers Quote** button.
-   - It reads the page's own product data: model, name, color and price, and each color or finish as an option (for example Kohler's 6 Cairn colors).
+2. **Add a product.** On every page of a vendor site the extension shows an **Add to Consumers Quote** button.
+   - On a product page it fills in the model, name, color and price, and each color or finish as an option (for example Kohler's 6 Cairn colors). See "What it reads" below.
+   - On a page with nothing to read, the panel opens with the page's name and a blank Model, and says so; the customer types the model and color shown on the page.
    - The customer picks the option, sets the quantity and clicks **Add to quote**.
 3. **Finish it in the Product Selector.** The Special Order menu item shows a count, and the **Picked on vendor websites** list sits at the top of the Special Order page.
    - **Use** fills in the Add Special Order form: product line, model, description, color, list price and quantity.
@@ -19,6 +20,42 @@ What the extension holds and where it runs:
 - **Other sites.** On any other site the extension does nothing.
 
 **Price check:** a vendor site can show a sale price. Delta's Outlet / Recertified items, for example, show $215 instead of the $449 list. The rep always confirms the list price.
+
+## What it reads
+
+In this order, stopping at the first that gives a product:
+1. **schema.org JSON-LD** `Product` / `ProductGroup` (each variant becomes an option). A barcode in `mpn` (Flusso's UPC) is skipped for the model in `sku`.
+2. **schema.org microdata** (`itemtype=".../Product"`), only when there is no JSON-LD product.
+3. **Open Graph** product tags (`og:type` product, `product:price:amount`).
+4. **The page text around its heading** (the first visible `h1`):
+   - a model label next to the name: `Model#:`, `Model number`, `SKU:`, `Item Number`, `Part Number`, `Article Number` (the value must contain a digit);
+   - else a model at the end of the address (`/product/T66T030-PC`), on a page that shows a price or calls itself a product;
+   - the first `$` price within 400 characters after the heading (add-on prices like `+$54.00` are skipped).
+
+Steps 1 to 3 are completed from step 4 when they leave the model or price out (TOTO, Top Knobs, Neptune's full model number).
+
+Checked on 11/4/2026 in Chrome, one product page per product line:
+
+| Vendor | Model | Price | Read from |
+|---|---|---|---|
+| Craft & Main | yes | yes | JSON-LD |
+| Delta | yes | yes | JSON-LD |
+| Flusso | yes | yes | JSON-LD (sku, not the UPC in mpn) |
+| Kohler | yes, per color | yes | JSON-LD ProductGroup |
+| Neptune | yes, full model number | yes | JSON-LD + page text |
+| Richelieu | yes | no (dealer price) | JSON-LD |
+| Top Knobs | yes | yes | microdata + Open Graph |
+| TOTO | yes (`CST776CEG#01`) | yes | Open Graph + page text |
+| Brizo | yes | yes | address + page text |
+| Elkay | yes | no ("Show List Price" button) | address |
+| John Boos | yes | yes | page text |
+| Icera | yes | yes | page text |
+| Strategic Brands | yes | no (sign-in) | page text |
+| Franke | Article Number (`115.0731.726`) | no | page text |
+| Fleurco | no: the model appears only after every configurator choice | no | customer types it |
+| Avance | no: door-style pages only | no | customer types it |
+
+When a vendor redesigns its site, open one of its product pages and check the panel; the unit tests hold one fixture per page shape.
 
 ## Install for testing (Load unpacked)
 
@@ -52,7 +89,7 @@ After the first install, open the Product Selector once (signed in), so the exte
 |---|---|
 | `manifest.json` | Manifest V3 (Chrome 111+ / Edge 111+) |
 | `background.js` | Holds picks, keeps the vendor domain list, runs `vendor.js` only on those domains |
-| `extract.js` | Reads schema.org JSON-LD (then Open Graph) product data from a page; pure, unit tested |
+| `extract.js` | Reads a page's product data (JSON-LD, microdata, Open Graph, then the text around the heading); pure, unit tested |
 | `vendor.js` | The "Add to Consumers Quote" button and panel on vendor pages (shadow DOM, house colors) |
 | `app.js` | Bridge on the Product Selector's pages: passes picks and the vendor list via `window.postMessage` |
 | `popup.html` / `popup.js` | Toolbar popup: items waiting and the vendor sites |

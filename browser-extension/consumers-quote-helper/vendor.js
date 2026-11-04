@@ -55,6 +55,7 @@
           <label>Price on this site<input class="price" type="number" min="0" step="0.01" inputmode="decimal"></label>
           <label>Quantity<input class="qty" type="number" min="1" max="1000000" step="1" value="1" inputmode="numeric"></label>
         </div>
+        <div class="hint manual-hint" hidden>We could not read this item from the page. Type the model number and color shown on it.</div>
         <div class="hint">Your Consumers sales rep confirms the list price and finishes this on your quote.</div>
         <div class="msg" hidden></div>
       </div>
@@ -63,11 +64,39 @@
   const $ = sel => root.querySelector(sel);
   const fab = $(".fab"), panel = $(".panel"), dot = $(".dot"), msg = $(".msg");
   const f = { img: $(".prod img"), name: $(".prod .name"), variantWrap: $(".variant-wrap"), variant: $(".variant"),
-    model: $(".model"), color: $(".color"), price: $(".price"), qty: $(".qty"), add: $(".add") };
+    model: $(".model"), color: $(".color"), price: $(".price"), qty: $(".qty"), add: $(".add"),
+    manualHint: $(".manual-hint") };
 
   let items = [];
   let selected = -1;
+  let manual = false; // nothing readable on the page: the customer types the model in
   let lastUrl = "";
+
+  // The page's schema.org Product microdata (Top Knobs), shaped like a JSON-LD Product for extract.js.
+  function microdata() {
+    const el = document.querySelector('[itemscope][itemtype*="schema.org/Product" i]');
+    if (!el) return null;
+    const scopeOf = n => (n.parentElement ? n.parentElement.closest("[itemscope]") : null);
+    const value = n => (n.getAttribute("content") || n.getAttribute("src") || n.getAttribute("href") || n.textContent || "").trim();
+    const prop = (name, nested) => {
+      for (const n of el.querySelectorAll(`[itemprop~="${name}"]`)) if (nested || scopeOf(n) === el) return value(n);
+      return "";
+    };
+    return {
+      "@type": "Product", name: prop("name"), sku: prop("sku"), mpn: prop("mpn"), model: prop("model"),
+      color: prop("color"), image: prop("image"), offers: { price: prop("price", true), priceCurrency: prop("priceCurrency", true) },
+    };
+  }
+
+  // The first visible h1, the page's visible text (for sites that only print the model and price) and microdata.
+  function pageText() {
+    const h1 = [...document.querySelectorAll("h1")].find(h => h.getClientRects().length && h.innerText.trim());
+    return {
+      heading: h1 ? h1.innerText.replace(/\s+/g, " ").trim() : "",
+      text: (document.body ? document.body.innerText : "").replace(/\s+/g, " "),
+      microdata: microdata(),
+    };
+  }
 
   function readPage() {
     const blocks = [...document.querySelectorAll('script[type="application/ld+json"]')].map(s => s.textContent || "");
@@ -76,27 +105,36 @@
       const key = m.getAttribute("property") || m.getAttribute("name");
       if (key && !(key in meta)) meta[key] = m.getAttribute("content") || "";
     }
-    return X.extract(blocks, meta, location.href);
+    // return X.extract(blocks, meta, location.href);
+    const page = pageText();
+    return { found: X.extract(blocks, meta, location.href, page), meta, page };
   }
 
   // Single-page sites can keep the previous page's data in the DOM; the page's own HTML is the fallback.
   async function readFromServer() {
     try {
       const html = await (await fetch(location.href, { credentials: "include" })).text();
-      const { blocks, meta } = X.scanHtml(html);
-      return X.extract(blocks, meta, location.href);
+      const { blocks, meta, page } = X.scanHtml(html);
+      return X.extract(blocks, meta, location.href, page);
     } catch {
       return { items: [], selected: -1 };
     }
   }
 
   async function detect() {
-    let found = readPage();
+    const live = readPage();
+    let found = live.found;
     if (!found.items.length) found = await readFromServer();
-    items = found.items;
-    selected = found.selected;
-    fab.style.display = items.length ? "flex" : "none";
-    if (!items.length) panel.style.display = "none";
+    manual = !found.items.length;
+    // 1.0.0: the button showed only on pages with product data.
+    // items = found.items;
+    // selected = found.selected;
+    // fab.style.display = items.length ? "flex" : "none";
+    // if (!items.length) panel.style.display = "none";
+    // Every page of a vendor site keeps the button: without product data the customer types the model in.
+    items = manual ? [X.blankItem(live.meta, live.page, document.title, location.href)] : found.items;
+    selected = manual ? 0 : found.selected;
+    fab.style.display = "flex";
   }
 
   function show(i) {
@@ -121,6 +159,7 @@
       f.variant.appendChild(o);
     });
     f.variantWrap.style.display = items.length > 1 ? "" : "none";
+    f.manualHint.hidden = !manual;
     f.variant.value = String(Math.max(selected, 0));
     f.qty.value = "1";
     msg.hidden = true;

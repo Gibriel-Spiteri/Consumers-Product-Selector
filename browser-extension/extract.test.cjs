@@ -65,6 +65,112 @@ test("non-product pages give nothing; text is cleaned and capped at 300 characte
   assert.equal(X.extract([JSON.stringify({ "@type": "Product", name: "P", image: "http://insecure.test/a.png" })], {}, "https://x.test/").items[0].imageUrl, "");
 });
 
+// The fixtures below follow the shapes of each vendor's product pages on 2026-11-04 (checked in Chrome).
+const page = (head, body) => `<html><head>${head}</head><body><nav>Home Products</nav>${body}<footer>Contact us</footer></body></html>`;
+const run = (html, url) => {
+  const { blocks, meta, page: p } = X.scanHtml(html);
+  return X.extract(blocks, meta, url, p);
+};
+
+test("Flusso: a UPC in mpn is skipped for the model in sku", () => {
+  const r = X.extract([JSON.stringify({ "@type": "Product", name: "Hole In Glass Center Mount Glass Clamp", sku: "10.FGC.4003CP",
+    model: "10.FGC.4003CP", mpn: "702338186523", color: "Chrome", offers: { price: 60, priceCurrency: "USD" } })], {}, "https://www.flussofaucets.com/products/10FGC4003CP/");
+  assert.equal(r.items[0].model, "10.FGC.4003CP");
+  assert.equal(r.items[0].price, 60);
+  assert.equal(X.extract([JSON.stringify({ "@type": "Product", name: "X", gtin12: "1", mpn: "702338186523" })], {}, "https://x.test/").items[0].model, "702338186523");
+});
+
+test("Neptune: the full model number and the price come from the page when its product data has the base model only", () => {
+  const html = page(ld({ "@type": "Product", name: "Monza 39 x 59 in. Pivot Tub Shield", sku: "220086", mpn: "220086" }),
+    "<div>Monza 39 x 59 in. Pivot Tub Shield <a>Where to buy</a></div>" + "<p>Info Technical Specs</p>".repeat(30) +
+    "<h1>Monza 39 x 59 in. Pivot Tub Shield</h1><p>INTERNET SKU: 220086</p><p>MODEL NUMBER: 220086-900-084-000</p>" +
+    "<p>Frame Finish: Chrome</p><strong>MSRP* USD$ 1,253.00</strong><section>Related <b>MSRP* USD$ 1,834.00</b></section>");
+  const r = run(html, "https://produitsneptune.com/product/monza/220086/220086-900-084-000");
+  assert.equal(r.items.length, 1);
+  assert.equal(r.items[0].model, "220086-900-084-000");
+  assert.equal(r.items[0].price, 1253);
+  // The longer page model is used only when the address confirms it.
+  assert.equal(run(html, "https://produitsneptune.com/product/monza/220086").items[0].model, "220086");
+});
+
+test("TOTO: Open Graph product completed from the page text; add-on prices are skipped", () => {
+  const html = page('<meta property="og:type" content="product"><meta property="og:title" content="Drake&reg; Two-piece Toilet, 1.28 GPF | TOTO USA">' +
+    '<meta property="og:image" content="https://assets.totousa.com/CST776CEG/images/CST776CEG_01.webp">',
+    '<h1 class="page-title">DRAKE&reg; TWO-PIECE TOILET, 1.28 GPF</h1><div>SKU: CST776CEG#01</div><div>MSRP LIST PRICE <span>$</span>445.00</div>' +
+    "<ul><li>Sedona Beige [+$54.00]</li><li>Cotton [+$48.00]</li></ul>");
+  const r = run(html, "https://www.totousa.com/drake-two-piece-128-gpf-elongated-bowl?color=cotton");
+  assert.deepEqual([r.items[0].name, r.items[0].model, r.items[0].price], ["Drake® Two-piece Toilet, 1.28 GPF", "CST776CEG#01", 445]);
+  assert.ok(r.items[0].imageUrl.startsWith("https://assets.totousa.com/"));
+});
+
+test("Top Knobs: microdata gives the model, Open Graph the price", () => {
+  const html = page('<meta property="og:type" content="product"><meta property="og:title" content="Barrow Knob">' +
+    '<meta property="product:price:amount" content="10.15"><meta property="product:price:currency" content="USD">',
+    '<div itemscope itemtype="http://schema.org/Product"><h1 itemprop="name">Barrow Knob 1 1/4 Inch Brushed Satin Nickel</h1>' +
+    '<div>Item Number <span itemprop="sku">TK1050BSN</span></div><span class="price">$10.15</span></div>');
+  const r = run(html, "https://www.topknobs.com/barrow-knob.html?finish_tk=13603");
+  assert.deepEqual([r.items[0].name, r.items[0].model, r.items[0].price], ["Barrow Knob 1 1/4 Inch Brushed Satin Nickel", "TK1050BSN", 10.15]);
+});
+
+test("Delta: with JSON-LD present, the page's microdata is not a second item", () => {
+  const html = page(ld({ "@type": "Product", name: "Single Handle Pull-Down Kitchen Faucet", sku: "19867LF-CZ", offers: { price: 449 } }),
+    '<div itemscope itemtype="https://schema.org/Product"><h1 itemprop="name">Single Handle Pull-Down Kitchen Faucet in Champagne Bronze</h1>' +
+    '<meta itemprop="price" content="449"></div>');
+  const r = run(html, "https://www.deltafaucet.com/kitchen/product/19867LF-CZ.html");
+  assert.equal(r.items.length, 1);
+  assert.equal(r.items[0].model, "19867LF-CZ");
+});
+
+test("Brizo and Elkay: the model at the end of the address on a product page", () => {
+  const brizo = page('<meta property="og:type" content="productPage"><meta property="og:title" content="SENSORI&reg; THERMOSTATIC VALVE TRIM">',
+    "<h1>Virage&reg;</h1><p>SENSORI&reg; THERMOSTATIC VALVE TRIM</p><p>Product(s) Shown: SENSORI THERMOSTATIC VALVE TRIM T66T030-PC $952.00</p>" +
+    "<p>LIST PRICE AS SHOWN (US $): $1,451.00</p><p>ITEM DETAILS</p>");
+  const b = run(brizo, "https://www.brizo.com/bath/product/T66T030-PC");
+  assert.deepEqual([b.items[0].name, b.items[0].model, b.items[0].price], ["SENSORI® THERMOSTATIC VALVE TRIM", "T66T030-PC", 952]);
+  const elkay = page('<meta property="og:type" content="product"><meta property="og:title" content="Crosstown 18 Gauge Undermount Sink">',
+    "<h1>ECTRU24179RT</h1><p>Crosstown 18 Gauge Stainless Steel Single Bowl Undermount Sink</p><button>Show List Price</button>");
+  const e = run(elkay, "https://www.elkay.com/products/sinks/materials/stainless-steel/ectru24179rt");
+  assert.deepEqual([e.items[0].model, e.items[0].price], ["ECTRU24179RT", null]);
+});
+
+test("John Boos, Icera, Strategic Brands and Franke: no product data, the model label next to the name", () => {
+  const boos = run(page('<meta property="og:title" content="Cherry Cucina D\'Amico Wine Cart">',
+    "<p>BOOS BLOCKS&gt;CARTS</p><p>Model#: CHY-CUCD15WC</p><h1>Cherry Cucina D'Amico Wine Cart</h1><p>$2,878.00</p><p>WEIGHT 125 lb</p>"),
+    "https://www.johnboos.com/products/cherry-cucina-damico-wine-cart");
+  assert.deepEqual([boos.items[0].name, boos.items[0].model, boos.items[0].price], ["Cherry Cucina D'Amico Wine Cart", "CHY-CUCD15WC", 2878]);
+  const icera = run(page("", "<h1>ANTIGUA Undermount Lavatory, 17&#8243;</h1><p>SKU: 1022.000.01 Category: Undermount Sinks</p><p>Gloss White $229.00</p>"),
+    "https://icerabath.com/product/antigua-undermount-lavatory/");
+  assert.deepEqual([icera.items[0].name, icera.items[0].model, icera.items[0].price], ["ANTIGUA Undermount Lavatory, 17″", "1022.000.01", 229]);
+  const sbi = run(page("", "<h1>1 1/4\" Knob - Precision - Polished Nickel</h1><p>Part Number 85414</p><p>Please log in to order products.</p>"),
+    "https://strategicbrandsincorporated.com/85414/1-1-4-knob-precision-polished-nickel");
+  assert.deepEqual([sbi.items[0].model, sbi.items[0].price], ["85414", null]);
+  const franke = run(page('<meta property="og:type" content="website"><meta property="og:title" content="Mythos Masterpiece Pull-Down, MMX-PD-CPR">',
+    "<h1>Mythos Masterpiece Pull-Down, MMX-PD-CPR</h1><p>Article Number 115.0731.726</p><p>Product finish Copper</p>"),
+    "https://www.franke.com/us/en/home-solutions/products/kitchen-faucets/product-detail-page.html/115.0731.726.html");
+  assert.deepEqual([franke.items[0].name, franke.items[0].model], ["Mythos Masterpiece Pull-Down, MMX-PD-CPR", "115.0731.726"]);
+});
+
+test("pages without a product give nothing: no heading, words in the address, labels without a number", () => {
+  assert.equal(run(page('<meta property="og:title" content="Avance Cabinetry | Benton Bourbon">', "<p>DOOR: SHAKER FINISH: LIGHT BROWN STAIN</p>"),
+    "https://www.avancecabinetry.com/cabinetry/benton/benton-bourbon-kitchen").items.length, 0);
+  assert.equal(run(page("", "<h1>Knobs</h1><p>ITEM DETAILS</p><p>200 item(s) found</p>"),
+    "https://strategicbrandsincorporated.com/category/Knobs/knobs").items.length, 0);
+  assert.equal(run(page("", "<h1>Kitchen Sinks</h1><p>From $199.00</p>"), "https://www.franke.com/us/en/kitchen-sinks.html").items.length, 0);
+  assert.equal(X.urlModel("https://strategicbrandsincorporated.com/85414/1-1-4-knob-precision-polished-nickel"), "");
+  assert.equal(X.urlModel("https://www.topknobs.com/barrow-knob.html"), "");
+  assert.equal(X.urlModel("https://www.richelieu.com/us/en/x/1166124/sku-BP56325128195"), "BP56325128195");
+  assert.equal(X.urlModel("https://www.deltafaucet.com/kitchen/product/19867LF-CZ.html"), "19867LF-CZ");
+});
+
+test("the blank item for pages with nothing to read keeps the page's name", () => {
+  const blank = X.blankItem({ "og:title": "Avance Cabinetry | Benton Bourbon | Shaker Light Brown Cabinets", "og:image": "https://static.wixstatic.com/a.jpg" },
+    { heading: "", text: "" }, "ignored", "https://www.avancecabinetry.com/cabinetry/benton/benton-bourbon");
+  assert.equal(blank.name, "Avance Cabinetry | Benton Bourbon | Shaker Light Brown Cabinets");
+  assert.equal(blank.model, "");
+  assert.equal(blank.imageUrl, "https://static.wixstatic.com/a.jpg");
+  assert.equal(X.blankItem({}, { heading: "Horizon In-line" }, "Horizon | Fleurco").name, "Horizon In-line");
+});
+
 test("vendor domains: subdomains count as the main domain", () => {
   assert.equal(X.registrableDomain("www.us.kohler.com"), "kohler.com");
   assert.equal(X.registrableDomain("craftandmain.com"), "craftandmain.com");

@@ -5,7 +5,7 @@
     "eyebrow": "Consumers Kitchen & Bath · Product Selector guide",
     "title": "From a product on a vendor's website to a priced special-order line on the estimate",
     "lede": "Where each step happens: on the vendor's own website with the customer, in the Consumers Quote Helper browser extension (Edge or Chrome), in the Product Selector on the sales PC, and in NetSuite. Click any numbered box to read its exact buttons.",
-    "meta": "Mapped from the code on 11/4/2026: Product Selector Special Order page, Quote List and the Consumers Quote Helper extension 1.0.0."
+    "meta": "Mapped from the code on 11/4/2026: Product Selector Special Order page, Quote List and the Consumers Quote Helper extension 1.1.0."
   },
   "lanes": {
     "VS": {
@@ -178,32 +178,32 @@
           "col": "VS",
           "kind": "decision",
           "lane": "VS",
-          "label": "Add to Consumers Quote button shows?",
-          "detail": "The button shows at the bottom right on product pages the helper can read (the page's own product data: model, name, color, price)."
+          "label": "Helper read the item from the page?",
+          "detail": "The Add to Consumers Quote button shows at the bottom right on every page of a product line's vendor site. On a product page the helper fills in the model, name and usually the price: from the page's product data, or from the model and price printed next to the product name."
         },
         {
           "id": "l_hand",
-          "num": null,
+          "num": 8,
           "row": 6,
           "col": "EX",
-          "kind": "link",
-          "lane": null,
-          "label": "Type it in Add Special Order instead (step 14)",
-          "detail": "If the page has no product data the helper cannot read it. Note the model and price and enter them in the Add Special Order form on the Special Order page."
+          "kind": "action",
+          "lane": "EX",
+          "label": "Customer types the model and color in the panel",
+          "detail": "A page with nothing to read (Fleurco's shower door configurator, Avance's door styles) opens the panel with the page's name and a blank Model, under the note We could not read this item from the page. Type the model number and color shown on it."
         },
         {
           "id": "n_add",
-          "num": 8,
+          "num": 9,
           "row": 7,
           "col": "VS",
           "kind": "action",
           "lane": "VS",
           "label": "Pick the option and quantity, click Add to quote",
-          "detail": "Click Add to Consumers Quote. Choose the Option (color or finish) if there are several, check Model, Color / finish, Price on this site and Quantity, then click Add to quote."
+          "detail": "Choose the Option (color or finish) if there are several, check or type Model, Color / finish, Price on this site and Quantity, then click Add to quote. Some sites show no price (Elkay, Franke, Richelieu, Strategic Brands); the rep enters the list price."
         },
         {
           "id": "a_wait",
-          "num": 9,
+          "num": 10,
           "row": 8,
           "col": "EX",
           "kind": "auto",
@@ -213,7 +213,7 @@
         },
         {
           "id": "a_listed",
-          "num": 10,
+          "num": 11,
           "row": 9,
           "col": "PS",
           "kind": "auto",
@@ -223,7 +223,7 @@
         },
         {
           "id": "n_use",
-          "num": 11,
+          "num": 12,
           "row": 10,
           "col": "PS",
           "kind": "action",
@@ -233,7 +233,7 @@
         },
         {
           "id": "a_fill",
-          "num": 12,
+          "num": 13,
           "row": 11,
           "col": "PS",
           "kind": "auto",
@@ -243,7 +243,7 @@
         },
         {
           "id": "n_type",
-          "num": 14,
+          "num": 15,
           "row": 12,
           "col": "PS",
           "kind": "action",
@@ -253,7 +253,7 @@
         },
         {
           "id": "a_cleared",
-          "num": 13,
+          "num": 14,
           "row": 12,
           "col": "EX",
           "kind": "auto",
@@ -263,7 +263,7 @@
         },
         {
           "id": "n_search",
-          "num": 15,
+          "num": 16,
           "row": 13,
           "col": "PS",
           "kind": "action",
@@ -273,7 +273,7 @@
         },
         {
           "id": "n_push",
-          "num": 16,
+          "num": 17,
           "row": 14,
           "col": "PS",
           "kind": "action",
@@ -283,7 +283,7 @@
         },
         {
           "id": "e_done",
-          "num": 17,
+          "num": 18,
           "row": 15,
           "col": "NS",
           "kind": "end",
@@ -421,6 +421,13 @@
           "mode": "down",
           "label": "",
           "opt": {}
+        },
+        {
+          "from": "l_hand",
+          "to": "n_add",
+          "mode": "down",
+          "label": "",
+          "opt": {}
         }
       ]
     }
@@ -428,8 +435,8 @@
   "gapsIntro": "What this process needs that the app or the helper does not do yet.",
   "gaps": [
     {
-      "title": "Only Delta and Kohler pages have been checked.",
-      "text": "The helper reads the product data a vendor page carries. The other product lines' sites (Brizo, Elkay, Franke, TOTO, Top Knobs and more) still need a look; a site without it gets no button, and the rep types the item in."
+      "title": "Fleurco and Avance pages have nothing to read.",
+      "text": "The helper reads the item on 14 of the 16 vendor sites. Fleurco's configurator and Avance's door-style pages show no model number, so the customer types it in the panel. Elkay, Franke, Richelieu and Strategic Brands show no price; the rep enters the list price."
     },
     {
       "title": "Picks stay in one browser.",
@@ -454,5 +461,5 @@
     "When a vendor's website changes, update the product line's website on its PRD page in NetSuite; the helper follows the next time the Product Selector is open.",
     "A vendor site can show a sale price. The list price is what counts, so always check it before Add to List."
   ],
-  "footer": "Vendor site special orders · Mapped from the code (Product Selector Special Order page and Quote List, Consumers Quote Helper extension 1.0.0) on 11/4/2026."
+  "footer": "Vendor site special orders · Mapped from the code (Product Selector Special Order page and Quote List, Consumers Quote Helper extension 1.1.0) on 11/4/2026."
 }
