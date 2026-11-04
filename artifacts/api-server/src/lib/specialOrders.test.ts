@@ -6,7 +6,9 @@ import {
   specialOrderRate, SpecialOrderValidationError, type EstimatePricingContext, type SpecialOrderPricing,
 } from "./specialOrders";
 
-const productLine = { id: "88", name: "DELTA", netsuiteItemId: "81317", sku: "SP-DELTA" };
+const productLine = {
+  id: "88", name: "DELTA", netsuiteItemId: "81317", sku: "SP-DELTA", costMultiplier: 0.534, retailMultiplier: 1.4606, crdMultiplier: 1.2813,
+};
 const type = { id: "3071", name: "BATH FAUCET", requiresAttachment: false, classId: "20" };
 const details: SpecialOrderDetails = {
   productLineId: "88", productLineName: "DELTA", typeId: "3071", typeName: "BATH FAUCET",
@@ -78,7 +80,10 @@ test("earn rate follows GetItemCommissionRates", () => {
 });
 
 test("drop ship and CRD pricing land on the line", () => {
-  const knobs = { id: "119", name: "TOP KNOBS HARDWARE", netsuiteItemId: "81427", sku: "SP-TOP KNOBS HARDWARE" };
+  const knobs = {
+    id: "119", name: "TOP KNOBS HARDWARE", netsuiteItemId: "81427", sku: "SP-TOP KNOBS HARDWARE",
+    costMultiplier: 0.583, retailMultiplier: 1.715, crdMultiplier: 1.4292,
+  };
   const pricing = { ...deltaPricing, costMult: 0.583, retailMult: 1.715, crdMult: 1.4292, dropShip: true };
   const line = specialOrderLine("81427", 37, { ...details, productLineId: "119", listPrice: 10.9 }, knobs, type, pricing, crd);
   assert.equal(line.rate, 9.08);
@@ -152,6 +157,31 @@ test("item options are filled into NetSuite's own template", () => {
     `CUSTCOL_ITEMOPT_SPECIALORDER${O}F${O}Note${O}Special Order - No Returns`,
   ].join(E));
   assert.throws(() => fillSpecialOrderOptions(`CUSTCOL_SPECORD_MODEL${O}T${O}MODEL${O}`, details, type), /CUSTCOL_SPECORD_TYPE/);
+});
+
+test("a Type that requires an attachment gets Per Order Form = Yes and 'Per Attached Order Form' specs, whatever was typed", () => {
+  const marble = { id: "3342", name: "MARBLE", requiresAttachment: true, classId: null };
+  const oasis = { ...productLine, id: "51", netsuiteItemId: "81385", sku: "SP-OASIS" };
+  const typed = { ...details, productLineId: "51", typeId: "3342", typeName: "MARBLE", model: "typed", description: "typed", color: "typed" };
+  const line = specialOrderLine("81385", 1, typed, oasis, marble, deltaPricing, retail);
+  assert.deepEqual(line.custcol_specord_perorderform, { id: "1" });
+  assert.equal(line.custcol_specord_model, "Per Attached Order Form");
+  assert.equal(line.custcol_specord_style, "Per Attached Order Form");
+  assert.equal(line.custcol_specord_color, "Per Attached Order Form");
+  // The options string NetSuite stored for ES241753 line 12 (SP-OASIS, MARBLE), entered through the Item Options popup.
+  const stored = [
+    `CUSTCOL_SPECORD_PRODLINE${O}T${O}PROD LINE${O}51${O}OASIS`,
+    `CUSTCOL_SPECORD_CLASS${O}F${O}CLASS${O}`,
+    `CUSTCOL_SPECORD_TYPE${O}T${O}TYPE${O}3342${O}MARBLE`,
+    `CUSTCOL_SPECORD_PERORDERFORM${O}F${O}As Per Order Form${O}1${O}Yes`,
+    `CUSTCOL_SPECORD_MODEL${O}T${O}MODEL${O}Per Attached Order Form`,
+    `CUSTCOL_SPECORD_STYLE${O}T${O}COLL/DESC${O}Per Attached Order Form`,
+    `CUSTCOL_SPECORD_COLOR${O}T${O}COLOR${O}Per Attached Order Form`,
+    `CUSTCOL_ITEMOPT_SPECIALORDER${O}F${O}Note${O}`,
+  ].join(E);
+  const fresh = stored
+    .replace(`3342${O}MARBLE`, "").replace(`1${O}Yes`, `2${O}No`).replaceAll("Per Attached Order Form", "");
+  assert.equal(fillSpecialOrderOptions(fresh, typed, marble), stored);
 });
 
 test("shared request contract accepts mixed regular and special-order lines", () => {

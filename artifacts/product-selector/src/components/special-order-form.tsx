@@ -7,10 +7,13 @@ import {
   getGetSpecialOrderTypesQueryKey,
 } from "@workspace/api-client-react";
 import type { QuoteItem, SpecialOrderInput } from "@/context/quote-list-context";
-import { cn } from "@/lib/utils";
+import { cn, fmtPrice } from "@/lib/utils";
+import { specialOrderPrices } from "@/lib/special-order-pricing";
 
 // NetSuite's Model / Coll/Desc / Color columns are Free-Form Text, 300 characters each.
 const LIMITS = { model: 300, color: 300, description: 300 };
+const PER_ORDER_FORM = "Per Attached Order Form";
+const typedSpec = (v: string | undefined) => (v && v !== PER_ORDER_FORM ? v : "");
 const MAX_PRICE = 99999999;
 const MAX_QTY = 1000000;
 
@@ -33,9 +36,10 @@ export default function SpecialOrderForm({ initial, onSubmit, onCancel }: {
   const [selectedItemId, setSelectedItemId] = useState(initial?.netsuiteId ?? "");
   const [typeId, setTypeId] = useState(so?.typeId ?? "");
   const [quantity, setQuantity] = useState(String(initial?.quantity ?? 1));
-  const [model, setModel] = useState(so?.model ?? "");
-  const [description, setDescription] = useState(so?.description ?? "");
-  const [color, setColor] = useState(so?.color ?? "");
+  // Typed specs only; an order-form line's "Per Attached Order Form" is not carried into the inputs.
+  const [model, setModel] = useState(typedSpec(so?.model));
+  const [description, setDescription] = useState(typedSpec(so?.description));
+  const [color, setColor] = useState(typedSpec(so?.color));
   const [listPrice, setListPrice] = useState(so ? String(so.listPrice) : "");
   const [errors, setErrors] = useState<Errors>({});
 
@@ -47,11 +51,18 @@ export default function SpecialOrderForm({ initial, onSubmit, onCancel }: {
   });
 
   const type = types.data?.find(t => t.id === typeId);
+  // A Type that requires an attachment takes an order form instead of typed specs, as NetSuite's Item Options
+  // popup does: Model, Color and Collection / Description are locked to "Per Attached Order Form".
+  const perOrderForm = !!type?.requiresAttachment;
   const staleLine = !!so && selectedItemId === initial?.netsuiteId && lines.isSuccess && !line;
+  const typedPrice = Number(listPrice.trim());
+  const preview = line && listPrice.trim() && Number.isFinite(typedPrice) && typedPrice > 0
+    ? specialOrderPrices(Math.round(typedPrice * 100) / 100, line) : null;
 
   const validate = (): SpecialOrderInput | null => {
     const e: Errors = {};
-    const m = model.trim(), d = description.trim(), c = color.trim();
+    // const m = model.trim(), d = description.trim(), c = color.trim();
+    const [m, d, c] = perOrderForm ? [PER_ORDER_FORM, PER_ORDER_FORM, PER_ORDER_FORM] : [model.trim(), description.trim(), color.trim()];
     const q = Number(quantity);
     const p = Number(listPrice.trim());
     if (!line) e.productLine = "Select a product line.";
@@ -92,7 +103,7 @@ export default function SpecialOrderForm({ initial, onSubmit, onCancel }: {
     <form onSubmit={submit} noValidate className="bg-white rounded-2xl border border-gray-100 shadow-sm animate-in fade-in slide-in-from-top-2 duration-200" data-testid="form-special-order" aria-label={initial ? "Edit special order" : "Add special order"}>
       <div className="px-6 py-5 border-b border-gray-100">
         <h3 className="font-semibold text-gray-900 text-[15px] mb-1">{initial ? "Edit Special Order" : "Add Special Order"}</h3>
-        <p className="text-[13px] text-gray-400">Choose a product line first, then its type. The selling price is set when you push to an estimate: list price x the product line's multipliers for the customer (Retail or CRD), the same as NetSuite.</p>
+        <p className="text-[13px] text-gray-400">Choose a product line first, then its type. The selling price is list price x the product line's multipliers, the same as NetSuite; the estimate's customer (Retail or CRD) decides which price is used.</p>
       </div>
 
       <div className="px-6 py-5 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -129,7 +140,7 @@ export default function SpecialOrderForm({ initial, onSubmit, onCancel }: {
               </button>
             </div>
           ) : (
-            <select id="so-type" value={typeId} disabled={!productLineId} onChange={e => setTypeId(e.target.value)} className={inputCls} {...aria("type")} data-testid="select-type">
+            <select id="so-type" value={typeId} disabled={!productLineId} onChange={e => { setTypeId(e.target.value); setErrors(prev => ({ ...prev, type: undefined, model: undefined, color: undefined, description: undefined })); }} className={inputCls} {...aria("type")} data-testid="select-type">
               <option value="">{!productLineId ? "Select a product line first" : types.data?.length ? "Select a type" : "No types for this product line"}</option>
               {types.data?.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
@@ -140,23 +151,24 @@ export default function SpecialOrderForm({ initial, onSubmit, onCancel }: {
         {type?.requiresAttachment && (
           <div className="md:col-span-2 flex items-start gap-2 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-[13px] text-amber-800 animate-in fade-in duration-200" role="status" data-testid="text-requires-attachment">
             <Info size={14} className="shrink-0 mt-0.5" />
-            <span>The {type.name} type requires an attachment. Add it to the estimate in NetSuite after pushing.</span>
+            {/* <span>The {type.name} type requires an attachment. Add it to the estimate in NetSuite after pushing.</span> */}
+            <span>The {type.name} type requires an order form, so Model, Color and Collection / Description are set to "{PER_ORDER_FORM}". Attach the order form to the estimate in NetSuite after pushing.</span>
           </div>
         )}
 
         <div>
           <label htmlFor="so-model" className={labelCls}>Model</label>
-          <input id="so-model" value={model} maxLength={LIMITS.model} onChange={e => setModel(e.target.value)} className={inputCls} {...aria("model")} data-testid="input-model" />
+          <input id="so-model" value={perOrderForm ? PER_ORDER_FORM : model} disabled={perOrderForm} maxLength={LIMITS.model} onChange={e => setModel(e.target.value)} className={inputCls} {...aria("model")} data-testid="input-model" />
           <FieldError id="so-err-model" msg={errors.model} />
         </div>
         <div>
           <label htmlFor="so-color" className={labelCls}>Color</label>
-          <input id="so-color" value={color} maxLength={LIMITS.color} onChange={e => setColor(e.target.value)} className={inputCls} {...aria("color")} data-testid="input-color" />
+          <input id="so-color" value={perOrderForm ? PER_ORDER_FORM : color} disabled={perOrderForm} maxLength={LIMITS.color} onChange={e => setColor(e.target.value)} className={inputCls} {...aria("color")} data-testid="input-color" />
           <FieldError id="so-err-color" msg={errors.color} />
         </div>
         <div className="md:col-span-2">
           <label htmlFor="so-desc" className={labelCls}>Collection / Description</label>
-          <textarea id="so-desc" rows={3} value={description} maxLength={LIMITS.description} onChange={e => setDescription(e.target.value)} className={cn(inputCls, "resize-y")} {...aria("description")} data-testid="input-description" />
+          <textarea id="so-desc" rows={3} value={perOrderForm ? PER_ORDER_FORM : description} disabled={perOrderForm} maxLength={LIMITS.description} onChange={e => setDescription(e.target.value)} className={cn(inputCls, "resize-y")} {...aria("description")} data-testid="input-description" />
           <FieldError id="so-err-description" msg={errors.description} />
         </div>
         <div>
@@ -171,6 +183,11 @@ export default function SpecialOrderForm({ initial, onSubmit, onCancel }: {
             <input id="so-price" type="number" inputMode="decimal" min={0} max={MAX_PRICE} step="0.01" value={listPrice} onChange={e => setListPrice(e.target.value)} className={cn(inputCls, "pl-7")} {...aria("listPrice")} data-testid="input-list-price" />
           </div>
           <FieldError id="so-err-listPrice" msg={errors.listPrice} />
+          {preview && (
+            <p className="mt-1 text-[12px] text-gray-500" data-testid="text-selling-price-preview">
+              Selling price each: <span className="font-medium text-gray-800">Retail ${fmtPrice(preview.retail)}</span>, CRD ${fmtPrice(preview.crd)}
+            </p>
+          )}
         </div>
       </div>
 
