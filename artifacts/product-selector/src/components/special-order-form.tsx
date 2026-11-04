@@ -9,6 +9,7 @@ import {
 import type { PriceBasis, QuoteItem, SpecialOrderInput } from "@/context/quote-list-context";
 import { cn, fmtPrice } from "@/lib/utils";
 import { specialOrderPrices } from "@/lib/special-order-pricing";
+import { specialOrderLookupRetry } from "@/lib/special-order-query";
 
 // NetSuite's Model / Coll/Desc / Color columns are Free-Form Text, 300 characters each.
 const LIMITS = { model: 300, color: 300, description: 300 };
@@ -55,11 +56,11 @@ export default function SpecialOrderForm({ initial, onSubmit, onCancel }: {
   const [priceBasis, setPriceBasis] = useState<PriceBasis>(initial?.priceBasis ?? "retail");
   const [errors, setErrors] = useState<Errors>({});
 
-  const lines = useGetSpecialOrderProductLines({ query: { queryKey: getGetSpecialOrderProductLinesQueryKey() } });
+  const lines = useGetSpecialOrderProductLines({ query: { queryKey: getGetSpecialOrderProductLinesQueryKey(), ...specialOrderLookupRetry } });
   const line = lines.data?.find(l => l.netsuiteItemId === selectedItemId);
   const productLineId = line?.id ?? "";
   const types = useGetSpecialOrderTypes(productLineId, {
-    query: { enabled: !!productLineId, queryKey: getGetSpecialOrderTypesQueryKey(productLineId) },
+    query: { enabled: !!productLineId, queryKey: getGetSpecialOrderTypesQueryKey(productLineId), ...specialOrderLookupRetry },
   });
 
   const type = types.data?.find(t => t.id === typeId);
@@ -129,7 +130,7 @@ export default function SpecialOrderForm({ initial, onSubmit, onCancel }: {
       <div className="px-6 py-5 grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label htmlFor="so-line" className={labelCls}>Product Line</label>
-          {lines.isLoading ? (
+          {lines.isLoading || (lines.isFetching && lines.isError) ? (
             <div className="h-[42px] rounded-xl bg-gray-100 animate-pulse" aria-label="Loading product lines" />
           ) : lines.isError ? (
             <div className="flex items-center gap-2 text-[13px] text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2.5">
@@ -150,7 +151,7 @@ export default function SpecialOrderForm({ initial, onSubmit, onCancel }: {
 
         <div>
           <label htmlFor="so-type" className={labelCls}>Type</label>
-          {productLineId && types.isLoading ? (
+          {productLineId && (types.isLoading || (types.isFetching && types.isError)) ? (
             <div className="h-[42px] rounded-xl bg-gray-100 animate-pulse" aria-label="Loading types" />
           ) : types.isError ? (
             <div className="flex items-center gap-2 text-[13px] text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2.5">

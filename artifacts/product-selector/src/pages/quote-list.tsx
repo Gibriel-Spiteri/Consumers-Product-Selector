@@ -3,6 +3,7 @@ import { Link, useSearch } from "wouter";
 import { ChevronRight, Trash2, Minus, Plus, ClipboardList, Search, Loader2, Send, Check, AlertCircle, ImageOff, X, PackagePlus, Pencil } from "lucide-react";
 import { useAddEstimateItems, useGetSpecialOrderProductLines, getGetSpecialOrderProductLinesQueryKey } from "@workspace/api-client-react";
 import { specialOrderPrices, type SpecialOrderPrices } from "@/lib/special-order-pricing";
+import { specialOrderLookupRetry } from "@/lib/special-order-query";
 import type { EstimateLineInput } from "@workspace/api-client-react";
 import SpecialOrderForm from "@/components/special-order-form";
 import { useQuoteList, type PriceBasis, type QuoteItem } from "@/context/quote-list-context";
@@ -414,7 +415,7 @@ export default function QuoteListPage() {
 
   // Special-order selling prices, from the product lines' NetSuite multipliers (same math as the push).
   const productLines = useGetSpecialOrderProductLines({
-    query: { queryKey: getGetSpecialOrderProductLinesQueryKey(), enabled: specialItems.length > 0 },
+    query: { queryKey: getGetSpecialOrderProductLinesQueryKey(), enabled: specialItems.length > 0, ...specialOrderLookupRetry },
   });
   const pricesFor = (item: QuoteItem): SpecialOrderPrices | null => {
     const so = item.specialOrder;
