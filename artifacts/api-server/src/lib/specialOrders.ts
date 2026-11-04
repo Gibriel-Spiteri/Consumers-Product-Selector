@@ -39,6 +39,7 @@ export async function getSpecialOrderProductLines(fresh = false): Promise<Specia
     LEFT JOIN file logo ON logo.id = pl.custrecord_pl_logo
     WHERE pl.isinactive = 'F' AND i.isinactive = 'F' AND i.itemid LIKE 'SP-%'
       AND UPPER(BUILTIN.DF(pl.custrecord_pl_type)) = 'INVENTORY'
+      AND pl.custrecord_pl_prd_eps = 'T'
       AND EXISTS (
         SELECT 1 FROM customrecord_specord_nondb_types st
         WHERE st.custrecord_specord_nondb_type_prodline = pl.id AND st.isinactive = 'F'

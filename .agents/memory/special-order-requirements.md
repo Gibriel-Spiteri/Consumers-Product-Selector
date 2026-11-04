@@ -36,3 +36,9 @@ Limit special-order product lines to PRODUCT LINE TYPE = INVENTORY.
 **Why:** The user explicitly requested this restriction.
 
 **How to apply:** Apply the restriction to available product-line choices and enforce it when validating an estimate push.
+
+Only show special-order product lines with `custrecord_pl_prd_eps` checked Yes.
+
+**Why:** The user explicitly requested this additional restriction.
+
+**How to apply:** Apply it alongside Inventory, including category choices, logo grids, and product-line selection.
