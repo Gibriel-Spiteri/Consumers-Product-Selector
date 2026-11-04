@@ -1,3 +1,5 @@
+// Superseded 2026-11-04 (1.2.1): the icons now come from the Product Selector's favicon, by make-icons.py.
+// Running this would bring back the old navy tile with a white plus.
 // Draws the Consumers Quote Helper icons (navy rounded tile, white plus) as PNGs with Node's zlib only.
 // Run: node browser-extension/make-icons.cjs
 const fs = require("fs");
