@@ -19,7 +19,9 @@ function netsuiteReason(err: any): string {
 }
 
 router.get("/estimates/search", async (req, res) => {
-  const q = (req.query.q as string || "").trim();
+  // const q = (req.query.q as string || "").trim();
+  // Estimate numbers have no spaces, so "es 241762" searches as "es241762".
+  const q = (req.query.q as string || "").replace(/\s+/g, "");
   if (!q) {
     return res.status(400).json({ error: "Missing search query" });
   }
@@ -72,10 +74,14 @@ router.get("/estimates/search", async (req, res) => {
       total: row.total ? parseFloat(row.total) : null,
     }));
 
-    res.json({ estimates });
-  } catch (err) {
+    return res.json({ estimates });
+  } catch (err: any) {
     logger.error({ err }, "Failed to search estimates");
-    res.status(500).json({ error: "Failed to search estimates" });
+    // NetSuite still busy after the 429 retries: say so, so staff just retry.
+    if (/ 429 /.test(String(err?.message))) {
+      return res.status(503).json({ error: "NetSuite is busy right now. Wait a few seconds and search again." });
+    }
+    return res.status(500).json({ error: "Failed to search estimates" });
   }
 });
 

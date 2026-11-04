@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { ChevronRight, Trash2, Minus, Plus, ClipboardList, Search, Loader2, Send, Check, AlertCircle, ImageOff, X, PackagePlus, Pencil } from "lucide-react";
 import { useAddEstimateItems, useGetSpecialOrderProductLines, getGetSpecialOrderProductLinesQueryKey } from "@workspace/api-client-react";
@@ -133,6 +133,14 @@ function SpecialOrderRow({ item, prices, pricingFallback, editing, onEdit, onRem
   );
 }
 
+// Estimate search: the number with or without the "ES" prefix ("ES241762", "es 241762", "241762").
+// It starts by itself once at least 3 digits are typed.
+const MIN_SEARCH_DIGITS = 3;
+function estimateDigits(q: string): string | null {
+  const s = q.replace(/\s+/g, "").replace(/^es?/i, ""); // "E" alone is the prefix being typed
+  return /^\d*$/.test(s) ? s : null;
+}
+
 function EstimateSearch({ onPush, pushResult, setPushResult }: {
   onPush: (estimateId: number, tranId: string) => Promise<void>;
   pushResult: { success: boolean; message: string } | null;
@@ -143,26 +151,78 @@ function EstimateSearch({ onPush, pushResult, setPushResult }: {
   const [searching, setSearching] = useState(false);
   const [selected, setSelected] = useState<Estimate | null>(null);
   const [pushing, setPushing] = useState(false);
+  // The digits of the last search that finished, and its error, so "No estimates found" only shows for a real search.
+  const [searchedFor, setSearchedFor] = useState<string | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const latestSearch = useRef(0);
 
-  const handleSearch = async () => {
-    if (!query.trim()) return;
+  const digits = estimateDigits(query);
+  const canSearch = digits !== null && digits.length >= MIN_SEARCH_DIGITS;
+
+  const runSearch = useCallback(async (d: string) => {
+    const id = ++latestSearch.current;
     setSearching(true);
+    setSearchError(null);
     setSelected(null);
     setPushResult(null);
     try {
-      const res = await fetch(`/api/estimates/search?q=${encodeURIComponent(query.trim())}`, { headers: authHeaders() });
-      const data = await res.json();
+      const res = await fetch(`/api/estimates/search?q=${encodeURIComponent(d)}`, { headers: authHeaders() });
+      const data = await res.json().catch(() => ({}));
+      if (id !== latestSearch.current) return; // a newer search replaced this one
       if (res.ok) {
         setResults(data.estimates ?? []);
       } else {
         setResults([]);
-        if (typeof data?.error === "string") setPushResult({ success: false, message: data.error });
+        setSearchError(typeof data?.error === "string" ? data.error : `Search failed (${res.status}). Try again.`);
       }
+      setSearchedFor(d);
     } catch {
+      if (id !== latestSearch.current) return;
       setResults([]);
+      setSearchError("Could not reach the server. Try again.");
+      setSearchedFor(d);
     } finally {
-      setSearching(false);
+      if (id === latestSearch.current) setSearching(false);
     }
+  }, [setPushResult]);
+
+  // Search as you type, once 3 digits are in (short pause so each keystroke is not a NetSuite call).
+  useEffect(() => {
+    if (!canSearch || digits === null) {
+      latestSearch.current++;
+      setResults([]);
+      setSearchedFor(null);
+      setSearchError(null);
+      setSearching(false);
+      return;
+    }
+    const t = setTimeout(() => runSearch(digits), 350);
+    return () => clearTimeout(t);
+  }, [digits, canSearch, runSearch]);
+
+  // Was: searched on Enter / button only, with any text; "No estimates found" showed while typing.
+  // const handleSearch = async () => {
+  //   if (!query.trim()) return;
+  //   setSearching(true);
+  //   setSelected(null);
+  //   setPushResult(null);
+  //   try {
+  //     const res = await fetch(`/api/estimates/search?q=${encodeURIComponent(query.trim())}`, { headers: authHeaders() });
+  //     const data = await res.json();
+  //     if (res.ok) {
+  //       setResults(data.estimates ?? []);
+  //     } else {
+  //       setResults([]);
+  //       if (typeof data?.error === "string") setPushResult({ success: false, message: data.error });
+  //     }
+  //   } catch {
+  //     setResults([]);
+  //   } finally {
+  //     setSearching(false);
+  //   }
+  // };
+  const handleSearch = () => {
+    if (canSearch && digits !== null) runSearch(digits);
   };
 
   const handlePush = async () => {
@@ -191,7 +251,9 @@ function EstimateSearch({ onPush, pushResult, setPushResult }: {
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Search by estimate # or customer name..."
+              placeholder="Estimate # (ES optional), e.g. ES241762 or 241762"
+              inputMode="search"
+              aria-label="Estimate number"
               value={query}
               onChange={e => setQuery(e.target.value)}
               onKeyDown={e => e.key === "Enter" && handleSearch()}
@@ -200,7 +262,7 @@ function EstimateSearch({ onPush, pushResult, setPushResult }: {
           </div>
           <button
             onClick={handleSearch}
-            disabled={searching || !query.trim()}
+            disabled={searching || !canSearch}
             className="px-4 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-700 transition-colors disabled:opacity-50 flex items-center gap-1.5"
           >
             {searching ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
@@ -270,8 +332,21 @@ function EstimateSearch({ onPush, pushResult, setPushResult }: {
           </div>
         )}
 
+        {/* Was: shown whenever the box had text, before any search ran.
         {results.length === 0 && !searching && query.trim() && (
           <p className="text-sm text-gray-400 text-center py-4">No estimates found for "{query}"</p>
+        )} */}
+        {query.trim() && digits === null && (
+          <p className="text-sm text-gray-400 text-center py-4" data-testid="text-estimate-search-hint">Enter an estimate number, like ES241762 or 241762.</p>
+        )}
+        {digits !== null && query.trim() && digits.length < MIN_SEARCH_DIGITS && (
+          <p className="text-sm text-gray-400 text-center py-4" data-testid="text-estimate-search-hint">Type at least {MIN_SEARCH_DIGITS} digits of the estimate number to search (the ES is optional).</p>
+        )}
+        {searchError && canSearch && !searching && (
+          <p className="text-sm text-red-600 text-center py-4" role="alert" data-testid="text-estimate-search-error">{searchError}</p>
+        )}
+        {results.length === 0 && !searching && !searchError && canSearch && searchedFor === digits && (
+          <p className="text-sm text-gray-400 text-center py-4">No estimates found for "{query.trim()}"</p>
         )}
 
         {selected && (
