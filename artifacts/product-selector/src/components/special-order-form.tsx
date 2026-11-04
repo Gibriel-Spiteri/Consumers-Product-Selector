@@ -16,15 +16,15 @@ const PER_ORDER_FORM = "Per Attached Order Form";
 const typedSpec = (v: string | undefined) => (v && v !== PER_ORDER_FORM ? v : "");
 const MAX_PRICE = 99999999;
 const MAX_QTY = 1000000;
-// The rep's last Retail / CRD choice, so a run of lines for one customer keeps it.
-const BASIS_KEY = "ps_so_price_basis";
-function lastBasis(): PriceBasis {
-  try {
-    return localStorage.getItem(BASIS_KEY) === "crd" ? "crd" : "retail";
-  } catch {
-    return "retail";
-  }
-}
+// 2026-11-04: replaced by "always start on Retail" (Gib). Was: remember the rep's last Retail / CRD choice.
+// const BASIS_KEY = "ps_so_price_basis";
+// function lastBasis(): PriceBasis {
+//   try {
+//     return localStorage.getItem(BASIS_KEY) === "crd" ? "crd" : "retail";
+//   } catch {
+//     return "retail";
+//   }
+// }
 
 type Errors = Partial<Record<"productLine" | "type" | "quantity" | "model" | "description" | "color" | "listPrice", string>>;
 
@@ -50,7 +50,9 @@ export default function SpecialOrderForm({ initial, onSubmit, onCancel }: {
   const [description, setDescription] = useState(typedSpec(so?.description));
   const [color, setColor] = useState(typedSpec(so?.color));
   const [listPrice, setListPrice] = useState(so ? String(so.listPrice) : "");
-  const [priceBasis, setPriceBasis] = useState<PriceBasis>(initial ? (initial.priceBasis ?? "retail") : lastBasis());
+  // 2026-11-04: a new special order always starts on Retail (Gib); editing keeps the line's choice.
+  // Was: initial ? (initial.priceBasis ?? "retail") : lastBasis()
+  const [priceBasis, setPriceBasis] = useState<PriceBasis>(initial?.priceBasis ?? "retail");
   const [errors, setErrors] = useState<Errors>({});
 
   const lines = useGetSpecialOrderProductLines({ query: { queryKey: getGetSpecialOrderProductLinesQueryKey() } });
@@ -106,11 +108,12 @@ export default function SpecialOrderForm({ initial, onSubmit, onCancel }: {
     ev.preventDefault();
     const v = validate();
     if (!v) return;
-    try {
-      localStorage.setItem(BASIS_KEY, v.priceBasis);
-    } catch {
-      // ignore storage errors
-    }
+    // 2026-11-04: no longer remembered; new lines always start on Retail.
+    // try {
+    //   localStorage.setItem(BASIS_KEY, v.priceBasis);
+    // } catch {
+    //   // ignore storage errors
+    // }
     onSubmit(v);
   };
 
