@@ -1,14 +1,30 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Check, ChevronRight, PackagePlus } from "lucide-react";
+import { useGetSpecialOrderProductLines, getGetSpecialOrderProductLinesQueryKey } from "@workspace/api-client-react";
 import SpecialOrderForm from "@/components/special-order-form";
+import VendorPicksPanel from "@/components/vendor-picks-panel";
 import { useQuoteList } from "@/context/quote-list-context";
+import { useVendorPicks } from "@/context/vendor-picks-context";
+import { specialOrderLookupRetry } from "@/lib/special-order-query";
+import { prefillFromPick, type VendorPick } from "@/lib/vendor-picks";
 
 export default function SpecialOrderPage() {
   const { addSpecialOrder } = useQuoteList();
   const [, navigate] = useLocation();
   const [formKey, setFormKey] = useState(0);
   const [added, setAdded] = useState(false);
+  // A product picked on a vendor website, loaded into the form (Consumers Quote Helper extension).
+  const { done } = useVendorPicks();
+  const [activePick, setActivePick] = useState<VendorPick | null>(null);
+  const lines = useGetSpecialOrderProductLines({ query: { queryKey: getGetSpecialOrderProductLinesQueryKey(), ...specialOrderLookupRetry } });
+  const formTop = useRef<HTMLDivElement>(null);
+  const loadPick = (pick: VendorPick) => {
+    setActivePick(pick);
+    setAdded(false);
+    setFormKey(key => key + 1);
+    setTimeout(() => formTop.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+  };
 
   useEffect(() => {
     const previous = document.title;
@@ -34,12 +50,25 @@ export default function SpecialOrderPage() {
           <Link href="/list" className="font-semibold underline ml-auto">View Quote List</Link>
         </div>
       )}
+      <VendorPicksPanel activeId={activePick?.id ?? null} onUse={loadPick} />
+      <div ref={formTop} className="scroll-mt-24" />
       <SpecialOrderForm
         key={formKey}
-        categoriesAboveForm
-        onCancel={() => navigate("/")}
+        categoriesAboveForm={!activePick}
+        prefill={activePick ? prefillFromPick(activePick, lines.data ?? []) : undefined}
+        onCancel={() => {
+          // Cancelling a vendor pick returns to the blank form; the pick stays waiting.
+          if (activePick) {
+            setActivePick(null);
+            setFormKey(key => key + 1);
+            return;
+          }
+          navigate("/");
+        }}
         onSubmit={input => {
           addSpecialOrder(input);
+          if (activePick) done(activePick.id);
+          setActivePick(null);
           setAdded(true);
           setFormKey(key => key + 1);
         }}

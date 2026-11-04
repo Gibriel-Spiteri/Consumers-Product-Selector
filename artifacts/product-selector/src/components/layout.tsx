@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { Search, Loader2, ChevronRight, ChevronDown, Package, Folders, Copy, Check, ClipboardList, LogOut, Settings, BookOpen, Flag, Menu, X } from "lucide-react";
 import { ReportIssueModal } from "@/components/report-issue-modal";
 import { useQuoteList } from "@/context/quote-list-context";
+import { useVendorPicks } from "@/context/vendor-picks-context";
 import { useAuth } from "@/context/auth-context";
 import { useGetCategories, useSearchProducts, getSearchProductsQueryKey } from "@workspace/api-client-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -87,6 +88,21 @@ function ProductStatsDebug() {
       </span>
       <span className="justify-self-end text-[12px] text-[#ffffff80]">Inventory Levels are Live</span>
     </div>
+  );
+}
+
+// Products customers picked on vendor websites (Consumers Quote Helper extension) that the rep has not handled yet.
+function VendorPicksBadge() {
+  const { picks } = useVendorPicks();
+  if (picks.length === 0) return null;
+  return (
+    <span
+      className="ml-1.5 bg-blue-600 text-white text-[10px] font-bold min-w-[18px] h-[18px] flex items-center justify-center rounded-full px-1 tracking-normal"
+      title={`${picks.length} picked on vendor websites`}
+      data-testid="badge-vendor-picks"
+    >
+      {picks.length > 99 ? "99+" : picks.length}
+    </span>
   );
 }
 
@@ -629,6 +645,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     className="flex-shrink-0 flex items-center h-[50px] px-4 font-semibold uppercase tracking-widest text-[#7B4DA8] hover:text-[#7B4DA8] transition-colors text-[13px]"
                   >
                     Special Order
+                    <VendorPicksBadge />
                   </Link>
                   {internalCategory && (
                     <Link

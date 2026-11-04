@@ -19,6 +19,7 @@ import AnalyticsPage from "@/pages/analytics";
 import LoginPage from "@/pages/login";
 import NotFound from "@/pages/not-found";
 import { QuoteListProvider } from "@/context/quote-list-context";
+import { VendorPicksProvider } from "@/context/vendor-picks-context";
 import { AuthProvider, useAuth } from "@/context/auth-context";
 import { Loader2 } from "lucide-react";
 
@@ -71,6 +72,7 @@ function App() {
           <AnalyticsTracker />
           <AuthGate>
             <QuoteListProvider>
+              <VendorPicksProvider>
               <Layout>
                 <Switch>
                   <Route path="/" component={Home} />
@@ -88,6 +90,7 @@ function App() {
                   <Route component={NotFound} />
                 </Switch>
               </Layout>
+              </VendorPicksProvider>
             </QuoteListProvider>
           </AuthGate>
         </WouterRouter>

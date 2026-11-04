@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Consumers Quote Helper</title>
+  <style>
+    body { margin: 0; width: 320px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1d2433; background: #e7eaf0; }
+    header { background: #0f1b33; color: #fff; padding: 12px 14px; }
+    header b { font-size: 15px; font-weight: 650; display: block; }
+    header small { color: #b8c2d6; font-size: 12px; }
+    main { padding: 12px; display: grid; gap: 10px; }
+    .card { background: #fff; border: 1px solid #d6dae2; border-radius: 12px; padding: 12px; }
+    .card h2 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #5b6475; }
+    ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 13px; }
+    li span { color: #6b7385; }
+    .muted { color: #6b7385; font-size: 13px; margin: 0; }
+    .row { display: flex; gap: 8px; }
+    a, button { flex: 1; text-align: center; border-radius: 8px; padding: 9px 10px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; }
+    a { background: #1f4fd1; color: #fff; border: 1px solid #1f4fd1; }
+    button { background: #fff; color: #1d2433; border: 1px solid #c3c9d6; }
+  </style>
+</head>
+<body>
+  <header><b>Consumers Quote Helper</b><small>Vendor site picks for the Product Selector</small></header>
+  <main>
+    <section class="card">
+      <h2>Waiting for the Product Selector</h2>
+      <ul id="picks"></ul>
+      <p class="muted" id="none">No items yet. Open a vendor's product page and click "Add to Consumers Quote".</p>
+    </section>
+    <section class="card">
+      <h2>Vendor sites</h2>
+      <p class="muted" id="sites"></p>
+    </section>
+    <div class="row">
+      <a href="https://consumers-product-selector.replit.app/special-order" target="_blank" rel="noopener">Open Product Selector</a>
+      <button id="clear" type="button">Clear waiting items</button>
+    </div>
+  </main>
+  <script src="popup.js"></script>
+</body>
+</html>

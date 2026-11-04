@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import type { SpecialOrderDetails } from "@workspace/api-zod";
 import {
   EstimateItemsSchema as AddEstimateItemsBody, fillSpecialOrderOptions, positiveId, specialOrderEarnRate, specialOrderLine,
-  specialOrderRate, SpecialOrderValidationError, type EstimatePricingContext, type SpecialOrderPricing,
+  specialOrderRate, SpecialOrderValidationError, vendorWebsite, type EstimatePricingContext, type SpecialOrderPricing,
 } from "./specialOrders";
 
 const productLine = {
@@ -184,6 +184,14 @@ test("a Type that requires an attachment gets Per Order Form = Yes and 'Per Atta
   const fresh = stored
     .replace(`3342${O}MARBLE`, "").replace(`1${O}Yes`, `2${O}No`).replaceAll("Per Attached Order Form", "");
   assert.equal(fillSpecialOrderOptions(fresh, typed, marble), stored);
+});
+
+test("a product line's website is passed on only when it is an http(s) address", () => {
+  assert.equal(vendorWebsite("https://www.deltafaucet.com/"), "https://www.deltafaucet.com/");
+  assert.equal(vendorWebsite(" http://www.brizo.com "), "http://www.brizo.com/");
+  for (const bad of [null, undefined, "", "www.kohler.com", "javascript:alert(1)", "ftp://x.test/"]) {
+    assert.equal(vendorWebsite(bad), null, String(bad));
+  }
 });
 
 test("shared request contract accepts mixed regular and special-order lines", () => {

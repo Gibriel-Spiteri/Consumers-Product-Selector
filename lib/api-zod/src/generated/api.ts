@@ -19,6 +19,12 @@ export const GetSpecialOrderProductLinesResponseItem = zod.object({
     .string()
     .nullish()
     .describe("NetSuite product-line logo image from custrecord_pl_logo"),
+  websiteUrl: zod
+    .string()
+    .nullish()
+    .describe(
+      "Vendor website from custrecord_pl_prd_website (the PRD page link); http(s) only",
+    ),
   categories: zod.array(
     zod.object({
       id: zod.string(),

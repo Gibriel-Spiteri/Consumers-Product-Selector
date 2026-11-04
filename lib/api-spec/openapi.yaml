@@ -183,6 +183,10 @@ components:
           type: string
           nullable: true
           description: NetSuite product-line logo image from custrecord_pl_logo
+        websiteUrl:
+          type: string
+          nullable: true
+          description: Vendor website from custrecord_pl_prd_website (the PRD page link); http(s) only
         categories:
           type: array
           items:

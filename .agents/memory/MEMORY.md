@@ -2,3 +2,4 @@
 - [api-server restart triggers a NetSuite sync](api-server-restart-sync.md) — boot runs an immediate live sync; api-server is build&start (no watch). Validate via typecheck, don't restart casually; frontend (Vite) hot-reloads.
 - [NetSuite routes need sign-in](netsuite-routes-sign-in.md) - signed token from /api/auth/login guards /api/estimates and /api/special-orders; 429s retried.
 - [Special-order requirements](special-order-requirements.md) — Type choices belong to each product line’s Special Order Types subtab; never use one shared list.
+- [Vendor sites + Quote Helper extension](vendor-site-quote-helper.md) - product line cards open the vendor site; extension picks pre-fill the Special Order form.
