@@ -10,6 +10,7 @@ import { useQuoteList, type PriceBasis, type QuoteItem } from "@/context/quote-l
 import { authHeaders } from "@/context/auth-context";
 import { cn, fmtPrice } from "@/lib/utils";
 import { trackPushToEstimate } from "@/lib/analytics";
+import { missingDetails } from "@/lib/vendor-picks";
 
 interface Estimate {
   id: number;
@@ -47,24 +48,54 @@ function SpecialOrderRow({ item, prices, pricingFallback, editing, onEdit, onRem
   const id = item.productId;
   const basis = item.priceBasis ?? "retail";
   const basisLabel = basis === "retail" ? "Retail" : "CRD";
+  const pick = item.vendorPick;
+  const missing = missingDetails(item);
+  const priceMissing = !!pick?.priceMissing;
+  const needed = <span className="text-amber-700 font-medium">Needed</span>;
   return (
     <tr className={cn("transition-colors align-top", editing ? "bg-amber-50/70" : "hover:bg-gray-50/50")} data-testid={`row-special-order-${id}`}>
       <td className="px-5 py-3">
-        <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
+        {/* <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
           <PackagePlus size={18} className="text-amber-500" />
-        </div>
+        </div> */}
+        {pick?.imageUrl ? (
+          <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center overflow-hidden shrink-0">
+            <ProductImage src={pick.imageUrl} name={so.description || so.model} />
+          </div>
+        ) : (
+          <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
+            <PackagePlus size={18} className="text-amber-500" />
+          </div>
+        )}
       </td>
       <td className="px-5 py-3">
-        <div className="flex items-center gap-2 mb-1">
+        <div className="flex flex-wrap items-center gap-2 mb-1">
           <p className="font-medium text-gray-900 text-[14px]">{so.productLineName}</p>
           <span className="text-[10px] font-semibold uppercase tracking-widest bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">Special Order</span>
+          {missing.length > 0 && (
+            <button
+              type="button"
+              onClick={onEdit}
+              className="text-[11px] font-semibold text-white bg-amber-600 hover:bg-amber-700 px-2 py-0.5 rounded"
+              title="Open the form to fill in what is missing"
+              data-testid={`button-finish-so-${id}`}
+            >
+              Needs {missing.join(", ")}
+            </button>
+          )}
         </div>
         <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[12px]">
-          <dt className="text-gray-400">Type</dt><dd className="text-gray-700" data-testid={`text-so-type-${id}`}>{so.typeName}</dd>
-          <dt className="text-gray-400">Model</dt><dd className="text-gray-700 break-words" data-testid={`text-so-model-${id}`}>{so.model}</dd>
-          <dt className="text-gray-400">Color</dt><dd className="text-gray-700 break-words" data-testid={`text-so-color-${id}`}>{so.color}</dd>
-          <dt className="text-gray-400">Collection</dt><dd className="text-gray-700 break-words whitespace-pre-line" data-testid={`text-so-description-${id}`}>{so.description}</dd>
+          <dt className="text-gray-400">Type</dt><dd className="text-gray-700" data-testid={`text-so-type-${id}`}>{so.typeName || needed}</dd>
+          <dt className="text-gray-400">Model</dt><dd className="text-gray-700 break-words" data-testid={`text-so-model-${id}`}>{so.model || needed}</dd>
+          <dt className="text-gray-400">Color</dt><dd className="text-gray-700 break-words" data-testid={`text-so-color-${id}`}>{so.color || needed}</dd>
+          <dt className="text-gray-400">Collection</dt><dd className="text-gray-700 break-words whitespace-pre-line" data-testid={`text-so-description-${id}`}>{so.description || needed}</dd>
         </dl>
+        {pick && (
+          <p className="mt-1 text-[11px] text-gray-400">
+            Picked on{" "}
+            <a href={pick.pageUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-600">{pick.vendorDomain}</a>
+          </p>
+        )}
       </td>
       <td className="px-5 py-3">
         {item.sku ? <span className="font-mono text-[12px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded">{item.sku}</span> : <span className="text-gray-300">—</span>}
@@ -77,15 +108,21 @@ function SpecialOrderRow({ item, prices, pricingFallback, editing, onEdit, onRem
             <span className="font-medium text-gray-900" data-testid={`text-so-retail-price-${id}`}>${fmtPrice(prices.retail)}</span>
             <p className="text-[10px] uppercase tracking-widest text-gray-400">Retail</p>
             <p className="text-[11px] text-gray-500 mt-0.5" data-testid={`text-so-crd-price-${id}`}>CRD ${fmtPrice(prices.crd)}</p> */}
-        {prices ? (
-          <>
-            <span className="font-medium text-gray-900" data-testid={`text-so-price-${id}`}>${fmtPrice(prices[basis])}</span>
-            <p className="text-[10px] uppercase tracking-widest text-gray-400">{basisLabel}</p>
-          </>
+        {priceMissing ? (
+          <p className="text-[11px] text-amber-700 font-medium" data-testid={`text-so-list-price-${id}`}>List price needed</p>
         ) : (
-          <p className="text-[11px] text-gray-400">{pricingFallback}</p>
+          <>
+            {prices ? (
+              <>
+                <span className="font-medium text-gray-900" data-testid={`text-so-price-${id}`}>${fmtPrice(prices[basis])}</span>
+                <p className="text-[10px] uppercase tracking-widest text-gray-400">{basisLabel}</p>
+              </>
+            ) : (
+              <p className="text-[11px] text-gray-400">{pricingFallback}</p>
+            )}
+            <p className="text-[11px] text-gray-400" data-testid={`text-so-list-price-${id}`}>List ${fmtPrice(so.listPrice)}</p>
+          </>
         )}
-        <p className="text-[11px] text-gray-400" data-testid={`text-so-list-price-${id}`}>List ${fmtPrice(so.listPrice)}</p>
       </td>
       <td className="px-5 py-3">
         <div className="flex items-center justify-center">
@@ -120,15 +157,21 @@ function SpecialOrderRow({ item, prices, pricingFallback, editing, onEdit, onRem
             <span className="font-semibold text-gray-900" data-testid={`text-so-retail-total-${id}`}>${fmtPrice(prices.retail * item.quantity)}</span>
             <p className="text-[10px] uppercase tracking-widest text-gray-400">Retail</p>
             <p className="text-[11px] text-gray-500 mt-0.5">CRD ${fmtPrice(prices.crd * item.quantity)}</p> */}
-        {prices ? (
-          <>
-            <span className="font-semibold text-gray-900" data-testid={`text-so-total-${id}`}>${fmtPrice(prices[basis] * item.quantity)}</span>
-            <p className="text-[10px] uppercase tracking-widest text-gray-400">{basisLabel}</p>
-          </>
+        {priceMissing ? (
+          <p className="text-[11px] text-gray-400">-</p>
         ) : (
-          <p className="text-[11px] text-gray-400">{pricingFallback}</p>
+          <>
+            {prices ? (
+              <>
+                <span className="font-semibold text-gray-900" data-testid={`text-so-total-${id}`}>${fmtPrice(prices[basis] * item.quantity)}</span>
+                <p className="text-[10px] uppercase tracking-widest text-gray-400">{basisLabel}</p>
+              </>
+            ) : (
+              <p className="text-[11px] text-gray-400">{pricingFallback}</p>
+            )}
+            <p className="text-[11px] text-gray-400">List ${fmtPrice(so.listPrice * item.quantity)}</p>
+          </>
         )}
-        <p className="text-[11px] text-gray-400">List ${fmtPrice(so.listPrice * item.quantity)}</p>
       </td>
       <td className="px-5 py-3">
         <div className="flex flex-col gap-1">
@@ -442,7 +485,14 @@ export default function QuoteListPage() {
     return matches.map(i => i.specialOrder ? `${i.specialOrder.productLineName} special order (${i.specialOrder.model})` : (i.sku ?? i.name)).join(", ");
   };
 
+  // Special orders added from vendor websites that still lack a Type, Model, Color or list price.
+  const unfinished = specialItems.filter(i => missingDetails(i).length > 0);
+  const unfinishedText = `${unfinished.length} special order${unfinished.length === 1 ? "" : "s"} from vendor websites need${unfinished.length === 1 ? "s" : ""} details`;
+
   const handlePushToEstimate = async (estimateId: number, tranId: string) => {
+    if (unfinished.length > 0) {
+      throw new Error(`${unfinishedText} before pushing: click the amber "Needs ..." on each one and fill in what is missing.`);
+    }
     const snapshot = items.filter(i => i.netsuiteId);
     if (snapshot.length === 0) {
       throw new Error("No items with valid NetSuite IDs to push");
@@ -592,6 +642,15 @@ export default function QuoteListPage() {
             </div>
           )}
           {formPanel}
+          {unfinished.length > 0 && (
+            <div className="flex items-start gap-2 px-5 py-3 rounded-2xl text-sm bg-amber-50 text-amber-900 border border-amber-200" role="status" data-testid="banner-unfinished-special-orders">
+              <AlertCircle size={16} className="mt-0.5 shrink-0" />
+              <span>
+                {unfinishedText}. The vendor page did not show everything NetSuite needs: click the amber <b>Needs ...</b> on
+                each one, fill in what is missing and click <b>Save Changes</b>. They can be pushed to an estimate after that.
+              </span>
+            </div>
+          )}
           <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">

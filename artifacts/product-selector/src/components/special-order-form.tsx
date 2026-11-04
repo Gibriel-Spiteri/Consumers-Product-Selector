@@ -60,7 +60,10 @@ export default function SpecialOrderForm({ initial, prefill, onSubmit, onCancel,
   const [model, setModel] = useState(typedSpec(so?.model ?? prefill?.model));
   const [description, setDescription] = useState(typedSpec(so?.description ?? prefill?.description));
   const [color, setColor] = useState(typedSpec(so?.color ?? prefill?.color));
-  const [listPrice, setListPrice] = useState(so ? String(so.listPrice) : prefill?.listPrice != null ? String(prefill.listPrice) : "");
+  // const [listPrice, setListPrice] = useState(so ? String(so.listPrice) : prefill?.listPrice != null ? String(prefill.listPrice) : "");
+  // A vendor pick whose page showed no price is stored at 0 until the rep enters the list price: start empty, not 0.
+  const [listPrice, setListPrice] = useState(
+    so ? (initial?.vendorPick?.priceMissing ? "" : String(so.listPrice)) : prefill?.listPrice != null ? String(prefill.listPrice) : "");
   // 2026-11-04: a new special order always starts on Retail (Gib); editing keeps the line's choice.
   // Was: initial ? (initial.priceBasis ?? "retail") : lastBasis()
   const [priceBasis, setPriceBasis] = useState<PriceBasis>(initial?.priceBasis ?? "retail");
@@ -182,6 +185,16 @@ export default function SpecialOrderForm({ initial, prefill, onSubmit, onCancel,
                 ? `Pick the product line (${prefill.candidateNames.join(" or ")}). `
                 : "Pick the product line. "}
               Choose the Type and check the list price: a vendor site can show a sale price.
+            </span>
+          </div>
+        )}
+        {initial?.vendorPick && (
+          <div className="mt-3 flex items-start gap-2 px-4 py-3 bg-blue-50 border border-blue-200 rounded-xl text-[13px] text-blue-900" role="status" data-testid="text-vendor-pick-source">
+            <Info size={14} className="shrink-0 mt-0.5" />
+            <span>
+              Picked on the{" "}
+              <a href={initial.vendorPick.pageUrl} target="_blank" rel="noopener noreferrer" className="underline font-medium">{initial.vendorPick.vendorDomain} page</a>.
+              {" "}Check the Type and the list price (a vendor site can show a sale price), and fill in anything blank.
             </span>
           </div>
         )}

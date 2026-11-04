@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { SpecialOrderProductLine } from "@workspace/api-client-react";
-import { parsePicksMessage, prefillFromPick, productLinesForPick, registrableDomain, vendorSites } from "./vendor-picks";
+import { missingDetails, parsePicksMessage, prefillFromPick, productLinesForPick, quoteInputFromPick, registrableDomain, suggestType, vendorSites } from "./vendor-picks";
 
 const line = (id: string, name: string, websiteUrl: string | null): SpecialOrderProductLine => ({
   id, name, netsuiteItemId: `item-${id}`, sku: `SP-${name}`, websiteUrl, categories: [], costMultiplier: 1, retailMultiplier: 1, crdMultiplier: 1,
@@ -63,4 +63,54 @@ test("the extension is told every product line's website", () => {
   assert.deepEqual(vendorSites(lines).map(s => s.websiteUrl), [
     "https://www.deltafaucet.com/", "https://www.us.kohler.com/us/", "https://craftandmain.com/", "https://craftandmain.com/",
   ]);
+});
+
+// Picks go straight onto the quote list (2026-11-04). Type names are the product lines' real NetSuite Types.
+const types = (...names: string[]) => names.map((name, i) => ({ id: String(i + 1), name: name.replace(/\*$/, ""), requiresAttachment: name.endsWith("*") }));
+const DELTA = types("BATH ACCESSORY", "BATH FAUCET", "DIVERTER", "HANDSHOWER", "KITCHEN FAUCET", "MISCELLANEOUS", "ROUGH", "SHOWERHEAD", "TRIP LEVER", "TUB / SHOWER FAUCET", "TUB FILLER");
+const KOHLER = types("ACCESSORY", "BATH FAUCET", "BATH SINK", "KITCHEN FAUCET", "KITCHEN SINK", "MEDICINE CABINET", "SHOWER BASE", "TOILET", "TUB");
+const TOTO = types("BATH FAUCET", "BATH SINK", "BIDET", "KITCHEN FAUCET", "MISCELLANEOUS", "SOAKER*", "TOILET", "WHIRLPOOL*");
+const TOP_KNOBS = types("BACKPLATES", "KNOBS", "MISCELLANEOUS", "PULLS");
+const RICHELIEU = types("KNOB", "MISC", "PULL", "SCREWS");
+const FLEURCO = types("BATH TUB", "MIRROR", "MISCELLANEOUS", "SHOWER BASE", "SHOWER DOOR", "SHOWER WALL", "TOWEL BAR", "TUB DOOR");
+const ELKAY = types("BATH FAUCET", "BATH SINK", "KITCHEN FAUCET", "KITCHEN SINK", "MISCELLANEOUS");
+const BRIZO = types("BATH - LAVATORY FAUCET", "KITCHEN - KITCHEN FAUCET", "SHOWER SYSTEM - VALVE ROUGH", "SHOWER SYSTEM - VALVE TRIM", "SHOWER SYSTEM - DIVERTER/VOLUME CONTROL TRIM", "SHOWER SYSTEM - HANDSHOWER");
+const guess = (name: string, pageUrl: string, list: ReturnType<typeof types>) => suggestType({ name, pageUrl }, list)?.name ?? null;
+
+test("the Type is suggested from the product name and the vendor's address", () => {
+  assert.equal(guess("Single Handle Pull-Down Kitchen Faucet", "https://www.deltafaucet.com/kitchen/product/19867LF-CZ.html", DELTA), "KITCHEN FAUCET");
+  assert.equal(guess("Cairn 27-1/2\" undermount single-bowl kitchen sink", "https://www.kohler.com/en/products/kitchen-sinks/shop-kitchen-sinks/cairn-28000", KOHLER), "KITCHEN SINK");
+  assert.equal(guess("Drake Two-piece Toilet, 1.28 GPF, Elongated Bowl", "https://www.totousa.com/drake-two-piece-128-gpf-elongated-bowl", TOTO), "TOILET");
+  assert.equal(guess("Barrow Knob 1 1/4 Inch Brushed Satin Nickel", "https://www.topknobs.com/barrow-knob.html", TOP_KNOBS), "KNOBS");
+  // The address also says "pulls-and-knobs"; the name decides.
+  assert.equal(guess("Modern Metal Pull - 5632", "https://www.richelieu.com/us/en/category/decorative-hardware/cabinet-hardware-pulls-and-knobs/pulls/contemporary-metal-pull-5632/1166124/sku-BP56325128195", RICHELIEU), "PULL");
+  assert.equal(guess("Horizon, Clear Glass (8mm)", "https://fleurco.com/shower-doors/horizon-sliding-inline", FLEURCO), "SHOWER DOOR");
+  assert.equal(guess("SENSORI THERMOSTATIC VALVE TRIM", "https://www.brizo.com/bath/product/T66T030-PC", BRIZO), "SHOWER SYSTEM - VALVE TRIM");
+});
+
+test("no Type is guessed on a tie, for order-form Types or MISCELLANEOUS", () => {
+  assert.equal(guess("Crosstown 18 Gauge Single Bowl Undermount Sink", "https://www.elkay.com/products/sinks/materials/stainless-steel/ectru24179rt", ELKAY), null);
+  assert.equal(guess("Nexus Soaker Tub", "https://www.totousa.com/soaker", TOTO), null);
+  assert.equal(guess("Miscellaneous part", "https://www.topknobs.com/x", TOP_KNOBS), null);
+  assert.equal(guess("Benton Bourbon", "https://www.avancecabinetry.com/cabinetry/benton/benton-bourbon-kitchen", KOHLER), null);
+});
+
+test("a pick becomes a quote-list line, with what the vendor page left out marked as missing", () => {
+  const delta = line("88", "DELTA", "https://www.deltafaucet.com/");
+  const input = quoteInputFromPick({ ...pick, vendorDomain: "deltafaucet.com", pageUrl: "https://www.deltafaucet.com/kitchen/product/9190TL-DST.html",
+    name: "Touch2O Kitchen Faucet with Touchless Technology", model: "9190TL-DST", color: "Chrome", price: 999, quantity: 1 }, delta, DELTA);
+  assert.equal(input.netsuiteId, "item-88");
+  assert.equal(input.priceBasis, "retail");
+  assert.deepEqual(input.details, { productLineId: "88", productLineName: "DELTA", typeId: "5", typeName: "KITCHEN FAUCET",
+    model: "9190TL-DST", description: "Touch2O Kitchen Faucet with Touchless Technology", color: "Chrome", listPrice: 999 });
+  assert.deepEqual(missingDetails({ specialOrder: input.details, vendorPick: input.vendorPick }), []);
+
+  const elkay = quoteInputFromPick({ ...pick, vendorDomain: "elkay.com", pageUrl: "https://www.elkay.com/products/sinks/ectru24179rt",
+    name: "Crosstown Undermount Sink", model: "ECTRU24179RT", color: "", price: null }, line("9", "ELKAY", "https://www.elkay.com/"), ELKAY);
+  assert.equal(elkay.details.listPrice, 0);
+  assert.deepEqual(missingDetails({ specialOrder: elkay.details, vendorPick: elkay.vendorPick }), ["Type", "Color", "List price"]);
+  // Once the rep saves the line, the price is no longer missing.
+  assert.deepEqual(missingDetails({ specialOrder: { ...elkay.details, typeId: "4", color: "Stainless" }, vendorPick: { ...elkay.vendorPick!, priceMissing: false } }), []);
+  // Lines typed in by the rep never count as missing anything.
+  assert.deepEqual(missingDetails({}), []);
 });

@@ -9,10 +9,11 @@ Lets a customer pick products on a vendor's own website (Delta, Kohler, Brizo, .
    - On a product page it fills in the model, name, color and price, and each color or finish as an option (for example Kohler's 6 Cairn colors). See "What it reads" below.
    - On a page with nothing to read, the panel opens with the page's name and a blank Model, and says so; the customer types the model and color shown on the page.
    - The customer picks the option, sets the quantity and clicks **Add to quote**.
-3. **Finish it in the Product Selector.** The Special Order menu item shows a count, and the **Picked on vendor websites** list sits at the top of the Special Order page.
-   - **Use** fills in the Add Special Order form: product line, model, description, color, list price and quantity.
-   - The rep picks the **Type**, checks the list price and clicks **Add to List**. The selling price is calculated as usual (list price x the product line's multipliers).
-   - **Remove** drops a pick.
+3. **It lands on the Quote List.** When the Product Selector is open (signed in) in that browser, each pick goes straight onto the Quote List as a special-order line, and leaves the extension.
+   - Model, description, color, list price and quantity come from the vendor page, with a **Picked on** link back to it. The Type is guessed from the product name and the vendor's address (KITCHEN FAUCET, TOILET, KNOBS, SHOWER DOOR); on a tie, or for order-form Types, it is left for the rep.
+   - A line the vendor page left incomplete shows an amber **Needs Type, Color, List price** (whatever is missing). Clicking it opens the Edit Special Order form; fill in the rest and click **Save Changes**. The Quote List will not push to an estimate until every line is complete.
+   - The selling price is calculated as usual (list price x the product line's multipliers). Check the list price: a vendor site can show a sale price.
+   - A pick whose vendor site has several product lines (Foremost: craftandmain.com) or none waits on the Special Order page under **Picked on vendor websites**: **Use** fills in the Add Special Order form, the rep picks the product line and Type and clicks **Add to List**; **Remove** drops it.
 
 What the extension holds and where it runs:
 - **Storage.** Picks stay in the extension's storage in that browser until the Product Selector takes them. Nothing goes to NetSuite until the rep adds the item and pushes the quote list as usual.

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import { trackAddToList } from "@/lib/analytics";
 import type { SpecialOrderDetails } from "@workspace/api-client-react";
+import type { VendorPickSource } from "@/lib/vendor-picks";
 
 // Which selling price the quote list shows for a special order. Display only: the push prices by the
 // estimate customer's category, as NetSuite does.
@@ -16,6 +17,7 @@ export interface QuoteItem {
   quantity: number;
   specialOrder?: SpecialOrderDetails;
   priceBasis?: PriceBasis; // special orders only; missing on older saved lists = retail
+  vendorPick?: VendorPickSource; // special orders added from a vendor website (Consumers Quote Helper)
 }
 
 export interface SpecialOrderInput {
@@ -24,6 +26,7 @@ export interface SpecialOrderInput {
   quantity: number;
   details: SpecialOrderDetails;
   priceBasis: PriceBasis;
+  vendorPick?: VendorPickSource;
 }
 
 interface QuoteListContextType {
@@ -76,6 +79,7 @@ function toSpecialItem(productId: number, input: SpecialOrderInput): QuoteItem {
     quantity: input.quantity,
     specialOrder: { ...d },
     priceBasis: input.priceBasis,
+    ...(input.vendorPick ? { vendorPick: { ...input.vendorPick } } : {}),
   };
 }
 
@@ -114,14 +118,24 @@ export function QuoteListProvider({ children }: { children: ReactNode }) {
 
   const addSpecialOrder = useCallback((input: SpecialOrderInput) => {
     setItems(prev => {
+      // A vendor pick is added once, even if the extension sends it again before it hears it was taken.
+      if (input.vendorPick && prev.some(i => i.vendorPick?.id === input.vendorPick?.id)) return prev;
       const minId = prev.reduce((m, i) => Math.min(m, i.productId), 0);
       const productId = Math.min(minId - 1, -Date.now());
       return [...prev, toSpecialItem(productId, input)];
     });
   }, []);
 
+  // const updateSpecialOrder = useCallback((productId: number, input: SpecialOrderInput) => {
+  //   setItems(prev => prev.map(i => (i.productId === productId && i.specialOrder ? toSpecialItem(productId, input) : i)));
+  // }, []);
+  // A line from a vendor pick keeps its source; the form required a list price, so it is no longer missing.
   const updateSpecialOrder = useCallback((productId: number, input: SpecialOrderInput) => {
-    setItems(prev => prev.map(i => (i.productId === productId && i.specialOrder ? toSpecialItem(productId, input) : i)));
+    setItems(prev => prev.map(i => {
+      if (i.productId !== productId || !i.specialOrder) return i;
+      const vendorPick = input.vendorPick ?? (i.vendorPick ? { ...i.vendorPick, priceMissing: false } : undefined);
+      return toSpecialItem(productId, { ...input, vendorPick });
+    }));
   }, []);
 
   const removeExactItems = useCallback((snapshot: QuoteItem[]) => {
