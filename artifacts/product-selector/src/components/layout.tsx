@@ -623,6 +623,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   >
                     Clearance
                   </Link>
+                  <Link
+                    href="/list?specialOrder=1"
+                    onClick={() => { setIsHoveringNav(false); setActiveTab(null); }}
+                    className="flex-shrink-0 flex items-center h-[50px] px-4 font-semibold uppercase tracking-widest text-[#7B4DA8] hover:text-[#7B4DA8] transition-colors text-[13px]"
+                  >
+                    Special Order
+                  </Link>
                   {internalCategory && (
                     <Link
                       href={categoryOverviewHref(internalCategory)}
@@ -685,6 +692,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       >
                         <span>Clearance</span>
                         <ChevronRight size={16} className="text-emerald-300" />
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/list?specialOrder=1"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center justify-between px-6 py-4 font-semibold uppercase tracking-widest text-[#7B4DA8] text-[13px] hover:bg-purple-50 transition-colors"
+                      >
+                        <span>Special Order</span>
+                        <ChevronRight size={16} />
                       </Link>
                     </li>
                     {internalCategory && (

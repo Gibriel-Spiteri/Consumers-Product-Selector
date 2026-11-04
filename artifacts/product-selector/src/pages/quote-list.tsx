@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link } from "wouter";
+import { Link, useSearch } from "wouter";
 import { ChevronRight, Trash2, Minus, Plus, ClipboardList, Search, Loader2, Send, Check, AlertCircle, ImageOff, X, PackagePlus, Pencil } from "lucide-react";
 import { useAddEstimateItems, useGetSpecialOrderProductLines, getGetSpecialOrderProductLinesQueryKey } from "@workspace/api-client-react";
 import { specialOrderPrices, type SpecialOrderPrices } from "@/lib/special-order-pricing";
@@ -399,6 +399,13 @@ export default function QuoteListPage() {
   const { items, removeItem, updateQuantity, clearList, totalItems, grandTotal, addSpecialOrder, updateSpecialOrder, removeExactItems } = useQuoteList();
   const [pushResult, setPushResult] = useState<{ success: boolean; message: string } | null>(null);
   const [formMode, setFormMode] = useState<{ kind: "add" } | { kind: "edit"; item: QuoteItem } | null>(null);
+  const search = useSearch();
+  useEffect(() => {
+    if (new URLSearchParams(search).get("specialOrder") === "1") {
+      setFormMode({ kind: "add" });
+      window.history.replaceState(window.history.state, "", window.location.pathname);
+    }
+  }, [search]);
   const addEstimateItems = useAddEstimateItems();
 
   const itemsMissingNsId = items.filter(i => !i.netsuiteId);
