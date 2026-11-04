@@ -3,7 +3,7 @@ import { executeSuiteQL, netsuiteRequest, isNetSuiteConfigured } from "../lib/ne
 import { logger } from "../lib/logger";
 import {
   EstimateItemsSchema, fillSpecialOrderOptions, getSpecialOrderPricing, getSpecialOrderProductLines, getSpecialOrderTypes,
-  positiveId, specialOrderLine, SpecialOrderValidationError,
+  positiveId, specialOrderLine, specialOrderSpecs, SpecialOrderValidationError,
 } from "../lib/specialOrders";
 import { requireEmployee } from "../lib/session";
 
@@ -256,7 +256,8 @@ router.post("/estimates/:estimateId/add-items", async (req, res) => {
       itemsAdded: goodItems.length,
       skippedNetsuiteIds: invalidIds,
       specialOrderLines: specialOrders.map(so => ({
-        netsuiteId: so.netsuiteId, model: so.details.model.trim(), quantity: so.quantity,
+        // Was: model: so.details.model.trim() (an order-form Type writes PER_ORDER_FORM_TEXT instead)
+        netsuiteId: so.netsuiteId, model: specialOrderSpecs(so.details, so.type).model, quantity: so.quantity,
         listPrice: so.details.listPrice, rate: so.rate, amount: so.amount,
       })),
     });

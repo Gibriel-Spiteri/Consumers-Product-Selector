@@ -164,6 +164,20 @@ export function specialOrderEarnRate(pricing: SpecialOrderPricing, ctx: Estimate
   }
 }
 
+// A Type whose "Requires Attachment" is Yes takes an order form instead of typed specs. NetSuite's Item Options
+// popup (itemoptions_client.js) ticks Per Order Form and locks the fields, and the estimate client
+// (SalesOrder_ValidateLine) writes this text into Model, Coll/Desc and Color: every such line since 9/2026.
+export const PER_ORDER_FORM_TEXT = "Per Attached Order Form";
+
+export function specialOrderSpecs(details: SpecialOrderDetails, type: Pick<SpecialOrderType, "requiresAttachment">) {
+  if (type.requiresAttachment) {
+    return { perOrderForm: true, model: PER_ORDER_FORM_TEXT, description: PER_ORDER_FORM_TEXT, color: PER_ORDER_FORM_TEXT };
+  }
+  return {
+    perOrderForm: false, model: cleanText(details.model), description: cleanText(details.description), color: cleanText(details.color),
+  };
+}
+
 export function specialOrderLine(
   itemId: string,
   quantity: number,
@@ -176,7 +190,8 @@ export function specialOrderLine(
   if (productLine.id !== details.productLineId || productLine.netsuiteItemId !== itemId || type.id !== details.typeId) {
     throw new SpecialOrderValidationError("The special-order item, product line and Type do not match");
   }
-  const model = cleanText(details.model), description = cleanText(details.description), color = cleanText(details.color);
+  // const model = cleanText(details.model), description = cleanText(details.description), color = cleanText(details.color);
+  const { perOrderForm, model, description, color } = specialOrderSpecs(details, type);
   if (![model, description, color].every(Boolean)) {
     throw new SpecialOrderValidationError("Model, Collection / Description and Color are required");
   }
@@ -194,8 +209,8 @@ export function specialOrderLine(
     custcol_list_selling_amt: cents(details.listPrice * quantity),
     custcol_isdropship: pricing.dropShip,
     ...(earnRate ? { custcol_item_earn_rate: earnRate } : {}),
-    // Per Order Form = No, as the Item Options popup sends it.
-    custcol_specord_perorderform: { id: "2" },
+    // Per Order Form: Yes (1) for a Type that requires an attachment, otherwise No (2), as the Item Options popup sends it.
+    custcol_specord_perorderform: { id: perOrderForm ? "1" : "2" },
     // The fields below are transaction item options. REST stores them blank when sent like this; the route
     // writes them through the line's `options` string (fillSpecialOrderOptions). Kept for readability.
     custcol_specord_prodline: { id: productLine.id },
@@ -219,12 +234,18 @@ const OPTION_ENTRY = "\u0004";
 // Fill the special-order item options into the template NetSuite generated for the line, so labels and the
 // other options stay exactly as NetSuite set them.
 export function fillSpecialOrderOptions(template: string, details: SpecialOrderDetails, type: SpecialOrderType): string {
+  const specs = specialOrderSpecs(details, type);
   const values: Record<string, string[]> = {
     CUSTCOL_SPECORD_TYPE: [type.id, cleanText(type.name)],
-    CUSTCOL_SPECORD_MODEL: [cleanText(details.model)],
-    CUSTCOL_SPECORD_STYLE: [cleanText(details.description)],
-    CUSTCOL_SPECORD_COLOR: [cleanText(details.color)],
+    // CUSTCOL_SPECORD_MODEL: [cleanText(details.model)],
+    // CUSTCOL_SPECORD_STYLE: [cleanText(details.description)],
+    // CUSTCOL_SPECORD_COLOR: [cleanText(details.color)],
+    CUSTCOL_SPECORD_MODEL: [specs.model],
+    CUSTCOL_SPECORD_STYLE: [specs.description],
+    CUSTCOL_SPECORD_COLOR: [specs.color],
+    CUSTCOL_SPECORD_PERORDERFORM: specs.perOrderForm ? ["1", "Yes"] : ["2", "No"],
   };
+  const optional = new Set(["CUSTCOL_SPECORD_PERORDERFORM"]);
   const filled = new Set<string>();
   const entries = template.split(OPTION_ENTRY).map(entry => {
     const parts = entry.split(OPTION_FIELD);
@@ -233,7 +254,7 @@ export function fillSpecialOrderOptions(template: string, details: SpecialOrderD
     filled.add(parts[0]);
     return [...parts.slice(0, 3), ...value].join(OPTION_FIELD);
   });
-  const missing = Object.keys(values).filter(id => !filled.has(id));
+  const missing = Object.keys(values).filter(id => !filled.has(id) && !optional.has(id));
   if (missing.length > 0) {
     throw new Error(`NetSuite did not offer the special-order options ${missing.join(", ")} on this line`);
   }
