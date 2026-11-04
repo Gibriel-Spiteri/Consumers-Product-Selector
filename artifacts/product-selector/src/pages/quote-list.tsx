@@ -370,7 +370,7 @@ function EstimateSearch({ onPush, pushResult, setPushResult, warnFor }: {
             <div className="text-sm">
               <span className="text-gray-500">Selected: </span>
               <span className="font-medium text-gray-900">{selected.tranId}</span>
-              {/* <span className="text-gray-400"> — {selected.customerName}</span> */}
+              {/* Was: the customer name only, after a long-dash separator. */}
               <span className="text-gray-400"> - {selected.customerName}{selected.customerCategory ? ` (${selected.customerCategory})` : ""}</span>
             </div>
             <button
