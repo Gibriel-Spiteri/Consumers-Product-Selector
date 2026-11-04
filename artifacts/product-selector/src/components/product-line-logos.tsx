@@ -1,13 +1,17 @@
 import { useState } from "react";
 import type { SpecialOrderProductLine } from "@workspace/api-client-react";
-import { ImageOff } from "lucide-react";
+import { ExternalLink, ImageOff } from "lucide-react";
 
 function ProductLineLogo({ line }: { line: SpecialOrderProductLine }) {
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   const showImage = !!line.logoUrl && failedUrl !== line.logoUrl;
 
-  return (
-    <figure className="rounded-xl border border-gray-200 bg-white p-4 flex flex-col items-center gap-3">
+  // 2026-11-04: a card with a vendor website (the PRD page's link) opens it, where the Consumers Quote Helper
+  // extension lets the customer add products to the quote. Was a plain card:
+  // return (
+  //   <figure className="rounded-xl border border-gray-200 bg-white p-4 flex flex-col items-center gap-3">
+  const card = (
+    <figure className={`h-full rounded-xl border border-gray-200 bg-white p-4 flex flex-col items-center gap-3${line.websiteUrl ? " transition-shadow group-hover:shadow-md group-hover:border-gray-300" : ""}`}>
       <div className="h-20 w-full flex items-center justify-center">
         {showImage ? (
           <img
@@ -25,7 +29,25 @@ function ProductLineLogo({ line }: { line: SpecialOrderProductLine }) {
         )}
       </div>
       <figcaption className="text-center text-[12px] font-medium text-gray-700">{line.name}</figcaption>
+      {line.websiteUrl && (
+        <span className="flex items-center gap-1 text-[11px] font-semibold text-[#7B4DA8]">
+          Shop vendor site <ExternalLink size={11} aria-hidden="true" />
+        </span>
+      )}
     </figure>
+  );
+  if (!line.websiteUrl) return card;
+  return (
+    <a
+      href={line.websiteUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7B4DA8] focus-visible:ring-offset-2"
+      aria-label={`Open the ${line.name} website in a new tab`}
+      data-testid={`link-vendor-site-${line.id}`}
+    >
+      {card}
+    </a>
   );
 }
 

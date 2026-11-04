@@ -14,6 +14,8 @@ export interface SpecialOrderProductLine {
   sku: string;
   /** NetSuite product-line logo image from custrecord_pl_logo */
   logoUrl?: string | null;
+  /** Vendor website from custrecord_pl_prd_website (the PRD page link); http(s) only */
+  websiteUrl?: string | null;
   categories: SpecialOrderProductLineCategoriesItem[];
   /** Product line Cost Incl. Freight multiplier (custrecord_pl_costinclfreightmult); blank or zero is sent as 1, as NetSuite treats it */
   costMultiplier: number;

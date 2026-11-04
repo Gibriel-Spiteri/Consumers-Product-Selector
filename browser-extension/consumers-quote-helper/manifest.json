@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "Consumers Quote Helper",
+  "version": "1.0.0",
+  "description": "Add products from vendor websites to the Consumers Product Selector quote list.",
+  "minimum_chrome_version": "111",
+  "permissions": ["storage", "scripting"],
+  "host_permissions": ["https://*/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://consumers-product-selector.replit.app/*",
+        "https://consumersstore.com/*",
+        "https://www.consumersstore.com/*",
+        "https://52197461-b75a-404e-bf3a-1b07572baf55-00-c88ny32zcnr9.riker.replit.dev/*"
+      ],
+      "js": ["app.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "Consumers Quote Helper",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

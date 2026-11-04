@@ -25,15 +25,29 @@ export function positiveId(value: unknown): string {
   return value;
 }
 
+// Only an http(s) address is passed on; anything else on the product line record is treated as no website.
+export function vendorWebsite(value: string | null | undefined): string | null {
+  const raw = String(value ?? "").trim();
+  if (!raw) return null;
+  try {
+    const url = new URL(raw);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getSpecialOrderProductLines(fresh = false): Promise<SpecialOrderProductLine[]> {
   if (!fresh && productLinesCache && productLinesCache.expires > Date.now()) return productLinesCache.data;
   const result = await executeSuiteQL<{
     id: string; name: string; itemid: string; sku: string; costmult: string | null; retailmult: string | null; crdmult: string | null; categoryids: string | null; logourl: string | null;
+    website: string | null;
   }>(`
     SELECT pl.id, pl.name, i.id AS itemid, i.itemid AS sku,
       pl.custrecord_pl_costinclfreightmult AS costmult, pl.custrecord_pl_price_mult_retail AS retailmult,
       pl.custrecord_pl_price_mult_crd AS crdmult,
-      pl.custrecord_pl_prd_category AS categoryids, logo.url AS logourl
+      pl.custrecord_pl_prd_category AS categoryids, logo.url AS logourl,
+      pl.custrecord_pl_prd_website AS website
     FROM customrecord_pl pl
     INNER JOIN item i ON i.custitem_prodline = pl.id
     LEFT JOIN file logo ON logo.id = pl.custrecord_pl_logo
@@ -66,6 +80,9 @@ export async function getSpecialOrderProductLines(fresh = false): Promise<Specia
       if (!name) throw new SpecialOrderValidationError(`Unknown product-line category ${id}`);
       return { id, name };
     }),
+    // The vendor's website, as the PRD page links it (custrecord_pl_prd_website). The product line cards open it, and
+    // the Consumers Quote Helper browser extension works on that vendor's domain.
+    websiteUrl: vendorWebsite(row.website),
     // For the quote list's selling price; the push itself re-reads them (getSpecialOrderPricing).
     costMultiplier: multiplier(row.costmult),
     retailMultiplier: multiplier(row.retailmult),

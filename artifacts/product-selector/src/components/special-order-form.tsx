@@ -12,6 +12,7 @@ import { specialOrderPrices } from "@/lib/special-order-pricing";
 import { specialOrderLookupRetry } from "@/lib/special-order-query";
 import ProductLineLogos from "@/components/product-line-logos";
 import SpecialOrderCategories from "@/components/special-order-categories";
+import type { SpecialOrderPrefill } from "@/lib/vendor-picks";
 
 // NetSuite's Model / Coll/Desc / Color columns are Free-Form Text, 300 characters each.
 const LIMITS = { model: 300, color: 300, description: 300 };
@@ -39,22 +40,24 @@ function FieldError({ id, msg }: { id: string; msg?: string }) {
   return <p id={id} role="alert" className="mt-1 text-[12px] text-red-600">{msg}</p>;
 }
 
-export default function SpecialOrderForm({ initial, onSubmit, onCancel, categoriesAboveForm = false }: {
+export default function SpecialOrderForm({ initial, prefill, onSubmit, onCancel, categoriesAboveForm = false }: {
   initial?: QuoteItem;
+  // A product a customer picked on a vendor website (Consumers Quote Helper extension); the rep confirms it.
+  prefill?: SpecialOrderPrefill;
   onSubmit: (input: SpecialOrderInput) => void;
   onCancel: () => void;
   categoriesAboveForm?: boolean;
 }) {
   const so = initial?.specialOrder;
-  const [selectedItemId, setSelectedItemId] = useState(initial?.netsuiteId ?? "");
+  const [selectedItemId, setSelectedItemId] = useState(initial?.netsuiteId ?? prefill?.netsuiteItemId ?? "");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [typeId, setTypeId] = useState(so?.typeId ?? "");
-  const [quantity, setQuantity] = useState(String(initial?.quantity ?? 1));
+  const [quantity, setQuantity] = useState(String(initial?.quantity ?? prefill?.quantity ?? 1));
   // Typed specs only; an order-form line's "Per Attached Order Form" is not carried into the inputs.
-  const [model, setModel] = useState(typedSpec(so?.model));
-  const [description, setDescription] = useState(typedSpec(so?.description));
-  const [color, setColor] = useState(typedSpec(so?.color));
-  const [listPrice, setListPrice] = useState(so ? String(so.listPrice) : "");
+  const [model, setModel] = useState(typedSpec(so?.model ?? prefill?.model));
+  const [description, setDescription] = useState(typedSpec(so?.description ?? prefill?.description));
+  const [color, setColor] = useState(typedSpec(so?.color ?? prefill?.color));
+  const [listPrice, setListPrice] = useState(so ? String(so.listPrice) : prefill?.listPrice != null ? String(prefill.listPrice) : "");
   // 2026-11-04: a new special order always starts on Retail (Gib); editing keeps the line's choice.
   // Was: initial ? (initial.priceBasis ?? "retail") : lastBasis()
   const [priceBasis, setPriceBasis] = useState<PriceBasis>(initial?.priceBasis ?? "retail");
@@ -151,6 +154,19 @@ export default function SpecialOrderForm({ initial, onSubmit, onCancel, categori
       <div className="px-6 py-5 border-b border-gray-100">
         <h3 className="font-semibold text-gray-900 text-[15px] mb-1">{initial ? "Edit Special Order" : "Add Special Order"}</h3>
         <p className="text-[13px] text-gray-400">Choose a product line first, then its type. The selling price is list price x the product line's multipliers, the same as NetSuite.</p>
+        {prefill && !initial && (
+          <div className="mt-3 flex items-start gap-2 px-4 py-3 bg-blue-50 border border-blue-200 rounded-xl text-[13px] text-blue-900" role="status" data-testid="text-vendor-prefill">
+            <Info size={14} className="shrink-0 mt-0.5" />
+            <span>
+              Filled in from the{" "}
+              <a href={prefill.sourceUrl} target="_blank" rel="noopener noreferrer" className="underline font-medium">vendor page</a>.
+              {" "}{prefill.netsuiteItemId ? "" : prefill.candidateNames.length > 1
+                ? `Pick the product line (${prefill.candidateNames.join(" or ")}). `
+                : "Pick the product line. "}
+              Choose the Type and check the list price: a vendor site can show a sale price.
+            </span>
+          </div>
+        )}
       </div>
       {!categoriesAboveForm && categoryFilters}
       <div className="px-6 py-5 grid grid-cols-1 md:grid-cols-2 gap-4">
