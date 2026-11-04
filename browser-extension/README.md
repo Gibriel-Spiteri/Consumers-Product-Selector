@@ -100,7 +100,7 @@ After the first install, open the Product Selector once (signed in), so the exte
 | `vendor.js` | The "Add to Consumers Quote" button and panel on vendor pages (shadow DOM, house colors) |
 | `app.js` | Bridge on the Product Selector's pages: passes picks and the vendor list via `window.postMessage` |
 | `popup.html` / `popup.js` | Toolbar popup: items waiting and the vendor sites |
-| `icons/` | Drawn by `make-icons.cjs` |
+| `icons/` | The Product Selector's favicon (the orange shopping bag), sized by `make-icons.py` (Pillow); rerun it when the favicon changes. `make-icons.cjs` drew the 1.0 navy icons and is kept for reference. |
 
 The Product Selector side is in `artifacts/product-selector/src/lib/vendor-picks.ts` (message protocol, validation), `context/vendor-picks-context.tsx`, `components/vendor-picks-panel.tsx` and `pages/special-order.tsx`.
 
