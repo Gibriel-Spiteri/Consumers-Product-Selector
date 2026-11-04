@@ -15,6 +15,21 @@ export const GetSpecialOrderProductLinesResponseItem = zod.object({
   name: zod.string(),
   netsuiteItemId: zod.string(),
   sku: zod.string(),
+  costMultiplier: zod
+    .number()
+    .describe(
+      "Product line Cost Incl. Freight multiplier (custrecord_pl_costinclfreightmult); blank or zero is sent as 1, as NetSuite treats it",
+    ),
+  retailMultiplier: zod
+    .number()
+    .describe(
+      "Product line Retail price multiplier (custrecord_pl_price_mult_retail); blank or zero is sent as 1",
+    ),
+  crdMultiplier: zod
+    .number()
+    .describe(
+      "Product line CRD price multiplier (custrecord_pl_price_mult_crd); blank or zero is sent as 1",
+    ),
 });
 export const GetSpecialOrderProductLinesResponse = zod.array(
   GetSpecialOrderProductLinesResponseItem,

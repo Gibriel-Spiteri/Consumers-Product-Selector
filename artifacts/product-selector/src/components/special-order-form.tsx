@@ -7,7 +7,8 @@ import {
   getGetSpecialOrderTypesQueryKey,
 } from "@workspace/api-client-react";
 import type { QuoteItem, SpecialOrderInput } from "@/context/quote-list-context";
-import { cn } from "@/lib/utils";
+import { cn, fmtPrice } from "@/lib/utils";
+import { specialOrderPrices } from "@/lib/special-order-pricing";
 
 // NetSuite's Model / Coll/Desc / Color columns are Free-Form Text, 300 characters each.
 const LIMITS = { model: 300, color: 300, description: 300 };
@@ -48,6 +49,9 @@ export default function SpecialOrderForm({ initial, onSubmit, onCancel }: {
 
   const type = types.data?.find(t => t.id === typeId);
   const staleLine = !!so && selectedItemId === initial?.netsuiteId && lines.isSuccess && !line;
+  const typedPrice = Number(listPrice.trim());
+  const preview = line && listPrice.trim() && Number.isFinite(typedPrice) && typedPrice > 0
+    ? specialOrderPrices(Math.round(typedPrice * 100) / 100, line) : null;
 
   const validate = (): SpecialOrderInput | null => {
     const e: Errors = {};
@@ -92,7 +96,7 @@ export default function SpecialOrderForm({ initial, onSubmit, onCancel }: {
     <form onSubmit={submit} noValidate className="bg-white rounded-2xl border border-gray-100 shadow-sm animate-in fade-in slide-in-from-top-2 duration-200" data-testid="form-special-order" aria-label={initial ? "Edit special order" : "Add special order"}>
       <div className="px-6 py-5 border-b border-gray-100">
         <h3 className="font-semibold text-gray-900 text-[15px] mb-1">{initial ? "Edit Special Order" : "Add Special Order"}</h3>
-        <p className="text-[13px] text-gray-400">Choose a product line first, then its type. The selling price is set when you push to an estimate: list price x the product line's multipliers for the customer (Retail or CRD), the same as NetSuite.</p>
+        <p className="text-[13px] text-gray-400">Choose a product line first, then its type. The selling price is list price x the product line's multipliers, the same as NetSuite; the estimate's customer (Retail or CRD) decides which price is used.</p>
       </div>
 
       <div className="px-6 py-5 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -171,6 +175,11 @@ export default function SpecialOrderForm({ initial, onSubmit, onCancel }: {
             <input id="so-price" type="number" inputMode="decimal" min={0} max={MAX_PRICE} step="0.01" value={listPrice} onChange={e => setListPrice(e.target.value)} className={cn(inputCls, "pl-7")} {...aria("listPrice")} data-testid="input-list-price" />
           </div>
           <FieldError id="so-err-listPrice" msg={errors.listPrice} />
+          {preview && (
+            <p className="mt-1 text-[12px] text-gray-500" data-testid="text-selling-price-preview">
+              Selling price each: <span className="font-medium text-gray-800">Retail ${fmtPrice(preview.retail)}</span>, CRD ${fmtPrice(preview.crd)}
+            </p>
+          )}
         </div>
       </div>
 

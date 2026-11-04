@@ -169,7 +169,7 @@ components:
   schemas:
     SpecialOrderProductLine:
       type: object
-      required: [id, name, netsuiteItemId, sku]
+      required: [id, name, netsuiteItemId, sku, costMultiplier, retailMultiplier, crdMultiplier]
       properties:
         id:
           type: string
@@ -179,6 +179,15 @@ components:
           type: string
         sku:
           type: string
+        costMultiplier:
+          type: number
+          description: Product line Cost Incl. Freight multiplier (custrecord_pl_costinclfreightmult); blank or zero is sent as 1, as NetSuite treats it
+        retailMultiplier:
+          type: number
+          description: Product line Retail price multiplier (custrecord_pl_price_mult_retail); blank or zero is sent as 1
+        crdMultiplier:
+          type: number
+          description: Product line CRD price multiplier (custrecord_pl_price_mult_crd); blank or zero is sent as 1
     SpecialOrderType:
       type: object
       required: [id, name, requiresAttachment]

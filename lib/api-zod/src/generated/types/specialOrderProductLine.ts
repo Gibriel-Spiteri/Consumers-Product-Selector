@@ -11,4 +11,10 @@ export interface SpecialOrderProductLine {
   name: string;
   netsuiteItemId: string;
   sku: string;
+  /** Product line Cost Incl. Freight multiplier (custrecord_pl_costinclfreightmult); blank or zero is sent as 1, as NetSuite treats it */
+  costMultiplier: number;
+  /** Product line Retail price multiplier (custrecord_pl_price_mult_retail); blank or zero is sent as 1 */
+  retailMultiplier: number;
+  /** Product line CRD price multiplier (custrecord_pl_price_mult_crd); blank or zero is sent as 1 */
+  crdMultiplier: number;
 }

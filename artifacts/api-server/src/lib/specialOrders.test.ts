@@ -6,7 +6,9 @@ import {
   specialOrderRate, SpecialOrderValidationError, type EstimatePricingContext, type SpecialOrderPricing,
 } from "./specialOrders";
 
-const productLine = { id: "88", name: "DELTA", netsuiteItemId: "81317", sku: "SP-DELTA" };
+const productLine = {
+  id: "88", name: "DELTA", netsuiteItemId: "81317", sku: "SP-DELTA", costMultiplier: 0.534, retailMultiplier: 1.4606, crdMultiplier: 1.2813,
+};
 const type = { id: "3071", name: "BATH FAUCET", requiresAttachment: false, classId: "20" };
 const details: SpecialOrderDetails = {
   productLineId: "88", productLineName: "DELTA", typeId: "3071", typeName: "BATH FAUCET",
@@ -78,7 +80,10 @@ test("earn rate follows GetItemCommissionRates", () => {
 });
 
 test("drop ship and CRD pricing land on the line", () => {
-  const knobs = { id: "119", name: "TOP KNOBS HARDWARE", netsuiteItemId: "81427", sku: "SP-TOP KNOBS HARDWARE" };
+  const knobs = {
+    id: "119", name: "TOP KNOBS HARDWARE", netsuiteItemId: "81427", sku: "SP-TOP KNOBS HARDWARE",
+    costMultiplier: 0.583, retailMultiplier: 1.715, crdMultiplier: 1.4292,
+  };
   const pricing = { ...deltaPricing, costMult: 0.583, retailMult: 1.715, crdMult: 1.4292, dropShip: true };
   const line = specialOrderLine("81427", 37, { ...details, productLineId: "119", listPrice: 10.9 }, knobs, type, pricing, crd);
   assert.equal(line.rate, 9.08);

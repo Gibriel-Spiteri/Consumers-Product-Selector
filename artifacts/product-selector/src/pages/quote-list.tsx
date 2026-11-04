@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { ChevronRight, Trash2, Minus, Plus, ClipboardList, Search, Loader2, Send, Check, AlertCircle, ImageOff, X, PackagePlus, Pencil } from "lucide-react";
-import { useAddEstimateItems } from "@workspace/api-client-react";
+import { useAddEstimateItems, useGetSpecialOrderProductLines, getGetSpecialOrderProductLinesQueryKey } from "@workspace/api-client-react";
+import { specialOrderPrices, type SpecialOrderPrices } from "@/lib/special-order-pricing";
 import type { EstimateLineInput } from "@workspace/api-client-react";
 import SpecialOrderForm from "@/components/special-order-form";
 import { useQuoteList, type QuoteItem } from "@/context/quote-list-context";
@@ -30,8 +31,10 @@ function ProductImage({ src, name }: { src: string | null; name: string }) {
   return <img src={src} alt={name} onError={() => setFailed(true)} className="w-full h-full object-contain" />;
 }
 
-function SpecialOrderRow({ item, editing, onEdit, onRemove, onQty }: {
+function SpecialOrderRow({ item, prices, pricingFallback, editing, onEdit, onRemove, onQty }: {
   item: QuoteItem;
+  prices: SpecialOrderPrices | null;
+  pricingFallback: string;
   editing: boolean;
   onEdit: () => void;
   onRemove: () => void;
@@ -62,8 +65,19 @@ function SpecialOrderRow({ item, editing, onEdit, onRemove, onQty }: {
         {item.sku ? <span className="font-mono text-[12px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded">{item.sku}</span> : <span className="text-gray-300">—</span>}
       </td>
       <td className="px-5 py-3 text-right whitespace-nowrap">
+        {/* 2026-11-03: selling price as NetSuite calculates it, with list underneath. Was list price only:
         <span className="font-medium text-gray-900" data-testid={`text-so-list-price-${id}`}>${fmtPrice(so.listPrice)}</span>
-        <p className="text-[10px] uppercase tracking-widest text-gray-400">List</p>
+        <p className="text-[10px] uppercase tracking-widest text-gray-400">List</p> */}
+        {prices ? (
+          <>
+            <span className="font-medium text-gray-900" data-testid={`text-so-retail-price-${id}`}>${fmtPrice(prices.retail)}</span>
+            <p className="text-[10px] uppercase tracking-widest text-gray-400">Retail</p>
+            <p className="text-[11px] text-gray-500 mt-0.5" data-testid={`text-so-crd-price-${id}`}>CRD ${fmtPrice(prices.crd)}</p>
+          </>
+        ) : (
+          <p className="text-[11px] text-gray-400">{pricingFallback}</p>
+        )}
+        <p className="text-[11px] text-gray-400" data-testid={`text-so-list-price-${id}`}>List ${fmtPrice(so.listPrice)}</p>
       </td>
       <td className="px-5 py-3">
         <div className="flex items-center justify-center">
@@ -91,8 +105,19 @@ function SpecialOrderRow({ item, editing, onEdit, onRemove, onQty }: {
         </div>
       </td>
       <td className="px-5 py-3 text-right whitespace-nowrap">
+        {/* 2026-11-03: extended selling price (rate x qty, as NetSuite). Was extended list:
         <span className="font-semibold text-gray-900">${fmtPrice(so.listPrice * item.quantity)}</span>
-        <p className="text-[10px] uppercase tracking-widest text-gray-400">Ext. list</p>
+        <p className="text-[10px] uppercase tracking-widest text-gray-400">Ext. list</p> */}
+        {prices ? (
+          <>
+            <span className="font-semibold text-gray-900" data-testid={`text-so-retail-total-${id}`}>${fmtPrice(prices.retail * item.quantity)}</span>
+            <p className="text-[10px] uppercase tracking-widest text-gray-400">Retail</p>
+            <p className="text-[11px] text-gray-500 mt-0.5">CRD ${fmtPrice(prices.crd * item.quantity)}</p>
+          </>
+        ) : (
+          <p className="text-[11px] text-gray-400">{pricingFallback}</p>
+        )}
+        <p className="text-[11px] text-gray-400">List ${fmtPrice(so.listPrice * item.quantity)}</p>
       </td>
       <td className="px-5 py-3">
         <div className="flex flex-col gap-1">
@@ -282,7 +307,23 @@ export default function QuoteListPage() {
   const specialItems = items.filter(i => i.specialOrder);
   const specialListTotal = specialItems.reduce((s, i) => s + (i.specialOrder?.listPrice ?? 0) * i.quantity, 0);
 
-  const describe = (snapshot: QuoteItem[], id: string) => {
+  // Special-order selling prices, from the product lines' NetSuite multipliers (same math as the push).
+  const productLines = useGetSpecialOrderProductLines({
+    query: { queryKey: getGetSpecialOrderProductLinesQueryKey(), enabled: specialItems.length > 0 },
+  });
+  const pricesFor = (item: QuoteItem): SpecialOrderPrices | null => {
+    const so = item.specialOrder;
+    const line = so && productLines.data?.find(l => l.id === so.productLineId && l.netsuiteItemId === item.netsuiteId);
+    return so && line ? specialOrderPrices(so.listPrice, line) : null;
+  };
+  const pricingFallback = productLines.isLoading ? "Pricing..." : "Price unavailable";
+  const cents = (n: number) => Math.round(n * 100) / 100;
+  const specialPriced = specialItems.map(i => ({ item: i, prices: pricesFor(i) }));
+  const allSpecialsPriced = specialPriced.every(p => p.prices);
+  const specialRetailTotal = specialPriced.reduce((s, p) => s + (p.prices ? cents(p.prices.retail * p.item.quantity) : 0), 0);
+  const specialCrdTotal = specialPriced.reduce((s, p) => s + (p.prices ? cents(p.prices.crd * p.item.quantity) : 0), 0);
+
+  const describe =(snapshot: QuoteItem[], id: string) => {
     const matches = snapshot.filter(i => String(i.netsuiteId) === String(id));
     if (matches.length === 0) return `NetSuite ID ${id}`;
     return matches.map(i => i.specialOrder ? `${i.specialOrder.productLineName} special order (${i.specialOrder.model})` : (i.sku ?? i.name)).join(", ");
@@ -457,6 +498,8 @@ export default function QuoteListPage() {
                     <SpecialOrderRow
                       key={item.productId}
                       item={item}
+                      prices={pricesFor(item)}
+                      pricingFallback={pricingFallback}
                       editing={formMode?.kind === "edit" && formMode.item.productId === item.productId}
                       onEdit={() => setFormMode({ kind: "edit", item })}
                       onRemove={() => { removeItem(item.productId); if (formMode?.kind === "edit" && formMode.item.productId === item.productId) setFormMode(null); }}
@@ -546,12 +589,38 @@ export default function QuoteListPage() {
                     </td>
                     <td></td>
                   </tr>
+                  {/* 2026-11-03: special orders shown at NetSuite's selling price and added to the total. Was list only:
                   {specialItems.length > 0 && (
                     <tr className="bg-amber-50/60">
                       <td colSpan={5} className="px-5 py-3 text-right text-[12px] text-amber-800">
                         Special orders: {specialItems.length} line{specialItems.length === 1 ? "" : "s"}, list amount ${fmtPrice(specialListTotal)} (not included above). Selling prices are calculated from the customer's Retail or CRD multipliers when pushed to an estimate.
                       </td>
                       <td className="px-5 py-3 text-right text-sm font-medium text-amber-900 whitespace-nowrap">${fmtPrice(specialListTotal)} list</td>
+                      <td></td>
+                    </tr>
+                  )} */}
+                  {specialItems.length > 0 && (
+                    <tr className="bg-amber-50/60">
+                      <td colSpan={5} className="px-5 py-3 text-right text-[12px] text-amber-800" data-testid="text-special-order-summary">
+                        Special orders: {specialItems.length} line{specialItems.length === 1 ? "" : "s"}, priced the same as NetSuite (list ${fmtPrice(specialListTotal)} x product line multipliers).
+                        {allSpecialsPriced
+                          ? ` Retail $${fmtPrice(specialRetailTotal)}, CRD $${fmtPrice(specialCrdTotal)}. A CRD customer's estimate gets the CRD price.`
+                          : " Some prices are not available yet."}
+                      </td>
+                      <td className="px-5 py-3 text-right text-sm font-medium text-amber-900 whitespace-nowrap">
+                        {allSpecialsPriced ? `$${fmtPrice(specialRetailTotal)}` : `$${fmtPrice(specialListTotal)} list`}
+                      </td>
+                      <td></td>
+                    </tr>
+                  )}
+                  {specialItems.length > 0 && allSpecialsPriced && (
+                    <tr className="border-t border-gray-200 bg-gray-50">
+                      <td colSpan={5} className="px-5 py-4 text-right">
+                        <span className="text-[13px] font-semibold uppercase tracking-widest text-gray-500">Grand Total</span>
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        <span className="text-lg font-bold text-gray-900" data-testid="text-grand-total">${fmtPrice(grandTotal + specialRetailTotal)}</span>
+                      </td>
                       <td></td>
                     </tr>
                   )}

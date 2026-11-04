@@ -27,8 +27,12 @@ export function positiveId(value: unknown): string {
 
 export async function getSpecialOrderProductLines(fresh = false): Promise<SpecialOrderProductLine[]> {
   if (!fresh && productLinesCache && productLinesCache.expires > Date.now()) return productLinesCache.data;
-  const result = await executeSuiteQL<{ id: string; name: string; itemid: string; sku: string }>(`
-    SELECT pl.id, pl.name, i.id AS itemid, i.itemid AS sku
+  const result = await executeSuiteQL<{
+    id: string; name: string; itemid: string; sku: string; costmult: string | null; retailmult: string | null; crdmult: string | null;
+  }>(`
+    SELECT pl.id, pl.name, i.id AS itemid, i.itemid AS sku,
+      pl.custrecord_pl_costinclfreightmult AS costmult, pl.custrecord_pl_price_mult_retail AS retailmult,
+      pl.custrecord_pl_price_mult_crd AS crdmult
     FROM customrecord_pl pl
     INNER JOIN item i ON i.custitem_prodline = pl.id
     WHERE pl.isinactive = 'F' AND i.isinactive = 'F' AND i.itemid LIKE 'SP-%'
@@ -47,6 +51,10 @@ export async function getSpecialOrderProductLines(fresh = false): Promise<Specia
     name: counts.get(String(row.id))! > 1 ? `${row.name} (${row.sku})` : row.name,
     netsuiteItemId: String(row.itemid),
     sku: row.sku,
+    // For the quote list's selling price; the push itself re-reads them (getSpecialOrderPricing).
+    costMultiplier: multiplier(row.costmult),
+    retailMultiplier: multiplier(row.retailmult),
+    crdMultiplier: multiplier(row.crdmult),
   }));
   productLinesCache = { data, expires: Date.now() + TTL };
   return data;
