@@ -689,6 +689,8 @@ export default function QuoteListPage() {
                   ))}
                 </tbody>
                 <tfoot>
+                  {/* 2026-11-04: one Grand Total row (Gib: "remove catalog total"). Was a Catalog Total row (catalog items
+                      only, "Grand Total" when there were no special orders) plus a separate Grand Total row below:
                   <tr className="border-t-2 border-gray-200 bg-gray-50">
                     <td colSpan={4} className="px-5 py-4 text-right">
                       <span className="text-[13px] font-semibold uppercase tracking-widest text-gray-500">{specialItems.length > 0 ? "Catalog Total" : "Grand Total"}</span>
@@ -698,6 +700,23 @@ export default function QuoteListPage() {
                     </td>
                     <td className="px-5 py-4 text-right">
                       <span className="text-lg font-bold text-gray-900">${fmtPrice(grandTotal)}</span>
+                    </td>
+                    <td></td>
+                  </tr> */}
+                  <tr className="border-t-2 border-gray-200 bg-gray-50">
+                    <td colSpan={4} className="px-5 py-4 text-right">
+                      <span className="text-[13px] font-semibold uppercase tracking-widest text-gray-500">Grand Total</span>
+                    </td>
+                    <td className="px-5 py-4 text-center">
+                      <span className="text-sm font-semibold text-gray-900">{totalItems} units</span>
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      {/* Catalog items plus special orders at each line's Retail / CRD price. */}
+                      {allSpecialsPriced ? (
+                        <span className="text-lg font-bold text-gray-900" data-testid="text-grand-total">${fmtPrice(grandTotal + specialTotal)}</span>
+                      ) : (
+                        <span className="text-sm text-gray-400">{pricingFallback}</span>
+                      )}
                     </td>
                     <td></td>
                   </tr>
@@ -726,18 +745,18 @@ export default function QuoteListPage() {
                       <td></td>
                     </tr>
                   )} */}
+                  {/* 2026-11-04: folded into the single Grand Total row above.
                   {specialItems.length > 0 && allSpecialsPriced && (
                     <tr className="border-t border-gray-200 bg-gray-50">
                       <td colSpan={5} className="px-5 py-4 text-right">
                         <span className="text-[13px] font-semibold uppercase tracking-widest text-gray-500">Grand Total</span>
                       </td>
                       <td className="px-5 py-4 text-right">
-                        {/* Was: grandTotal + specialRetailTotal */}
                         <span className="text-lg font-bold text-gray-900" data-testid="text-grand-total">${fmtPrice(grandTotal + specialTotal)}</span>
                       </td>
                       <td></td>
                     </tr>
-                  )}
+                  )} */}
                 </tfoot>
               </table>
             </div>
