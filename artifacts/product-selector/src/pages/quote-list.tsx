@@ -5,7 +5,7 @@ import { useAddEstimateItems, useGetSpecialOrderProductLines, getGetSpecialOrder
 import { specialOrderPrices, type SpecialOrderPrices } from "@/lib/special-order-pricing";
 import type { EstimateLineInput } from "@workspace/api-client-react";
 import SpecialOrderForm from "@/components/special-order-form";
-import { useQuoteList, type QuoteItem } from "@/context/quote-list-context";
+import { useQuoteList, type PriceBasis, type QuoteItem } from "@/context/quote-list-context";
 import { authHeaders } from "@/context/auth-context";
 import { cn, fmtPrice } from "@/lib/utils";
 import { trackPushToEstimate } from "@/lib/analytics";
@@ -17,6 +17,8 @@ interface Estimate {
   status: string;
   date: string;
   total: number | null;
+  customerCategory?: string; // "RETAIL", "CRD", ... (estimate's customer category)
+  customerCategoryId?: string; // "1" = Retail; anything else is priced at CRD
 }
 
 function ProductImage({ src, name }: { src: string | null; name: string }) {
@@ -42,6 +44,8 @@ function SpecialOrderRow({ item, prices, pricingFallback, editing, onEdit, onRem
 }) {
   const so = item.specialOrder!;
   const id = item.productId;
+  const basis = item.priceBasis ?? "retail";
+  const basisLabel = basis === "retail" ? "Retail" : "CRD";
   return (
     <tr className={cn("transition-colors align-top", editing ? "bg-amber-50/70" : "hover:bg-gray-50/50")} data-testid={`row-special-order-${id}`}>
       <td className="px-5 py-3">
@@ -68,11 +72,14 @@ function SpecialOrderRow({ item, prices, pricingFallback, editing, onEdit, onRem
         {/* 2026-11-03: selling price as NetSuite calculates it, with list underneath. Was list price only:
         <span className="font-medium text-gray-900" data-testid={`text-so-list-price-${id}`}>${fmtPrice(so.listPrice)}</span>
         <p className="text-[10px] uppercase tracking-widest text-gray-400">List</p> */}
-        {prices ? (
-          <>
+        {/* 2026-11-04: only the price the line is toggled to (Retail or CRD). Was both:
             <span className="font-medium text-gray-900" data-testid={`text-so-retail-price-${id}`}>${fmtPrice(prices.retail)}</span>
             <p className="text-[10px] uppercase tracking-widest text-gray-400">Retail</p>
-            <p className="text-[11px] text-gray-500 mt-0.5" data-testid={`text-so-crd-price-${id}`}>CRD ${fmtPrice(prices.crd)}</p>
+            <p className="text-[11px] text-gray-500 mt-0.5" data-testid={`text-so-crd-price-${id}`}>CRD ${fmtPrice(prices.crd)}</p> */}
+        {prices ? (
+          <>
+            <span className="font-medium text-gray-900" data-testid={`text-so-price-${id}`}>${fmtPrice(prices[basis])}</span>
+            <p className="text-[10px] uppercase tracking-widest text-gray-400">{basisLabel}</p>
           </>
         ) : (
           <p className="text-[11px] text-gray-400">{pricingFallback}</p>
@@ -108,11 +115,14 @@ function SpecialOrderRow({ item, prices, pricingFallback, editing, onEdit, onRem
         {/* 2026-11-03: extended selling price (rate x qty, as NetSuite). Was extended list:
         <span className="font-semibold text-gray-900">${fmtPrice(so.listPrice * item.quantity)}</span>
         <p className="text-[10px] uppercase tracking-widest text-gray-400">Ext. list</p> */}
-        {prices ? (
-          <>
+        {/* 2026-11-04: only the toggled price. Was both:
             <span className="font-semibold text-gray-900" data-testid={`text-so-retail-total-${id}`}>${fmtPrice(prices.retail * item.quantity)}</span>
             <p className="text-[10px] uppercase tracking-widest text-gray-400">Retail</p>
-            <p className="text-[11px] text-gray-500 mt-0.5">CRD ${fmtPrice(prices.crd * item.quantity)}</p>
+            <p className="text-[11px] text-gray-500 mt-0.5">CRD ${fmtPrice(prices.crd * item.quantity)}</p> */}
+        {prices ? (
+          <>
+            <span className="font-semibold text-gray-900" data-testid={`text-so-total-${id}`}>${fmtPrice(prices[basis] * item.quantity)}</span>
+            <p className="text-[10px] uppercase tracking-widest text-gray-400">{basisLabel}</p>
           </>
         ) : (
           <p className="text-[11px] text-gray-400">{pricingFallback}</p>
@@ -141,10 +151,11 @@ function estimateDigits(q: string): string | null {
   return /^\d*$/.test(s) ? s : null;
 }
 
-function EstimateSearch({ onPush, pushResult, setPushResult }: {
+function EstimateSearch({ onPush, pushResult, setPushResult, warnFor }: {
   onPush: (estimateId: number, tranId: string) => Promise<void>;
   pushResult: { success: boolean; message: string } | null;
   setPushResult: (r: { success: boolean; message: string } | null) => void;
+  warnFor?: (est: Estimate) => string | null;
 }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Estimate[]>([]);
@@ -311,7 +322,12 @@ function EstimateSearch({ onPush, pushResult, setPushResult }: {
                         )}
                       </td>
                       <td className="px-4 py-2.5 font-mono font-medium text-gray-900">{est.tranId}</td>
-                      <td className="px-4 py-2.5 text-gray-700">{est.customerName}</td>
+                      <td className="px-4 py-2.5 text-gray-700">
+                        {est.customerName}
+                        {est.customerCategory && (
+                          <span className="ml-2 text-[10px] font-semibold uppercase tracking-widest text-gray-400" data-testid={`text-estimate-category-${est.id}`}>{est.customerCategory}</span>
+                        )}
+                      </td>
                       <td className="px-4 py-2.5">
                         <span className={cn(
                           "text-[11px] font-medium px-2 py-0.5 rounded-full",
@@ -354,7 +370,8 @@ function EstimateSearch({ onPush, pushResult, setPushResult }: {
             <div className="text-sm">
               <span className="text-gray-500">Selected: </span>
               <span className="font-medium text-gray-900">{selected.tranId}</span>
-              <span className="text-gray-400"> — {selected.customerName}</span>
+              {/* <span className="text-gray-400"> — {selected.customerName}</span> */}
+              <span className="text-gray-400"> - {selected.customerName}{selected.customerCategory ? ` (${selected.customerCategory})` : ""}</span>
             </div>
             <button
               onClick={handlePush}
@@ -364,6 +381,12 @@ function EstimateSearch({ onPush, pushResult, setPushResult }: {
               {pushing ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
               Push Items to Estimate
             </button>
+          </div>
+        )}
+        {selected && warnFor?.(selected) && (
+          <div className="mt-2 flex items-start gap-2 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-[13px] text-amber-800" role="status" data-testid="text-price-basis-warning">
+            <AlertCircle size={14} className="shrink-0 mt-0.5" />
+            <span>{warnFor(selected)}</span>
           </div>
         )}
 
@@ -395,8 +418,22 @@ export default function QuoteListPage() {
   const cents = (n: number) => Math.round(n * 100) / 100;
   const specialPriced = specialItems.map(i => ({ item: i, prices: pricesFor(i) }));
   const allSpecialsPriced = specialPriced.every(p => p.prices);
-  const specialRetailTotal = specialPriced.reduce((s, p) => s + (p.prices ? cents(p.prices.retail * p.item.quantity) : 0), 0);
-  const specialCrdTotal = specialPriced.reduce((s, p) => s + (p.prices ? cents(p.prices.crd * p.item.quantity) : 0), 0);
+  // 2026-11-04: each line at the price it is toggled to (Retail or CRD). Was separate Retail and CRD totals:
+  // const specialRetailTotal = specialPriced.reduce((s, p) => s + (p.prices ? cents(p.prices.retail * p.item.quantity) : 0), 0);
+  // const specialCrdTotal = specialPriced.reduce((s, p) => s + (p.prices ? cents(p.prices.crd * p.item.quantity) : 0), 0);
+  const specialTotal = specialPriced.reduce(
+    (s, p) => s + (p.prices ? cents(p.prices[p.item.priceBasis ?? "retail"] * p.item.quantity) : 0), 0);
+
+  // Before a push: lines toggled to the other price than the chosen estimate's customer gets in NetSuite.
+  const basisWarning = (est: Estimate): string | null => {
+    if (!est.customerCategoryId) return null;
+    const estimateBasis: PriceBasis = est.customerCategoryId === "1" ? "retail" : "crd";
+    const off = specialItems.filter(i => (i.priceBasis ?? "retail") !== estimateBasis);
+    if (off.length === 0) return null;
+    const label = estimateBasis === "retail" ? "Retail" : "CRD";
+    return `${est.tranId} is a ${est.customerCategory || label} customer, so NetSuite prices special orders at ${label}. ` +
+      `${off.length} special order${off.length === 1 ? " is" : "s are"} shown at the other price here and will be pushed at ${label}.`;
+  };
 
   const describe =(snapshot: QuoteItem[], id: string) => {
     const matches = snapshot.filter(i => String(i.netsuiteId) === String(id));
@@ -674,6 +711,7 @@ export default function QuoteListPage() {
                       <td></td>
                     </tr>
                   )} */}
+                  {/* 2026-11-04: special-orders summary row removed (Gib); each line shows its own price instead.
                   {specialItems.length > 0 && (
                     <tr className="bg-amber-50/60">
                       <td colSpan={5} className="px-5 py-3 text-right text-[12px] text-amber-800" data-testid="text-special-order-summary">
@@ -687,14 +725,15 @@ export default function QuoteListPage() {
                       </td>
                       <td></td>
                     </tr>
-                  )}
+                  )} */}
                   {specialItems.length > 0 && allSpecialsPriced && (
                     <tr className="border-t border-gray-200 bg-gray-50">
                       <td colSpan={5} className="px-5 py-4 text-right">
                         <span className="text-[13px] font-semibold uppercase tracking-widest text-gray-500">Grand Total</span>
                       </td>
                       <td className="px-5 py-4 text-right">
-                        <span className="text-lg font-bold text-gray-900" data-testid="text-grand-total">${fmtPrice(grandTotal + specialRetailTotal)}</span>
+                        {/* Was: grandTotal + specialRetailTotal */}
+                        <span className="text-lg font-bold text-gray-900" data-testid="text-grand-total">${fmtPrice(grandTotal + specialTotal)}</span>
                       </td>
                       <td></td>
                     </tr>
@@ -724,7 +763,7 @@ export default function QuoteListPage() {
             </div>
           )}
 
-          <EstimateSearch onPush={handlePushToEstimate} pushResult={pushResult} setPushResult={setPushResult} />
+          <EstimateSearch onPush={handlePushToEstimate} pushResult={pushResult} setPushResult={setPushResult} warnFor={basisWarning} />
         </div>
       )}
     </div>

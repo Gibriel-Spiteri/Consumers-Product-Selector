@@ -2,6 +2,10 @@ import { createContext, useContext, useState, useCallback, useEffect, type React
 import { trackAddToList } from "@/lib/analytics";
 import type { SpecialOrderDetails } from "@workspace/api-client-react";
 
+// Which selling price the quote list shows for a special order. Display only: the push prices by the
+// estimate customer's category, as NetSuite does.
+export type PriceBasis = "retail" | "crd";
+
 export interface QuoteItem {
   productId: number;
   netsuiteId: string;
@@ -11,6 +15,7 @@ export interface QuoteItem {
   imageUrl: string | null;
   quantity: number;
   specialOrder?: SpecialOrderDetails;
+  priceBasis?: PriceBasis; // special orders only; missing on older saved lists = retail
 }
 
 export interface SpecialOrderInput {
@@ -18,6 +23,7 @@ export interface SpecialOrderInput {
   sku: string | null;
   quantity: number;
   details: SpecialOrderDetails;
+  priceBasis: PriceBasis;
 }
 
 interface QuoteListContextType {
@@ -69,6 +75,7 @@ function toSpecialItem(productId: number, input: SpecialOrderInput): QuoteItem {
     imageUrl: null,
     quantity: input.quantity,
     specialOrder: { ...d },
+    priceBasis: input.priceBasis,
   };
 }
 

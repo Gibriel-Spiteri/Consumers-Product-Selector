@@ -50,6 +50,7 @@ router.get("/estimates/search", async (req, res) => {
       status: string;
       trandate: string;
       total: string | null;
+      ccat: string | null; ccatname: string | null; ecat: string | null; ecatname: string | null;
     }>(`
       SELECT
         t.id,
@@ -57,8 +58,11 @@ router.get("/estimates/search", async (req, res) => {
         BUILTIN.DF(t.entity) AS entityname,
         BUILTIN.DF(t.status) AS status,
         t.trandate,
-        t.total
+        t.total,
+        c.category AS ccat, BUILTIN.DF(c.category) AS ccatname,
+        t.custbody_customer_category AS ecat, BUILTIN.DF(t.custbody_customer_category) AS ecatname
       FROM Estimate t
+      LEFT JOIN customer c ON c.id = t.entity
       WHERE (${tranIdConditions})
       AND t.status NOT IN ('Estimate : Voided', 'Estimate : Declined')
       ORDER BY t.trandate DESC
@@ -72,6 +76,10 @@ router.get("/estimates/search", async (req, res) => {
       status: row.status ?? "",
       date: row.trandate ?? "",
       total: row.total ? parseFloat(row.total) : null,
+      // The push prices special orders by this (the customer's category, else the estimate's), so the page can
+      // warn when a line is shown at the other price.
+      customerCategoryId: row.ccat != null ? String(row.ccat) : row.ecat != null ? String(row.ecat) : "",
+      customerCategory: (row.ccat != null ? row.ccatname : row.ecatname) ?? "",
     }));
 
     return res.json({ estimates });
