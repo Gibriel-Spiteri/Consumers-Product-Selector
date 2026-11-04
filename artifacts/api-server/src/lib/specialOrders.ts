@@ -64,6 +64,21 @@ export async function getSpecialOrderProductLines(fresh = false): Promise<Specia
     "SELECT id, name FROM customlist_prd_category ORDER BY name"
   );
   const categoryNames = new Map(categoryResult.items.map(c => [String(c.id), c.name]));
+  // Every product line's special-order Types in one query (about 300 in all), for the Consumers Quote Helper: it
+  // offers the Type on the vendor page. The Add Special Order form still loads them per line.
+  const typeResult = await executeSuiteQL<{ id: string; name: string; prodline: string; requiresattachment: string | null }>(`
+    SELECT id, name, custrecord_specord_nondb_type_prodline AS prodline,
+      BUILTIN.DF(custrecord_specord_nondb_type_reqattach) AS requiresattachment
+    FROM customrecord_specord_nondb_types
+    WHERE isinactive = 'F'
+    ORDER BY name
+  `);
+  const typesByLine = new Map<string, SpecialOrderType[]>();
+  for (const t of typeResult.items) {
+    const key = String(t.prodline);
+    if (!typesByLine.has(key)) typesByLine.set(key, []);
+    typesByLine.get(key)!.push({ id: String(t.id), name: t.name, requiresAttachment: t.requiresattachment?.toLowerCase() === "yes" });
+  }
   // Do not silently pick an arbitrary special-order item when a product line has several.
   const counts = new Map<string, number>();
   for (const row of result.items) counts.set(String(row.id), (counts.get(String(row.id)) ?? 0) + 1);
@@ -87,6 +102,7 @@ export async function getSpecialOrderProductLines(fresh = false): Promise<Specia
     costMultiplier: multiplier(row.costmult),
     retailMultiplier: multiplier(row.retailmult),
     crdMultiplier: multiplier(row.crdmult),
+    types: typesByLine.get(String(row.id)) ?? [],
   }));
   productLinesCache = { data, expires: Date.now() + TTL };
   return data;

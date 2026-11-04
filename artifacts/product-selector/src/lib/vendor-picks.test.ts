@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { SpecialOrderProductLine } from "@workspace/api-client-react";
-import { missingDetails, parsePicksMessage, prefillFromPick, productLinesForPick, quoteInputFromPick, registrableDomain, suggestType, vendorSites } from "./vendor-picks";
+import { collDesc, missingDetails, parsePicksMessage, prefillFromPick, productLineForPick, productLinesForPick, quoteInputFromPick, registrableDomain, suggestType, vendorSites } from "./vendor-picks";
 
 const line = (id: string, name: string, websiteUrl: string | null): SpecialOrderProductLine => ({
   id, name, netsuiteItemId: `item-${id}`, sku: `SP-${name}`, websiteUrl, categories: [], costMultiplier: 1, retailMultiplier: 1, crdMultiplier: 1,
@@ -113,4 +113,37 @@ test("a pick becomes a quote-list line, with what the vendor page left out marke
   assert.deepEqual(missingDetails({ specialOrder: { ...elkay.details, typeId: "4", color: "Stainless" }, vendorPick: { ...elkay.vendorPick!, priceMissing: false } }), []);
   // Lines typed in by the rep never count as missing anything.
   assert.deepEqual(missingDetails({}), []);
+});
+
+// 1.3.0: the extension sends the Type, product line, Collection and Description chosen on the vendor page.
+test("the Type and product line chosen in the extension are used; Collection and Description make Coll/Desc", () => {
+  const foremost = [line("699", "FOREMOST BATH", "https://craftandmain.com/"), line("383", "FOREMOST T&S DOORS", "https://craftandmain.com/")];
+  const fpick = { ...pick, vendorDomain: "craftandmain.com", pageUrl: "https://craftandmain.com/p/1" };
+  assert.equal(productLineForPick(fpick, foremost), null);
+  assert.equal(productLineForPick({ ...fpick, productLineId: "383" }, foremost)?.name, "FOREMOST T&S DOORS");
+  assert.equal(productLineForPick({ ...fpick, productLineId: "88" }, foremost), null); // not one of this site's lines
+
+  const delta = line("88", "DELTA", "https://www.deltafaucet.com/");
+  const dpick = { ...pick, vendorDomain: "deltafaucet.com", pageUrl: "https://www.deltafaucet.com/kitchen/product/9190TL-PN-DST.html",
+    name: "Touch2O® Technology Kitchen Faucet with Touchless Technology", model: "9190TL-PN-DST", color: "Polished Nickel", price: 1242,
+    typeId: "2", typeName: "BATH FAUCET", collection: "Broderick", description: "Touch2O® Technology Kitchen Faucet with Touchless Technology" };
+  const input = quoteInputFromPick(dpick, delta, DELTA);
+  assert.equal(input.details.typeName, "BATH FAUCET"); // the customer's choice wins over the guess
+  assert.equal(input.details.description, "Broderick Touch2O® Technology Kitchen Faucet with Touchless Technology");
+  // A Type id that is not one of the line's falls back to the guess.
+  assert.equal(quoteInputFromPick({ ...dpick, typeId: "999" }, delta, DELTA).details.typeName, "KITCHEN FAUCET");
+  assert.equal(collDesc("Cairn®", "Cairn 27-1/2\" undermount single-bowl kitchen sink"), "Cairn 27-1/2\" undermount single-bowl kitchen sink");
+  assert.equal(collDesc("", "Drake Two-piece Toilet"), "Drake Two-piece Toilet");
+  // The breadcrumbs help the guess: "Pull-Down" alone in the name, "Kitchen / Sink Faucets" in the crumbs.
+  assert.equal(suggestType({ name: "Broderick Pull-Down", pageUrl: "https://www.deltafaucet.com/p/9190TL-DST.html", category: "Kitchen / Sink Faucets / Pull-Down" }, DELTA)?.name, "KITCHEN FAUCET");
+});
+
+test("the new pick fields are taken only when well-formed", () => {
+  const raw = { ...pick, productLineId: "88", typeId: "5", typeName: "KITCHEN FAUCET", collection: "Broderick", description: "Faucet", category: "Kitchen" };
+  const [p] = parsePicksMessage(msg([raw]))!;
+  assert.deepEqual([p.productLineId, p.typeId, p.typeName, p.collection, p.description, p.category], ["88", "5", "KITCHEN FAUCET", "Broderick", "Faucet", "Kitchen"]);
+  const [q] = parsePicksMessage(msg([{ ...raw, productLineId: "88; drop", typeId: "<b>", collection: 7 }]))!;
+  assert.deepEqual([q.productLineId, q.typeId, q.collection], [undefined, undefined, undefined]);
+  assert.deepEqual(vendorSites([{ ...line("88", "DELTA", "https://www.deltafaucet.com/"), types: [{ id: "5", name: "KITCHEN FAUCET", requiresAttachment: false }] }])[0].types,
+    [{ id: "5", name: "KITCHEN FAUCET", requiresAttachment: false }]);
 });

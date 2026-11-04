@@ -10,6 +10,12 @@ export type SpecialOrderProductLineCategoriesItem = {
   name: string;
 };
 
+export interface SpecialOrderType {
+  id: string;
+  name: string;
+  requiresAttachment: boolean;
+}
+
 export interface SpecialOrderProductLine {
   id: string;
   name: string;
@@ -26,12 +32,8 @@ export interface SpecialOrderProductLine {
   retailMultiplier: number;
   /** Product line CRD price multiplier (custrecord_pl_price_mult_crd); blank or zero is sent as 1 */
   crdMultiplier: number;
-}
-
-export interface SpecialOrderType {
-  id: string;
-  name: string;
-  requiresAttachment: boolean;
+  /** The product line's active special-order Types (for the Consumers Quote Helper) */
+  types?: SpecialOrderType[];
 }
 
 export interface SpecialOrderDetails {

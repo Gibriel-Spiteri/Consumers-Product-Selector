@@ -46,6 +46,18 @@ export const GetSpecialOrderProductLinesResponseItem = zod.object({
     .describe(
       "Product line CRD price multiplier (custrecord_pl_price_mult_crd); blank or zero is sent as 1",
     ),
+  types: zod
+    .array(
+      zod.object({
+        id: zod.string(),
+        name: zod.string(),
+        requiresAttachment: zod.boolean(),
+      }),
+    )
+    .optional()
+    .describe(
+      "The product line's active special-order Types (for the Consumers Quote Helper)",
+    ),
 });
 export const GetSpecialOrderProductLinesResponse = zod.array(
   GetSpecialOrderProductLinesResponseItem,

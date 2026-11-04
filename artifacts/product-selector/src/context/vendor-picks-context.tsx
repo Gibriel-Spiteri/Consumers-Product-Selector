@@ -6,7 +6,7 @@ import {
 import { specialOrderLookupRetry } from "@/lib/special-order-query";
 import { useQuoteList } from "@/context/quote-list-context";
 import {
-  FROM_EXTENSION, parsePicksMessage, postToExtension, productLinesForPick, quoteInputFromPick, vendorSites, type VendorPick,
+  FROM_EXTENSION, parsePicksMessage, postToExtension, productLineForPick, quoteInputFromPick, vendorSites, type VendorPick,
 } from "@/lib/vendor-picks";
 import { cleanVersion } from "@/lib/quote-helper";
 
@@ -71,10 +71,18 @@ export function VendorPicksProvider({ children }: { children: ReactNode }) {
     if (!all?.length) return;
     for (const pick of picks) {
       if (taken.current.has(pick.id)) continue;
-      const candidates = productLinesForPick(pick, all);
-      if (candidates.length !== 1) continue;
+      // const candidates = productLinesForPick(pick, all);
+      // if (candidates.length !== 1) continue;
+      // The line chosen in the extension (Foremost has several on one site), else the site's only line.
+      const line = productLineForPick(pick, all);
+      if (!line) continue;
       taken.current.add(pick.id);
-      const line = candidates[0];
+      // The product lines carry their Types since 11/4; older cached answers fall back to the per-line call.
+      if (line.types?.length) {
+        addSpecialOrder(quoteInputFromPick(pick, line, line.types));
+        done(pick.id);
+        continue;
+      }
       queryClient
         .fetchQuery({
           queryKey: getGetSpecialOrderTypesQueryKey(line.id),

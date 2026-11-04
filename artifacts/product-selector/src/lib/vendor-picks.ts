@@ -21,9 +21,17 @@ export interface VendorPick {
   price: number | null;
   imageUrl: string;
   quantity: number;
+  // Extension 1.3.0 and later: what the customer chose or the page showed (all optional, plain text or ids).
+  productLineId?: string; // the product line chosen on a vendor site that has several (Foremost)
+  typeId?: string; // the special-order Type chosen in the extension's panel
+  typeName?: string;
+  collection?: string; // "Broderick"
+  description?: string; // the product name, as edited in the panel
+  category?: string; // the vendor's breadcrumbs, "Kitchen / Sink Faucets / Pull-Down" (for the Type guess)
 }
 
 const MAX_TEXT = 300;
+const nsId = (v: unknown) => (typeof v === "string" && /^[1-9]\d{0,17}$/.test(v) ? v : "");
 const str = (v: unknown, max = MAX_TEXT) => (typeof v === "string" ? v.replace(/[\u0000-\u001f\u007f]+/g, " ").trim().slice(0, max) : "");
 function httpsUrl(v: unknown): string {
   try {
@@ -55,6 +63,11 @@ export function parsePick(raw: unknown): VendorPick | null {
     imageUrl: httpsUrl(p.imageUrl),
     quantity: qty,
   };
+  const extra: Partial<VendorPick> = {
+    productLineId: nsId(p.productLineId), typeId: nsId(p.typeId), typeName: str(p.typeName),
+    collection: str(p.collection), description: str(p.description), category: str(p.category),
+  };
+  for (const [k, v] of Object.entries(extra)) if (v) (pick as unknown as Record<string, unknown>)[k] = v;
   return pick.name || pick.model ? pick : null;
 }
 
@@ -87,11 +100,23 @@ export function productLinesForPick(pick: VendorPick, lines: SpecialOrderProduct
   return lines.filter(l => websiteDomain(l.websiteUrl) === pick.vendorDomain);
 }
 
-// What the extension needs to know where to run: each product line's vendor website.
+// The product line a pick belongs to: the one chosen in the extension when its site has several (and it is one of
+// them), else the only line on that site. Null when the rep has to choose.
+export function productLineForPick(pick: VendorPick, lines: SpecialOrderProductLine[]): SpecialOrderProductLine | null {
+  const candidates = productLinesForPick(pick, lines);
+  const chosen = pick.productLineId ? candidates.find(l => l.id === pick.productLineId) : undefined;
+  return chosen ?? (candidates.length === 1 ? candidates[0] : null);
+}
+
+// What the extension needs to know where to run (each product line's vendor website), and since 1.3.0 the product
+// line's special-order Types, which its panel offers.
 export function vendorSites(lines: SpecialOrderProductLine[]) {
   return lines
     .filter(l => !!l.websiteUrl)
-    .map(l => ({ websiteUrl: l.websiteUrl, productLineId: l.id, productLineName: l.name, netsuiteItemId: l.netsuiteItemId }));
+    .map(l => ({
+      websiteUrl: l.websiteUrl, productLineId: l.id, productLineName: l.name, netsuiteItemId: l.netsuiteItemId,
+      types: (l.types ?? []).map(t => ({ id: t.id, name: t.name, requiresAttachment: t.requiresAttachment })),
+    }));
 }
 
 export interface SpecialOrderPrefill {
@@ -108,10 +133,12 @@ export interface SpecialOrderPrefill {
 export function prefillFromPick(pick: VendorPick, lines: SpecialOrderProductLine[]): SpecialOrderPrefill {
   const candidates = productLinesForPick(pick, lines);
   return {
-    netsuiteItemId: candidates.length === 1 ? candidates[0].netsuiteItemId : undefined,
+    // netsuiteItemId: candidates.length === 1 ? candidates[0].netsuiteItemId : undefined,
+    netsuiteItemId: productLineForPick(pick, lines)?.netsuiteItemId,
     candidateNames: candidates.map(c => c.name),
     model: pick.model,
-    description: pick.name,
+    // description: pick.name,
+    description: collDesc(pick.collection, pick.description || pick.name),
     color: pick.color,
     listPrice: pick.price,
     quantity: pick.quantity,
@@ -136,7 +163,9 @@ function words(s: string): string[] {
 // address: "Single Handle Pull-Down Kitchen Faucet" on /kitchen/ -> KITCHEN FAUCET, "Modern Metal Pull" -> PULL.
 // No guess when two Types fit equally well (Elkay's "Undermount Sink": KITCHEN SINK or BATH SINK), and never an
 // order-form Type or MISCELLANEOUS; the rep chooses those.
-export function suggestType(pick: Pick<VendorPick, "name" | "pageUrl">, types: PickTypeOption[]): PickTypeOption | null {
+// The vendor's breadcrumbs ("Kitchen / Sink Faucets / Pull-Down") count like the address. The extension uses the same
+// rule (suggestType in extract.js) to preselect the Type in its panel.
+export function suggestType(pick: Pick<VendorPick, "name" | "pageUrl"> & { category?: string }, types: PickTypeOption[]): PickTypeOption | null {
   let path = "";
   try {
     path = decodeURIComponent(new URL(pick.pageUrl).pathname);
@@ -144,7 +173,7 @@ export function suggestType(pick: Pick<VendorPick, "name" | "pageUrl">, types: P
     path = "";
   }
   const nameWords = new Set(words(pick.name));
-  const pathWords = new Set(words(path));
+  const pathWords = new Set([...words(path), ...words(pick.category ?? "")]);
   const scored = types
     .filter(t => !t.requiresAttachment && !/^misc/i.test(t.name.trim()))
     .map(t => {
@@ -169,8 +198,21 @@ export interface VendorPickSource {
 
 // The quote-list line for a pick on a product line. Whatever the vendor page did not give (Type, Model, Color, list
 // price) stays blank for the rep to fill in on the quote list; missingDetails() lists it.
+// NetSuite's Coll/Desc, the way reps fill it: the collection, then the description ("Cassidy Two Handle Widespread
+// Bathroom Faucet"). Not repeated when the description already starts with it ("Cairn 27-1/2 inch ... sink").
+export function collDesc(collection: string | undefined, description: string): string {
+  const c = (collection ?? "").replace(/[®™]/g, "").trim();
+  const d = description.trim();
+  if (!c) return d.slice(0, 300);
+  if (d.replace(/[®™]/g, "").toLowerCase().startsWith(c.toLowerCase())) return d.slice(0, 300);
+  return `${c} ${d}`.trim().slice(0, 300);
+}
+
 export function quoteInputFromPick(pick: VendorPick, line: SpecialOrderProductLine, types: PickTypeOption[]): SpecialOrderInput {
-  const type = suggestType(pick, types);
+  // const type = suggestType(pick, types);
+  // The Type chosen in the extension's panel when it is one of the line's; otherwise the guess.
+  const chosen = pick.typeId ? types.find(t => t.id === pick.typeId && !t.requiresAttachment) : undefined;
+  const type = chosen ?? suggestType(pick, types);
   return {
     netsuiteId: line.netsuiteItemId,
     sku: line.sku || null,
@@ -181,7 +223,8 @@ export function quoteInputFromPick(pick: VendorPick, line: SpecialOrderProductLi
       typeId: type?.id ?? "",
       typeName: type?.name.trim() ?? "",
       model: pick.model,
-      description: pick.name,
+      // description: pick.name,
+      description: collDesc(pick.collection, pick.description || pick.name),
       color: pick.color,
       listPrice: pick.price ?? 0,
     },

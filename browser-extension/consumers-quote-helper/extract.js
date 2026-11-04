@@ -14,6 +14,7 @@
   function text(value) {
     if (value == null) return "";
     const s = String(Array.isArray(value) ? value[0] ?? "" : value)
+      .replace(/<\/?(sub|sup)\b[^>]*>/gi, "") // Delta's "Touch<sub>2</sub>O" is one word, not "Touch 2 O"
       .replace(/<[^>]*>/g, " ")
       .replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&quot;/gi, '"').replace(/&#39;|&apos;/gi, "'")
       .replace(/[\u0000-\u001f\u007f]+/g, " ").replace(/\s+/g, " ").trim();
@@ -152,10 +153,15 @@
   function textWindow(page) {
     const all = String((page && page.text) || "");
     const heading = String((page && page.heading) || "").replace(/\s+/g, " ").trim();
-    const at = heading ? all.indexOf(heading) : -1;
+    // Case-blind: a site can style the title in capitals ("With", "In") that its own text does not use.
+    const lower = all.toLowerCase();
+    const key = heading.toLowerCase();
+    // const at = heading ? all.indexOf(heading) : -1;
+    const at = key ? lower.indexOf(key) : -1;
     if (at < 0) return null; // no heading: not a product page as far as we can tell (Fleurco's configurator, Avance)
     const afters = [];
-    for (let i = at; i >= 0 && afters.length < 3; i = all.indexOf(heading, i + heading.length)) {
+    // for (let i = at; i >= 0 && afters.length < 3; i = all.indexOf(heading, i + heading.length)) {
+    for (let i = at; i >= 0 && afters.length < 3; i = lower.indexOf(key, i + key.length)) {
       afters.push(all.slice(i, i + TEXT_AFTER_HEADING));
     }
     return {
@@ -204,16 +210,103 @@
     return value.toUpperCase();
   }
 
+  // A price as printed. Cents in superscript lose their point in the page's text: Delta's "$1,242<sup>00</sup>"
+  // reads "$1,24200"; a last group of five digits after a comma is read as dollars and cents.
+  function printedPrice(raw) {
+    const s = String(raw);
+    const m = /^(\d{1,3}(?:,\d{3})*),(\d{3})(\d{2})$/.exec(s);
+    return number(m ? `${m[1].replace(/,/g, "")}${m[2]}.${m[3]}` : s);
+  }
+
   // The first price shortly after the heading. "+$54.00" is an add-on (TOTO's colors), not the price.
   function pagePrice(win) {
     if (!win) return null;
     for (const after of win.afters) {
       for (const m of after.slice(0, PRICE_AFTER_HEADING).matchAll(/(^|[^+\d])\$\s?(\d[\d,]*(?:\.\d{2})?)/g)) {
-        const p = number(m[2]);
+        // const p = number(m[2]);
+        const p = printedPrice(m[2]);
         if (p) return p;
       }
     }
     return null;
+  }
+
+  // ---- Collection, breadcrumbs and the special-order Type (1.3.0) ---------------------------------------------
+
+  const plain = s => text(s).replace(/[®™]/g, "").trim();
+
+  // The collection: a short heading that is not the product's name (Brizo's h1 "Virage®" above "Sensori Valve
+  // Trim"), else a trademarked first word or two of the name ("Cairn® 27-1/2...", "Drake® Two-piece..."). Delta's
+  // comes from its own rule. Empty when the page does not say; the customer or rep can type it.
+  function guessCollection(item, page) {
+    const heading = plain(page && page.heading);
+    const name = plain(item.name);
+    if (heading && heading.split(/\s+/).length <= 3 && name && !name.toLowerCase().startsWith(heading.toLowerCase())) return heading;
+    const m = /^([A-Z][A-Za-z0-9'&.-]*(?:\s[A-Z][A-Za-z0-9'&.-]*){0,2})\s?[®™]/.exec(text(item.name));
+    return m ? m[1].trim() : "";
+  }
+
+  // The vendor's breadcrumbs ("Kitchen / Sink Faucets / Pull-Down"): JSON-LD BreadcrumbList, else the page's own
+  // breadcrumb links (page.crumbs), else the product's category.
+  function breadcrumbs(blocks, page) {
+    const names = [];
+    let productCategory = "";
+    const walk = o => {
+      if (!o || typeof o !== "object") return;
+      if (Array.isArray(o)) return o.forEach(walk);
+      const t = types(o);
+      if (t.includes("BreadcrumbList")) {
+        for (const li of [].concat(o.itemListElement || [])) names.push(text(li && (li.name || (li.item && li.item.name))));
+        return;
+      }
+      if ((t.includes("Product") || t.includes("ProductGroup")) && o.category && !productCategory) productCategory = text(o.category);
+      if (o["@graph"]) walk(o["@graph"]);
+    };
+    for (const raw of blocks || []) {
+      try {
+        walk(typeof raw === "string" ? JSON.parse(raw) : raw);
+      } catch {}
+    }
+    const list = (names.length ? names : [].concat((page && page.crumbs) || []).map(text))
+      .filter(n => n && !/^home$/i.test(n));
+    const unique = [...new Set(list)];
+    return (unique.length ? unique.join(" / ") : productCategory).slice(0, MAX_TEXT);
+  }
+
+  // Words, singular: "Pull-Down Kitchen Faucets" -> pull, down, kitchen, faucet.
+  function words(s) {
+    return String(s).toLowerCase().split(/[^a-z]+/).filter(w => w.length > 1)
+      .map(w => (w.length > 3 && w.endsWith("s") && !w.endsWith("ss") ? w.slice(0, -1) : w));
+  }
+
+  // The product line's special-order Type that fits: words of the Type found in the product name count 2, in the
+  // breadcrumbs or address 1. No guess on a tie, for order-form Types or MISCELLANEOUS. Same rule as the Product
+  // Selector's suggestType (artifacts/product-selector/src/lib/vendor-picks.ts).
+  function suggestType(pick, typeList) {
+    let path = "";
+    try {
+      path = decodeURIComponent(new URL(String(pick.pageUrl)).pathname);
+    } catch {}
+    const nameWords = new Set(words(pick.name || ""));
+    const otherWords = new Set([...words(path), ...words(pick.category || "")]);
+    const scored = (typeList || [])
+      .filter(t => !t.requiresAttachment && !/^misc/i.test(String(t.name).trim()))
+      .map(t => ({ t, score: [...new Set(words(t.name))].reduce((s, w) => s + (nameWords.has(w) ? 2 : otherWords.has(w) ? 1 : 0), 0) }))
+      .filter(s => s.score > 0)
+      .sort((a, b) => b.score - a.score);
+    if (!scored.length || (scored.length > 1 && scored[1].score === scored[0].score)) return null;
+    return scored[0].t;
+  }
+
+  // The page switched to another finish without a new page load: the address now ends in another model of the same
+  // family (Delta: /9190TL-DST.html -> /9190TL-PN-DST.html) while the product data still describes the first one.
+  function staleFor(item, pageUrl) {
+    const fromUrl = urlModel(pageUrl);
+    const model = String(item.model || "").toUpperCase();
+    if (!fromUrl || !model || fromUrl === model || String(pageUrl).toUpperCase().includes(model)) return "";
+    let common = 0;
+    while (common < Math.min(fromUrl.length, model.length) && fromUrl[common] === model[common]) common++;
+    return common >= 4 ? fromUrl : "";
   }
 
   // An item from the page's text alone, when the page has no product data: it needs a model next to the name, or
@@ -367,12 +460,31 @@
     if (!items.length) items = fromOpenGraph(m, pageUrl);
     if (!items.length) items = fromPageText(page, m, pageUrl);
     else if (items.length === 1) items = [fillGaps(items[0], page, m, pageUrl)];
-    return { items, selected: pickDefault(items, pageUrl) };
+    // return { items, selected: pickDefault(items, pageUrl) };
+    // The finish the customer switched to wins over product data that still describes the first one: the model from
+    // the address (or the "Model" label next to the name), the price the page shows now, and no color until known.
+    if (items.length === 1) {
+      const fresh = staleFor(items[0], pageUrl);
+      if (fresh) {
+        const win = textWindow(page);
+        const labeled = pageModel(win);
+        const livePrice = number(page && page.microdata && page.microdata.offers && page.microdata.offers.price) || pagePrice(win);
+        items = [{
+          ...items[0],
+          model: labeled.isModel && labeled.value.toUpperCase() === fresh ? labeled.value : fresh,
+          color: "",
+          price: livePrice,
+          priceIsList: false,
+        }];
+      }
+    }
+    items = items.map(it => ({ ...it, collection: it.collection || guessCollection(it, page) }));
+    return { items, selected: pickDefault(items, pageUrl), category: breadcrumbs(blocks, page) };
   }
 
   const api = {
     extract, scanHtml, fromJsonLd, fromOpenGraph, fromPageText, fillGaps, blankItem, urlModel, labeledModels,
-    registrableDomain, pickDefault, text, number,
+    registrableDomain, pickDefault, text, number, suggestType, printedPrice, breadcrumbs,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.ConsumersExtract = api;
