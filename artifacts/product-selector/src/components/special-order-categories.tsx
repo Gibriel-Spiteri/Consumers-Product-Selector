@@ -21,7 +21,7 @@ export default function SpecialOrderCategories({ categories, selected, onSelect 
   return (
     <section aria-label="Special-order categories">
       <div className="flex items-center justify-between gap-3 mb-3">
-        <h2 className="text-[15px] font-semibold text-gray-800">Browse by category</h2>
+        <h2 className="text-[15px] font-semibold text-gray-800">Browse By Category</h2>
         <button
           type="button"
           aria-pressed={!selected}
@@ -50,7 +50,7 @@ export default function SpecialOrderCategories({ categories, selected, onSelect 
                     aria-pressed={active}
                     onClick={() => onSelect(category.id)}
                     className={cn(
-                      "w-full min-h-11 flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-[13px] leading-5 font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7B4DA8] focus-visible:ring-offset-2",
+                      "w-full min-h-11 flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-[14px] leading-5 font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7B4DA8] focus-visible:ring-offset-2",
                       active ? "border-[#7B4DA8] bg-[#7B4DA8] text-white shadow-sm" : "border-transparent text-gray-700 hover:border-purple-200 hover:bg-white"
                     )}
                   >

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { AlertCircle, Info, Loader2, RotateCcw } from "lucide-react";
+import { useId, useState } from "react";
+import { AlertCircle, ChevronDown, Info, Loader2, RotateCcw } from "lucide-react";
 import {
   useGetSpecialOrderProductLines,
   useGetSpecialOrderTypes,
@@ -40,14 +40,17 @@ function FieldError({ id, msg }: { id: string; msg?: string }) {
   return <p id={id} role="alert" className="mt-1 text-[12px] text-red-600">{msg}</p>;
 }
 
-export default function SpecialOrderForm({ initial, prefill, onSubmit, onCancel, categoriesAboveForm = false }: {
+export default function SpecialOrderForm({ initial, prefill, onSubmit, onCancel, categoriesAboveForm = false, collapsible = false }: {
   initial?: QuoteItem;
   // A product a customer picked on a vendor website (Consumers Quote Helper extension); the rep confirms it.
   prefill?: SpecialOrderPrefill;
   onSubmit: (input: SpecialOrderInput) => void;
   onCancel: () => void;
   categoriesAboveForm?: boolean;
+  collapsible?: boolean;
 }) {
+  const [expanded, setExpanded] = useState(!collapsible || !!initial || !!prefill);
+  const panelId = useId();
   const so = initial?.specialOrder;
   const [selectedItemId, setSelectedItemId] = useState(initial?.netsuiteId ?? prefill?.netsuiteItemId ?? "");
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -151,8 +154,23 @@ export default function SpecialOrderForm({ initial, prefill, onSubmit, onCancel,
       {categoriesAboveForm && categoryFilters}
       {categoriesAboveForm && selectedCategory && <ProductLineLogos lines={visibleLines} />}
       <form onSubmit={submit} noValidate className="bg-white rounded-2xl border border-gray-100 shadow-sm animate-in fade-in slide-in-from-top-2 duration-200" data-testid="form-special-order" aria-label={initial ? "Edit special order" : "Add special order"}>
-      <div className="px-6 py-5 border-b border-gray-100">
-        <h3 className="font-semibold text-gray-900 text-[15px] mb-1">{initial ? "Edit Special Order" : "Add Special Order"}</h3>
+      {collapsible && (
+        <h3>
+          <button
+            type="button"
+            aria-expanded={expanded}
+            aria-controls={panelId}
+            onClick={() => setExpanded(value => !value)}
+            className="w-full flex items-center justify-between gap-3 px-6 py-5 text-left font-semibold text-gray-900 text-[15px] rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7B4DA8]"
+          >
+            {initial ? "Edit Special Order" : "Manually Add Special Order"}
+            <ChevronDown size={18} aria-hidden="true" className={cn("transition-transform", expanded && "rotate-180")} />
+          </button>
+        </h3>
+      )}
+      <div id={panelId} hidden={collapsible && !expanded}>
+      <div className={cn("px-6 pb-5 border-b border-gray-100", !collapsible && "pt-5")}>
+        {!collapsible && <h3 className="font-semibold text-gray-900 text-[15px] mb-1">{initial ? "Edit Special Order" : "Manually Add Special Order"}</h3>}
         <p className="text-[13px] text-gray-400">Choose a product line first, then its type. The selling price is list price x the product line's multipliers, the same as NetSuite.</p>
         {prefill && !initial && (
           <div className="mt-3 flex items-start gap-2 px-4 py-3 bg-blue-50 border border-blue-200 rounded-xl text-[13px] text-blue-900" role="status" data-testid="text-vendor-prefill">
@@ -288,6 +306,7 @@ export default function SpecialOrderForm({ initial, prefill, onSubmit, onCancel,
           {lines.isLoading && <Loader2 size={14} className="animate-spin" />}
           {initial ? "Save Changes" : "Add to List"}
         </button>
+      </div>
       </div>
     </form>
     </>

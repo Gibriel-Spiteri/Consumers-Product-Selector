@@ -77,6 +77,7 @@ export default function SpecialOrderPage() {
       <div ref={formTop} className="scroll-mt-24" />
       <SpecialOrderForm
         key={formKey}
+        collapsible
         categoriesAboveForm={!activePick}
         prefill={activePick ? prefillFromPick(activePick, lines.data ?? []) : undefined}
         onCancel={() => {
