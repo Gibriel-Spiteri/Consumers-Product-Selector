@@ -1,7 +1,11 @@
 // The message protocol with the Consumers Quote Helper browser extension (browser-extension/consumers-quote-helper).
 // Customers add products on vendor websites; the extension hands them to this page as "picks". Everything that
-// arrives here is untrusted: it only pre-fills the Add Special Order form, and the rep confirms it.
-import type { SpecialOrderProductLine } from "@workspace/api-client-react";
+// arrives here is untrusted: it only fills in plain text fields (length-limited) of a special-order line, which the
+// rep checks and completes on the quote list before anything goes to NetSuite.
+// 2026-11-04: picks go straight onto the quote list (quoteInputFromPick). Was: they only pre-filled the Add Special
+// Order form through a Use button; that remains for picks whose vendor site has several product lines.
+import type { SpecialOrderDetails, SpecialOrderProductLine } from "@workspace/api-client-react";
+import type { SpecialOrderInput } from "@/context/quote-list-context";
 
 export const FROM_PAGE = "consumers-product-selector";
 export const FROM_EXTENSION = "consumers-quote-helper";
@@ -113,6 +117,96 @@ export function prefillFromPick(pick: VendorPick, lines: SpecialOrderProductLine
     quantity: pick.quantity,
     sourceUrl: pick.pageUrl,
   };
+}
+
+// ---- Picks go straight onto the quote list (Gib, 2026-11-04) ------------------------------------------------------
+
+export interface PickTypeOption {
+  id: string;
+  name: string;
+  requiresAttachment: boolean;
+}
+
+// Words, singular: "Pull-Down Kitchen Faucets" -> pull, down, kitchen, faucet.
+function words(s: string): string[] {
+  return s.toLowerCase().split(/[^a-z]+/).filter(w => w.length > 1).map(w => (w.length > 3 && w.endsWith("s") && !w.endsWith("ss") ? w.slice(0, -1) : w));
+}
+
+// The product line's special-order Type that fits the pick, from the product name (counts double) and the vendor's
+// address: "Single Handle Pull-Down Kitchen Faucet" on /kitchen/ -> KITCHEN FAUCET, "Modern Metal Pull" -> PULL.
+// No guess when two Types fit equally well (Elkay's "Undermount Sink": KITCHEN SINK or BATH SINK), and never an
+// order-form Type or MISCELLANEOUS; the rep chooses those.
+export function suggestType(pick: Pick<VendorPick, "name" | "pageUrl">, types: PickTypeOption[]): PickTypeOption | null {
+  let path = "";
+  try {
+    path = decodeURIComponent(new URL(pick.pageUrl).pathname);
+  } catch {
+    path = "";
+  }
+  const nameWords = new Set(words(pick.name));
+  const pathWords = new Set(words(path));
+  const scored = types
+    .filter(t => !t.requiresAttachment && !/^misc/i.test(t.name.trim()))
+    .map(t => {
+      const tw = [...new Set(words(t.name))];
+      const score = tw.reduce((s, w) => s + (nameWords.has(w) ? 2 : pathWords.has(w) ? 1 : 0), 0);
+      return { t, score };
+    })
+    .filter(s => s.score > 0)
+    .sort((a, b) => b.score - a.score);
+  if (scored.length === 0 || (scored.length > 1 && scored[1].score === scored[0].score)) return null;
+  return scored[0].t;
+}
+
+// What a pick added to the quote list remembers about where it came from.
+export interface VendorPickSource {
+  id: string;
+  pageUrl: string;
+  vendorDomain: string;
+  imageUrl: string;
+  priceMissing: boolean; // the vendor page showed no price; the rep enters the list price
+}
+
+// The quote-list line for a pick on a product line. Whatever the vendor page did not give (Type, Model, Color, list
+// price) stays blank for the rep to fill in on the quote list; missingDetails() lists it.
+export function quoteInputFromPick(pick: VendorPick, line: SpecialOrderProductLine, types: PickTypeOption[]): SpecialOrderInput {
+  const type = suggestType(pick, types);
+  return {
+    netsuiteId: line.netsuiteItemId,
+    sku: line.sku || null,
+    quantity: pick.quantity,
+    details: {
+      productLineId: line.id,
+      productLineName: line.name.trim(),
+      typeId: type?.id ?? "",
+      typeName: type?.name.trim() ?? "",
+      model: pick.model,
+      description: pick.name,
+      color: pick.color,
+      listPrice: pick.price ?? 0,
+    },
+    priceBasis: "retail",
+    vendorPick: {
+      id: pick.id,
+      pageUrl: pick.pageUrl,
+      vendorDomain: pick.vendorDomain,
+      imageUrl: pick.imageUrl,
+      priceMissing: pick.price == null,
+    },
+  };
+}
+
+// The details a special-order line still needs before it can go to an estimate (only picks can lack them).
+export function missingDetails(item: { specialOrder?: SpecialOrderDetails; vendorPick?: VendorPickSource }): string[] {
+  const so = item.specialOrder;
+  if (!so) return [];
+  const out: string[] = [];
+  if (!so.typeId) out.push("Type");
+  if (!so.model.trim()) out.push("Model");
+  if (!so.color.trim()) out.push("Color");
+  if (!so.description.trim()) out.push("Description");
+  if (item.vendorPick?.priceMissing) out.push("List price");
+  return out;
 }
 
 export function postToExtension(type: string, data: Record<string, unknown> = {}) {

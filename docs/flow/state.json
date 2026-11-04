@@ -218,28 +218,28 @@
           "col": "PS",
           "kind": "auto",
           "lane": "PS",
-          "label": "SPECIAL ORDER shows a count; picks listed",
-          "detail": "A blue count shows next to SPECIAL ORDER in the menu. The Special Order page lists them under Picked on vendor websites, with the vendor's picture, model, color, price, quantity and a link back to the page."
+          "label": "Pick lands on the Quote List, Type suggested",
+          "detail": "With the Product Selector open and signed in, each pick goes straight onto the Quote List as a special-order line: model, description, color, list price and quantity from the vendor page, the Type guessed from the product name, and a Picked on link to the vendor page. A pick whose site has several product lines (Foremost) waits on the Special Order page under Picked on vendor websites instead; Use fills in the form there."
         },
         {
           "id": "n_use",
-          "num": 12,
+          "num": 13,
           "row": 10,
           "col": "PS",
-          "kind": "action",
+          "kind": "decision",
           "lane": "PS",
-          "label": "Click Use on a pick",
-          "detail": "Use loads the pick into the Add Special Order form. The X next to it removes the pick instead."
+          "label": "Line shows an amber Needs ...?",
+          "detail": "When the vendor page did not show everything NetSuite needs (a Type the name does not settle, a Color, the list price), the line says what is missing, and the Quote List will not push until it is done."
         },
         {
           "id": "a_fill",
-          "num": 13,
+          "num": 14,
           "row": 11,
           "col": "PS",
-          "kind": "auto",
+          "kind": "action",
           "lane": "PS",
-          "label": "Form fills in: product line, model, description, color, list price",
-          "detail": "Quantity too. The product line is filled in when only one line uses that vendor's website; otherwise the note says which ones to pick from (for example FOREMOST BATH or FOREMOST T&S DOORS)."
+          "label": "Click Needs ...: the form opens with the pick",
+          "detail": "The Edit Special Order form opens with the product line, model, description, color and quantity filled in, and a link to the vendor page. The list price is blank when the page showed none."
         },
         {
           "id": "n_type",
@@ -248,18 +248,18 @@
           "col": "PS",
           "kind": "action",
           "lane": "PS",
-          "label": "Choose the Type, check the list price, click Add to List",
-          "detail": "Pick the Type for the product line. Check the List Price: a vendor site can show a sale price (Delta Outlet items, for example). Price As starts on Retail. Add to List puts it on the Quote List."
+          "label": "Fill in what is missing, check the list price, click Save Changes",
+          "detail": "Pick the Type if it is blank, type the Color or Model, and check the List Price: a vendor site can show a sale price (Delta Outlet items, for example). Price As starts on Retail."
         },
         {
           "id": "a_cleared",
-          "num": 14,
-          "row": 12,
+          "num": 12,
+          "row": 9,
           "col": "EX",
           "kind": "auto",
           "lane": "EX",
           "label": "Pick cleared from the helper",
-          "detail": "Once added, the pick leaves the helper's waiting list and the counts go down."
+          "detail": "As soon as it is on the Quote List, the pick leaves the helper's waiting list and the counts go down."
         },
         {
           "id": "n_search",
@@ -384,20 +384,13 @@
           "from": "n_use",
           "to": "a_fill",
           "mode": "down",
-          "label": "",
+          "label": "Yes",
           "opt": {}
         },
         {
           "from": "a_fill",
           "to": "n_type",
           "mode": "down",
-          "label": "",
-          "opt": {}
-        },
-        {
-          "from": "n_type",
-          "to": "a_cleared",
-          "mode": "side",
           "label": "",
           "opt": {}
         },
@@ -428,6 +421,24 @@
           "mode": "down",
           "label": "",
           "opt": {}
+        },
+        {
+          "from": "a_listed",
+          "to": "a_cleared",
+          "mode": "side",
+          "label": "",
+          "opt": {}
+        },
+        {
+          "from": "n_use",
+          "to": "n_search",
+          "mode": "chan",
+          "label": "No",
+          "opt": {
+            "exit": "right",
+            "enter": "right",
+            "x": "PS.r+16"
+          }
         }
       ]
     }
@@ -447,8 +458,8 @@
       "text": "Everything added on a PC lands in one waiting list. If two customers use the same PC, the rep has to tell their picks apart."
     },
     {
-      "title": "The Type is not suggested.",
-      "text": "The rep picks the special-order Type every time; the vendor's own category (Kitchen Faucets, Bath Sinks) is not used to suggest one."
+      "title": "The Type is only suggested when the name settles it.",
+      "text": "The Quote List guesses the Type from the product name and the vendor's address (KITCHEN FAUCET, TOILET, KNOBS, SHOWER DOOR). When two Types fit equally, like Elkay's KITCHEN SINK or BATH SINK, or the right one is an order-form Type, the rep picks it."
     },
     {
       "title": "The helper is still loaded by hand on each PC.",

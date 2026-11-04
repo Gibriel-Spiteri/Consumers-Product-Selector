@@ -17,7 +17,12 @@ export default function VendorPicksPanel({ activeId, onUse }: { activeId: string
   return (
     <section aria-label="Picked on vendor websites" className="mb-6 rounded-2xl border border-blue-200 bg-blue-50/60 p-4" data-testid="panel-vendor-picks">
       <h2 className="text-sm font-semibold text-gray-800 mb-1">Picked on vendor websites ({picks.length})</h2>
-      <p className="text-[12px] text-gray-500 mb-3">Use a pick to fill in the form below, choose its Type, check the list price, then add it to the quote list.</p>
+      {/* <p className="text-[12px] text-gray-500 mb-3">Use a pick to fill in the form below, choose its Type, check the list price, then add it to the quote list.</p> */}
+      <p className="text-[12px] text-gray-500 mb-3">
+        Picks go straight to the quote list when their vendor site belongs to one product line. These could not: their
+        site has several product lines, or none. Use a pick to fill in the form below, choose the product line and Type,
+        check the list price, then add it to the quote list.
+      </p>
       <ul className="grid gap-2">
         {picks.map(pick => (
           <li key={pick.id} className={`flex items-center gap-3 rounded-xl border bg-white px-3 py-2 ${activeId === pick.id ? "border-blue-400 ring-1 ring-blue-300" : "border-gray-200"}`}>

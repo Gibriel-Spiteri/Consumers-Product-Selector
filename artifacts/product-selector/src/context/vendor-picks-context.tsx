@@ -1,7 +1,13 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
-import { useGetSpecialOrderProductLines, getGetSpecialOrderProductLinesQueryKey } from "@workspace/api-client-react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  useGetSpecialOrderProductLines, getGetSpecialOrderProductLinesQueryKey, getSpecialOrderTypes, getGetSpecialOrderTypesQueryKey,
+} from "@workspace/api-client-react";
 import { specialOrderLookupRetry } from "@/lib/special-order-query";
-import { FROM_EXTENSION, parsePicksMessage, postToExtension, vendorSites, type VendorPick } from "@/lib/vendor-picks";
+import { useQuoteList } from "@/context/quote-list-context";
+import {
+  FROM_EXTENSION, parsePicksMessage, postToExtension, productLinesForPick, quoteInputFromPick, vendorSites, type VendorPick,
+} from "@/lib/vendor-picks";
 import { cleanVersion } from "@/lib/quote-helper";
 
 interface VendorPicksContextType {
@@ -55,7 +61,38 @@ export function VendorPicksProvider({ children }: { children: ReactNode }) {
     postToExtension("pick-done", { id });
   }, []);
 
-  return <VendorPicksContext.Provider value={{ extensionReady, extensionVersion, picks, done }}>{children}</VendorPicksContext.Provider>;
+  // 2026-11-04 (Gib): picks go straight onto the quote list, with the Type suggested from the product name. A pick
+  // whose vendor site has several product lines (Foremost) or none waits on the Special Order page for the rep.
+  const { addSpecialOrder } = useQuoteList();
+  const queryClient = useQueryClient();
+  const taken = useRef(new Set<string>());
+  useEffect(() => {
+    const all = lines.data;
+    if (!all?.length) return;
+    for (const pick of picks) {
+      if (taken.current.has(pick.id)) continue;
+      const candidates = productLinesForPick(pick, all);
+      if (candidates.length !== 1) continue;
+      taken.current.add(pick.id);
+      const line = candidates[0];
+      queryClient
+        .fetchQuery({
+          queryKey: getGetSpecialOrderTypesQueryKey(line.id),
+          queryFn: () => getSpecialOrderTypes(line.id),
+          staleTime: 5 * 60 * 1000,
+        })
+        .catch(() => []) // no Types right now: the line is added without one and the rep picks it
+        .then(types => {
+          addSpecialOrder(quoteInputFromPick(pick, line, types ?? []));
+          done(pick.id);
+        });
+    }
+  }, [picks, lines.data, addSpecialOrder, done, queryClient]);
+  const waiting = picks.filter(p => !taken.current.has(p.id));
+
+  // return <VendorPicksContext.Provider value={{ extensionReady, extensionVersion, picks, done }}>{children}</VendorPicksContext.Provider>;
+  // Only the picks the rep still has to place (the ones going onto the quote list are not shown or counted).
+  return <VendorPicksContext.Provider value={{ extensionReady, extensionVersion, picks: waiting, done }}>{children}</VendorPicksContext.Provider>;
 }
 
 export function useVendorPicks() {
