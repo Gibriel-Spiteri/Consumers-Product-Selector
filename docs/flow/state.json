@@ -5,7 +5,7 @@
     "eyebrow": "Consumers Kitchen & Bath · Product Selector guide",
     "title": "From a product on a vendor's website to a priced special-order line on the estimate",
     "lede": "Where each step happens: on the vendor's own website with the customer, in the Consumers Quote Helper browser extension (Edge or Chrome), in the Product Selector on the sales PC, and in NetSuite. Click any numbered box to read its exact buttons.",
-    "meta": "Mapped from the code on 11/4/2026: Product Selector Special Order page, Quote List and the Consumers Quote Helper extension 1.2.0."
+    "meta": "Mapped from the code on 11/4/2026: Product Selector Special Order page, Quote List and the Consumers Quote Helper extension 1.3.0."
   },
   "lanes": {
     "VS": {
@@ -198,8 +198,8 @@
           "col": "VS",
           "kind": "action",
           "lane": "VS",
-          "label": "Pick the option and quantity, click Add to quote",
-          "detail": "Choose the Option (color or finish) if there are several, check or type Model, Color / finish, Price on this site and Quantity, then click Add to quote. Some sites show no price (Elkay, Franke, Richelieu, Strategic Brands); the rep enters the list price."
+          "label": "Check Type, model, finish, collection, quantity; click Add to quote",
+          "detail": "Choose the Option (color or finish) if there are several; picking another finish on the page refreshes the panel. Check the Type (the best fit is preselected), Model, Color / finish, Collection, Description, Price on this site and Quantity, then click Add to quote. Some sites show no price (Elkay, Franke, Richelieu, Strategic Brands); the rep enters the list price."
         },
         {
           "id": "a_wait",
@@ -472,5 +472,5 @@
     "When a vendor's website changes, update the product line's website on its PRD page in NetSuite; the helper follows the next time the Product Selector is open.",
     "A vendor site can show a sale price. The list price is what counts, so always check it before Add to List."
   ],
-  "footer": "Vendor site special orders · Mapped from the code (Product Selector Special Order page and Quote List, Consumers Quote Helper extension 1.2.0) on 11/4/2026."
+  "footer": "Vendor site special orders · Mapped from the code (Product Selector Special Order page and Quote List, Consumers Quote Helper extension 1.3.0) on 11/4/2026."
 }

@@ -8,6 +8,9 @@ Lets a customer pick products on a vendor's own website (Delta, Kohler, Brizo, .
 2. **Add a product.** On every page of a vendor site the extension shows an **Add to Consumers Quote** button.
    - On a product page it fills in the model, name, color and price, and each color or finish as an option (for example Kohler's 6 Cairn colors). See "What it reads" below.
    - On a page with nothing to read, the panel opens with the page's name and a blank Model, and says so; the customer types the model and color shown on the page.
+   - The panel has the special-order fields (1.3.0): **Type** (the product line's NetSuite Types, the best fit preselected from the product name and the vendor's breadcrumbs), **Model**, **Color / finish**, **Collection**, **Description**, **Price on this site** and **Quantity**. A vendor site with several product lines (Foremost) also asks for the **Product line**. The Types come from the Product Selector, so open it once after installing; until then the Type is left to the rep.
+   - The panel follows the page: picking another finish or color while it is open (Delta changes the address to the new model) refreshes the model, finish and price and keeps the quantity.
+   - On the Quote List, Collection and Description become NetSuite's Coll/Desc ("Broderick Touch2O Technology Kitchen Faucet..."), the way reps fill it.
    - The customer picks the option, sets the quantity and clicks **Add to quote**.
 3. **It lands on the Quote List.** When the Product Selector is open (signed in) in that browser, each pick goes straight onto the Quote List as a special-order line, and leaves the extension.
    - Model, description, color, list price and quantity come from the vendor page, with a **Picked on** link back to it. The Type is guessed from the product name and the vendor's address (KITCHEN FAUCET, TOILET, KNOBS, SHOWER DOOR); on a tie, or for order-form Types, it is left for the rep.

@@ -23,7 +23,29 @@ const MAX_PICKS = 50;
 const { registrableDomain, text, number } = globalThis.ConsumersExtract;
 
 async function state() {
-  return chrome.storage.local.get({ vendorDomains: SEED_DOMAINS, picks: [] });
+  return chrome.storage.local.get({ vendorDomains: SEED_DOMAINS, picks: [], siteLines: {} });
+}
+
+const nsId = v => (typeof v === "string" && /^[1-9]\d{0,17}$/.test(v) ? v : "");
+
+// Each vendor domain's product lines and their special-order Types, from the Product Selector (since 1.3.0), so the
+// panel can offer the Type. Only ids and plain, length-limited names are kept.
+function siteLinesFrom(sites) {
+  const out = {};
+  for (const s of sites) {
+    let domain = "";
+    try {
+      const u = new URL(String(s.websiteUrl || ""));
+      domain = /^https?:$/.test(u.protocol) ? registrableDomain(u.hostname) : "";
+    } catch {}
+    const id = nsId(s.productLineId);
+    if (!domain || !id) continue;
+    const types = (Array.isArray(s.types) ? s.types : []).slice(0, 200)
+      .map(t => ({ id: nsId(t && t.id), name: text(t && t.name), requiresAttachment: !!(t && t.requiresAttachment) }))
+      .filter(t => t.id && t.name);
+    (out[domain] = out[domain] || []).push({ id, name: text(s.productLineName), types });
+  }
+  return out;
 }
 
 async function registerVendorScripts(domains) {
@@ -90,12 +112,19 @@ function cleanPick(raw, sender) {
     currency: text(raw.currency) || "USD",
     imageUrl: image,
     quantity: qty >= 1 && qty <= 1000000 ? qty : 1,
+    // 1.3.0: what the customer chose or the page showed for the special-order fields.
+    productLineId: nsId(raw.productLineId),
+    typeId: nsId(raw.typeId),
+    typeName: text(raw.typeName),
+    collection: text(raw.collection),
+    description: text(raw.description),
+    category: text(raw.category),
   };
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
-    const { vendorDomains, picks } = await state();
+    const { vendorDomains, picks, siteLines } = await state();
     switch (message && message.type) {
       case "vendor-sites": {
         // The Product Selector's current product lines; their websites decide where vendor.js runs.
@@ -109,7 +138,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           }
         }).filter(Boolean))].sort();
         if (domains.length === 0) return sendResponse({ ok: false }); // never wipe the list on an empty answer
-        await chrome.storage.local.set({ vendorDomains: domains });
+        // await chrome.storage.local.set({ vendorDomains: domains });
+        await chrome.storage.local.set({ vendorDomains: domains, siteLines: siteLinesFrom(message.sites.slice(0, 1000)) });
         await registerVendorScripts(domains);
         return sendResponse({ ok: true, domains: domains.length });
       }
@@ -135,6 +165,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
       case "pick-count":
         return sendResponse({ count: picks.length });
+      case "site-info": {
+        // The product lines (with their Types) of the vendor site this page is on.
+        const host = (() => { try { return new URL(sender.url || sender.tab.url).hostname; } catch { return ""; } })();
+        return sendResponse({ lines: siteLines[registrableDomain(host)] || [] });
+      }
       case "popup-state":
         return sendResponse({ vendorDomains, picks });
       case "clear-picks": {

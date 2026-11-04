@@ -17,7 +17,7 @@ test("a single Product (Delta) gives model, color, price and image", () => {
   assert.equal(r.items.length, 1);
   assert.deepEqual(r.items[0], {
     name: "Single Handle Pull-Down Kitchen Faucet", model: "19867LF-CZ", color: "Champagne Bronze", price: 449,
-    currency: "USD", priceIsList: false, imageUrl: "https://www.deltafaucet.com/img/19867LF-CZ.png",
+    currency: "USD", priceIsList: false, imageUrl: "https://www.deltafaucet.com/img/19867LF-CZ.png", collection: "",
   });
 });
 
@@ -169,6 +169,47 @@ test("the blank item for pages with nothing to read keeps the page's name", () =
   assert.equal(blank.model, "");
   assert.equal(blank.imageUrl, "https://static.wixstatic.com/a.jpg");
   assert.equal(X.blankItem({}, { heading: "Horizon In-line" }, "Horizon | Fleurco").name, "Horizon In-line");
+});
+
+// 1.3.0: the finish the customer switched to, and the special-order fields (Type, Collection, Description).
+test("Delta: after a finish change the address and the live page win over the first finish's product data", () => {
+  const blocks = [JSON.stringify({ "@type": "Product", name: "Touch<sub>2</sub>O® Technology Kitchen Faucet with Touchless Technology",
+    sku: "9190TL-DST", mpn: "9190TL-DST", category: "Pull-Down", offers: { price: "999.00", priceCurrency: "USD" } })];
+  const first = X.extract(blocks, {}, "https://www.deltafaucet.com/kitchen/product/9190TL-DST.html", { heading: "", text: "", microdata: null });
+  assert.deepEqual([first.items[0].name, first.items[0].model, first.items[0].price], ["Touch2O® Technology Kitchen Faucet with Touchless Technology", "9190TL-DST", 999]);
+  const page = { heading: "", text: "", microdata: { "@type": "Product", offers: { price: "1242.00" } } };
+  const after = X.extract(blocks, {}, "https://www.deltafaucet.com/kitchen/product/9190TL-PN-DST.html", page);
+  assert.deepEqual([after.items[0].model, after.items[0].price, after.items[0].color], ["9190TL-PN-DST", 1242, ""]);
+  // An unrelated address is not a finish change.
+  assert.equal(X.extract(blocks, {}, "https://www.deltafaucet.com/kitchen/product/B1234-XX.html", page).items[0].model, "9190TL-DST");
+});
+
+test("a price with its cents in superscript reads as dollars and cents", () => {
+  assert.equal(X.printedPrice("1,24200"), 1242);
+  assert.equal(X.printedPrice("2,878.00"), 2878);
+  assert.equal(X.printedPrice("445"), 445);
+});
+
+test("collection: a short heading above the name, or the trademarked first word of the name", () => {
+  const brizo = X.extract([], { "og:type": "productPage", "og:title": "SENSORI® THERMOSTATIC VALVE TRIM" }, "https://www.brizo.com/bath/product/T66T030-PC",
+    { heading: "Virage®", text: "Virage® SENSORI® THERMOSTATIC VALVE TRIM T66T030-PC $952.00" });
+  assert.equal(brizo.items[0].collection, "Virage");
+  const kohler = X.extract([JSON.stringify({ "@type": "Product", name: "Cairn® 27-1/2\" undermount single-bowl kitchen sink", sku: "K-28000-CM6" })], {}, "https://www.kohler.com/x");
+  assert.equal(kohler.items[0].collection, "Cairn");
+  const plain = X.extract([JSON.stringify({ "@type": "Product", name: "Barrow Knob 1 1/4 Inch", sku: "TK1050BSN" })], {}, "https://www.topknobs.com/x");
+  assert.equal(plain.items[0].collection, "");
+});
+
+test("breadcrumbs and the Type guess the panel preselects", () => {
+  const crumbs = JSON.stringify({ "@type": "BreadcrumbList", itemListElement: [{ name: "Home" }, { name: "Kitchen" }, { name: "Sink Faucets" }, { name: "Pull-Down" }] });
+  const r = X.extract([crumbs, JSON.stringify({ "@type": "Product", name: "Touch2O Technology Kitchen Faucet", sku: "9190TL-DST" })], {}, "https://www.deltafaucet.com/kitchen/product/9190TL-DST.html");
+  assert.equal(r.category, "Kitchen / Sink Faucets / Pull-Down");
+  assert.equal(X.breadcrumbs([], { crumbs: ["Kitchen", "Sink Faucets", "Pull-Down", "Kitchen"] }), "Kitchen / Sink Faucets / Pull-Down");
+  const delta = ["BATH FAUCET", "KITCHEN FAUCET", "KITCHEN SINK", "MISCELLANEOUS", "ROUGH"].map((name, i) => ({ id: String(i + 1), name, requiresAttachment: false }));
+  assert.equal(X.suggestType({ name: "Touch2O Technology Kitchen Faucet", pageUrl: "https://www.deltafaucet.com/kitchen/product/9190TL-DST.html", category: r.category }, delta).name, "KITCHEN FAUCET");
+  assert.equal(X.suggestType({ name: "Undermount Sink", pageUrl: "https://x.test/sinks/a1", category: "" }, [
+    { id: "1", name: "KITCHEN SINK", requiresAttachment: false }, { id: "2", name: "BATH SINK", requiresAttachment: false }]), null);
+  assert.equal(X.suggestType({ name: "Soaker tub", pageUrl: "https://x.test/", category: "" }, [{ id: "1", name: "SOAKER", requiresAttachment: true }]), null);
 });
 
 test("vendor domains: subdomains count as the main domain", () => {

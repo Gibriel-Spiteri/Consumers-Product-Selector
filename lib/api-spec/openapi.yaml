@@ -206,6 +206,11 @@ components:
         crdMultiplier:
           type: number
           description: Product line CRD price multiplier (custrecord_pl_price_mult_crd); blank or zero is sent as 1
+        types:
+          type: array
+          description: The product line's active special-order Types (for the Consumers Quote Helper)
+          items:
+            $ref: "#/components/schemas/SpecialOrderType"
     SpecialOrderType:
       type: object
       required: [id, name, requiresAttachment]

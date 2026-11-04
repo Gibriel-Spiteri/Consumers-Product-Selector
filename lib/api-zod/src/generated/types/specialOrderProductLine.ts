@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { SpecialOrderProductLineCategoriesItem } from "./specialOrderProductLineCategoriesItem";
+import type { SpecialOrderType } from "./specialOrderType";
 
 export interface SpecialOrderProductLine {
   id: string;
@@ -23,4 +24,6 @@ export interface SpecialOrderProductLine {
   retailMultiplier: number;
   /** Product line CRD price multiplier (custrecord_pl_price_mult_crd); blank or zero is sent as 1 */
   crdMultiplier: number;
+  /** The product line's active special-order Types (for the Consumers Quote Helper) */
+  types?: SpecialOrderType[];
 }
