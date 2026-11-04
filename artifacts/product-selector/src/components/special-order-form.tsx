@@ -37,10 +37,11 @@ function FieldError({ id, msg }: { id: string; msg?: string }) {
   return <p id={id} role="alert" className="mt-1 text-[12px] text-red-600">{msg}</p>;
 }
 
-export default function SpecialOrderForm({ initial, onSubmit, onCancel }: {
+export default function SpecialOrderForm({ initial, onSubmit, onCancel, categoriesAboveForm = false }: {
   initial?: QuoteItem;
   onSubmit: (input: SpecialOrderInput) => void;
   onCancel: () => void;
+  categoriesAboveForm?: boolean;
 }) {
   const so = initial?.specialOrder;
   const [selectedItemId, setSelectedItemId] = useState(initial?.netsuiteId ?? "");
@@ -134,15 +135,8 @@ export default function SpecialOrderForm({ initial, onSubmit, onCancel }: {
 
   const aria = (k: keyof Errors) => ({ "aria-invalid": !!errors[k], "aria-describedby": errors[k] ? `so-err-${k}` : undefined });
 
-  return (
-    <form onSubmit={submit} noValidate className="bg-white rounded-2xl border border-gray-100 shadow-sm animate-in fade-in slide-in-from-top-2 duration-200" data-testid="form-special-order" aria-label={initial ? "Edit special order" : "Add special order"}>
-      <div className="px-6 py-5 border-b border-gray-100">
-        <h3 className="font-semibold text-gray-900 text-[15px] mb-1">{initial ? "Edit Special Order" : "Add Special Order"}</h3>
-        <p className="text-[13px] text-gray-400">Choose a product line first, then its type. The selling price is list price x the product line's multipliers, the same as NetSuite.</p>
-      </div>
-
-      {categories.length > 0 && (
-        <div className="px-6 py-4 border-b border-gray-100">
+  const categoryFilters = categories.length > 0 && (
+        <div className={categoriesAboveForm ? "mb-6" : "px-6 py-4 border-b border-gray-100"}>
           <div className={labelCls}>Categories</div>
           <div className="flex flex-wrap gap-2" role="group" aria-label="Special-order categories">
             {[{ id: "", name: "All" }, ...categories].map(category => (
@@ -163,7 +157,17 @@ export default function SpecialOrderForm({ initial, onSubmit, onCancel }: {
             ))}
           </div>
         </div>
-      )}
+      );
+
+  return (
+    <>
+      {categoriesAboveForm && categoryFilters}
+      <form onSubmit={submit} noValidate className="bg-white rounded-2xl border border-gray-100 shadow-sm animate-in fade-in slide-in-from-top-2 duration-200" data-testid="form-special-order" aria-label={initial ? "Edit special order" : "Add special order"}>
+      <div className="px-6 py-5 border-b border-gray-100">
+        <h3 className="font-semibold text-gray-900 text-[15px] mb-1">{initial ? "Edit Special Order" : "Add Special Order"}</h3>
+        <p className="text-[13px] text-gray-400">Choose a product line first, then its type. The selling price is list price x the product line's multipliers, the same as NetSuite.</p>
+      </div>
+      {!categoriesAboveForm && categoryFilters}
       <div className="px-6 py-5 grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label htmlFor="so-line" className={labelCls}>Product Line</label>
@@ -285,5 +289,6 @@ export default function SpecialOrderForm({ initial, onSubmit, onCancel }: {
         </button>
       </div>
     </form>
+    </>
   );
 }

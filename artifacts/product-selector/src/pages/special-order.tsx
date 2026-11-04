@@ -36,6 +36,7 @@ export default function SpecialOrderPage() {
       )}
       <SpecialOrderForm
         key={formKey}
+        categoriesAboveForm
         onCancel={() => navigate("/")}
         onSubmit={input => {
           addSpecialOrder(input);
