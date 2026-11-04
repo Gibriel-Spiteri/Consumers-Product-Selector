@@ -37,7 +37,7 @@ export default function SpecialOrderCategories({ categories, selected, onSelect 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
         {Array.from(groups).sort(([a], [b]) => a.localeCompare(b)).map(([group, entries]) => (
           <fieldset key={group} className="min-w-0 rounded-xl border border-gray-200 bg-gray-50/70 p-3">
-            <legend className="px-1 text-[11px] font-bold uppercase tracking-widest text-gray-500">{group}</legend>
+            <legend className="px-1 text-[13px] font-bold uppercase tracking-widest text-gray-500">{group}</legend>
             <div className="space-y-1">
               {entries.sort((a, b) => a.label.localeCompare(b.label)).map(category => {
                 const active = selected === category.id;

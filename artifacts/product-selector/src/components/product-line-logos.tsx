@@ -55,7 +55,7 @@ export default function ProductLineLogos({ lines }: { lines: SpecialOrderProduct
   const productLines = Array.from(new Map(lines.map(line => [line.id, line])).values());
   return (
     <section aria-label="Product lines in selected category" className="mb-6">
-      <h2 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Product Lines</h2>
+      <h2 className="text-[15px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Product Lines</h2>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-3">
         {productLines.map(line => <ProductLineLogo key={line.id} line={line} />)}
       </div>
