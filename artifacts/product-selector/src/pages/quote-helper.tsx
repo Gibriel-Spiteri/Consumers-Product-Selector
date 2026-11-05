@@ -94,10 +94,13 @@ export default function QuoteHelperPage() {
         <Puzzle size={24} className="text-[#7B4DA8]" />
         Consumers Quote Helper
       </h1>
+      {/* 2026-11-05: picks go straight onto the Quote List since PR #11. Was: "...and the items land on the Special Order
+          page under Picked on vendor websites, ready to add to the quote list." */}
       <p className="text-sm text-gray-600 mb-6">
-        A Microsoft Edge and Google Chrome extension for showroom PCs. Customers pick products on a vendor's own website
-        and the items land on the <Link href="/special-order" className="underline">Special Order</Link> page under
-        <b> Picked on vendor websites</b>, ready to add to the quote list.
+        A Microsoft Edge and Google Chrome extension for showroom PCs. Customers pick products on a vendor's own website,
+        and the items go straight onto the <Link href="/list" className="underline">Quote List</Link> as special orders,
+        with the Type suggested, as soon as this Product Selector is open in the same browser. A line the vendor page
+        left incomplete is marked <b>Needs ...</b> for you to finish before pushing it to an estimate.
       </p>
 
       <section aria-label="Quote Helper in this browser" className="mb-6" data-testid="quote-helper-status">
@@ -167,9 +170,15 @@ export default function QuoteHelperPage() {
             When you load it, the browser warns that the extension can read and change data on websites. It only runs on
             the special-order vendor sites and on this Product Selector.
           </p>
-          <p>
+          {/* <p>
             Picks stay in the browser where they were made until you use them on the Special Order page. Nothing goes to
             NetSuite until you add the item and push the quote list as usual.
+          </p> */}
+          <p>
+            Picks wait in the browser where they were made until this Product Selector is open there, then move to the
+            Quote List. A pick from a vendor site with several product lines waits on the{" "}
+            <Link href="/special-order" className="underline">Special Order</Link> page instead, for you to choose the
+            line. Nothing goes to NetSuite until you push the quote list as usual.
           </p>
         </div>
       </section>
