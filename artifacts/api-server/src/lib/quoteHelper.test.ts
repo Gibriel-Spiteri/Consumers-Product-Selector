@@ -50,7 +50,7 @@ test("the Quote Helper zip holds every extension file under consumers-quote-help
   assert.equal(pkg.version, manifest.version);
   assert.equal(pkg.fileName, `consumers-quote-helper-${manifest.version}.zip`);
   const files = readZip(pkg.zip);
-  for (const rel of ["manifest.json", "background.js", "extract.js", "vendor.js", "app.js", "popup.html", "popup.js", "icons/icon128.png"]) {
+  for (const rel of ["manifest.json", "background.js", "extract.js", "seed-sites.js", "vendor.js", "app.js", "popup.html", "popup.js", "icons/icon128.png"]) {
     const inZip = files.get(`consumers-quote-helper/${rel}`);
     assert.ok(inZip, `${rel} in the zip`);
     assert.ok(inZip!.equals(fs.readFileSync(path.join(dir!, rel))), `${rel} unchanged`);

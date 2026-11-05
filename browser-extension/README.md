@@ -1,14 +1,16 @@
-# Consumers Quote Helper (Edge and Chrome extension)
+# Consumers QuickAdd (Edge and Chrome extension)
+
+Called Consumers Quote Helper until 1.5.0. The folder, the zip and the Product Selector page address keep the old name (`consumers-quote-helper`, `/quote-helper`), so an update still extracts over the folder the browser already loads.
 
 Lets a customer pick products on a vendor's own website (Delta, Kohler, Brizo, ...) and sends them to the Consumers Product Selector, where the sales rep turns each one into a special order on the quote list.
 
 ## How it works
 
 1. **Open a vendor site.** In the Product Selector, go to **Special Order** and pick a category. Then click a product line card ("Shop vendor site"); it opens the vendor's website, as the PRD page links it (`custrecord_pl_prd_website`), in a new tab.
-2. **Add a product.** On every page of a vendor site the extension shows an **Add to Consumers Quote** button.
+2. **Add a product.** On every page of a vendor site the extension shows an **Add to CPS Quote List** button (1.5.0; was Add to Consumers Quote). The panel header asks the customer to confirm all fields are correct before adding.
    - On a product page it fills in the model, name, color and price, and each color or finish as an option (for example Kohler's 6 Cairn colors). See "What it reads" below.
    - On a page with nothing to read, the panel opens with the page's name and a blank Model, and says so; the customer types the model and color shown on the page.
-   - The panel has the special-order fields (1.3.0): **Type** (the product line's NetSuite Types, the best fit preselected from the product name and the vendor's breadcrumbs), **Model**, **Color / finish**, **Collection / Description** (one field, as NetSuite's Coll/Desc: "Altado Two Handle Widespread Bathroom Faucet"), **Price on this site** and **Quantity**. A vendor site with several product lines (Foremost) also asks for the **Product line**. The Types come from the Product Selector, so open it once after installing; until then the Type is left to the rep.
+   - The panel has the special-order fields (1.3.0): **Type** (the product line's NetSuite Types, the best fit preselected from the product name and the vendor's breadcrumbs), **Model**, **Color / finish**, **Collection / Description** (one field, as NetSuite's Coll/Desc: "Altado Two Handle Widespread Bathroom Faucet"), **Price on this site** and **Quantity**. A vendor site with several product lines (Foremost) also asks for the **Product line**. The Types come from the Product Selector; since 1.5.0 the extension also carries the PROD list (`seed-sites.js`, from 11/4/2026), so the Type shows before the Product Selector has been opened in that browser.
    - The panel follows the page the same way on every site (1.4.0): picking another finish or color while it is open refreshes the model, finish and price and keeps the quantity. Since 1.4.2 the panel stays open, greyed out with an "Updating..." spinner, from the moment the page changes until the new values are in. Delta (the shown MODEL#) and Kohler (the shown SKU) have their own rules; an Option list appears only when a page does not say which color is chosen.
    - When a page gives no color, a finish at the end of the product name is used ("128mm Austin Pull - Satin Nickel", "...Brushed Satin Nickel"). Strategic Brands' collection comes from its "parts in this collection" link.
    - Collection / Description goes to NetSuite's Coll/Desc as is. It starts as the collection, then the product name, the way reps type it; the collection is left out when the name already has it.
@@ -65,7 +67,7 @@ When a vendor redesigns its site, open one of its product pages and check the pa
 
 ## Staff download (Product Selector)
 
-Signed-in staff get it from the Product Selector: click your name (top right) and choose **Quote Helper**, or the **Get the Quote Helper** link on the Special Order page.
+Signed-in staff get it from the Product Selector: click your name (top right) and choose **QuickAdd**, or the **Get Consumers QuickAdd** link on the Special Order page.
 - The page says whether this browser has the extension and whether it is out of date, has a **Download** button and the install and update steps for Edge and Chrome.
 - The API server zips `browser-extension/consumers-quote-helper` on request (`GET /api/quote-helper/download`, signed-in employees only; `GET /api/quote-helper` gives the version). So a merged change to the extension reaches staff with the next Republish of the Repl; bump `version` in `manifest.json` so the page tells older installs to update.
 
@@ -77,7 +79,7 @@ You need the `consumers-quote-helper` folder (from the staff download, from this
 1. Go to `edge://extensions`.
 2. Turn on **Developer mode** (left side).
 3. Click **Load unpacked** and choose the `consumers-quote-helper` folder.
-4. Optional: click the puzzle icon in the toolbar and pin **Consumers Quote Helper**.
+4. Optional: click the puzzle icon in the toolbar and pin **Consumers QuickAdd**.
 
 **Google Chrome**
 1. Go to `chrome://extensions`.
@@ -100,9 +102,10 @@ After the first install, open the Product Selector once (signed in), so the exte
 | File | What it does |
 |---|---|
 | `manifest.json` | Manifest V3 (Chrome 111+ / Edge 111+) |
+| `seed-sites.js` | The special-order product lines and their Types from PROD (11/4/2026), used until the Product Selector sends the current ones (1.5.0) |
 | `background.js` | Holds picks, keeps the vendor domain list, runs `vendor.js` only on those domains |
 | `extract.js` | Reads a page's product data (JSON-LD, microdata, Open Graph, then the text around the heading); pure, unit tested |
-| `vendor.js` | The "Add to Consumers Quote" button and panel on vendor pages (shadow DOM, house colors) |
+| `vendor.js` | The "Add to CPS Quote List" button and panel on vendor pages (shadow DOM, house colors) |
 | `app.js` | Bridge on the Product Selector's pages: passes picks and the vendor list via `window.postMessage` |
 | `popup.html` / `popup.js` | Toolbar popup: items waiting and the vendor sites |
 | `icons/` | The Product Selector's favicon (the orange shopping bag), sized by `make-icons.py` (Pillow); rerun it when the favicon changes. `make-icons.cjs` drew the 1.0 navy icons and is kept for reference. |

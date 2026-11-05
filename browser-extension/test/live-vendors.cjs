@@ -1,4 +1,4 @@
-// Live check of the Consumers Quote Helper on the real vendor websites, with the real extension loaded in a
+// Live check of Consumers QuickAdd (Consumers Quote Helper until 1.5.0) on the real vendor websites, with the real extension loaded in a
 // throwaway Chromium profile. It opens one product page per vendor, reads the panel, changes the finish where the
 // site allows it (Delta) or walks a configurator (Fleurco), adds picks to the extension's own storage, and checks the
 // hand-off to the Product Selector's page. Read-only for the vendors and NetSuite: nothing is ordered, sent or saved
@@ -139,7 +139,35 @@ async function readPanel(page) {
   try {
     const sw = ctx.serviceWorkers()[0] || await ctx.waitForEvent("serviceworker", { timeout: 15000 });
     const version = await sw.evaluate(() => chrome.runtime.getManifest().version);
-    console.log(`Consumers Quote Helper ${version}, ${vendors.length} vendor page(s)\n`);
+    console.log(`Consumers QuickAdd ${version}, ${vendors.length} vendor page(s)\n`);
+
+    // 1.5.0 (Gib 11/5, "still missing Type"): before any Product Selector tab has sent the vendor sites, the bundled
+    // PROD list (seed-sites.js) still gives the panel its Types. Also the 1.5.0 button and header wording.
+    {
+      const first = await ctx.newPage();
+      try {
+        await first.goto(VENDORS.find(v => v.key === "delta").url, { waitUntil: "domcontentloaded", timeout: 60000 });
+        await first.waitForTimeout(4000);
+        const fab = first.locator("[data-consumers-quote-helper]").locator(".fab");
+        await fab.waitFor({ state: "visible", timeout: 20000 });
+        const fabText = (await fab.innerText()).trim();
+        await fab.click();
+        const p = first.locator("[data-consumers-quote-helper]").locator(".panel");
+        await p.waitFor({ state: "visible", timeout: 10000 });
+        await first.waitForTimeout(500);
+        const typeShown = await p.locator(".type-wrap").isVisible();
+        const type = await p.locator(".type").evaluate(s => (s.value && s.selectedOptions[0] ? s.selectedOptions[0].textContent : ""));
+        const head = (await p.locator(".head b").innerText()).trim(), sub = (await p.locator(".head small").innerText()).trim();
+        const wording = fabText === "Add to CPS Quote List" && head === "Add to CPS Quote List" && sub === "Confirm all fields are correct before adding";
+        record("seed", typeShown && type === "KITCHEN FAUCET", `before the Product Selector is opened: Type ${typeShown ? type || "(none chosen)" : "hidden"}`);
+        record("wording", wording, `button "${fabText}", header "${head}" / "${sub}"`);
+        await first.screenshot({ path: path.join(SHOTS, "seed-delta.png") });
+      } catch (e) {
+        record("seed", false, `error: ${String(e.message || e).split("\n")[0]}`);
+      } finally {
+        await first.close();
+      }
+    }
 
     // The Product Selector's page hands the extension the vendor sites and their Types, as the signed-in app does.
     const app = await ctx.newPage();

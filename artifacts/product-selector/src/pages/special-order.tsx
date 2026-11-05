@@ -11,7 +11,8 @@ import { prefillFromPick, type VendorPick } from "@/lib/vendor-picks";
 import { quoteHelperStatus } from "@/lib/quote-helper";
 import { useQuoteHelperInfo } from "@/hooks/use-quote-helper-info";
 
-// Points to the Quote Helper download when this browser does not have the extension, or has an older version.
+// Points to the Consumers QuickAdd (was Quote Helper) download when this browser does not have the extension, or has
+// an older version.
 function QuoteHelperPrompt() {
   const { extensionReady, extensionVersion } = useVendorPicks();
   const info = useQuoteHelperInfo();
@@ -24,7 +25,8 @@ function QuoteHelperPrompt() {
       data-testid="link-get-quote-helper"
     >
       <Puzzle size={13} className="text-[#7B4DA8]" />
-      {status === "outdated" ? `Update the Quote Helper to ${info.data?.version}` : "Get the Quote Helper for vendor websites"}
+      {/* {status === "outdated" ? `Update the Quote Helper to ${info.data?.version}` : "Get the Quote Helper for vendor websites"} */}
+      {status === "outdated" ? `Update Consumers QuickAdd to ${info.data?.version}` : "Get Consumers QuickAdd for vendor websites"}
     </Link>
   );
 }

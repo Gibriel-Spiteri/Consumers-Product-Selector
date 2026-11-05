@@ -1,4 +1,4 @@
-// Consumers Quote Helper: reads a vendor product page's own product data: schema.org JSON-LD and microdata, then
+// Consumers QuickAdd (Consumers Quote Helper until 1.5.0): reads a vendor product page's own product data: schema.org JSON-LD and microdata, then
 // Open Graph, then the page's visible text around its heading (model labels such as "SKU:" or "Model#:", the model
 // at the end of the address, the first price after the heading).
 // Pure functions with no DOM or extension APIs, so vendor.js uses them in the page and the tests run them in Node.
