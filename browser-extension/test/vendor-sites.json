@@ -1,0 +1,818 @@
+{
+ "note": "Product lines with a vendor website and their special-order Types, read from PROD NetSuite on 2026-11-04 (customrecord_pl.custrecord_pl_prd_website, customrecord_specord_nondb_types). Same shape the Product Selector sends the extension (vendor-sites).",
+ "sites": [
+  {
+   "websiteUrl": "https://www.avancecabinetry.com/",
+   "productLineId": "854",
+   "productLineName": "Avance Bath",
+   "types": [
+    {
+     "id": "3657",
+     "name": "BASE CABINET",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3658",
+     "name": "MIRROR",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3659",
+     "name": "MISCELLANEOUS",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3660",
+     "name": "TALL CABINET",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3661",
+     "name": "VANITY CABINET",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3662",
+     "name": "WALL CABINET",
+     "requiresAttachment": false
+    }
+   ]
+  },
+  {
+   "websiteUrl": "https://www.avancecabinetry.com/",
+   "productLineId": "830",
+   "productLineName": "Avance Cabinetry",
+   "types": [
+    {
+     "id": "3528",
+     "name": "BASE CABINET",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3533",
+     "name": "MIRROR",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3529",
+     "name": "MISCELLANEOUS",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3530",
+     "name": "TALL CABINET",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3531",
+     "name": "VANITY CABINET",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3532",
+     "name": "WALL CABINET",
+     "requiresAttachment": false
+    }
+   ]
+  },
+  {
+   "websiteUrl": "https://www.brizo.com/",
+   "productLineId": "817",
+   "productLineName": "BRIZO",
+   "types": [
+    {
+     "id": "3481",
+     "name": "BATH - ACCESSORY",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3480",
+     "name": "BATH - BIDET FAUCET",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3476",
+     "name": "BATH - LAVATORY FAUCET",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3478",
+     "name": "BATH - SHOWER FAUCET",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3477",
+     "name": "BATH - TUB FAUCET",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3474",
+     "name": "KITCHEN - ACCESSORY",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3472",
+     "name": "KITCHEN - BAR/PREP",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3475",
+     "name": "KITCHEN - BEVERAGE FAUCET",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3471",
+     "name": "KITCHEN - KITCHEN FAUCET",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3473",
+     "name": "KITCHEN - POT FILLER",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3482",
+     "name": "SHOWER SYSTEM - BODY JET",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3484",
+     "name": "SHOWER SYSTEM - BODY SPRAY",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3483",
+     "name": "SHOWER SYSTEM - BODY SPRAY ROUGH",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3485",
+     "name": "SHOWER SYSTEM - CEILING MOUNT SHOWER ARM AND FLANGE",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3486",
+     "name": "SHOWER SYSTEM - CEILING MOUNT SHOWERHEAD",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3487",
+     "name": "SHOWER SYSTEM - DIVERTER/VOLUME CONTROL ROUGH",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3488",
+     "name": "SHOWER SYSTEM - DIVERTER/VOLUME CONTROL TRIM",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3489",
+     "name": "SHOWER SYSTEM - HANDSHOWER",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3490",
+     "name": "SHOWER SYSTEM - HANDSHOWR WALL MOUNT ELBOW",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3491",
+     "name": "SHOWER SYSTEM - VALVE ROUGH",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3492",
+     "name": "SHOWER SYSTEM - VALVE TRIM",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3493",
+     "name": "SHOWER SYSTEM - WALL MOUNT SHOWER ARM",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3494",
+     "name": "SHOWER SYSTEM - WALL MOUNT SHOWER FLANGE",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3495",
+     "name": "SHOWER SYSTEM - WALL MOUNT SHOWER HEAD",
+     "requiresAttachment": false
+    }
+   ]
+  },
+  {
+   "websiteUrl": "https://www.deltafaucet.com/",
+   "productLineId": "88",
+   "productLineName": "DELTA",
+   "types": [
+    {
+     "id": "3626",
+     "name": "BATH ACCESSORY",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3071",
+     "name": "BATH FAUCET",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3625",
+     "name": "DIVERTER",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3072",
+     "name": "HANDSHOWER",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3078",
+     "name": "KITCHEN FAUCET",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3073",
+     "name": "MISCELLANEOUS",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3079",
+     "name": "ROUGH",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3074",
+     "name": "SHOWERHEAD",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3076",
+     "name": "TRIP LEVER",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3075",
+     "name": "TUB / SHOWER FAUCET",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3077",
+     "name": "TUB FILLER",
+     "requiresAttachment": false
+    }
+   ]
+  },
+  {
+   "websiteUrl": "http://www.elkay.com/",
+   "productLineId": "87",
+   "productLineName": "ELKAY",
+   "types": [
+    {
+     "id": "3083",
+     "name": "BATH FAUCET",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3081",
+     "name": "BATH SINK",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3082",
+     "name": "KITCHEN FAUCET",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3080",
+     "name": "KITCHEN SINK",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3084",
+     "name": "MISCELLANEOUS",
+     "requiresAttachment": false
+    }
+   ]
+  },
+  {
+   "websiteUrl": "http://www.fleurco.com/",
+   "productLineId": "172",
+   "productLineName": "FLEURCO",
+   "types": [
+    {
+     "id": "3465",
+     "name": "BATH TUB",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3496",
+     "name": "MIRROR",
+     "requiresAttachment": false
+    },
+    {
+     "id": "2822",
+     "name": "MISCELLANEOUS",
+     "requiresAttachment": false
+    },
+    {
+     "id": "2818",
+     "name": "SHOWER BASE",
+     "requiresAttachment": false
+    },
+    {
+     "id": "2820",
+     "name": "SHOWER DOOR",
+     "requiresAttachment": false
+    },
+    {
+     "id": "2819",
+     "name": "SHOWER WALL",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3631",
+     "name": "TOWEL BAR",
+     "requiresAttachment": false
+    },
+    {
+     "id": "2821",
+     "name": "TUB DOOR",
+     "requiresAttachment": false
+    }
+   ]
+  },
+  {
+   "websiteUrl": "https://www.flussofaucets.com/",
+   "productLineId": "845",
+   "productLineName": "FLUSSO LUXURY PLUMBING FIXTURES",
+   "types": [
+    {
+     "id": "3616",
+     "name": "BATH ACCESSORY",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3617",
+     "name": "BATH FAUCET",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3624",
+     "name": "DIVERTER",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3618",
+     "name": "HANDSHOWER",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3619",
+     "name": "KITCHEN FAUCET",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3620",
+     "name": "MISCELLANEOUS",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3621",
+     "name": "ROUGH",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3622",
+     "name": "SHOWERHEAD",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3623",
+     "name": "TRIP LEVER",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3628",
+     "name": "TUB / SHOWER FAUCET",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3627",
+     "name": "TUB FILLER",
+     "requiresAttachment": false
+    }
+   ]
+  },
+  {
+   "websiteUrl": "https://craftandmain.com/",
+   "productLineId": "699",
+   "productLineName": "FOREMOST BATH",
+   "types": [
+    {
+     "id": "3417",
+     "name": "Faucet",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3421",
+     "name": "Light Bar",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3418",
+     "name": "Medicine Cabinet",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3424",
+     "name": "Misc",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3416",
+     "name": "Pedestal",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3419",
+     "name": "Sink",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3422",
+     "name": "Toilet",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3423",
+     "name": "Tub",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3415",
+     "name": "Vanity",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3637",
+     "name": "Vanity Top",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3420",
+     "name": "Wall Valet",
+     "requiresAttachment": false
+    }
+   ]
+  },
+  {
+   "websiteUrl": "https://craftandmain.com/shower-enclosure-collections/",
+   "productLineId": "383",
+   "productLineName": "FOREMOST T&S DOORS",
+   "types": [
+    {
+     "id": "3679",
+     "name": "Shower Door",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3678",
+     "name": "Tub Door",
+     "requiresAttachment": false
+    }
+   ]
+  },
+  {
+   "websiteUrl": "https://www.franke.com/us/en/ks.html",
+   "productLineId": "169",
+   "productLineName": "FRANKE SINKS",
+   "types": [
+    {
+     "id": "2827",
+     "name": "BATH FAUCET",
+     "requiresAttachment": false
+    },
+    {
+     "id": "2826",
+     "name": "BATH SINK",
+     "requiresAttachment": false
+    },
+    {
+     "id": "2823",
+     "name": "KITCHEN FAUCET",
+     "requiresAttachment": false
+    },
+    {
+     "id": "2825",
+     "name": "KITCHEN SINK",
+     "requiresAttachment": false
+    },
+    {
+     "id": "2824",
+     "name": "MISCELLANEOUS",
+     "requiresAttachment": false
+    }
+   ]
+  },
+  {
+   "websiteUrl": "https://icerabath.com/",
+   "productLineId": "126",
+   "productLineName": "ICERA ST THOMAS",
+   "types": [
+    {
+     "id": "2963",
+     "name": "BATH SINK",
+     "requiresAttachment": false
+    },
+    {
+     "id": "2961",
+     "name": "BIDET",
+     "requiresAttachment": false
+    },
+    {
+     "id": "2964",
+     "name": "MISCELLANEOUS",
+     "requiresAttachment": false
+    },
+    {
+     "id": "2965",
+     "name": "SOAKER",
+     "requiresAttachment": false
+    },
+    {
+     "id": "2962",
+     "name": "TOILET",
+     "requiresAttachment": false
+    }
+   ]
+  },
+  {
+   "websiteUrl": "https://www.johnboos.com/",
+   "productLineId": "67",
+   "productLineName": "JOHN BOOS",
+   "types": [
+    {
+     "id": "3124",
+     "name": "BUTCHER BLOCK",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3123",
+     "name": "MISCELLANEOUS",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3125",
+     "name": "TABLE",
+     "requiresAttachment": false
+    }
+   ]
+  },
+  {
+   "websiteUrl": "https://www.us.kohler.com/us/",
+   "productLineId": "808",
+   "productLineName": "KOHLER",
+   "types": [
+    {
+     "id": "3546",
+     "name": "ACCESSORY",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3454",
+     "name": "BATH FAUCET",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3453",
+     "name": "BATH SINK",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3544",
+     "name": "KITCHEN FAUCET",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3545",
+     "name": "KITCHEN SINK",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3588",
+     "name": "MEDICINE CABINET",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3615",
+     "name": "SHOWER BASE",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3456",
+     "name": "TOILET",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3563",
+     "name": "TUB",
+     "requiresAttachment": false
+    }
+   ]
+  },
+  {
+   "websiteUrl": "https://www.strategicbrandsincorporated.com/page/laurey-collections",
+   "productLineId": "149",
+   "productLineName": "LAUREY",
+   "types": [
+    {
+     "id": "3404",
+     "name": "KNOB",
+     "requiresAttachment": false
+    },
+    {
+     "id": "2864",
+     "name": "MISCELLANEOUS",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3403",
+     "name": "PULL",
+     "requiresAttachment": false
+    },
+    {
+     "id": "2868",
+     "name": "ROBE HOOK",
+     "requiresAttachment": false
+    },
+    {
+     "id": "2867",
+     "name": "TOILET PAPER HOLDER",
+     "requiresAttachment": false
+    },
+    {
+     "id": "2862",
+     "name": "TOWEL BAR",
+     "requiresAttachment": false
+    },
+    {
+     "id": "2865",
+     "name": "TOWELL RING",
+     "requiresAttachment": false
+    }
+   ]
+  },
+  {
+   "websiteUrl": "https://www.strategicbrandsincorporated.com/page/mng-collections",
+   "productLineId": "390",
+   "productLineName": "MNG Hardware",
+   "types": [
+    {
+     "id": "3443",
+     "name": "Knobs",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3442",
+     "name": "Pulls",
+     "requiresAttachment": false
+    }
+   ]
+  },
+  {
+   "websiteUrl": "http://www.produitsneptune.com/en/",
+   "productLineId": "824",
+   "productLineName": "NEPTUNE PRODUCTS",
+   "types": [
+    {
+     "id": "3513",
+     "name": "ACCESSORIES",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3512",
+     "name": "FAUCETS",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3511",
+     "name": "FREE STANDING TUB",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3510",
+     "name": "SHOWER BASE",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3509",
+     "name": "TUB",
+     "requiresAttachment": false
+    }
+   ]
+  },
+  {
+   "websiteUrl": "https://www.richelieu.com/us/en/category/decorative-hardware/cabinet-hardware-pulls-knobs/1064512",
+   "productLineId": "816",
+   "productLineName": "RICHELIEU HARDWARE",
+   "types": [
+    {
+     "id": "3466",
+     "name": "KNOB",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3469",
+     "name": "MISC",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3467",
+     "name": "PULL",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3468",
+     "name": "SCREWS",
+     "requiresAttachment": false
+    }
+   ]
+  },
+  {
+   "websiteUrl": "http://www.topknobs.com/",
+   "productLineId": "119",
+   "productLineName": "TOP KNOBS HARDWARE",
+   "types": [
+    {
+     "id": "3001",
+     "name": "BACKPLATES",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3000",
+     "name": "KNOBS",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3002",
+     "name": "MISCELLANEOUS",
+     "requiresAttachment": false
+    },
+    {
+     "id": "2999",
+     "name": "PULLS",
+     "requiresAttachment": false
+    }
+   ]
+  },
+  {
+   "websiteUrl": "https://www.totousa.com/",
+   "productLineId": "118",
+   "productLineName": "TOTO FIXTURES",
+   "types": [
+    {
+     "id": "3007",
+     "name": "BATH FAUCET",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3005",
+     "name": "BATH SINK",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3003",
+     "name": "BIDET",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3008",
+     "name": "KITCHEN FAUCET",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3006",
+     "name": "MISCELLANEOUS",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3332",
+     "name": "SOAKER",
+     "requiresAttachment": true
+    },
+    {
+     "id": "3004",
+     "name": "TOILET",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3333",
+     "name": "WHIRLPOOL",
+     "requiresAttachment": true
+    }
+   ]
+  }
+ ]
+}

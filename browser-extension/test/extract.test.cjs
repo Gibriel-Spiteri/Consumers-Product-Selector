@@ -1,8 +1,8 @@
-// node --test browser-extension/extract.test.cjs
+// node --test browser-extension/test/extract.test.cjs
 // Fixtures follow the shapes Delta and Kohler product pages used on 2026-11-04.
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
-const X = require("./consumers-quote-helper/extract.js");
+const X = require("../consumers-quote-helper/extract.js");
 
 const ld = obj => `<script type="application/ld+json">${JSON.stringify(obj)}</script>`;
 

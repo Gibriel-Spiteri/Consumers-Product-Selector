@@ -181,7 +181,10 @@ export function suggestType(pick: Pick<VendorPick, "name" | "pageUrl"> & { categ
       const score = tw.reduce((s, w) => s + (nameWords.has(w) ? 2 : pathWords.has(w) ? 1 : 0), 0);
       return { t, score };
     })
-    .filter(s => s.score > 0)
+    // .filter(s => s.score > 0)
+    // At least a word in the name, or two in the breadcrumbs or address: one breadcrumb word is too weak (live check
+    // 11/4: John Boos' wine cart under "Boos Blocks > Carts" was guessed BUTCHER BLOCK).
+    .filter(s => s.score >= 2)
     .sort((a, b) => b.score - a.score);
   if (scored.length === 0 || (scored.length > 1 && scored[1].score === scored[0].score)) return null;
   return scored[0].t;

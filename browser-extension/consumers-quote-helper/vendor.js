@@ -204,6 +204,7 @@
       .filter(e => e.getClientRects().length).map(e => e.textContent.replace(/\s+/g, " ").trim()).filter(t => t && t.length < 60);
     return {
       heading: h1 ? h1.innerText.replace(/\s+/g, " ").trim() : "",
+      headingText: h1 ? h1.textContent.replace(/\s+/g, " ").trim() : "", // as written, before CSS capitals
       text: (document.body ? document.body.innerText : "").replace(/\s+/g, " "),
       microdata: microdata(),
       crumbs,
