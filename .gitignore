@@ -50,3 +50,5 @@ Thumbs.db
 
 browser-extension/dist/
 browser-extension/test/live-shots/
+# QuickAdd signing key: never in the repo (browser-extension/pack-crx.cjs keeps it in Documents)
+*.pem

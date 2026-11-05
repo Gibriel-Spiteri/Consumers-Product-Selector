@@ -92,10 +92,41 @@ After the first install, open the Product Selector once (signed in), so the exte
 
 ## Rolling out to showroom PCs
 
+<!-- Until 11/5/2026:
 - **Recommended:** publish it as an unlisted extension on **Microsoft Edge Add-ons** (Partner Center) and, if needed, the **Chrome Web Store**.
   - The browsers then update it automatically.
   - IT can force-install it with the Edge `ExtensionInstallForcelist` policy, through Intune or Group Policy.
 - **Quick option (today):** staff download it from the Product Selector and Load unpacked on each PC, as above. Edge may show a "developer mode extensions" reminder. To update, download again, extract over the folder and click **Reload** on `edge://extensions`.
+-->
+
+- **Group Policy (since 1.5.1, no store):** the PCs are on the `WORKGROUP.com` domain, so Edge accepts an extension from our own server when Group Policy installs it. Sales staff do nothing, cannot remove it, and get each new version within hours. See the next section.
+- **By hand (testing, or a PC off the domain):** download it from the Product Selector and Load unpacked, as above. Edge may show a "developer mode extensions" reminder. To update, download again, extract over the folder and click **Reload** on `edge://extensions`.
+- **Later, if needed:** a hidden listing on Microsoft Edge Add-ons works on PCs off the domain too. A store listing must not have `update_url` in `manifest.json`.
+
+## Install on every PC with Group Policy
+
+The Product Selector serves a signed package and an update file, both public because Edge fetches them without anyone signed in:
+- `https://consumers-product-selector.replit.app/api/quickadd/update.xml`
+- `https://consumers-product-selector.replit.app/api/quickadd/consumers-quickadd-<version>.crx`
+
+Extension ID: **`fdfhmjjacillkifkpnekcncfinoaoiem`** (fixed by the signing key). The QuickAdd page in the Product Selector shows the same line with a Copy button under **For IT**.
+
+**Domain admin, once** (on the domain controller, Group Policy Management):
+1. Edit the GPO that already sets Edge's homepage for the showroom PCs, or create one linked to their OU. To try it first, link a new GPO to a test OU with one PC in it (or use security filtering).
+2. Go to **Computer Configuration > Policies > Administrative Templates > Microsoft Edge > Extensions > Control which extensions are installed silently**.
+3. Choose **Enabled**, click **Show...**, and add this value (leave the name column as Edge fills it):
+   `fdfhmjjacillkifkpnekcncfinoaoiem;https://consumers-product-selector.replit.app/api/quickadd/update.xml`
+4. OK, then close the editor.
+5. For Chrome PCs, the same value goes in **Google > Google Chrome > Extensions > Configure the list of force-installed apps and extensions**.
+
+**On each PC:** nothing, apart from removing any copy loaded with Load unpacked (`edge://extensions`, **Remove**), or the PC can show two buttons. The policy arrives at the next refresh (about 90 minutes) or right away with `gpupdate /force` in a Command Prompt and an Edge restart. Check `edge://extensions`: Consumers QuickAdd shows as installed by your organization, and `edge://policy` lists `ExtensionInstallForcelist`. Then open the Product Selector once (signed in) in that browser.
+
+**Releasing a new version:**
+1. Change the extension and bump `version` in `manifest.json`.
+2. `node browser-extension/pack-crx.cjs` signs it with the key in `Documents\ConsumersQuickAdd-signing\consumers-quickadd.pem` and writes `browser-extension/release/` (the `.crx` and `release.json`). The API test fails when `release/` is older than the extension folder.
+3. Commit, merge and Republish. Edge checks the update file every few hours and updates every PC.
+
+**The signing key** (`consumers-quickadd.pem`) never goes in the repo (`*.pem` is ignored). Keep a copy somewhere safe: without it the next version needs a new key, which means a new extension ID and a new policy line.
 
 ## Files
 
@@ -109,6 +140,8 @@ After the first install, open the Product Selector once (signed in), so the exte
 | `app.js` | Bridge on the Product Selector's pages: passes picks and the vendor list via `window.postMessage` |
 | `popup.html` / `popup.js` | Toolbar popup: items waiting and the vendor sites |
 | `icons/` | The Product Selector's favicon (the orange shopping bag), sized by `make-icons.py` (Pillow); rerun it when the favicon changes. `make-icons.cjs` drew the 1.0 navy icons and is kept for reference. |
+| `../pack-crx.cjs` | Signs the extension into `../release/consumers-quickadd.crx` with Edge's packer, for the Group Policy install (1.5.1) |
+| `../release/` | The signed package and `release.json` (id, version, SHA-256) the Product Selector serves at `/api/quickadd/` |
 
 The Product Selector side is in `artifacts/product-selector/src/lib/vendor-picks.ts` (message protocol, validation), `context/vendor-picks-context.tsx`, `components/vendor-picks-panel.tsx` and `pages/special-order.tsx`.
 

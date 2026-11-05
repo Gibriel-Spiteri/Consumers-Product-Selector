@@ -1,0 +1,2 @@
+# The signed QuickAdd package: never convert line endings inside it
+*.crx binary
