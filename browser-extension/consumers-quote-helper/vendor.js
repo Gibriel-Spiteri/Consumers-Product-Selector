@@ -43,6 +43,14 @@
       .btn:disabled { opacity: .6; cursor: default; }
       .ok { background: #e3f4ea; color: #1d7a46; border-radius: 8px; padding: 10px 12px; font-size: 13px; }
       .err { background: #fdecec; color: #a12a2a; border-radius: 8px; padding: 10px 12px; font-size: 13px; }
+      /* 1.4.2 (Gib 11/5): while the page changes under the open panel (another finish), it stays open, greyed out with a
+         spinner, until the new values are read. The header (and its close button) stays clear. */
+      .busy { position: absolute; left: 0; right: 0; bottom: 0; top: 0; z-index: 1; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 10px; background: rgba(236, 239, 245, .85); color: #3b4456;
+        font-size: 13px; font-weight: 600; border-radius: 0 0 12px 12px; }
+      .spin { width: 30px; height: 30px; border-radius: 50%; border: 3px solid #c9d3ea; border-top-color: #1f4fd1;
+        animation: cqh-spin .8s linear infinite; }
+      @keyframes cqh-spin { to { transform: rotate(360deg); } }
     </style>
     <button class="fab" type="button" part="fab"><span>Add to Consumers Quote</span><span class="dot" hidden></span></button>
     <div class="panel" role="dialog" aria-label="Add to Consumers Quote">
@@ -69,6 +77,7 @@
         <div class="msg" hidden></div>
       </div>
       <div class="actions"><button class="btn cancel" type="button">Close</button><button class="btn primary add" type="button">Add to quote</button></div>
+      <div class="busy" role="status" hidden><div class="spin"></div><span>Updating...</span></div>
     </div>`;
   const $ = sel => root.querySelector(sel);
   const fab = $(".fab"), panel = $(".panel"), dot = $(".dot"), msg = $(".msg");
@@ -77,6 +86,16 @@
     manualHint: $(".manual-hint"),
     lineWrap: $(".line-wrap"), line: $(".line"), typeWrap: $(".type-wrap"), type: $(".type"),
     description: $(".description") }; // was also collection: $(".collection") (until 1.4.1)
+  const busy = $(".busy"), head = $(".head"), bodyEl = $(".body"), actionsEl = $(".actions");
+
+  // 1.4.2: grey the open panel out with a spinner while it re-reads the page; nothing under it can be clicked or typed.
+  function setBusy(on) {
+    if (on) busy.style.top = head.offsetHeight + "px";
+    busy.hidden = !on;
+    bodyEl.inert = on;
+    actionsEl.inert = on;
+    panel.setAttribute("aria-busy", String(on));
+  }
 
   let items = [];
   let selected = -1;
@@ -370,6 +389,7 @@
   }
 
   function closePanel() {
+    setBusy(false);
     panel.style.display = "none";
     fab.style.display = items.length ? "flex" : "none";
   }
@@ -471,18 +491,41 @@
     const v = siteRule && !siteRule.requireModel ? siteValues() : {};
     return `${location.href}|${v.model || ""}|${v.color || ""}`;
   };
+  // setInterval(() => {
+  //   const key = pageKey();
+  //   if (key !== lastUrl) {
+  //     lastUrl = key;
+  //     const open = panel.style.display === "block";
+  //     if (!open) closePanel();
+  //     setTimeout(async () => {
+  //       await detect();
+  //       if (open) openPanel(true);
+  //     }, 800);
+  //   }
+  // }, 1000);
+  // 1.4.2 (Gib 11/5): the open panel greys out with a spinner as soon as the page changes (checked every 0.3 s) and
+  // is read 0.8 s after the last change (Delta changes the swatch, then the MODEL#, then the address), at most 4 s
+  // after the first. Only the newest read fills the panel.
+  let refreshTimer = 0, firstChange = 0, refreshRun = 0;
   setInterval(() => {
     const key = pageKey();
-    if (key !== lastUrl) {
-      lastUrl = key;
-      const open = panel.style.display === "block";
-      if (!open) closePanel();
-      setTimeout(async () => {
+    if (key === lastUrl) return;
+    lastUrl = key;
+    if (panel.style.display === "block") setBusy(true);
+    else closePanel();
+    if (!refreshTimer) firstChange = Date.now();
+    clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(async () => {
+      refreshTimer = 0;
+      const run = ++refreshRun;
+      try {
         await detect();
-        if (open) openPanel(true);
-      }, 800);
-    }
-  }, 1000);
+      } catch {}
+      if (run !== refreshRun) return; // a later change is being read
+      if (panel.style.display === "block") openPanel(true);
+      setBusy(false);
+    }, Math.max(0, Math.min(800, 4000 - (Date.now() - firstChange))));
+  }, 300);
   // lastUrl = location.href;
   lastUrl = pageKey();
   detect();
