@@ -132,6 +132,11 @@ test("the Type and product line chosen in the extension are used; Collection and
   assert.equal(input.details.description, "Broderick Touch2O® Technology Kitchen Faucet with Touchless Technology");
   // A Type id that is not one of the line's falls back to the guess.
   assert.equal(quoteInputFromPick({ ...dpick, typeId: "999" }, delta, DELTA).details.typeName, "KITCHEN FAUCET");
+  // 11/5 (extension 1.5.3): an order-form Type chosen in the panel is kept (the push sends "Per Attached Order Form").
+  const toto = line("118", "TOTO FIXTURES", "https://www.totousa.com/");
+  const soak = quoteInputFromPick({ ...pick, vendorDomain: "totousa.com", pageUrl: "https://www.totousa.com/flotation-tub",
+    name: "Flotation Tub with Zero Dimension", model: "ABY994#01", color: "Cotton", price: 9000, typeId: "6", typeName: "SOAKER" }, toto, TOTO);
+  assert.deepEqual([soak.details.typeId, soak.details.typeName, soak.details.model], ["6", "SOAKER", "ABY994#01"]);
   assert.equal(collDesc("Cairn®", "Cairn 27-1/2\" undermount single-bowl kitchen sink"), "Cairn 27-1/2\" undermount single-bowl kitchen sink");
   assert.equal(collDesc("", "Drake Two-piece Toilet"), "Drake Two-piece Toilet");
   assert.equal(collDesc("Austin", "128mm Austin Pull - Satin Nickel"), "128mm Austin Pull - Satin Nickel");

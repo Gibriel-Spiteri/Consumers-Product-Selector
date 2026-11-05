@@ -5,7 +5,7 @@
     "eyebrow": "Consumers Kitchen & Bath · Product Selector guide",
     "title": "From a product on a vendor's website to a priced special-order line on the estimate",
     "lede": "Where each step happens: on the vendor's own website with the customer, in the Consumers QuickAdd browser extension (Edge or Chrome), in the Product Selector on the sales PC, and in NetSuite. Click any numbered box to read its exact buttons.",
-    "meta": "Mapped from the code on 11/5/2026: Product Selector Special Order page, Quote List and the Consumers QuickAdd extension 1.5.0."
+    "meta": "Mapped from the code on 11/5/2026: Product Selector Special Order page, Quote List and the Consumers QuickAdd extension 1.5.3."
   },
   "lanes": {
     "VS": {
@@ -446,8 +446,8 @@
   "gapsIntro": "What this process needs that the app or QuickAdd does not do yet.",
   "gaps": [
     {
-      "title": "Avance pages have nothing to read.",
-      "text": "QuickAdd reads the item on 15 of the 16 vendor sites. Avance's pages are door styles with no model numbers, so the customer types the model in the panel. Elkay, Franke, Richelieu and Strategic Brands show no price; the rep enters the list price."
+      "title": "Some pages leave fields for the customer.",
+      "text": "QuickAdd reads the item on 17 special-order vendor sites (checked page by page on 11/5/2026, about 230 product pages). Avance pages are door styles with no model numbers, so the customer types the model. Richelieu, Strategic Brands, Franke and Craft & Main show no price to the public, so the rep enters the list price. Configurators (Fleurco, Sofia, Bain Ultra) fill in once every choice is made."
     },
     {
       "title": "Picks stay in one browser.",
@@ -459,11 +459,11 @@
     },
     {
       "title": "The Type is only suggested when the name settles it.",
-      "text": "The Quote List guesses the Type from the product name and the vendor's address (KITCHEN FAUCET, TOILET, KNOBS, SHOWER DOOR). When two Types fit equally, like Elkay's KITCHEN SINK or BATH SINK, or the right one is an order-form Type, the rep picks it."
+      "text": "QuickAdd suggests the Type from the product name, the breadcrumbs and the vendor address (34 of 34 sweep cases right). When two Types fit equally the customer picks it; the panel requires it. Order-form Types (Bain Ultra tubs) go to NetSuite as Per Attached Order Form, so the rep attaches the vendor order form. Craft & Main shower bases and walls have no Type in NetSuite yet."
     },
     {
-      "title": "QuickAdd is still loaded by hand on each PC.",
-      "text": "Staff download it from the Product Selector (their name, then QuickAdd) and load it with Load unpacked; updates are a new download and Reload. Publishing it unlisted on Edge Add-ons would let IT push it to every showroom PC and update it automatically."
+      "title": "New vendor sites need a QuickAdd release for the built-in list.",
+      "text": "QuickAdd goes to every PC by Group Policy and updates itself from the Product Selector. A product line made special-order in NetSuite works as soon as the Product Selector is open in that browser; the list built into QuickAdd (used before that) is refreshed with each release."
     }
   ],
   "tips": [
@@ -472,5 +472,5 @@
     "When a vendor's website changes, update the product line's website on its PRD page in NetSuite; QuickAdd follows the next time the Product Selector is open.",
     "A vendor site can show a sale price. The list price is what counts, so always check it before Add to List."
   ],
-  "footer": "Vendor site special orders · Mapped from the code (Product Selector Special Order page and Quote List, Consumers QuickAdd extension 1.5.0) on 11/5/2026."
+  "footer": "Vendor site special orders · Mapped from the code (Product Selector Special Order page and Quote List, Consumers QuickAdd extension 1.5.3) on 11/5/2026."
 }

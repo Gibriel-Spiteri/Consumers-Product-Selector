@@ -1,12 +1,12 @@
 {
   "manifest_version": 3,
   "name": "Consumers QuickAdd",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "update_url": "https://consumers-product-selector.replit.app/api/quickadd/update.xml",
   "description": "Add products from vendor websites to the Consumers Product Selector quote list.",
   "minimum_chrome_version": "111",
   "permissions": ["storage", "scripting"],
-  "host_permissions": ["https://*/*"],
+  "host_permissions": ["https://*/*", "http://*/*"],
   "background": {
     "service_worker": "background.js"
   },

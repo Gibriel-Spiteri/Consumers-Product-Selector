@@ -225,7 +225,11 @@ export function collDesc(collection: string | undefined, description: string): s
 export function quoteInputFromPick(pick: VendorPick, line: SpecialOrderProductLine, types: PickTypeOption[]): SpecialOrderInput {
   // const type = suggestType(pick, types);
   // The Type chosen in the extension's panel when it is one of the line's; otherwise the guess.
-  const chosen = pick.typeId ? types.find(t => t.id === pick.typeId && !t.requiresAttachment) : undefined;
+  // const chosen = pick.typeId ? types.find(t => t.id === pick.typeId && !t.requiresAttachment) : undefined;
+  // 2026-11-05 (extension 1.5.3): an order-form Type the customer chose counts too (Bain Ultra's tubs are AIR TUB or
+  // SOAKER). The push sends "Per Attached Order Form" for it (specialOrderSpecs), and the rep attaches the vendor's
+  // order form; the model and finish the customer picked stay on the quote line for the rep to read.
+  const chosen = pick.typeId ? types.find(t => t.id === pick.typeId) : undefined;
   const type = chosen ?? suggestType(pick, types);
   return {
     netsuiteId: line.netsuiteItemId,

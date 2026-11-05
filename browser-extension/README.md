@@ -9,12 +9,15 @@ Lets a customer pick products on a vendor's own website (Delta, Kohler, Brizo, .
 1. **Open a vendor site.** In the Product Selector, go to **Special Order** and pick a category. Then click a product line card ("Shop vendor site"); it opens the vendor's website, as the PRD page links it (`custrecord_pl_prd_website`), in a new tab.
 2. **Add a product.** On every page of a vendor site the extension shows an **Add to CPS Quote List** button (1.5.0; was Add to Consumers Quote). The panel header asks the customer to confirm all fields are correct before adding.
    - On a product page it fills in the model, name, color and price, and each color or finish as an option (for example Kohler's 6 Cairn colors). See "What it reads" below.
-   - On a page with nothing to read, the panel opens with the page's name and a blank Model, and says so; the customer types the model and color shown on the page.
+   - On a page with nothing to read, the panel opens with a blank Model and says so; the customer types the model and color shown on the page. Since 1.5.3 it also leaves Collection / Description and Type blank there (a category page's heading is not a product), except on a configurator (Fleurco, Sofia), whose own name it keeps.
+   - A page that needs a choice first (an Elkay base model with finish tiles, Icera before a color, Top Knobs before a size and finish, Sofia before a model number and depth) shows no model or price yet and says what to pick (1.5.3).
+   - A finish that is its own page (Brizo, Elkay, Franke, Flusso, Richelieu swatch links) loads a new page; the panel reopens on it with the same quantity (1.5.3).
+   - A page that says the item is discontinued gets a note in the panel (1.5.3). Order-form Types (Bain Ultra's AIR TUB, SOAKER, WHIRLPOOL) are offered too, marked "(order form)", with a note that the rep attaches the vendor's order form; the push sends "Per Attached Order Form" for them.
    - The panel has the special-order fields (1.3.0): **Type** (the product line's NetSuite Types, the best fit preselected from the product name and the vendor's breadcrumbs), **Model**, **Color / finish**, **Collection / Description** (one field, as NetSuite's Coll/Desc: "Altado Two Handle Widespread Bathroom Faucet"), **Price on this site** and **Quantity**. A vendor site with several product lines (Foremost) also asks for the **Product line**. The Types come from the Product Selector; since 1.5.0 the extension also carries the PROD list (`seed-sites.js`, from 11/4/2026), so the Type shows before the Product Selector has been opened in that browser.
    - The panel follows the page the same way on every site (1.4.0): picking another finish or color while it is open refreshes the model, finish and price and keeps the quantity. Since 1.4.2 the panel stays open, greyed out with an "Updating..." spinner, from the moment the page changes until the new values are in. Delta (the shown MODEL#) and Kohler (the shown SKU) have their own rules; an Option list appears only when a page does not say which color is chosen.
    - When a page gives no color, a finish at the end of the product name is used ("128mm Austin Pull - Satin Nickel", "...Brushed Satin Nickel"). Strategic Brands' collection comes from its "parts in this collection" link.
    - Collection / Description goes to NetSuite's Coll/Desc as is. It starts as the collection, then the product name, the way reps type it; the collection is left out when the name already has it.
-   - The customer picks the option, sets the quantity and clicks **Add to quote**. Every field is required (1.5.2): **Add to quote** outlines the empty ones in red and names them, so a page that gives no color (John Boos, TOTO) or no price (Elkay, Franke, Richelieu, Strategic Brands) needs the customer, or the sales rep, to type it in.
+   - The customer picks the option, sets the quantity and clicks **Add to quote**. Every field is required (1.5.2): **Add to quote** outlines the empty ones in red and names them, so a page that gives no color (Icera, since the 1.5.3 color readers) or no price (Elkay, Franke, Richelieu, Strategic Brands) needs the customer, or the sales rep, to type it in.
 3. **It lands on the Quote List.** When the Product Selector is open (signed in) in that browser, each pick goes straight onto the Quote List as a special-order line, and leaves the extension.
    - Model, description, color, list price and quantity come from the vendor page, with a **Picked on** link back to it. The Type is guessed from the product name and the vendor's address (KITCHEN FAUCET, TOILET, KNOBS, SHOWER DOOR); on a tie, or for order-form Types, it is left for the rep.
    - A line the vendor page left incomplete shows an amber **Needs Type, Color, List price** (whatever is missing). Clicking it opens the Edit Special Order form; fill in the rest and click **Save Changes**. The Quote List will not push to an estimate until every line is complete.
@@ -23,10 +26,10 @@ Lets a customer pick products on a vendor's own website (Delta, Kohler, Brizo, .
 
 What the extension holds and where it runs:
 - **Storage.** Picks stay in the extension's storage in that browser until the Product Selector takes them. Nothing goes to NetSuite until the rep adds the item and pushes the quote list as usual.
-- **Vendor sites.** The extension runs only on the vendor domains of the special-order product lines. The Product Selector sends that list whenever it is open, so a product line added in NetSuite (with a website) is picked up automatically. Until then, the 16 domains from 2026-11-04 are built in.
+- **Vendor sites.** The extension runs only on the vendor domains of the special-order product lines. The Product Selector sends that list whenever it is open, so a product line added in NetSuite (with a website) is picked up automatically. Until then, the 18 domains from PROD on 2026-11-05 are built in (`SEED_DOMAINS` in `background.js`, Types in `seed-sites.js`). On 11/5 Bain Ultra, Grohe and Sofia Medicine Cabinets became special-order lines and Neptune, Foremost Bath and Avance Cabinetry stopped being ones; the Product Selector picks such changes up on its own, the built-in list is refreshed with each release.
 - **Other sites.** On any other site the extension does nothing.
 
-**Price check:** a vendor site can show a sale price. Delta's Outlet / Recertified items, for example, show $215 instead of the $449 list. The rep always confirms the list price.
+**Price check:** a vendor site can show a sale price. Delta's Outlet / Recertified items, for example, show $215 instead of the $449 list. The rep always confirms the list price. Since 1.5.3 the panel takes the list price where the page prints it next to a sale price (Delta's struck-through price, Grohe's "List price"; not Kohler, whose shown price Gib kept on 11/5) and no price from a range ("$680.00 - $1,061.00") or a "from" price.
 
 ## What it reads
 
@@ -50,7 +53,7 @@ Checked on 11/4/2026 in Chrome, one product page per product line:
 | Delta | yes | yes | JSON-LD |
 | Flusso | yes | yes | JSON-LD (sku, not the UPC in mpn) |
 | Kohler | yes, per color | yes | JSON-LD ProductGroup |
-| Neptune | yes, full model number | yes | JSON-LD + page text |
+| Neptune (not a special-order line since 11/4) | yes, full model number | yes | JSON-LD + page text |
 | Richelieu | yes | no (dealer price) | JSON-LD |
 | Top Knobs | yes | yes | microdata + Open Graph |
 | TOTO | yes (`CST776CEG#01`) | yes | Open Graph + page text |
@@ -62,6 +65,34 @@ Checked on 11/4/2026 in Chrome, one product page per product line:
 | Franke | Article Number (`115.0731.726`) | no | page text |
 | Fleurco | yes (`NHS160-25-40R-79`, `VP4836-12-40-79`), once every configurator choice is made, Mix & Match Kit included; an open panel follows each choice (1.5.2) | yes | site rule (the total under the options) |
 | Avance | no: door-style pages only | no | customer types it |
+
+**Color / finish** (1.5.3): from the product data where it has one (Delta, Kohler, Flusso, Neptune, Top Knobs), else a site rule in `vendor.js`: TOTO and Craft & Main "Color: Cotton" over the swatches, Brizo "Selected Finish: ...", Richelieu the "Finish:" option, Franke the "Product finish" spec row, Elkay the finish or "Material" spec row (Stainless Steel), John Boos the wood at the start of the name, Strategic Brands the end of the name, Fleurco the chosen hardware finish. Icera shows none. Picking another color on the page refreshes the open panel (TOTO: Ebony gives CST776EF#51 at its own price).
+
+**Flusso** (1.5.3): the collection comes from the details row ("Collection | Serie 250"; a bare "Kitchen" is skipped), and a barcode with a dashed check digit in `mpn` ("716894070509-7") no longer beats the model in `sku` (K.1200CR).
+
+**Sweep of 11/5/2026 (1.5.3):** four testers went through about 230 product pages and 40 other pages on all 17 special-order vendor sites (Avance left out), with about 110 finish, color, size and configurator changes made while the panel was open. What it found is fixed by these site rules in `vendor.js` (each value they read also tells the open panel to follow a change):
+
+| Vendor | Reads |
+|---|---|
+| Grohe (new) | the shown variant: `[data-product-sku]`, its "List price" (`[data-price-list=<variant>]`; the product data has 75% of list), the Finish swatch label, the collection above the title |
+| Kohler | the price Kohler shows and the title, so an option that loads another product (Crue Touchless, a Verdera width) gets that product's own name and price. The price stays the sale price Kohler shows (Gib, 11/5: "Leave the Kohler price"); its "List Price" is not used |
+| Delta | the struck-through list price on Outlet / Recertified items |
+| Brizo | a combo's parts joined with " + " and its "List price as shown" |
+| Icera | the WooCommerce SKU and variation price for the chosen color (two-piece SKUs whole: "C-3690.01, T-3690.01") |
+| Bain Ultra (new) | the tub variant named by the pressed drain, colour, deck and technology tiles (BAMBRA0RT-02); the drain kit in Coll/Desc |
+| Elkay | the chosen finish tile (not "Material"), the list price behind "Show List Price", the "Room" row for the Type |
+| TOTO | the SKU's own price (the page adds checked add-ons); the add-ons (Rough-In, Trip Lever) in Coll/Desc; "Made to Order (MTO)" dropped |
+| Franke | the model code that ends the title (MAG11031OW-SHG), as reps enter Franke, not the Article Number |
+| Top Knobs | nothing until a size and finish are picked, then the item number, the price box (not the family's lowest og price), the Finish and Collection rows |
+| Richelieu | only the product's own number (`#pm2_topInfo`), the Finish option or spec row, the size in Coll/Desc |
+| Strategic Brands | the finish part of the name (not a size), the collection from its own link, LAUREY or MNG preselected from the breadcrumbs |
+| John Boos | the title (the og:title is an SEO title), the wood from the description when the title has none |
+| Craft & Main | the shown variant SKU (the product data keeps the first); no price (hidden on the site) |
+| Fleurco | the whole code before "Total" (door + kit / drain), nothing while a shown finish has no choice, the finish or material outside doors, the subtitle (Tub enclosure) |
+| Flusso | as before, plus no "Universal Fixtures" collection and image addresses without a scheme |
+| Sofia (new) | the shop's model number plus depth code (ART 2430 1D-1), the price line for the chosen depth and edge, the edge and interior or frame finish; also on plain http |
+
+The Type rules got hand showers, shower heads and rainheads, bath accessories, lavatories, prep faucets, tub enclosures and tub shower doors, ignore parts named after a fixture (a toilet seat), score only the main part of the name, and break ties toward the main noun that comes last (1.5.2 got 16 of 34 sweep cases wrong or blank, 1.5.3 none). The testers' reports are kept with the sweep (outside the repo).
 
 When a vendor redesigns its site, open one of its product pages and check the panel; the unit tests hold one fixture per page shape.
 
@@ -169,5 +200,5 @@ PLAYWRIGHT=C:/Users/gspiteri1/Desktop/Git/Bundle63418/Projects/SrrUiTests node b
 
 - Add `--headed` to watch it, or name vendors to run only those (`delta fleurco`).
 - Screenshots of each panel land in `browser-extension/test/live-shots/`.
-- The Types it hands the extension are in `test/vendor-sites.json`, read from PROD NetSuite on 2026-11-04.
+- The vendor sites and Types it hands the extension are in `test/vendor-sites.json`, read from PROD NetSuite on 2026-11-05 with the Product Selector's own product-line and Type queries (`artifacts/api-server/src/lib/specialOrders.ts`): special-order (EPS) Inventory lines with an active SP- item, at least one active Type and a website. When lines change in NetSuite, refresh it (the signed-in `/api/special-orders/product-lines` answer has the same data), then `consumers-quote-helper/seed-sites.js` and `SEED_DOMAINS` from it.
 - Prices are only checked for being there or not, since vendors change them.
