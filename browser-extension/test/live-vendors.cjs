@@ -31,31 +31,31 @@ const noPrice = { price: v => v === "" };
 const VENDORS = [
   { key: "delta", url: "https://www.deltafaucet.com/kitchen/product/9190TL-DST.html", add: true,
     // The header is Consumers Confirm's blue (#1f4fd1 to #183fa8), Jim 11/5.
-    expect: { model: "9190TL-DST", color: "Chrome", collection: "Broderick", type: "KITCHEN FAUCET", header: h => /31, 79, 209/.test(h), ...anyPrice },
+    expect: { model: "9190TL-DST", color: "Chrome", collDesc: v => v.toLowerCase().includes("broderick"), type: "KITCHEN FAUCET", header: h => /31, 79, 209/.test(h), ...anyPrice },
     // Pick another finish with the panel open: the panel follows it.
     // Clicked from the page: at this window size the open panel sits over Delta's swatches.
     change: async page => page.evaluate(() => document.querySelector('button.product-attribute__swatch[title^="Finish: Polished Nickel"]').click()),
     afterChange: { model: "9190TL-PN-DST", color: "Polished Nickel", ...anyPrice } },
   // Jim (11/5): the panel kept 35442-MPU-DST after Champagne Bronze was picked. The shown MODEL# is read first.
   { key: "delta2", url: "https://www.deltafaucet.com/bathroom/product/35442-MPU-DST.html",
-    expect: { model: "35442-MPU-DST", color: "Chrome", collection: "Altado", type: "BATH FAUCET", ...anyPrice },
+    expect: { model: "35442-MPU-DST", color: "Chrome", collDesc: v => v.toLowerCase().includes("altado"), type: "BATH FAUCET", ...anyPrice },
     change: async page => page.evaluate(() => document.querySelector('button.product-attribute__swatch[title^="Finish: Champagne Bronze"]').click()),
-    afterChange: { model: "35442-CZMPU-DST", color: "Champagne Bronze", collection: "Altado", ...anyPrice } },
+    afterChange: { model: "35442-CZMPU-DST", color: "Champagne Bronze", collDesc: v => v.toLowerCase().includes("altado"), ...anyPrice } },
   // Jim (11/5): Kohler offered a color dropdown while Delta followed the page. Now Kohler follows the page too.
   { key: "kohler", url: "https://www.kohler.com/en/products/kitchen-sinks/shop-kitchen-sinks/cairn-27-1-2-x-18-5-16-x-9-1-2-neoroc-under-mount-single-bowl-kitchen-sink-with-sink-rack-28000",
-    expect: { model: /^K-28000-CM\d+$/, collection: "Cairn", type: "KITCHEN SINK", optionsShown: false, ...anyPrice },
+    expect: { model: /^K-28000-CM\d+$/, collDesc: v => v.toLowerCase().includes("cairn"), type: "KITCHEN SINK", optionsShown: false, ...anyPrice },
     change: async page => page.evaluate(() => document.querySelector('.product-detail-page__color-swatch input[aria-label="Matte White"]').click()),
     afterChange: { model: "K-28000-CM6", color: "Matte White", optionsShown: false, ...anyPrice } },
   { key: "toto", url: "https://www.totousa.com/drake-two-piece-128-gpf-elongated-bowl", add: true,
-    expect: { model: /^CST776CEG#\d\d$/, collection: "Drake", type: "TOILET", ...anyPrice } },
+    expect: { model: /^CST776CEG#\d\d$/, collDesc: v => v.toLowerCase().includes("drake"), type: "TOILET", ...anyPrice } },
   { key: "brizo", url: "https://www.brizo.com/bath/product/T66T030-PC",
-    expect: { model: "T66T030-PC", collection: "Virage", type: "SHOWER SYSTEM - VALVE TRIM", ...anyPrice } },
+    expect: { model: "T66T030-PC", collDesc: v => v.toLowerCase().includes("virage"), type: "SHOWER SYSTEM - VALVE TRIM", ...anyPrice } },
   { key: "topknobs", url: "https://www.topknobs.com/barrow-knob.html?finish_tk=13603",
     expect: { model: "TK1050BSN", color: "Brushed Satin Nickel", type: "KNOBS", ...anyPrice } },
   { key: "richelieu", url: "https://www.richelieu.com/us/en/category/decorative-hardware/cabinet-hardware-pulls-and-knobs/pulls/contemporary-metal-pull-5632/1166124/sku-BP56325128195",
     expect: { model: "BP56325128195", type: "PULL", ...noPrice } },
   { key: "elkay", url: "https://www.elkay.com/products/sinks/materials/stainless-steel/ectru24179rt",
-    expect: { model: "ECTRU24179RT", collection: "Crosstown", ...noPrice } },
+    expect: { model: "ECTRU24179RT", collDesc: v => v.toLowerCase().includes("crosstown"), ...noPrice } },
   { key: "flusso", url: "https://www.flussofaucets.com/products/10FGC4003CP-hole-in-glass-center-mount-glass-clamp/",
     expect: { model: "10.FGC.4003CP", color: "Chrome", ...anyPrice } },
   // The Monza tub shield used on 11/4 was gone by 11/5; Neptune's addresses keep this shape.
@@ -69,7 +69,7 @@ const VENDORS = [
     expect: { model: "1022.000.01", ...anyPrice } },
   // Jim (11/5): "Not parsing out the finish or collection" on this page.
   { key: "strategic", url: "https://strategicbrandsincorporated.com/80828/128mm-austin-pull-satin-nickel",
-    expect: { model: "80828", color: "Satin Nickel", collection: "Austin", lineShown: true, ...noPrice } },
+    expect: { model: "80828", color: "Satin Nickel", collDesc: v => v.toLowerCase().includes("austin"), lineShown: true, ...noPrice } },
   { key: "franke", url: "https://www.franke.com/us/en/home-solutions/products/kitchen-faucets/product-detail-page.html/115.0731.726.html",
     expect: { model: "115.0731.726", ...noPrice } },
   { key: "fleurco", url: "https://fleurco.com/shower-doors/horizon-sliding-inline", add: true,
@@ -115,7 +115,7 @@ async function readPanel(page) {
     model: await p.locator(".model").inputValue(),
     color: await p.locator(".color").inputValue(),
     price: await p.locator(".price").inputValue(),
-    collection: await p.locator(".collection").inputValue(),
+    collDesc: await p.locator(".description").inputValue(), // one Collection / Description field since 1.4.1
     description: await p.locator(".description").inputValue(),
     type: await p.locator(".type").evaluate(s => (s.value && s.selectedOptions[0] ? s.selectedOptions[0].textContent : "")),
     options: await p.locator(".variant option").count(),
@@ -167,7 +167,7 @@ async function readPanel(page) {
         await page.waitForTimeout(500);
         let got = await readPanel(page);
         let bad = compare(got, v.expect);
-        record(v.key, bad.length === 0, bad.length ? bad.join("; ") : `${got.model} | ${got.color || "-"} | $${got.price || "-"} | ${got.collection || "-"} | ${got.type || "-"}`);
+        record(v.key, bad.length === 0, bad.length ? bad.join("; ") : `${got.model} | ${got.color || "-"} | $${got.price || "-"} | ${(got.collDesc || "-").slice(0, 45)} | ${got.type || "-"}`);
         await page.screenshot({ path: path.join(SHOTS, `${v.key}.png`) });
         if (v.change) {
           await v.change(page);
@@ -180,7 +180,7 @@ async function readPanel(page) {
         if (v.add) {
           await panel.locator(".add").click();
           await panel.locator(".msg.ok").waitFor({ timeout: 10000 });
-          added.push({ key: v.key, model: got.model, type: got.type, collection: got.collection });
+          added.push({ key: v.key, model: got.model, type: got.type, collDesc: got.collDesc });
         }
       } catch (e) {
         record(v.key, false, `error: ${String(e.message || e).split("\n")[0]}`);
@@ -201,8 +201,8 @@ async function readPanel(page) {
       const picks = (msgs.filter(m => m.type === "vendor-picks").pop() || { picks: [] }).picks;
       for (const a of added) {
         const p = picks.find(x => x.model === a.model);
-        const ok = !!p && (!a.type || p.typeName === a.type) && (!a.collection || p.collection === a.collection) && !!p.description;
-        record("hand-off", ok, `${a.key}: ${p ? `${p.model}, Type ${p.typeName || "-"}, Collection ${p.collection || "-"}, ${p.description.slice(0, 40)}` : "not delivered"}`);
+        const ok = !!p && (!a.type || p.typeName === a.type) && p.description === a.collDesc && !!p.description;
+        record("hand-off", ok, `${a.key}: ${p ? `${p.model}, Type ${p.typeName || "-"}, Coll/Desc ${p.description.slice(0, 50)}` : "not delivered"}`);
       }
     }
   } finally {

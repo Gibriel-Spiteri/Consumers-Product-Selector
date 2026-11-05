@@ -210,11 +210,15 @@ export interface VendorPickSource {
 // price) stays blank for the rep to fill in on the quote list; missingDetails() lists it.
 // NetSuite's Coll/Desc, the way reps fill it: the collection, then the description ("Cassidy Two Handle Widespread
 // Bathroom Faucet"). Not repeated when the description already starts with it ("Cairn 27-1/2 inch ... sink").
+// 2026-11-05: left out when the description names the collection anywhere ("128mm Austin Pull - Satin Nickel"), not only
+// at the start. Since extension 1.4.1 the panel sends one Collection / Description value and an empty collection.
 export function collDesc(collection: string | undefined, description: string): string {
   const c = (collection ?? "").replace(/[®™]/g, "").trim();
   const d = description.trim();
   if (!c) return d.slice(0, 300);
-  if (d.replace(/[®™]/g, "").toLowerCase().startsWith(c.toLowerCase())) return d.slice(0, 300);
+  // if (d.replace(/[®™]/g, "").toLowerCase().startsWith(c.toLowerCase())) return d.slice(0, 300);
+  const named = new RegExp(`(^|[^a-z0-9])${c.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}($|[^a-z0-9])`);
+  if (named.test(d.replace(/[®™]/g, "").toLowerCase())) return d.slice(0, 300);
   return `${c} ${d}`.trim().slice(0, 300);
 }
 

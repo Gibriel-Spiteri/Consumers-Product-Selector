@@ -134,6 +134,10 @@ test("the Type and product line chosen in the extension are used; Collection and
   assert.equal(quoteInputFromPick({ ...dpick, typeId: "999" }, delta, DELTA).details.typeName, "KITCHEN FAUCET");
   assert.equal(collDesc("Cairn®", "Cairn 27-1/2\" undermount single-bowl kitchen sink"), "Cairn 27-1/2\" undermount single-bowl kitchen sink");
   assert.equal(collDesc("", "Drake Two-piece Toilet"), "Drake Two-piece Toilet");
+  assert.equal(collDesc("Austin", "128mm Austin Pull - Satin Nickel"), "128mm Austin Pull - Satin Nickel");
+  // Extension 1.4.1 sends the one Coll/Desc value with an empty collection: used as is.
+  assert.equal(quoteInputFromPick({ ...dpick, collection: undefined, description: "Altado Two Handle Widespread Bathroom Faucet" }, delta, DELTA).details.description,
+    "Altado Two Handle Widespread Bathroom Faucet");
   // The breadcrumbs help the guess: "Pull-Down" alone in the name, "Kitchen / Sink Faucets" in the crumbs.
   assert.equal(suggestType({ name: "Broderick Pull-Down", pageUrl: "https://www.deltafaucet.com/p/9190TL-DST.html", category: "Kitchen / Sink Faucets / Pull-Down" }, DELTA)?.name, "KITCHEN FAUCET");
 });
