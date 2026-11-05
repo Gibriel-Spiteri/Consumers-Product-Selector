@@ -231,6 +231,15 @@ test("a finish at the end of the product name fills an empty color (Jim, 11/5)",
   assert.equal(X.extract([JSON.stringify({ "@type": "Product", name: "Knob in Chrome", sku: "K1", color: "Matte Black" })], {}, "https://x.test/").items[0].color, "Matte Black");
 });
 
+test("one Collection / Description value, as NetSuite's Coll/Desc (Gib, 11/5)", () => {
+  assert.equal(X.collDesc("Altado", "Two Handle Widespread Bathroom Faucet"), "Altado Two Handle Widespread Bathroom Faucet");
+  assert.equal(X.collDesc("Broderick", "Touch2O® Technology Kitchen Faucet with Touchless Technology"), "Broderick Touch2O® Technology Kitchen Faucet with Touchless Technology");
+  assert.equal(X.collDesc("Cairn", "Cairn® 27-1/2\" undermount single-bowl kitchen sink"), "Cairn® 27-1/2\" undermount single-bowl kitchen sink");
+  assert.equal(X.collDesc("Austin", "128mm Austin Pull - Satin Nickel"), "128mm Austin Pull - Satin Nickel");
+  assert.equal(X.collDesc("", "Drake Two-piece Toilet"), "Drake Two-piece Toilet");
+  assert.equal(X.collDesc("Art", "Partition Wall Panel"), "Art Partition Wall Panel"); // a word, not part of one
+});
+
 test("vendor domains: subdomains count as the main domain", () => {
   assert.equal(X.registrableDomain("www.us.kohler.com"), "kohler.com");
   assert.equal(X.registrableDomain("craftandmain.com"), "craftandmain.com");

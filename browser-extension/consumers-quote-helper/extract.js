@@ -267,6 +267,18 @@
     return tail.some(w => FINISH_COLOR.has(w.toLowerCase().replace(/[^a-z]/g, ""))) ? tail.join(" ") : "";
   }
 
+  // NetSuite's Coll/Desc as reps type it: the collection, then the description ("Altado Two Handle Widespread
+  // Bathroom Faucet"). The collection is left out when the description already names it ("Cairn 27-1/2..." or
+  // "128mm Austin Pull - Satin Nickel"). Same rule as the Product Selector's collDesc (src/lib/vendor-picks.ts).
+  function collDesc(collection, description) {
+    const c = String(collection || "").replace(/[®™]/g, "").trim();
+    const d = text(description);
+    if (!c) return d;
+    const named = new RegExp(`(^|[^a-z0-9])${c.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}($|[^a-z0-9])`);
+    if (named.test(d.replace(/[®™]/g, "").toLowerCase())) return d;
+    return `${c} ${d}`.trim().slice(0, MAX_TEXT);
+  }
+
   // The vendor's breadcrumbs ("Kitchen / Sink Faucets / Pull-Down"): JSON-LD BreadcrumbList, else the page's own
   // breadcrumb links (page.crumbs), else the product's category.
   function breadcrumbs(blocks, page) {
@@ -516,7 +528,7 @@
 
   const api = {
     extract, scanHtml, fromJsonLd, fromOpenGraph, fromPageText, fillGaps, blankItem, urlModel, labeledModels,
-    registrableDomain, pickDefault, text, number, suggestType, printedPrice, breadcrumbs, guessFinish,
+    registrableDomain, pickDefault, text, number, suggestType, printedPrice, breadcrumbs, guessFinish, collDesc,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.ConsumersExtract = api;

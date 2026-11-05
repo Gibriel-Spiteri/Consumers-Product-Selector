@@ -56,8 +56,10 @@
           <label>Model<input class="model" maxlength="300"></label>
           <label>Color / finish<input class="color" maxlength="300"></label>
         </div>
+        <!-- 2026-11-05 (Gib): one field, as NetSuite's Coll/Desc. Was two:
         <label>Collection<input class="collection" maxlength="300"></label>
-        <label>Description<input class="description" maxlength="300"></label>
+        <label>Description<input class="description" maxlength="300"></label> -->
+        <label>Collection / Description<input class="description" maxlength="300"></label>
         <div class="row">
           <label>Price on this site<input class="price" type="number" min="0" step="0.01" inputmode="decimal"></label>
           <label>Quantity<input class="qty" type="number" min="1" max="1000000" step="1" value="1" inputmode="numeric"></label>
@@ -74,7 +76,7 @@
     model: $(".model"), color: $(".color"), price: $(".price"), qty: $(".qty"), add: $(".add"),
     manualHint: $(".manual-hint"),
     lineWrap: $(".line-wrap"), line: $(".line"), typeWrap: $(".type-wrap"), type: $(".type"),
-    collection: $(".collection"), description: $(".description") };
+    description: $(".description") }; // was also collection: $(".collection") (until 1.4.1)
 
   let items = [];
   let selected = -1;
@@ -306,8 +308,11 @@
     f.model.value = it.model;
     f.color.value = it.color;
     f.price.value = it.price != null ? String(it.price) : "";
-    f.collection.value = it.collection || "";
-    f.description.value = it.name || "";
+    // f.collection.value = it.collection || "";
+    // f.description.value = it.name || "";
+    // Coll/Desc as reps type it in NetSuite: the collection, then the description ("Altado Two Handle Widespread
+    // Bathroom Faucet"), not repeated when the name already has it.
+    f.description.value = X.collDesc(it.collection, it.name || "");
     fillTypes();
   }
 
@@ -331,7 +336,8 @@
     f.type.innerHTML = "";
     f.type.appendChild(new Option("Choose a type (or leave it to your sales rep)", ""));
     for (const t of options) f.type.appendChild(new Option(t.name, t.id));
-    const guess = X.suggestType({ name: f.description.value, pageUrl: location.href, category }, options);
+    const it = items[selected] || {};
+    const guess = X.suggestType({ name: it.name || f.description.value, pageUrl: location.href, category }, options);
     f.type.value = guess ? guess.id : "";
     f.typeWrap.hidden = options.length === 0;
   }
@@ -383,7 +389,8 @@
     const typeOption = f.type.selectedOptions[0];
     const pick = {
       // name: it.name || "",
-      name: f.description.value || it.name || "",
+      // name: f.description.value || it.name || "",
+      name: it.name || f.description.value || "",
       model: f.model.value,
       color: f.color.value,
       price: f.price.value,
@@ -394,7 +401,10 @@
       productLineId: line ? line.id : "",
       typeId: f.type.value,
       typeName: f.type.value && typeOption ? typeOption.textContent : "",
-      collection: f.collection.value,
+      // collection: f.collection.value,
+      // description: f.description.value,
+      // The one Coll/Desc field (collection included); the Product Selector uses it as is.
+      collection: "",
       description: f.description.value,
       category,
     };

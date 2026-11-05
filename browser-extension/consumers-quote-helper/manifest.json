@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Consumers Quote Helper",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Add products from vendor websites to the Consumers Product Selector quote list.",
   "minimum_chrome_version": "111",
   "permissions": ["storage", "scripting"],
