@@ -47,7 +47,7 @@ const VENDORS = [
     change: async page => page.evaluate(() => document.querySelector('.product-detail-page__color-swatch input[aria-label="Matte White"]').click()),
     afterChange: { model: "K-28000-CM6", color: "Matte White", optionsShown: false, ...anyPrice } },
   { key: "toto", url: "https://www.totousa.com/drake-two-piece-128-gpf-elongated-bowl", add: true,
-    // 1.5.1: every field is required; the page gives no color, so Add is refused until the customer types one.
+    // 1.5.2: every field is required; the page gives no color, so Add is refused until the customer types one.
     fill: { ".color": "Cotton White" },
     expect: { model: /^CST776CEG#\d\d$/, collDesc: v => v.toLowerCase().includes("drake"), type: "TOILET", ...anyPrice } },
   { key: "brizo", url: "https://www.brizo.com/bath/product/T66T030-PC",
@@ -227,7 +227,7 @@ async function readPanel(page) {
           await page.screenshot({ path: path.join(SHOTS, `${v.key}-changed.png`) });
         }
         if (v.add) {
-          // 1.5.1 (Gib 11/5): all fields are required. A field the page left empty must be refused and outlined first.
+          // 1.5.2 (Gib 11/5): all fields are required. A field the page left empty must be refused and outlined first.
           if (v.fill) {
             await panel.locator(".add").click();
             await page.waitForTimeout(300);
