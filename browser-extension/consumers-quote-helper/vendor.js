@@ -1,4 +1,4 @@
-// Consumers Quote Helper, on vendor websites (only the product lines' domains): shows an "Add to Consumers Quote"
+// Consumers QuickAdd (Consumers Quote Helper until 1.5.0), on vendor websites (only the product lines' domains): shows an "Add to CPS Quote List"
 // button on product pages. The panel lives in a shadow root so the vendor's styles and ours never mix.
 (() => {
   "use strict";
@@ -52,9 +52,13 @@
         animation: cqh-spin .8s linear infinite; }
       @keyframes cqh-spin { to { transform: rotate(360deg); } }
     </style>
+    <!-- 1.5.0 (Gib 11/5): "Add to CPS Quote List", and the subtext asks to check the fields. Was:
     <button class="fab" type="button" part="fab"><span>Add to Consumers Quote</span><span class="dot" hidden></span></button>
     <div class="panel" role="dialog" aria-label="Add to Consumers Quote">
-      <div class="head"><div><b>Add to Consumers Quote</b><small>Your sales rep finishes it in the Product Selector</small></div><button class="x" type="button" aria-label="Close">&times;</button></div>
+      <div class="head"><div><b>Add to Consumers Quote</b><small>Your sales rep finishes it in the Product Selector</small></div>... -->
+    <button class="fab" type="button" part="fab"><span>Add to CPS Quote List</span><span class="dot" hidden></span></button>
+    <div class="panel" role="dialog" aria-label="Add to CPS Quote List">
+      <div class="head"><div><b>Add to CPS Quote List</b><small>Confirm all fields are correct before adding</small></div><button class="x" type="button" aria-label="Close">&times;</button></div>
       <div class="body">
         <div class="prod"><img alt=""><div class="name"></div></div>
         <label class="variant-wrap">Option<select class="variant"></select></label>
@@ -142,7 +146,7 @@
       color: () => checkedLabel("rdoHardwareFinish"),
       name: () => [textOf(".product-page .title"), checkedLabel("rdoGlassType")].filter(Boolean).join(", "),
       collection: () => textOf(".product-page .title"),
-      hint: "Choose every option on the page, Mix & Match Kit included, until the model number shows under them. Then click Add to Consumers Quote again, or type the model here.",
+      hint: "Choose every option on the page, Mix & Match Kit included, until the model number shows under them. Then click Add to CPS Quote List again, or type the model here.",
     },
     // Delta (2026-11-04): picking a finish changes the address (/9190TL-DST.html -> /9190TL-PN-DST.html) and the
     // price shown, but not the page's product data. The chosen swatch is titled "Finish: Polished Nickel, selected",
@@ -436,7 +440,8 @@
     msg.hidden = false;
     if (res && res.ok) {
       msg.className = "msg ok";
-      msg.textContent = `Added to your Consumers quote. ${res.count} item${res.count === 1 ? "" : "s"} waiting for your sales rep.`;
+      // msg.textContent = `Added to your Consumers quote. ${res.count} item${res.count === 1 ? "" : "s"} waiting for your sales rep.`;
+      msg.textContent = `Added to the CPS Quote List. ${res.count} item${res.count === 1 ? "" : "s"} waiting for your sales rep.`;
       refreshCount();
     } else {
       msg.className = "msg err";

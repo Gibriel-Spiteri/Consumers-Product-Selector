@@ -1,4 +1,4 @@
-// Consumers Quote Helper, on the Product Selector's own pages: passes messages between the page and the extension.
+// Consumers QuickAdd (Consumers Quote Helper until 1.5.0), on the Product Selector's own pages: passes messages between the page and the extension.
 // The page sends its product lines' vendor websites and finished picks; the extension sends the picks customers
 // made on vendor sites. Only same-window messages from this origin are accepted.
 (() => {

@@ -1,8 +1,9 @@
-// Consumers Quote Helper service worker (Chrome and Edge, Manifest V3).
+// Consumers QuickAdd service worker (Chrome and Edge, Manifest V3). Named Consumers Quote Helper until 1.5.0.
 // - Keeps the vendor domain list the Product Selector sends (product lines' websites from NetSuite) and runs
 //   vendor.js only on those domains.
 // - Holds the items customers add on vendor sites until the Product Selector picks them up.
-importScripts("extract.js");
+// importScripts("extract.js");
+importScripts("extract.js", "seed-sites.js");
 
 const APP_ORIGINS = [
   "https://consumers-product-selector.replit.app",
@@ -23,7 +24,11 @@ const MAX_PICKS = 50;
 const { registrableDomain, text, number } = globalThis.ConsumersExtract;
 
 async function state() {
-  return chrome.storage.local.get({ vendorDomains: SEED_DOMAINS, picks: [], siteLines: {} });
+  // return chrome.storage.local.get({ vendorDomains: SEED_DOMAINS, picks: [], siteLines: {} });
+  const s = await chrome.storage.local.get({ vendorDomains: SEED_DOMAINS, picks: [], siteLines: {} });
+  // 1.5.0: until a Product Selector tab sends the current product lines, the bundled PROD list gives the panel its Types.
+  if (!s.siteLines || !Object.keys(s.siteLines).length) s.siteLines = seedLines();
+  return s;
 }
 
 const nsId = v => (typeof v === "string" && /^[1-9]\d{0,17}$/.test(v) ? v : "");
@@ -47,6 +52,10 @@ function siteLinesFrom(sites) {
   }
   return out;
 }
+
+// The bundled lines (seed-sites.js), worked out once.
+let seeded = null;
+const seedLines = () => (seeded = seeded || siteLinesFrom(Array.isArray(globalThis.ConsumersSeedSites) ? globalThis.ConsumersSeedSites : []));
 
 async function registerVendorScripts(domains) {
   const matches = domains.flatMap(d => [`https://${d}/*`, `https://*.${d}/*`]);

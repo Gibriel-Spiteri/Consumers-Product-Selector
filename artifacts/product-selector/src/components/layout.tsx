@@ -198,7 +198,8 @@ function EmployeeBadge() {
             data-testid="link-quote-helper"
           >
             <Puzzle size={14} />
-            Quote Helper
+            {/* Quote Helper (renamed Consumers QuickAdd on 11/5) */}
+            QuickAdd
           </Link>
           <button
             onClick={() => { setOpen(false); logout(); }}
