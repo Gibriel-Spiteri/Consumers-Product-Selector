@@ -249,6 +249,24 @@
     return m ? m[1].trim() : "";
   }
 
+  // A finish named at the end of the product name, when the page gives no color (Jim, 11/5): "128mm Austin Pull -
+  // Satin Nickel", "Barrow Knob 1 1/4 Inch Brushed Satin Nickel", "... with Clear glass in Chrome". The trailing words
+  // must all be finish words and include a color or metal, so "Elongated Bowl" or "Matte" alone is not a finish.
+  const FINISH_COLOR = new Set(["chrome", "nickel", "bronze", "brass", "gold", "black", "white", "stainless", "steel",
+    "copper", "pewter", "silver", "graphite", "gunmetal", "iron", "biscuit", "almond", "bone", "cotton", "grey", "gray",
+    "taupe", "ivory", "champagne", "platinum", "titanium", "aluminum", "zinc", "onyx", "slate", "sand", "cream"]);
+  const FINISH_WORD = new Set([...FINISH_COLOR, "matte", "polished", "brushed", "satin", "oil", "rubbed", "antique",
+    "aged", "venetian", "spotshield", "lumicoat", "arctic", "vibrant", "french", "honey", "dark", "light", "warm",
+    "flat", "gloss", "glossy", "natural", "tuscan", "english", "moderne", "luxe", "pvd", "brilliance", "and", "&"]);
+  function guessFinish(name) {
+    const words = text(name).replace(/[®™]/g, "").split(/\s+/).filter(Boolean);
+    let i = words.length;
+    while (i > 0 && FINISH_WORD.has(words[i - 1].toLowerCase().replace(/[^a-z&]/g, ""))) i--;
+    const tail = words.slice(i);
+    while (tail.length && /^(and|&)$/i.test(tail[0])) tail.shift();
+    return tail.some(w => FINISH_COLOR.has(w.toLowerCase().replace(/[^a-z]/g, ""))) ? tail.join(" ") : "";
+  }
+
   // The vendor's breadcrumbs ("Kitchen / Sink Faucets / Pull-Down"): JSON-LD BreadcrumbList, else the page's own
   // breadcrumb links (page.crumbs), else the product's category.
   function breadcrumbs(blocks, page) {
@@ -276,10 +294,13 @@
     return (unique.length ? unique.join(" / ") : productCategory).slice(0, MAX_TEXT);
   }
 
-  // Words, singular: "Pull-Down Kitchen Faucets" -> pull, down, kitchen, faucet.
+  // Words, singular: "Pull-Down Kitchen Faucets" -> pull, down, kitchen, faucet. "Bathroom" counts as the Types'
+  // "BATH" (Delta's "Two Handle Widespread Bathroom Faucet" is a BATH FAUCET, 11/5).
+  const SAME_WORD = { bathroom: "bath" };
   function words(s) {
     return String(s).toLowerCase().split(/[^a-z]+/).filter(w => w.length > 1)
-      .map(w => (w.length > 3 && w.endsWith("s") && !w.endsWith("ss") ? w.slice(0, -1) : w));
+      .map(w => (w.length > 3 && w.endsWith("s") && !w.endsWith("ss") ? w.slice(0, -1) : w))
+      .map(w => SAME_WORD[w] || w);
   }
 
   // The product line's special-order Type that fits: words of the Type found in the product name count 2, in the
@@ -293,8 +314,12 @@
     } catch {}
     const nameWords = new Set(words(pick.name || ""));
     const otherWords = new Set([...words(path), ...words(pick.category || "")]);
+    // The Type's last word is its main noun (BASE, DOOR, FAUCET, SINK, TRIM) and must be there too: a shower door is
+    // not a SHOWER BASE just because both say "shower" (Neptune has no shower-door Type, live check 11/5).
+    const head = t => { const w = words(t.name); return w[w.length - 1]; };
     const scored = (typeList || [])
       .filter(t => !t.requiresAttachment && !/^misc/i.test(String(t.name).trim()))
+      .filter(t => nameWords.has(head(t)) || otherWords.has(head(t)))
       .map(t => ({ t, score: [...new Set(words(t.name))].reduce((s, w) => s + (nameWords.has(w) ? 2 : otherWords.has(w) ? 1 : 0), 0) }))
       // .filter(s => s.score > 0)
       .filter(s => s.score >= MIN_TYPE_SCORE)
@@ -478,18 +503,20 @@
           ...items[0],
           model: labeled.isModel && labeled.value.toUpperCase() === fresh ? labeled.value : fresh,
           color: "",
+          stale: true, // its name may still name the first finish: no finish guessed from it
           price: livePrice,
           priceIsList: false,
         }];
       }
     }
-    items = items.map(it => ({ ...it, collection: it.collection || guessCollection(it, page) }));
+    // items = items.map(it => ({ ...it, collection: it.collection || guessCollection(it, page) }));
+    items = items.map(it => ({ ...it, color: it.color || (it.stale ? "" : guessFinish(it.name)), collection: it.collection || guessCollection(it, page) }));
     return { items, selected: pickDefault(items, pageUrl), category: breadcrumbs(blocks, page) };
   }
 
   const api = {
     extract, scanHtml, fromJsonLd, fromOpenGraph, fromPageText, fillGaps, blankItem, urlModel, labeledModels,
-    registrableDomain, pickDefault, text, number, suggestType, printedPrice, breadcrumbs,
+    registrableDomain, pickDefault, text, number, suggestType, printedPrice, breadcrumbs, guessFinish,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.ConsumersExtract = api;

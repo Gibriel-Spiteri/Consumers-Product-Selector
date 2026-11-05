@@ -30,35 +30,46 @@ const noPrice = { price: v => v === "" };
 // What each vendor's product page should give (checked 2026-11-04).
 const VENDORS = [
   { key: "delta", url: "https://www.deltafaucet.com/kitchen/product/9190TL-DST.html", add: true,
-    expect: { model: "9190TL-DST", color: "Chrome", collection: "Broderick", type: "KITCHEN FAUCET", ...anyPrice },
+    // The header is Consumers Confirm's blue (#1f4fd1 to #183fa8), Jim 11/5.
+    expect: { model: "9190TL-DST", color: "Chrome", collection: "Broderick", type: "KITCHEN FAUCET", header: h => /31, 79, 209/.test(h), ...anyPrice },
     // Pick another finish with the panel open: the panel follows it.
     // Clicked from the page: at this window size the open panel sits over Delta's swatches.
     change: async page => page.evaluate(() => document.querySelector('button.product-attribute__swatch[title^="Finish: Polished Nickel"]').click()),
     afterChange: { model: "9190TL-PN-DST", color: "Polished Nickel", ...anyPrice } },
-  { key: "kohler", url: "https://www.kohler.com/en/products/kitchen-sinks/shop-kitchen-sinks/cairn-27-1-2-x-18-5-16-x-9-1-2-neoroc-under-mount-single-bowl-kitchen-sink-with-sink-rack-28000?skuId=K-28000-CM6",
-    expect: { model: "K-28000-CM6", color: "Matte White", collection: "Cairn", type: "KITCHEN SINK", options: n => n > 1, ...anyPrice } },
+  // Jim (11/5): the panel kept 35442-MPU-DST after Champagne Bronze was picked. The shown MODEL# is read first.
+  { key: "delta2", url: "https://www.deltafaucet.com/bathroom/product/35442-MPU-DST.html",
+    expect: { model: "35442-MPU-DST", color: "Chrome", collection: "Altado", type: "BATH FAUCET", ...anyPrice },
+    change: async page => page.evaluate(() => document.querySelector('button.product-attribute__swatch[title^="Finish: Champagne Bronze"]').click()),
+    afterChange: { model: "35442-CZMPU-DST", color: "Champagne Bronze", collection: "Altado", ...anyPrice } },
+  // Jim (11/5): Kohler offered a color dropdown while Delta followed the page. Now Kohler follows the page too.
+  { key: "kohler", url: "https://www.kohler.com/en/products/kitchen-sinks/shop-kitchen-sinks/cairn-27-1-2-x-18-5-16-x-9-1-2-neoroc-under-mount-single-bowl-kitchen-sink-with-sink-rack-28000",
+    expect: { model: /^K-28000-CM\d+$/, collection: "Cairn", type: "KITCHEN SINK", optionsShown: false, ...anyPrice },
+    change: async page => page.evaluate(() => document.querySelector('.product-detail-page__color-swatch input[aria-label="Matte White"]').click()),
+    afterChange: { model: "K-28000-CM6", color: "Matte White", optionsShown: false, ...anyPrice } },
   { key: "toto", url: "https://www.totousa.com/drake-two-piece-128-gpf-elongated-bowl", add: true,
     expect: { model: /^CST776CEG#\d\d$/, collection: "Drake", type: "TOILET", ...anyPrice } },
   { key: "brizo", url: "https://www.brizo.com/bath/product/T66T030-PC",
     expect: { model: "T66T030-PC", collection: "Virage", type: "SHOWER SYSTEM - VALVE TRIM", ...anyPrice } },
   { key: "topknobs", url: "https://www.topknobs.com/barrow-knob.html?finish_tk=13603",
-    expect: { model: "TK1050BSN", type: "KNOBS", ...anyPrice } },
+    expect: { model: "TK1050BSN", color: "Brushed Satin Nickel", type: "KNOBS", ...anyPrice } },
   { key: "richelieu", url: "https://www.richelieu.com/us/en/category/decorative-hardware/cabinet-hardware-pulls-and-knobs/pulls/contemporary-metal-pull-5632/1166124/sku-BP56325128195",
     expect: { model: "BP56325128195", type: "PULL", ...noPrice } },
   { key: "elkay", url: "https://www.elkay.com/products/sinks/materials/stainless-steel/ectru24179rt",
     expect: { model: "ECTRU24179RT", collection: "Crosstown", ...noPrice } },
   { key: "flusso", url: "https://www.flussofaucets.com/products/10FGC4003CP-hole-in-glass-center-mount-glass-clamp/",
     expect: { model: "10.FGC.4003CP", color: "Chrome", ...anyPrice } },
-  { key: "neptune", url: "https://produitsneptune.com/product/monza-39-x-59-in-8-mm-pivot-tub-shield-for-alcove-installation/220086/220086-900-084-000",
-    expect: { model: "220086-900-084-000", ...anyPrice } },
+  // The Monza tub shield used on 11/4 was gone by 11/5; Neptune's addresses keep this shape.
+  { key: "neptune", url: "https://produitsneptune.com/product/belaya-32-36-x-72-in-6mm-pivot-shower-door-for-alcove-installation/220333/220333-900-084-000",
+    expect: { model: "220333-900-084-000", type: "", ...anyPrice } }, // no shower-door Type at Neptune: not SHOWER BASE
   { key: "craftandmain", url: "https://craftandmain.com/products/craft-main%C2%AE-ashlow%E2%84%A2-vanity-with-engineered-stone-top",
     expect: { model: "AWWVT2419D", lineShown: true, ...anyPrice } },
   { key: "johnboos", url: "https://www.johnboos.com/products/cherry-cucina-damico-wine-cart-with-undershelves-and-towel-bar",
     expect: { model: "CHY-CUCD15WC", type: "", ...anyPrice } }, // a wine cart: no Type guess from "Boos Blocks"
   { key: "icera", url: "https://icerabath.com/product/antigua-undermount-lavatory/",
     expect: { model: "1022.000.01", ...anyPrice } },
-  { key: "strategic", url: "https://strategicbrandsincorporated.com/85414/1-1-4-knob-precision-polished-nickel",
-    expect: { model: "85414", lineShown: true, ...noPrice } },
+  // Jim (11/5): "Not parsing out the finish or collection" on this page.
+  { key: "strategic", url: "https://strategicbrandsincorporated.com/80828/128mm-austin-pull-satin-nickel",
+    expect: { model: "80828", color: "Satin Nickel", collection: "Austin", lineShown: true, ...noPrice } },
   { key: "franke", url: "https://www.franke.com/us/en/home-solutions/products/kitchen-faucets/product-detail-page.html/115.0731.726.html",
     expect: { model: "115.0731.726", ...noPrice } },
   { key: "fleurco", url: "https://fleurco.com/shower-doors/horizon-sliding-inline", add: true,
@@ -110,6 +121,8 @@ async function readPanel(page) {
     options: await p.locator(".variant option").count(),
     lineShown: await p.locator(".line-wrap").isVisible(),
     manual: await p.locator(".manual-hint").isVisible(),
+    optionsShown: await p.locator(".variant-wrap").isVisible(),
+    header: await p.locator(".head").evaluate(h => getComputedStyle(h).backgroundImage),
   };
 }
 
