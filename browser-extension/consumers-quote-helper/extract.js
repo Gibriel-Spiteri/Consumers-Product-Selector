@@ -30,7 +30,10 @@
 
   function imageUrl(image, base) {
     const first = Array.isArray(image) ? image[0] : image;
-    const raw = typeof first === "object" && first ? first.url || first.contentUrl : first;
+    // const raw = typeof first === "object" && first ? first.url || first.contentUrl : first;
+    let raw = typeof first === "object" && first ? first.url || first.contentUrl : first;
+    // 1.5.3 (sweep 11/5): Flusso writes "flussofaucets.com/media/..." with no scheme, which resolved under the page.
+    if (typeof raw === "string" && /^[a-z0-9-]+(?:\.[a-z0-9-]+)+\//i.test(raw)) raw = `https://${raw}`;
     if (!raw) return "";
     try {
       const url = new URL(String(raw), base);
@@ -45,7 +48,9 @@
   }
 
   // A barcode (UPC/EAN/GTIN), not a model number. Flusso puts its UPC in mpn and the model in sku.
-  const isBarcode = value => /^\d{8}$|^\d{12,14}$/.test(value);
+  // const isBarcode = value => /^\d{8}$|^\d{12,14}$/.test(value);
+  // Also with a dashed check digit: Flusso's Caso K.1200CR has mpn "716894070509-7" (Gib 11/5).
+  const isBarcode = value => /^(?:\d{8}|\d{12,14})(?:-\d)?$/.test(value);
 
   // The first model-number candidate that is not a barcode; a barcode only when nothing else is given.
   function firstModel(candidates) {
@@ -68,7 +73,10 @@
       }
     }
     for (const offer of list) {
-      const p = number(offer && (offer.price ?? offer.lowPrice));
+      // const p = number(offer && (offer.price ?? offer.lowPrice));
+      // 1.5.3: a range (AggregateOffer lowPrice to a different highPrice) is not one price.
+      const ranged = offer && offer.price == null && offer.highPrice != null && number(offer.highPrice) !== number(offer.lowPrice);
+      const p = ranged ? null : number(offer && (offer.price ?? offer.lowPrice));
       if (p) return { price: p, currency: text(offer.priceCurrency) || "USD", isList: false };
     }
     return { price: null, currency: "USD", isList: false };
@@ -132,7 +140,9 @@
 
   // Open Graph product tags, used only when the page has no JSON-LD or microdata product.
   function fromOpenGraph(meta, pageUrl) {
-    const isProduct = /product/i.test(meta["og:type"] || "") || meta["og:price:amount"] || meta["product:price:amount"];
+    // const isProduct = /product/i.test(meta["og:type"] || "") || meta["og:price:amount"] || meta["product:price:amount"];
+    // 1.5.3 (sweep 11/5): "product" only; a Shopify collection page says "product.group" (Craft & Main).
+    const isProduct = /^(og:)?product$/i.test(String(meta["og:type"] || "").trim()) || meta["og:price:amount"] || meta["product:price:amount"];
     if (!isProduct) return [];
     return [{
       // name: text(meta["og:title"]).replace(/\s*\|.*$/, ""),
@@ -175,7 +185,10 @@
   // "Model#: CHY-CUCD15WC" (John Boos), "MODEL NUMBER: 220086-900-084-000" (Neptune), "SKU: CST776CEG#01" (TOTO),
   // "Item Number TK1050BSN" (Top Knobs), "Part Number 85414" (Strategic Brands), "Article Number 115.0731.726"
   // (Franke). The value must hold a digit, so "ITEM DETAILS" is not one.
-  const MODEL_LABEL = /\b(model(?:\s*(?:#|no\.?|number))?|sku|item\s*(?:#|no\.?|number)|part\s*(?:#|no\.?|number)|article\s*(?:#|no\.?|number)|product\s*(?:code|#|no\.?|number))\s*[:#]?\s*([A-Z0-9][A-Z0-9.\-\/#]{1,40})/gi;
+  // const MODEL_LABEL = /\b(model(?:\s*(?:#|no\.?|number))?|sku|item\s*(?:#|no\.?|number)|part\s*(?:#|no\.?|number)|article\s*(?:#|no\.?|number)|product\s*(?:code|#|no\.?|number))\s*[:#]?\s*([A-Z0-9][A-Z0-9.\-\/#]{1,40})/gi;
+  // 1.5.3 (sweep 11/5): a bare "model" needs its ":" or "#" ("Model: 32665003"); prose like "The model 8160 is
+  // available in 8 finishes" (a Richelieu family page) is not a label.
+  const MODEL_LABEL = /\b(model\s*(?:#|no\.?|number)|model(?=\s*[:#])|sku|item\s*(?:#|no\.?|number)|part\s*(?:#|no\.?|number)|article\s*(?:#|no\.?|number)|product\s*(?:code|#|no\.?|number))\s*[:#]?\s*([A-Z0-9][A-Z0-9.\-\/#]{1,40})/gi;
 
   function labeledModels(s) {
     const found = [];
@@ -220,16 +233,38 @@
   }
 
   // The first price shortly after the heading. "+$54.00" is an add-on (TOTO's colors), not the price.
+  // function pagePrice(win) {
+  //   if (!win) return null;
+  //   for (const after of win.afters) {
+  //     for (const m of after.slice(0, PRICE_AFTER_HEADING).matchAll(/(^|[^+\d])\$\s?(\d[\d,]*(?:\.\d{2})?)/g)) {
+  //       const p = printedPrice(m[2]);
+  //       if (p) return p;
+  //     }
+  //   }
+  //   return null;
+  // }
+  // 1.5.3 (sweep 11/5): a price that starts inside the window is read to its end (Brizo's "$1,185.00" was cut to $1),
+  // and a range ("$680.00 - $1,061.00", "$191.00 through $301.00") or a "from" price is not the item's price: none
+  // is taken, so the customer picks the finish and the panel reads the single price then.
   function pagePrice(win) {
     if (!win) return null;
     for (const after of win.afters) {
-      for (const m of after.slice(0, PRICE_AFTER_HEADING).matchAll(/(^|[^+\d])\$\s?(\d[\d,]*(?:\.\d{2})?)/g)) {
-        // const p = number(m[2]);
+      for (const m of after.slice(0, PRICE_AFTER_HEADING + 20).matchAll(/(^|[^+\d])\$\s?(\d[\d,]*(?:\.\d{2})?)/g)) {
+        if (m.index >= PRICE_AFTER_HEADING) break;
+        const end = m.index + m[0].length;
+        if (/^\s*(?:-|\u2013|\u2014|to|through)\s*\$/i.test(after.slice(end, end + 15))) return null;
+        if (/\b(?:from|starting at|as low as)\s*$/i.test(after.slice(Math.max(0, m.index - 20), m.index + m[1].length))) return null;
         const p = printedPrice(m[2]);
         if (p) return p;
       }
     }
     return null;
+  }
+
+  // The page says the item is discontinued, next to its name (Elkay, TOTO colors; 1.5.3): the panel warns.
+  function discontinued(page) {
+    const win = textWindow(page);
+    return !!win && /\bdiscontinued\b/i.test(win.after.slice(0, PRICE_AFTER_HEADING));
   }
 
   // ---- Collection, breadcrumbs and the special-order Type (1.3.0) ---------------------------------------------
@@ -270,13 +305,39 @@
   // NetSuite's Coll/Desc as reps type it: the collection, then the description ("Altado Two Handle Widespread
   // Bathroom Faucet"). The collection is left out when the description already names it ("Cairn 27-1/2..." or
   // "128mm Austin Pull - Satin Nickel"). Same rule as the Product Selector's collDesc (src/lib/vendor-picks.ts).
+  // function collDesc(collection, description) {
+  //   const c = String(collection || "").replace(/[®™]/g, "").trim();
+  //   const d = text(description);
+  //   if (!c) return d;
+  //   const named = new RegExp(`(^|[^a-z0-9])${c.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}($|[^a-z0-9])`);
+  //   if (named.test(d.replace(/[®™]/g, "").toLowerCase())) return d;
+  //   return `${c} ${d}`.trim().slice(0, MAX_TEXT);
+  // }
+  // 1.5.3 (sweep 11/5): no ® or ™ anywhere, and a brand is not a collection (Delta's ".collection-name" can be just
+  // "DELTA®", Brizo's heading just "Brizo®", which gave "Delta MultiChoice...").
+  const BRAND = /^(delta|brizo|kohler|grohe|toto|elkay|franke|icera|flusso|fleurco|bain\s*ultra|bainultra|john\s*boos|boos|richelieu|top\s*knobs|laurey|mng(?:\s*hardware)?|sofia|craft\s*(?:\+|&|and)?\s*main)$/i;
   function collDesc(collection, description) {
-    const c = String(collection || "").replace(/[®™]/g, "").trim();
-    const d = text(description);
+    let c = String(collection || "").replace(/[®™]/g, "").replace(/\s+/g, " ").trim();
+    if (BRAND.test(c)) c = "";
+    const d = text(description).replace(/[®™]/g, "").replace(/\s+/g, " ").trim();
     if (!c) return d;
     const named = new RegExp(`(^|[^a-z0-9])${c.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}($|[^a-z0-9])`);
-    if (named.test(d.replace(/[®™]/g, "").toLowerCase())) return d;
+    if (named.test(d.toLowerCase())) return d;
     return `${c} ${d}`.trim().slice(0, MAX_TEXT);
+  }
+
+  // The product name for Coll/Desc without what has its own field (1.5.3, sweep 11/5): the model number ("Pescara
+  // Undermount Sink - PTX110-17") and the finish at the end ("... Undermount Sink Greystone", "128mm Austin Pull -
+  // Satin Nickel"). The name as it was when nothing would be left.
+  function descName(name, model, color) {
+    const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    let n = text(name).replace(/[®™]/g, "").replace(/^\s*discontinued\s*[-:]\s*/i, ""); // the panel warns instead
+    const m = text(model);
+    if (m.length >= 4) n = n.replace(new RegExp(`\\s*[-,(]?\\s*(?<![A-Za-z0-9])${esc(m)}(?![A-Za-z0-9])\\.?\\)?`, "i"), " ");
+    const c = text(color).replace(/[®™]/g, "");
+    if (c) n = n.replace(new RegExp(`(?:\\s+-\\s*|,\\s*|\\s+in\\s+|\\s+)${esc(c)}\\s*$`, "i"), "");
+    n = n.replace(/\s+/g, " ").replace(/[\s,-]+$/, "").trim();
+    return n || text(name).replace(/[®™]/g, "");
   }
 
   // The vendor's breadcrumbs ("Kitchen / Sink Faucets / Pull-Down"): JSON-LD BreadcrumbList, else the page's own
@@ -308,36 +369,102 @@
 
   // Words, singular: "Pull-Down Kitchen Faucets" -> pull, down, kitchen, faucet. "Bathroom" counts as the Types'
   // "BATH" (Delta's "Two Handle Widespread Bathroom Faucet" is a BATH FAUCET, 11/5).
-  const SAME_WORD = { bathroom: "bath" };
+  // const SAME_WORD = { bathroom: "bath" };
+  // function words(s) {
+  //   return String(s).toLowerCase().split(/[^a-z]+/).filter(w => w.length > 1)
+  //     .map(w => (w.length > 3 && w.endsWith("s") && !w.endsWith("ss") ? w.slice(0, -1) : w))
+  //     .map(w => SAME_WORD[w] || w);
+  // }
+  // 1.5.3 (sweep 11/5): two-word names count as one word ("hand shower" is a HANDSHOWER, "shower head" a SHOWERHEAD),
+  // bath accessories by their names ("towel bar", "toilet paper holder"), "freestanding bath" and "bathtub" as a tub,
+  // "-ies" as "-y", and a lavatory (not a lavatory faucet) as a bath sink.
+  const COMPOUND = [
+    [/\bhand[\s-]+showers?\b/gi, "handshower"],
+    [/\bshower[\s-]+heads?\b|\brain[\s-]*heads?\b/gi, "showerhead"],
+    [/\btub\s*(?:\/|&|and)?\s*shower\s+doors?\b/gi, "tub door"], // Craft & Main's "Sliding Tub Shower Door" is a TUB DOOR
+    [/\btub\s+(?:enclosures?|screens?|shields?)\b/gi, "tub door"], // Fleurco's "Tub enclosure"
+    [/\bshower\s+(?:enclosures?|screens?)\b/gi, "shower door"],
+    [/\b(?:toilet\s+paper|tissue)\s+holders?\b|\btowel\s+(?:bars?|rings?|shel(?:f|ves)|hooks?)\b|\brobe\s+hooks?\b|\bgrab\s+bars?\b|\bsoap\s+(?:dish(?:es)?|dispensers?)\b/gi, "accessory"],
+    [/\b(freestanding|alcove|drop-in|undermount|soaking|corner)\s+bath\b(?!\s*(?:faucet|filler|sink|room))/gi, "$1 tub"],
+    [/\blavator(?:y|ies)\b(?!\s+faucets?)/gi, "bath sink"],
+    [/\b(?:bar|prep)(?:\s*\/\s*(?:bar|prep))?\s+faucets?\b/gi, "bar prep"], // Brizo's "Prep Faucet" is KITCHEN - BAR/PREP
+  ];
+  const SAME_WORD = { bathroom: "bath", bathtub: "tub", accessorie: "accessory" };
   function words(s) {
-    return String(s).toLowerCase().split(/[^a-z]+/).filter(w => w.length > 1)
+    let x = String(s);
+    for (const [re, to] of COMPOUND) x = x.replace(re, to);
+    return x.toLowerCase().split(/[^a-z]+/).filter(w => w.length > 1)
+      .map(w => (w.length > 4 && w.endsWith("ies") ? `${w.slice(0, -3)}y` : w))
       .map(w => (w.length > 3 && w.endsWith("s") && !w.endsWith("ss") ? w.slice(0, -1) : w))
       .map(w => SAME_WORD[w] || w);
   }
+  // A part named after the fixture it fits is not the fixture: a toilet seat is not a TOILET, a sink grid not a SINK.
+  const PART_AFTER = new Set(["seat", "lid", "lever", "tank", "grid", "strainer", "kit", "cover", "bracket", "cartridge",
+    "basket", "flange", "rack", "mat", "caddy", "handle", "part"]);
 
   // The product line's special-order Type that fits: words of the Type found in the product name count 2, in the
   // breadcrumbs or address 1. It needs at least 2 (one word in the name, or two elsewhere): a lone breadcrumb word
   // is too weak (John Boos "Boos Blocks > Carts" is not BUTCHER BLOCK). No guess on a tie, for order-form Types or
   // MISCELLANEOUS. Same rule as the Product Selector's suggestType (artifacts/product-selector/src/lib/vendor-picks.ts).
-  function suggestType(pick, typeList) {
+  // function suggestType(pick, typeList) {
+  //   let path = "";
+  //   try {
+  //     path = decodeURIComponent(new URL(String(pick.pageUrl)).pathname);
+  //   } catch {}
+  //   const nameWords = new Set(words(pick.name || ""));
+  //   const otherWords = new Set([...words(path), ...words(pick.category || "")]);
+  //   // The Type's last word is its main noun (BASE, DOOR, FAUCET, SINK, TRIM) and must be there too: a shower door is
+  //   // not a SHOWER BASE just because both say "shower" (Neptune has no shower-door Type, live check 11/5).
+  //   const head = t => { const w = words(t.name); return w[w.length - 1]; };
+  //   const scored = (typeList || [])
+  //     .filter(t => !t.requiresAttachment && !/^misc/i.test(String(t.name).trim()))
+  //     .filter(t => nameWords.has(head(t)) || otherWords.has(head(t)))
+  //     .map(t => ({ t, score: [...new Set(words(t.name))].reduce((s, w) => s + (nameWords.has(w) ? 2 : otherWords.has(w) ? 1 : 0), 0) }))
+  //     .filter(s => s.score >= MIN_TYPE_SCORE)
+  //     .sort((a, b) => b.score - a.score);
+  //   if (!scored.length || (scored.length > 1 && scored[1].score === scored[0].score)) return null;
+  //   return scored[0].t;
+  // }
+  // 1.5.3 (sweep 11/5; 1.5.2 got 16 of 34 sweep pages wrong or blank, this gets 1): only the main part of the name
+  // counts as the name ("X with Hand Shower", "X - Less Handles", "X, 1.2 gpm"), the product's own slug at the end of
+  // the address does not count, a Type whose main noun is in the name beats one found only in the breadcrumbs, and a
+  // tie goes to the Type with fewer missing words, then to the main noun that comes last ("sink faucet" is a FAUCET).
+  // opts.orderForms: the panel may suggest an order-form Type too (Bain Ultra's AIR TUB); the customer sees it.
+  function suggestType(pick, typeList, opts) {
     let path = "";
     try {
-      path = decodeURIComponent(new URL(String(pick.pageUrl)).pathname);
+      path = decodeURIComponent(new URL(String(pick.pageUrl)).pathname).split("/").filter(Boolean).slice(0, -1).join("/");
     } catch {}
-    const nameWords = new Set(words(pick.name || ""));
+    const full = String(pick.name || "");
+    const head = t => { const w = words(t.name); return w[w.length - 1]; };
+    const allowed = (typeList || [])
+      .filter(t => (!t.requiresAttachment || (opts && opts.orderForms)) && !/^misc/i.test(String(t.name).trim()));
+    // The main part of the name; the whole name when that part is just a collection ("Caso - ... Kitchen Faucet"), not
+    // when it describes something no Type fits ("Elongated Toilet with Seat, Left-Hand Trip Lever" is no TRIP LEVER).
+    const mainList = words(full.split(/\s+(?:with|w\/)\s+|\s+-\s+|,\s*/i)[0]);
+    const nameList = allowed.some(t => mainList.includes(head(t))) || mainList.length > 2 ? mainList : words(full);
+    const nameWords = new Set(nameList);
     const otherWords = new Set([...words(path), ...words(pick.category || "")]);
     // The Type's last word is its main noun (BASE, DOOR, FAUCET, SINK, TRIM) and must be there too: a shower door is
-    // not a SHOWER BASE just because both say "shower" (Neptune has no shower-door Type, live check 11/5).
-    const head = t => { const w = words(t.name); return w[w.length - 1]; };
-    const scored = (typeList || [])
-      .filter(t => !t.requiresAttachment && !/^misc/i.test(String(t.name).trim()))
-      .filter(t => nameWords.has(head(t)) || otherWords.has(head(t)))
-      .map(t => ({ t, score: [...new Set(words(t.name))].reduce((s, w) => s + (nameWords.has(w) ? 2 : otherWords.has(w) ? 1 : 0), 0) }))
-      // .filter(s => s.score > 0)
+    // not a SHOWER BASE just because both say "shower" (live check 11/5). A part after it ("Toilet Seat") is not it.
+    const inName = t => { const i = nameList.lastIndexOf(head(t)); return i >= 0 && !PART_AFTER.has(nameList[i + 1]); };
+    const partOf = t => { const i = nameList.lastIndexOf(head(t)); return i >= 0 && PART_AFTER.has(nameList[i + 1]); };
+    let cands = allowed.filter(t => !partOf(t) && (inName(t) || otherWords.has(head(t))));
+    if (cands.some(inName)) cands = cands.filter(inName);
+    const scored = cands.map(t => {
+      const ws = [...new Set(words(t.name))];
+      // const score = ws.reduce((s, w) => s + (nameWords.has(w) ? 2 : otherWords.has(w) ? 1 : 0), 0);
+      // A one-word Type named in the breadcrumbs counts in full (Fleurco's "LED Mirrors" is a MIRROR).
+      const score = ws.reduce((s, w) => s + (nameWords.has(w) ? 2 : otherWords.has(w) ? (ws.length === 1 ? 2 : 1) : 0), 0);
+      const missing = ws.filter(w => !nameWords.has(w) && !otherWords.has(w)).length;
+      return { t, score, missing, pos: nameList.lastIndexOf(head(t)) };
+    })
       .filter(s => s.score >= MIN_TYPE_SCORE)
-      .sort((a, b) => b.score - a.score);
-    if (!scored.length || (scored.length > 1 && scored[1].score === scored[0].score)) return null;
-    return scored[0].t;
+      .sort((a, b) => b.score - a.score || a.missing - b.missing || b.pos - a.pos);
+    if (!scored.length) return null;
+    const [a, b] = scored;
+    if (b && a.score === b.score && a.missing === b.missing && a.pos === b.pos) return null;
+    return a.t;
   }
 
   // The page switched to another finish without a new page load: the address now ends in another model of the same
@@ -359,7 +486,8 @@
     const price = number(meta["product:price:amount"] || meta["og:price:amount"]) || pagePrice(win);
     const labeled = pageModel(win).value;
     const fromUrl = labeled ? "" : urlModel(pageUrl);
-    const looksLikeProduct = price != null || /product/i.test(meta["og:type"] || "");
+    // const looksLikeProduct = price != null || /product/i.test(meta["og:type"] || "");
+    const looksLikeProduct = price != null || /^(og:)?product$/i.test(String(meta["og:type"] || "").trim()); // 1.5.3
     const model = labeled || (looksLikeProduct ? fromUrl : "");
     if (!model) return [];
     return [{
@@ -529,6 +657,7 @@
   const api = {
     extract, scanHtml, fromJsonLd, fromOpenGraph, fromPageText, fillGaps, blankItem, urlModel, labeledModels,
     registrableDomain, pickDefault, text, number, suggestType, printedPrice, breadcrumbs, guessFinish, collDesc,
+    descName, discontinued, words, guessCollection, // 1.5.3
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.ConsumersExtract = api;

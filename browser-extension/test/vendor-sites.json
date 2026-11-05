@@ -1,5 +1,5 @@
 {
- "note": "Product lines with a vendor website and their special-order Types, read from PROD NetSuite on 2026-11-04 (customrecord_pl.custrecord_pl_prd_website, customrecord_specord_nondb_types). Same shape the Product Selector sends the extension (vendor-sites).",
+ "note": "Product lines with a vendor website and their special-order Types, read from PROD NetSuite on 2026-11-05 with the Product Selector's own queries (customrecord_pl.custrecord_pl_prd_website, customrecord_specord_nondb_types). Same shape the Product Selector sends the extension (vendor-sites).",
  "sites": [
   {
    "websiteUrl": "https://www.avancecabinetry.com/",
@@ -39,39 +39,39 @@
    ]
   },
   {
-   "websiteUrl": "https://www.avancecabinetry.com/",
-   "productLineId": "830",
-   "productLineName": "Avance Cabinetry",
+   "websiteUrl": "http://www.bainultra.com/",
+   "productLineId": "102",
+   "productLineName": "BAIN ULTRA TUBS",
    "types": [
     {
-     "id": "3528",
-     "name": "BASE CABINET",
-     "requiresAttachment": false
+     "id": "3334",
+     "name": "AIR TUB",
+     "requiresAttachment": true
     },
     {
-     "id": "3533",
-     "name": "MIRROR",
-     "requiresAttachment": false
-    },
-    {
-     "id": "3529",
+     "id": "3044",
      "name": "MISCELLANEOUS",
      "requiresAttachment": false
     },
     {
-     "id": "3530",
-     "name": "TALL CABINET",
+     "id": "3335",
+     "name": "SHOWER MODULE",
+     "requiresAttachment": true
+    },
+    {
+     "id": "3045",
+     "name": "SKIRT",
      "requiresAttachment": false
     },
     {
-     "id": "3531",
-     "name": "VANITY CABINET",
-     "requiresAttachment": false
+     "id": "3336",
+     "name": "SOAKER",
+     "requiresAttachment": true
     },
     {
-     "id": "3532",
-     "name": "WALL CABINET",
-     "requiresAttachment": false
+     "id": "3337",
+     "name": "WHIRLPOOL",
+     "requiresAttachment": true
     }
    ]
   },
@@ -406,68 +406,6 @@
    ]
   },
   {
-   "websiteUrl": "https://craftandmain.com/",
-   "productLineId": "699",
-   "productLineName": "FOREMOST BATH",
-   "types": [
-    {
-     "id": "3417",
-     "name": "Faucet",
-     "requiresAttachment": false
-    },
-    {
-     "id": "3421",
-     "name": "Light Bar",
-     "requiresAttachment": false
-    },
-    {
-     "id": "3418",
-     "name": "Medicine Cabinet",
-     "requiresAttachment": false
-    },
-    {
-     "id": "3424",
-     "name": "Misc",
-     "requiresAttachment": false
-    },
-    {
-     "id": "3416",
-     "name": "Pedestal",
-     "requiresAttachment": false
-    },
-    {
-     "id": "3419",
-     "name": "Sink",
-     "requiresAttachment": false
-    },
-    {
-     "id": "3422",
-     "name": "Toilet",
-     "requiresAttachment": false
-    },
-    {
-     "id": "3423",
-     "name": "Tub",
-     "requiresAttachment": false
-    },
-    {
-     "id": "3415",
-     "name": "Vanity",
-     "requiresAttachment": false
-    },
-    {
-     "id": "3637",
-     "name": "Vanity Top",
-     "requiresAttachment": false
-    },
-    {
-     "id": "3420",
-     "name": "Wall Valet",
-     "requiresAttachment": false
-    }
-   ]
-  },
-  {
    "websiteUrl": "https://craftandmain.com/shower-enclosure-collections/",
    "productLineId": "383",
    "productLineName": "FOREMOST T&S DOORS",
@@ -512,6 +450,58 @@
     {
      "id": "2824",
      "name": "MISCELLANEOUS",
+     "requiresAttachment": false
+    }
+   ]
+  },
+  {
+   "websiteUrl": "https://www.grohe.us/",
+   "productLineId": "74",
+   "productLineName": "GROHE",
+   "types": [
+    {
+     "id": "3094",
+     "name": "BATH FAUCET",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3095",
+     "name": "HANDSHOWER",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3101",
+     "name": "KITCHEN FAUCET",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3096",
+     "name": "MISCELLANEOUS",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3102",
+     "name": "ROUGH",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3097",
+     "name": "SHOWERHEAD",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3099",
+     "name": "TRIP LEVER",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3100",
+     "name": "TUB FILLER",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3098",
+     "name": "TUB/ / SHOWER FAUCET",
      "requiresAttachment": false
     }
    ]
@@ -682,38 +672,6 @@
    ]
   },
   {
-   "websiteUrl": "http://www.produitsneptune.com/en/",
-   "productLineId": "824",
-   "productLineName": "NEPTUNE PRODUCTS",
-   "types": [
-    {
-     "id": "3513",
-     "name": "ACCESSORIES",
-     "requiresAttachment": false
-    },
-    {
-     "id": "3512",
-     "name": "FAUCETS",
-     "requiresAttachment": false
-    },
-    {
-     "id": "3511",
-     "name": "FREE STANDING TUB",
-     "requiresAttachment": false
-    },
-    {
-     "id": "3510",
-     "name": "SHOWER BASE",
-     "requiresAttachment": false
-    },
-    {
-     "id": "3509",
-     "name": "TUB",
-     "requiresAttachment": false
-    }
-   ]
-  },
-  {
    "websiteUrl": "https://www.richelieu.com/us/en/category/decorative-hardware/cabinet-hardware-pulls-knobs/1064512",
    "productLineId": "816",
    "productLineName": "RICHELIEU HARDWARE",
@@ -736,6 +694,43 @@
     {
      "id": "3468",
      "name": "SCREWS",
+     "requiresAttachment": false
+    }
+   ]
+  },
+  {
+   "websiteUrl": "http://www.sofiamedicinecabinets.com/",
+   "productLineId": "835",
+   "productLineName": "SOFIA MEDICINE CABINETS",
+   "types": [
+    {
+     "id": "3555",
+     "name": "DOOR FRAME",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3556",
+     "name": "FLAT MIRROR",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3554",
+     "name": "LIGHT",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3551",
+     "name": "MEDICINE CABINET",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3553",
+     "name": "MISCELLANEOUS",
+     "requiresAttachment": false
+    },
+    {
+     "id": "3552",
+     "name": "SURFACE MOUNT SIDE KIT",
      "requiresAttachment": false
     }
    ]

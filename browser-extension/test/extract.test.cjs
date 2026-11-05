@@ -78,6 +78,11 @@ test("Flusso: a UPC in mpn is skipped for the model in sku", () => {
   assert.equal(r.items[0].model, "10.FGC.4003CP");
   assert.equal(r.items[0].price, 60);
   assert.equal(X.extract([JSON.stringify({ "@type": "Product", name: "X", gtin12: "1", mpn: "702338186523" })], {}, "https://x.test/").items[0].model, "702338186523");
+  // 1.5.3: a barcode with a dashed check digit is still a barcode (Caso, 11/5).
+  const caso = X.extract([JSON.stringify({ "@type": "Product", name: "Caso - Semi-Professional Dual Spray Stainless Steel Kitchen Faucet With Pull Out",
+    model: "K.1200CR", sku: "K.1200CR", mpn: "716894070509-7", gtin: "716894070509-7", color: "Crimson", offers: { price: 1058, priceCurrency: "USD" } })],
+    {}, "https://www.flussofaucets.com/products/K1200CR-caso-semi-professional-dual-spray-stainless-steel-kitchen-faucet-with-pull-out/");
+  assert.equal(caso.items[0].model, "K.1200CR");
 });
 
 test("Neptune: the full model number and the price come from the page when its product data has the base model only", () => {
@@ -233,11 +238,87 @@ test("a finish at the end of the product name fills an empty color (Jim, 11/5)",
 
 test("one Collection / Description value, as NetSuite's Coll/Desc (Gib, 11/5)", () => {
   assert.equal(X.collDesc("Altado", "Two Handle Widespread Bathroom Faucet"), "Altado Two Handle Widespread Bathroom Faucet");
-  assert.equal(X.collDesc("Broderick", "Touch2O® Technology Kitchen Faucet with Touchless Technology"), "Broderick Touch2O® Technology Kitchen Faucet with Touchless Technology");
-  assert.equal(X.collDesc("Cairn", "Cairn® 27-1/2\" undermount single-bowl kitchen sink"), "Cairn® 27-1/2\" undermount single-bowl kitchen sink");
+  // assert.equal(X.collDesc("Broderick", "Touch2O® Technology Kitchen Faucet with Touchless Technology"), "Broderick Touch2O® Technology Kitchen Faucet with Touchless Technology");
+  // assert.equal(X.collDesc("Cairn", "Cairn® 27-1/2\" undermount single-bowl kitchen sink"), "Cairn® 27-1/2\" undermount single-bowl kitchen sink");
+  // 1.5.3: no ® or ™ in Coll/Desc.
+  assert.equal(X.collDesc("Broderick", "Touch2O® Technology Kitchen Faucet with Touchless Technology"), "Broderick Touch2O Technology Kitchen Faucet with Touchless Technology");
+  assert.equal(X.collDesc("Cairn", "Cairn® 27-1/2\" undermount single-bowl kitchen sink"), "Cairn 27-1/2\" undermount single-bowl kitchen sink");
   assert.equal(X.collDesc("Austin", "128mm Austin Pull - Satin Nickel"), "128mm Austin Pull - Satin Nickel");
   assert.equal(X.collDesc("", "Drake Two-piece Toilet"), "Drake Two-piece Toilet");
   assert.equal(X.collDesc("Art", "Partition Wall Panel"), "Art Partition Wall Panel"); // a word, not part of one
+});
+
+test("1.5.3 sweep: Coll/Desc drops the model, a trailing finish and a brand standing in for the collection", () => {
+  assert.equal(X.descName("Pescara Undermount Sink - PTX110-17", "PTX110-17", "Stainless Steel"), "Pescara Undermount Sink");
+  assert.equal(X.descName("Maris Laundry Sink- MAG61023L-ONY.", "MAG61023L-ONY", "Onyx"), "Maris Laundry Sink");
+  assert.equal(X.descName("Crosstown 18 Gauge Undermount Sink Greystone", "ELGRU13322GS0", "Greystone"), "Crosstown 18 Gauge Undermount Sink");
+  assert.equal(X.descName("128mm Austin Pull - Satin Nickel", "80828", "Satin Nickel"), "128mm Austin Pull");
+  assert.equal(X.descName("Ashlow White Oak Vanity with Top", "AWWVT2419D", "White Oak"), "Ashlow White Oak Vanity with Top"); // not at the end
+  assert.equal(X.descName("Satin Nickel", "X1", "Satin Nickel"), "Satin Nickel"); // nothing would be left
+  assert.equal(X.collDesc("DELTA®", "MultiChoice® Universal Tub / Shower Rough"), "MultiChoice Universal Tub / Shower Rough");
+  assert.equal(X.collDesc("Brizo®", "Sensori Thermostatic Valve Trim"), "Sensori Thermostatic Valve Trim");
+});
+
+test("1.5.3 sweep: no price from a range, a 'from' price or a price cut at the end of the window", () => {
+  const run = (text, heading = "Widget") => X.extract([], {}, "https://x.test/p/ABC123", { heading, text, microdata: null });
+  const pad = "x".repeat(362); // the "$" lands at character 395, inside the 400-character window; the number runs past it
+  // Brizo: "$1,185.00" starts near the end of the 400-character window and was read as $1.
+  const cut = X.fromPageText({ heading: "Prep Faucet", text: `Prep Faucet Model #: 63949LF-PC ${pad} $1,185.00 list` }, {}, "https://x.test/p/63949LF-PC");
+  assert.equal(cut[0].price, 1185);
+  // Elkay: "$680.00 - $1,061.00 (USD)" until a finish is picked; Icera: "Price range: $191.00 through $301.00".
+  assert.equal(X.fromPageText({ heading: "LKAV1061", text: "LKAV1061 Model #: LKAV1061 $680.00 - $1,061.00 (USD)" }, {}, "https://x.test/p/lkav1061")[0].price, null);
+  assert.equal(X.fromPageText({ heading: "Muse Lavatory", text: "Muse Lavatory SKU: L-2410 Price range: $191.00 through $301.00" }, {}, "https://x.test/p/l-2410")[0].price, null);
+  assert.equal(X.fromPageText({ heading: "Muse Lavatory", text: "Muse Lavatory SKU: L-2410 from $191.00" }, {}, "https://x.test/p/l-2410")[0].price, null);
+  assert.equal(run("Widget SKU: ABC123 $45.00").items[0].price, 45);
+  // A product data range (AggregateOffer) is not one price.
+  const agg = X.extract([JSON.stringify({ "@type": "Product", name: "Sink", sku: "S1", offers: { "@type": "AggregateOffer", lowPrice: 680, highPrice: 1061 } })], {}, "https://x.test/");
+  assert.equal(agg.items[0].price, null);
+});
+
+test("1.5.3 sweep: Type rules (hand showers, accessories, parts, lavatories, prep faucets, collections before a dash)", () => {
+  const T = (...names) => names.map((name, i) => ({ id: String(i + 1), name, requiresAttachment: false }));
+  const pick = (name, url, category = "") => ({ name, pageUrl: url, category });
+  const delta = T("BATH FAUCET", "KITCHEN FAUCET", "HANDSHOWER", "SHOWERHEAD", "TUB / SHOWER FAUCET", "ROUGH", "BATH ACCESSORY", "TUB FILLER");
+  const name = t => (t ? t.name : null);
+  assert.equal(name(X.suggestType(pick("Premium Single-Setting Adjustable Wall Mount Hand Shower", "https://www.deltafaucet.com/bathroom/product/55085.html"), delta)), "HANDSHOWER");
+  assert.equal(name(X.suggestType(pick("Single-Setting Raincan Shower Head", "https://www.deltafaucet.com/bathroom/product/52215-PR.html"), delta)), "SHOWERHEAD");
+  assert.equal(name(X.suggestType(pick("24\" Towel Bar", "https://www.deltafaucet.com/bathroom/product/759240.html"), delta)), "BATH ACCESSORY");
+  assert.equal(name(X.suggestType(pick("MultiChoice® Universal Tub / Shower Rough - Universal Inlets / Outlets", "https://www.deltafaucet.com/bathroom/product/R10000-UNBX.html", "Rough Valves"), delta)), "ROUGH");
+  assert.equal(name(X.suggestType(pick("Single Handle Floor Mount Tub Filler Trim with Hand Shower", "https://www.deltafaucet.com/bathroom/product/T4759-FL.html"), delta)), "TUB FILLER");
+  const toto = T("TOILET", "BATH SINK", "BIDET", "BATH FAUCET", "MISCELLANEOUS");
+  assert.equal(name(X.suggestType(pick("SoftClose® Toilet Seat - Elongated", "https://www.totousa.com/softclose-toilet-seat-elongated"), toto)), null);
+  assert.equal(name(X.suggestType(pick("ANTIGUA Undermount Lavatory, 17″", "https://icerabath.com/product/antigua-undermount-lavatory/"), toto)), "BATH SINK");
+  const brizo = T("KITCHEN - KITCHEN FAUCET", "KITCHEN - BAR/PREP", "BATH - LAVATORY FAUCET");
+  assert.equal(name(X.suggestType(pick("Pull-Down Prep Faucet with Angled Spout - Less Handle", "https://www.brizo.com/kitchen/product/63949LF-PCLHP--HLK048-PC"), brizo)), "KITCHEN - BAR/PREP");
+  assert.equal(name(X.suggestType(pick("Widespread Lavatory Faucet with Square Spout - Less Handles", "https://www.brizo.com/bath/product/65368LF-PCLHP"), brizo)), "BATH - LAVATORY FAUCET");
+  const flusso = T("BATH FAUCET", "KITCHEN FAUCET");
+  assert.equal(name(X.suggestType(pick("Caso - Semi-Professional Dual Spray Stainless Steel Kitchen Faucet With Pull Out", "https://www.flussofaucets.com/products/K1200CR-caso/"), flusso)), "KITCHEN FAUCET");
+  const grohe = T("BATH FAUCET", "TRIP LEVER");
+  assert.equal(name(X.suggestType(pick("Two-Piece Right Height Elongated Toilet with Seat, Left-Hand Trip Lever", "https://www.grohe.us/products/two-piece-toilet"), grohe)), null);
+  // Order-form Types only when the panel asks for them (Bain Ultra).
+  const bain = [{ id: "1", name: "AIR TUB", requiresAttachment: true }, { id: "2", name: "SOAKER", requiresAttachment: true }, { id: "3", name: "SKIRT", requiresAttachment: false }];
+  assert.equal(name(X.suggestType(pick("AMMA 6030, ThermoMasseur air tub, Right drain", "https://www.bainultra.com/products/amma-6030"), bain)), null);
+  assert.equal(name(X.suggestType(pick("AMMA 6030, ThermoMasseur air tub, Right drain", "https://www.bainultra.com/products/amma-6030"), bain, { orderForms: true })), "AIR TUB");
+  assert.equal(name(X.suggestType(pick("AMMA 6030, Soaker tub, Left drain", "https://www.bainultra.com/products/amma-6030"), bain, { orderForms: true })), "SOAKER");
+});
+
+test("1.5.3 sweep: a collection page is no product; an image address without a scheme; more Type phrases", () => {
+  assert.equal(X.fromOpenGraph({ "og:type": "product.group", "og:title": "All Shower Doors" }, "https://craftandmain.com/collections/x").length, 0);
+  assert.equal(X.fromOpenGraph({ "og:type": "product", "og:title": "Cove Door" }, "https://craftandmain.com/products/cove").length, 1);
+  const flusso = X.extract([JSON.stringify({ "@type": "Product", name: "Brass Towel Bar - 18\"", sku: "100.1009BN", image: "flussofaucets.com/media/product_images/1000X1000/100.1009BN.jpg", offers: { price: 193 } })], {}, "https://www.flussofaucets.com/products/1001009BN-brass-towel-bar-18/");
+  assert.equal(flusso.items[0].imageUrl, "https://flussofaucets.com/media/product_images/1000X1000/100.1009BN.jpg");
+  const T = (...names) => names.map((name, i) => ({ id: String(i + 1), name, requiresAttachment: false }));
+  const fleurco = T("BATH TUB", "MIRROR", "SHOWER BASE", "SHOWER DOOR", "TUB DOOR");
+  const name = t => (t ? t.name : null);
+  assert.equal(name(X.suggestType({ name: "Horizon, Tub enclosure, Clear Glass (8mm)", pageUrl: "https://fleurco.com/shower-doors/horizon-sliding-tub-door-reversible" }, fleurco)), "TUB DOOR");
+  assert.equal(name(X.suggestType({ name: "Halo Plus", pageUrl: "https://fleurco.com/furnishing/halo-plus", category: "LED Mirrors" }, fleurco)), "MIRROR");
+  assert.equal(name(X.suggestType({ name: "Tides Framed Sliding Tub Shower Door", pageUrl: "https://craftandmain.com/products/tides" }, T("Shower Door", "Tub Door"))), "Tub Door");
+  assert.equal(name(X.suggestType({ name: "Rainhead 15\" Square", pageUrl: "https://www.flussofaucets.com/products/MSS15SCP/" }, T("SHOWERHEAD", "HANDSHOWER"))), "SHOWERHEAD");
+});
+
+test("1.5.3 sweep: a page that says the item is discontinued", () => {
+  assert.equal(X.discontinued({ heading: "Fireclay Farmhouse Sink", text: "Fireclay Farmhouse Sink Discontinued Model #: SWUF28179MG" }), true);
+  assert.equal(X.discontinued({ heading: "Fireclay Farmhouse Sink", text: "Fireclay Farmhouse Sink Model #: SWUF28179WH $1,154.00" }), false);
 });
 
 test("vendor domains: subdomains count as the main domain", () => {

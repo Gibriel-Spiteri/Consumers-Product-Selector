@@ -14,10 +14,16 @@ const APP_ORIGINS = [
 const APP_MATCHES = APP_ORIGINS.map(o => `${o}/*`);
 // Vendor domains of the special-order product lines on 2026-11-04, used until a Product Selector tab sends the
 // current list.
+// const SEED_DOMAINS = [
+//   "avancecabinetry.com", "brizo.com", "craftandmain.com", "deltafaucet.com", "elkay.com", "fleurco.com",
+//   "flussofaucets.com", "franke.com", "icerabath.com", "johnboos.com", "kohler.com", "produitsneptune.com",
+//   "richelieu.com", "strategicbrandsincorporated.com", "topknobs.com", "totousa.com",
+// ];
+// 2026-11-05 (1.5.3), from PROD: Bain Ultra, Grohe and Sofia became special-order lines; Neptune stopped being one.
 const SEED_DOMAINS = [
-  "avancecabinetry.com", "brizo.com", "craftandmain.com", "deltafaucet.com", "elkay.com", "fleurco.com",
-  "flussofaucets.com", "franke.com", "icerabath.com", "johnboos.com", "kohler.com", "produitsneptune.com",
-  "richelieu.com", "strategicbrandsincorporated.com", "topknobs.com", "totousa.com",
+  "avancecabinetry.com", "bainultra.com", "brizo.com", "craftandmain.com", "deltafaucet.com", "elkay.com",
+  "fleurco.com", "flussofaucets.com", "franke.com", "grohe.us", "icerabath.com", "johnboos.com", "kohler.com",
+  "richelieu.com", "sofiamedicinecabinets.com", "strategicbrandsincorporated.com", "topknobs.com", "totousa.com",
 ];
 const VENDOR_SCRIPT_ID = "consumers-vendor";
 const MAX_PICKS = 50;
@@ -58,7 +64,10 @@ let seeded = null;
 const seedLines = () => (seeded = seeded || siteLinesFrom(Array.isArray(globalThis.ConsumersSeedSites) ? globalThis.ConsumersSeedSites : []));
 
 async function registerVendorScripts(domains) {
-  const matches = domains.flatMap(d => [`https://${d}/*`, `https://*.${d}/*`]);
+  // const matches = domains.flatMap(d => [`https://${d}/*`, `https://*.${d}/*`]);
+  // 1.5.3 (sweep 11/5): plain http too, on the vendor domains only: Sofia's own "Shop" link opens
+  // http://shop.sofiamedicinecabinets.com, which has no https redirect.
+  const matches = domains.flatMap(d => [`https://${d}/*`, `https://*.${d}/*`, `http://${d}/*`, `http://*.${d}/*`]);
   const existing = await chrome.scripting.getRegisteredContentScripts({ ids: [VENDOR_SCRIPT_ID] });
   if (matches.length === 0) {
     if (existing.length) await chrome.scripting.unregisterContentScripts({ ids: [VENDOR_SCRIPT_ID] });
