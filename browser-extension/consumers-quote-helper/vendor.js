@@ -54,6 +54,8 @@
       .spin { width: 30px; height: 30px; border-radius: 50%; border: 3px solid #c9d3ea; border-top-color: #1f4fd1;
         animation: cqh-spin .8s linear infinite; }
       @keyframes cqh-spin { to { transform: rotate(360deg); } }
+      /* 1.5.2: a required field left empty when Add is clicked. */
+      input.missing, select.missing { border-color: #d93025; box-shadow: 0 0 0 2px rgba(217, 48, 37, .15); outline-color: #d93025; }
     </style>
     <!-- 1.5.0 (Gib 11/5): "Add to CPS Quote List", and the subtext asks to check the fields. Was:
     <button class="fab" type="button" part="fab"><span>Add to Consumers Quote</span><span class="dot" hidden></span></button>
@@ -138,6 +140,9 @@
     return label ? label.textContent.replace(/\s+/g, " ").trim() : "";
   };
 
+  // Fleurco's product title without its own tags: "*New* Vespero Pivot" is the Vespero Pivot (1.5.2).
+  const fleurcoTitle = () => textOf(".product-page .title").replace(/\*[^*]*\*/g, " ").replace(/\s+/g, " ").trim();
+
   // Vendor sites that need their own rule, by main domain.
   const SITE_RULES = {
     // Fleurco's shower door configurator (2026-11-04) prints the model number and total only once every choice is
@@ -147,8 +152,10 @@
       model: () => textOf(".product-total .product-sku"),
       price: () => (textOf(".product-total").match(/\$\s?(\d[\d,]*(?:\.\d{2})?)/) || [])[1],
       color: () => checkedLabel("rdoHardwareFinish"),
-      name: () => [textOf(".product-page .title"), checkedLabel("rdoGlassType")].filter(Boolean).join(", "),
-      collection: () => textOf(".product-page .title"),
+      // name: () => [textOf(".product-page .title"), checkedLabel("rdoGlassType")].filter(Boolean).join(", "),
+      // collection: () => textOf(".product-page .title"),
+      name: () => [fleurcoTitle(), checkedLabel("rdoGlassType")].filter(Boolean).join(", "),
+      collection: () => fleurcoTitle(),
       hint: "Choose every option on the page, Mix & Match Kit included, until the model number shows under them. Then click Add to CPS Quote List again, or type the model here.",
     },
     // Delta (2026-11-04): picking a finish changes the address (/9190TL-DST.html -> /9190TL-PN-DST.html) and the
@@ -315,7 +322,16 @@
     // fab.style.display = items.length ? "flex" : "none";
     // if (!items.length) panel.style.display = "none";
     // Every page of a vendor site keeps the button: without product data the customer types the model in.
-    items = manual ? [X.blankItem(live.meta, live.page, document.title, location.href)] : found.items;
+    // items = manual ? [X.blankItem(live.meta, live.page, document.title, location.href)] : found.items;
+    // 1.5.2: on a page with no model yet (Fleurco mid-configurator), the site rule's own name, finish and collection
+    // beat the tab title ("Vespero Pivot, Fluted (6mm)", not "Vespero Pivot| High-Quality Shower Doors | Fleurco").
+    if (manual) {
+      const blank = X.blankItem(live.meta, live.page, document.title, location.href);
+      const v = siteValues();
+      items = [{ ...blank, name: v.name || blank.name, color: v.color || "", collection: v.collection || "" }];
+    } else {
+      items = found.items;
+    }
     selected = manual ? 0 : found.selected;
     // The page says which color or finish is chosen (Kohler's shown SKU, the model in the address): the panel follows
     // it and needs no Option list. Jim (11/5): it should work the same on every site.
@@ -360,7 +376,8 @@
     const line = currentLine();
     const options = line ? (line.types || []).filter(t => !t.requiresAttachment) : [];
     f.type.innerHTML = "";
-    f.type.appendChild(new Option("Choose a type (or leave it to your sales rep)", ""));
+    // f.type.appendChild(new Option("Choose a type (or leave it to your sales rep)", ""));
+    f.type.appendChild(new Option("Choose a type", "")); // required since 1.5.2
     for (const t of options) f.type.appendChild(new Option(t.name, t.id));
     const it = items[selected] || {};
     const guess = X.suggestType({ name: it.name || f.description.value, pageUrl: location.href, category }, options);
@@ -391,8 +408,41 @@
     msg.hidden = true;
     f.add.disabled = false;
     show(Math.max(selected, 0));
+    clearMissing();
     panel.style.display = "block";
     fab.style.display = "none";
+  }
+
+  // 1.5.2 (Gib 11/5): every field is required before adding (John Boos left Color / finish empty). Product line and
+  // Type count only when the panel shows them.
+  const REQUIRED = [
+    ["line", "Product line", () => !f.lineWrap.hidden],
+    ["type", "Type", () => !f.typeWrap.hidden],
+    ["model", "Model"],
+    ["color", "Color / finish"],
+    ["description", "Collection / Description"],
+    ["price", "Price on this site"],
+    ["qty", "Quantity"],
+  ];
+  function missingFields() {
+    const out = [];
+    for (const [key, label, shown] of REQUIRED) {
+      const el = f[key];
+      if (shown && !shown()) {
+        el.classList.remove("missing");
+        continue;
+      }
+      const v = String(el.value || "").trim();
+      let ok = v !== "";
+      if (key === "price") ok = ok && Number(v) > 0;
+      if (key === "qty") ok = ok && Number.isInteger(Number(v)) && Number(v) >= 1;
+      el.classList.toggle("missing", !ok);
+      if (!ok) out.push({ el, label });
+    }
+    return out;
+  }
+  function clearMissing() {
+    for (const [key] of REQUIRED) f[key].classList.remove("missing");
   }
 
   function closePanel() {
@@ -411,6 +461,15 @@
   }
 
   async function add() {
+    const missing = missingFields();
+    if (missing.length) {
+      msg.hidden = false;
+      msg.className = "msg err";
+      msg.textContent = `Please fill in ${missing.map(m => m.label).join(", ")} before adding.` +
+        (missing.some(m => m.el === f.price) ? " If this site shows no price, ask your sales rep for it." : "");
+      missing[0].el.focus();
+      return;
+    }
     const it = items[selected] || {};
     const line = currentLine();
     const typeOption = f.type.selectedOptions[0];
@@ -471,6 +530,10 @@
   f.variant.addEventListener("change", () => show(Number(f.variant.value)));
   f.line.addEventListener("change", fillTypes);
   f.add.addEventListener("click", add);
+  // A field filled in loses its red outline.
+  for (const [key] of REQUIRED) {
+    for (const ev of ["input", "change"]) f[key].addEventListener(ev, () => f[key].classList.remove("missing"));
+  }
 
   (document.body || document.documentElement).appendChild(host);
   // Re-read when a single-page site changes the address without a page load.
@@ -495,9 +558,15 @@
   // }, 1000);
   // 2026-11-05: also when the page's shown model or finish changes without a new address (Delta updates the address
   // after the swatch; Kohler's SKU line), so the panel never keeps an older finish.
+  // const pageKey = () => {
+  //   const v = siteRule && !siteRule.requireModel ? siteValues() : {};
+  //   return `${location.href}|${v.model || ""}|${v.color || ""}`;
+  // };
+  // 1.5.2 (Gib 11/5, Fleurco's Vespero Pivot): a configurator (requireModel) changes the shown model, finish and total
+  // without a new address, so those count too; the open panel greys out and follows each choice.
   const pageKey = () => {
-    const v = siteRule && !siteRule.requireModel ? siteValues() : {};
-    return `${location.href}|${v.model || ""}|${v.color || ""}`;
+    const v = siteValues();
+    return `${location.href}|${v.model || ""}|${v.color || ""}|${v.price || ""}`;
   };
   // setInterval(() => {
   //   const key = pageKey();
