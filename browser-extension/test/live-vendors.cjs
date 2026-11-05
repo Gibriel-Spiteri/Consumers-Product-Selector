@@ -171,7 +171,14 @@ async function readPanel(page) {
         await page.screenshot({ path: path.join(SHOTS, `${v.key}.png`) });
         if (v.change) {
           await v.change(page);
-          await page.waitForTimeout(3000);
+          // await page.waitForTimeout(3000);
+          // 1.4.2 (Gib 11/5): the panel stays open, greyed out with a spinner, while it re-reads the page.
+          const busy = panel.locator(".busy");
+          const spun = await busy.waitFor({ state: "visible", timeout: 3000 }).then(() => true, () => false);
+          if (spun) await page.screenshot({ path: path.join(SHOTS, `${v.key}-updating.png`) });
+          const settled = await busy.waitFor({ state: "hidden", timeout: 10000 }).then(() => true, () => false);
+          record(v.key, spun && settled && await panel.isVisible(), `while it updates: panel open, ${spun ? "spinner shown" : "NO spinner"}, ${settled ? "then cleared" : "still spinning after 10 s"}`);
+          await page.waitForTimeout(300);
           got = await readPanel(page);
           bad = compare(got, v.afterChange);
           record(v.key, bad.length === 0 && await panel.isVisible(), `after the change, panel open: ${bad.length ? bad.join("; ") : `${got.model} | ${got.color} | $${got.price}`}`);
