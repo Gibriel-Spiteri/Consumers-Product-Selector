@@ -3,6 +3,8 @@
 export interface QuoteHelperInfo {
   available: boolean;
   version: string | null;
+  // 1.5.1: the Group Policy install (signed package on this server); null when there is none.
+  policy?: { extensionId: string; version: string; updateUrl: string; value: string } | null;
 }
 
 export const QUOTE_HELPER_INFO_URL = "/api/quote-helper";

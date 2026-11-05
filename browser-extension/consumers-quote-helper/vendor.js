@@ -4,6 +4,9 @@
   "use strict";
   if (window.__consumersQuoteHelper) return;
   window.__consumersQuoteHelper = true;
+  // 1.5.1: another copy of the extension (one loaded by hand next to the Group Policy one) already put its button on
+  // this page; one button is enough. Each copy runs in its own isolated world, so only the shared DOM shows it.
+  if (document.querySelector("[data-consumers-quote-helper]")) return;
   const X = globalThis.ConsumersExtract;
 
   const host = document.createElement("div");

@@ -174,6 +174,30 @@ export default function QuoteHelperPage() {
             </li>
           </ol>
         </div>
+        {info.data?.policy && (
+          <div data-testid="quickadd-group-policy">
+            <h2 className="text-base font-semibold text-gray-900 mb-2">For IT: install it on every showroom PC (Group Policy)</h2>
+            <p className="text-sm text-gray-700 mb-2">
+              Nothing to do on the PCs, and new versions arrive on their own. On the domain controller, in the Group
+              Policy that applies to the showroom PCs, open <b>Computer Configuration &gt; Policies &gt; Administrative
+              Templates &gt; Microsoft Edge &gt; Extensions &gt; Control which extensions are installed silently</b>,
+              set it to <b>Enabled</b>, click <b>Show...</b> and add this line:
+            </p>
+            <div className="mb-2 overflow-x-auto"><CopyAddress address={info.data.policy.value} /></div>
+            <ul className="list-disc pl-5 space-y-1 text-sm text-gray-700">
+              <li>Extension ID {info.data.policy.extensionId}, version {info.data.policy.version} on this server.</li>
+              <li>
+                Remove any copy loaded with Load unpacked first (edge://extensions, <b>Remove</b>); a PC with both can show
+                two buttons.
+              </li>
+              <li>
+                A PC picks it up at its next policy refresh (about 90 minutes) or after <b>gpupdate /force</b> and an Edge
+                restart. It then shows on edge://extensions as installed by your organization.
+              </li>
+              <li>For Chrome, the same line goes in Google &gt; Google Chrome &gt; Extensions &gt; Configure the list of force-installed apps and extensions.</li>
+            </ul>
+          </div>
+        )}
         <div className="rounded-xl border border-gray-200 px-4 py-3 text-[13px] text-gray-600 space-y-1">
           <p>
             When you load it, the browser warns that the extension can read and change data on websites. It only runs on
