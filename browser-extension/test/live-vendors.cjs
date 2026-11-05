@@ -47,6 +47,8 @@ const VENDORS = [
     change: async page => page.evaluate(() => document.querySelector('.product-detail-page__color-swatch input[aria-label="Matte White"]').click()),
     afterChange: { model: "K-28000-CM6", color: "Matte White", optionsShown: false, ...anyPrice } },
   { key: "toto", url: "https://www.totousa.com/drake-two-piece-128-gpf-elongated-bowl", add: true,
+    // 1.5.1: every field is required; the page gives no color, so Add is refused until the customer types one.
+    fill: { ".color": "Cotton White" },
     expect: { model: /^CST776CEG#\d\d$/, collDesc: v => v.toLowerCase().includes("drake"), type: "TOILET", ...anyPrice } },
   { key: "brizo", url: "https://www.brizo.com/bath/product/T66T030-PC",
     expect: { model: "T66T030-PC", collDesc: v => v.toLowerCase().includes("virage"), type: "SHOWER SYSTEM - VALVE TRIM", ...anyPrice } },
@@ -88,6 +90,18 @@ const VENDORS = [
       await page.waitForTimeout(1500);
     },
     expect: { model: "NHS160-25-40R-79", color: "Brushed Nickel", type: "SHOWER DOOR", manual: false, ...anyPrice } },
+  // Gib (11/5): on the Vespero Pivot, choices made with the panel open did not reach it. The panel opens before the
+  // last choice (no model yet), then the finish is picked on the page: the panel must follow.
+  { key: "fleurco2", url: "https://fleurco.com/shower-doors/vespero-pivot-2sided",
+    prepare: async page => {
+      await page.selectOption("#drpFront", "48");
+      await page.waitForTimeout(1500);
+      await page.evaluate(() => { const r = document.querySelector('input[name="rdoGlassType"][value="40"]'); if (r) r.click(); });
+      await page.waitForTimeout(1500);
+    },
+    expect: { model: "", manual: true },
+    change: async page => page.evaluate(() => { const r = document.querySelector('input[name="rdoHardwareFinish"][value="12"]'); if (r) r.click(); }),
+    afterChange: { model: "VP4836-12-40-79", color: "Brushed Gold", collDesc: "Vespero Pivot, Clear Glass (6mm)", manual: false, ...anyPrice } },
   { key: "avance", url: "https://www.avancecabinetry.com/cabinetry/benton/benton-bourbon",
     expect: { model: "", manual: true, lineShown: true } },
 ];
@@ -213,6 +227,16 @@ async function readPanel(page) {
           await page.screenshot({ path: path.join(SHOTS, `${v.key}-changed.png`) });
         }
         if (v.add) {
+          // 1.5.1 (Gib 11/5): all fields are required. A field the page left empty must be refused and outlined first.
+          if (v.fill) {
+            await panel.locator(".add").click();
+            await page.waitForTimeout(300);
+            const err = await panel.locator(".msg.err").innerText().catch(() => "");
+            const flagged = await panel.locator(".missing").count();
+            record(v.key, /Please fill in/.test(err) && flagged >= 1, `empty field refused (${flagged} outlined): "${err}"`);
+            await page.screenshot({ path: path.join(SHOTS, `${v.key}-refused.png`) });
+            for (const [sel, val] of Object.entries(v.fill)) await panel.locator(sel).fill(val);
+          }
           await panel.locator(".add").click();
           await panel.locator(".msg.ok").waitFor({ timeout: 10000 });
           added.push({ key: v.key, model: got.model, type: got.type, collDesc: got.collDesc });

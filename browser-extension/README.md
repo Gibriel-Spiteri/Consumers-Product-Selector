@@ -14,7 +14,7 @@ Lets a customer pick products on a vendor's own website (Delta, Kohler, Brizo, .
    - The panel follows the page the same way on every site (1.4.0): picking another finish or color while it is open refreshes the model, finish and price and keeps the quantity. Since 1.4.2 the panel stays open, greyed out with an "Updating..." spinner, from the moment the page changes until the new values are in. Delta (the shown MODEL#) and Kohler (the shown SKU) have their own rules; an Option list appears only when a page does not say which color is chosen.
    - When a page gives no color, a finish at the end of the product name is used ("128mm Austin Pull - Satin Nickel", "...Brushed Satin Nickel"). Strategic Brands' collection comes from its "parts in this collection" link.
    - Collection / Description goes to NetSuite's Coll/Desc as is. It starts as the collection, then the product name, the way reps type it; the collection is left out when the name already has it.
-   - The customer picks the option, sets the quantity and clicks **Add to quote**.
+   - The customer picks the option, sets the quantity and clicks **Add to quote**. Every field is required (1.5.1): **Add to quote** outlines the empty ones in red and names them, so a page that gives no color (John Boos, TOTO) or no price (Elkay, Franke, Richelieu, Strategic Brands) needs the customer, or the sales rep, to type it in.
 3. **It lands on the Quote List.** When the Product Selector is open (signed in) in that browser, each pick goes straight onto the Quote List as a special-order line, and leaves the extension.
    - Model, description, color, list price and quantity come from the vendor page, with a **Picked on** link back to it. The Type is guessed from the product name and the vendor's address (KITCHEN FAUCET, TOILET, KNOBS, SHOWER DOOR); on a tie, or for order-form Types, it is left for the rep.
    - A line the vendor page left incomplete shows an amber **Needs Type, Color, List price** (whatever is missing). Clicking it opens the Edit Special Order form; fill in the rest and click **Save Changes**. The Quote List will not push to an estimate until every line is complete.
@@ -60,7 +60,7 @@ Checked on 11/4/2026 in Chrome, one product page per product line:
 | Icera | yes | yes | page text |
 | Strategic Brands | yes | no (sign-in) | page text |
 | Franke | Article Number (`115.0731.726`) | no | page text |
-| Fleurco | yes (`NHS160-25-40R-79`), once every configurator choice is made, Mix & Match Kit included | yes | site rule (the total under the options) |
+| Fleurco | yes (`NHS160-25-40R-79`, `VP4836-12-40-79`), once every configurator choice is made, Mix & Match Kit included; an open panel follows each choice (1.5.1) | yes | site rule (the total under the options) |
 | Avance | no: door-style pages only | no | customer types it |
 
 When a vendor redesigns its site, open one of its product pages and check the panel; the unit tests hold one fixture per page shape.
