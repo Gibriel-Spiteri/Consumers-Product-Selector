@@ -154,9 +154,13 @@ export interface PickTypeOption {
   requiresAttachment: boolean;
 }
 
-// Words, singular: "Pull-Down Kitchen Faucets" -> pull, down, kitchen, faucet.
+// Words, singular: "Pull-Down Kitchen Faucets" -> pull, down, kitchen, faucet. "Bathroom" counts as the Types' "BATH"
+// (Delta's "Two Handle Widespread Bathroom Faucet" is a BATH FAUCET, 11/5); same rule as the extension.
+const SAME_WORD: Record<string, string> = { bathroom: "bath" };
 function words(s: string): string[] {
-  return s.toLowerCase().split(/[^a-z]+/).filter(w => w.length > 1).map(w => (w.length > 3 && w.endsWith("s") && !w.endsWith("ss") ? w.slice(0, -1) : w));
+  return s.toLowerCase().split(/[^a-z]+/).filter(w => w.length > 1)
+    .map(w => (w.length > 3 && w.endsWith("s") && !w.endsWith("ss") ? w.slice(0, -1) : w))
+    .map(w => SAME_WORD[w] ?? w);
 }
 
 // The product line's special-order Type that fits the pick, from the product name (counts double) and the vendor's
@@ -174,8 +178,11 @@ export function suggestType(pick: Pick<VendorPick, "name" | "pageUrl"> & { categ
   }
   const nameWords = new Set(words(pick.name));
   const pathWords = new Set([...words(path), ...words(pick.category ?? "")]);
+  // The Type's last word is its main noun and must be there too (a shower door is not a SHOWER BASE), as in the extension.
+  const head = (t: PickTypeOption) => { const w = words(t.name); return w[w.length - 1]; };
   const scored = types
     .filter(t => !t.requiresAttachment && !/^misc/i.test(t.name.trim()))
+    .filter(t => nameWords.has(head(t)) || pathWords.has(head(t)))
     .map(t => {
       const tw = [...new Set(words(t.name))];
       const score = tw.reduce((s, w) => s + (nameWords.has(w) ? 2 : pathWords.has(w) ? 1 : 0), 0);

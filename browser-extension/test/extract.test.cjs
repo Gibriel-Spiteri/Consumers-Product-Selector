@@ -210,6 +210,25 @@ test("breadcrumbs and the Type guess the panel preselects", () => {
   assert.equal(X.suggestType({ name: "Undermount Sink", pageUrl: "https://x.test/sinks/a1", category: "" }, [
     { id: "1", name: "KITCHEN SINK", requiresAttachment: false }, { id: "2", name: "BATH SINK", requiresAttachment: false }]), null);
   assert.equal(X.suggestType({ name: "Soaker tub", pageUrl: "https://x.test/", category: "" }, [{ id: "1", name: "SOAKER", requiresAttachment: true }]), null);
+  // The Type's main noun must be there: a shower door is not a SHOWER BASE (Neptune, 11/5).
+  assert.equal(X.suggestType({ name: "Belaya 6mm Pivot Shower Door", pageUrl: "https://produitsneptune.com/product/belaya/220333", category: "" },
+    ["ACCESSORIES", "FAUCETS", "FREE STANDING TUB", "SHOWER BASE", "TUB"].map((name, i) => ({ id: String(i), name, requiresAttachment: false }))), null);
+  // "Bathroom" is the Types' "BATH" (Delta 35442, 11/5).
+  assert.equal(X.suggestType({ name: "Two Handle Widespread Bathroom Faucet", pageUrl: "https://www.deltafaucet.com/bathroom/product/35442-MPU-DST.html", category: "Bathroom / Sink Faucets / Widespread" }, delta).name, "BATH FAUCET");
+});
+
+test("a finish at the end of the product name fills an empty color (Jim, 11/5)", () => {
+  assert.equal(X.guessFinish("128mm Austin Pull - Satin Nickel"), "Satin Nickel");
+  assert.equal(X.guessFinish("1 1/4\" Knob - Precision - Polished Nickel"), "Polished Nickel");
+  assert.equal(X.guessFinish("Barrow Knob 1 1/4 Inch Brushed Satin Nickel"), "Brushed Satin Nickel");
+  assert.equal(X.guessFinish("Monza Pivot Tub Shield with Clear glass in Chrome"), "Chrome");
+  assert.equal(X.guessFinish("Drake® Two-piece Toilet, 1.28 GPF, Elongated Bowl"), "");
+  assert.equal(X.guessFinish("Crosstown 18 Gauge Stainless Steel Single Bowl Undermount Sink"), "");
+  assert.equal(X.guessFinish("Antigua Undermount Lavatory Matte"), "");
+  const r = X.extract([JSON.stringify({ "@type": "Product", name: "Barrow Knob 1 1/4 Inch Brushed Satin Nickel", sku: "TK1050BSN" })], {}, "https://www.topknobs.com/x");
+  assert.equal(r.items[0].color, "Brushed Satin Nickel");
+  // A color the product data gives is kept.
+  assert.equal(X.extract([JSON.stringify({ "@type": "Product", name: "Knob in Chrome", sku: "K1", color: "Matte Black" })], {}, "https://x.test/").items[0].color, "Matte Black");
 });
 
 test("vendor domains: subdomains count as the main domain", () => {

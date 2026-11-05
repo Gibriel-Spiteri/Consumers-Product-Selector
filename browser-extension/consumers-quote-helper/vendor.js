@@ -13,18 +13,20 @@
     <style>
       :host { all: initial; }
       * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+      /* 2026-11-05 (Jim): Consumers Confirm's blue (--blue #1f4fd1, --blue-dark #183fa8 in its sign_style.css) for the
+         button and the panel header. Was Confirm's navy bar color #0f1b33 (hover #1b2846). */
       .fab { position: fixed; right: 20px; bottom: 20px; z-index: 2147483647; display: none; align-items: center; gap: 8px;
-        background: #0f1b33; color: #fff; border: 0; border-radius: 999px; padding: 14px 20px; font-size: 15px; font-weight: 650;
-        box-shadow: 0 6px 20px rgba(15, 27, 51, .35); cursor: pointer; }
-      .fab:hover { background: #1b2846; }
-      .fab .dot { background: #1f4fd1; border-radius: 999px; padding: 2px 8px; font-size: 12px; }
+        background: #1f4fd1; color: #fff; border: 0; border-radius: 999px; padding: 14px 20px; font-size: 15px; font-weight: 650;
+        box-shadow: 0 6px 20px rgba(31, 79, 209, .35); cursor: pointer; }
+      .fab:hover { background: #183fa8; }
+      .fab .dot { background: #fff; color: #1f4fd1; border-radius: 999px; padding: 2px 8px; font-size: 12px; }
       .panel { position: fixed; right: 20px; bottom: 20px; z-index: 2147483647; width: 360px; max-width: calc(100vw - 32px);
         max-height: calc(100vh - 40px); overflow: auto; display: none; background: #fff; color: #1d2433; border: 1px solid #d6dae2;
         border-radius: 12px; box-shadow: 0 12px 40px rgba(15, 27, 51, .25); }
-      .head { background: #0f1b33; color: #fff; padding: 12px 16px; border-radius: 12px 12px 0 0; display: flex; justify-content: space-between; align-items: center; }
+      .head { background: linear-gradient(135deg, #1f4fd1, #183fa8); color: #fff; padding: 12px 16px; border-radius: 12px 12px 0 0; display: flex; justify-content: space-between; align-items: center; }
       .head b { font-size: 15px; font-weight: 650; }
-      .head small { display: block; color: #b8c2d6; font-size: 12px; font-weight: 400; }
-      .x { background: transparent; border: 0; color: #b8c2d6; font-size: 22px; cursor: pointer; line-height: 1; }
+      .head small { display: block; color: #dbe4ff; font-size: 12px; font-weight: 400; }
+      .x { background: transparent; border: 0; color: #dbe4ff; font-size: 22px; cursor: pointer; line-height: 1; }
       .body { padding: 14px 16px; display: grid; gap: 10px; }
       .prod { display: flex; gap: 12px; align-items: center; }
       .prod img { width: 64px; height: 64px; object-fit: contain; border: 1px solid #e3e6ec; border-radius: 8px; background: #fff; }
@@ -77,7 +79,8 @@
   let items = [];
   let selected = -1;
   let manual = false; // nothing readable on the page: the customer types the model in
-  let lastUrl = "";
+  let lastUrl = ""; // since 11/5 the address plus the shown model and finish (pageKey)
+  let followsPage = false; // the page shows which variant is chosen, so no Option list
   const MANUAL_HINT = f.manualHint.textContent;
   let category = ""; // the vendor's breadcrumbs, for the Type guess
   let siteLines = []; // this vendor's product lines and their special-order Types, from the Product Selector
@@ -124,7 +127,10 @@
     // price shown, but not the page's product data. The chosen swatch is titled "Finish: Polished Nickel, selected",
     // the shown list price carries itemprop="price" content="1242.00", and the collection is ".collection-name".
     "deltafaucet.com": {
-      model: () => X.urlModel(location.href),
+      // model: () => X.urlModel(location.href),
+      // The shown "MODEL#: 35442-CZMPU-DST" first: the address can lag a moment behind the swatch (Jim, 11/5: the
+      // panel had 35442-MPU-DST with Champagne Bronze).
+      model: () => textOf(".model-name").replace(/^\s*model\s*#?\s*:?\s*/i, "") || X.urlModel(location.href),
       color: () => {
         const b = [...document.querySelectorAll("button.product-attribute__swatch")]
           .find(s => /selected/i.test(s.title || "") || s.getAttribute("aria-pressed") === "true");
@@ -135,6 +141,29 @@
         return el ? el.getAttribute("content") || el.textContent : "";
       },
       collection: () => textOf(".collection-name"),
+    },
+    // Kohler (2026-11-05): the color swatches change "?skuId=28000-CM6" (no "K-") and the shown SKU
+    // (.product-detail-page__sku-id "K-28000-CM6"); the product data lists every color. The shown SKU picks the
+    // color, so the panel follows the page as on Delta instead of offering a dropdown.
+    "kohler.com": {
+      model: () => textOf(".product-detail-page__sku-id"),
+      color: () => {
+        const r = document.querySelector(".product-detail-page__color-swatch input:checked");
+        return r ? r.getAttribute("aria-label") || "" : "";
+      },
+    },
+    // Strategic Brands (2026-11-05, Jim): names read "128mm Austin Pull - Satin Nickel"; the finish is the last part,
+    // and the collection is in the "parts in this collection" link (...termsFilters[product_collection][Austin]=1).
+    "strategicbrandsincorporated.com": {
+      color: () => {
+        const parts = textOf("h1").split(/\s+-\s+/);
+        return parts.length > 1 ? parts[parts.length - 1] : "";
+      },
+      collection: () => {
+        const a = document.querySelector('a[href*="product_collection"]');
+        const m = a && /product_collection\]\[([^\]]+)\]/.exec(decodeURIComponent(a.getAttribute("href") || ""));
+        return m ? m[1].replace(/\+/g, " ") : "";
+      },
     },
   };
   const siteRule = SITE_RULES[X.registrableDomain(location.hostname)] || null;
@@ -170,6 +199,12 @@
   function withSiteValues(found) {
     if (!siteRule || siteRule.requireModel || !found.items.length) return found;
     const v = siteValues();
+    // The page shows which of the product data's colors is chosen (Kohler): select it; its color and price are its own.
+    const shown = v.model ? found.items.findIndex(it => String(it.model).toUpperCase() === v.model.toUpperCase()) : -1;
+    if (found.items.length > 1 && shown >= 0) {
+      return { ...found, selected: shown, follows: true, items: found.items.map((x, j) => (j === shown && v.collection
+        ? { ...x, collection: v.collection.replace(/[®™]/g, "").trim() } : x)) };
+    }
     const i = Math.max(found.selected, 0);
     const it = { ...found.items[i] };
     if (v.model) it.model = v.model;
@@ -177,7 +212,7 @@
     if (v.price && X.number(v.price)) it.price = X.number(v.price);
     if (v.name) it.name = v.name;
     if (v.collection) it.collection = v.collection.replace(/[®™]/g, "").trim();
-    return { ...found, items: found.items.map((x, j) => (j === i ? it : x)) };
+    return { ...found, follows: !!v.model, items: found.items.map((x, j) => (j === i ? it : x)) };
   }
 
   // The page's schema.org Product microdata (Top Knobs), shaped like a JSON-LD Product for extract.js.
@@ -254,6 +289,10 @@
     // Every page of a vendor site keeps the button: without product data the customer types the model in.
     items = manual ? [X.blankItem(live.meta, live.page, document.title, location.href)] : found.items;
     selected = manual ? 0 : found.selected;
+    // The page says which color or finish is chosen (Kohler's shown SKU, the model in the address): the panel follows
+    // it and needs no Option list. Jim (11/5): it should work the same on every site.
+    const url = location.href.toUpperCase();
+    followsPage = !!found.follows || items.some(it => it.model && url.includes(String(it.model).toUpperCase()));
     fab.style.display = "flex";
   }
 
@@ -307,7 +346,8 @@
       o.textContent = [it.color, it.model].filter(Boolean).join(" - ") || it.name;
       f.variant.appendChild(o);
     });
-    f.variantWrap.style.display = items.length > 1 ? "" : "none";
+    // f.variantWrap.style.display = items.length > 1 ? "" : "none";
+    f.variantWrap.style.display = items.length > 1 && !followsPage ? "" : "none";
     f.manualHint.hidden = !manual;
     f.manualHint.textContent = (siteRule && siteRule.hint) || MANUAL_HINT;
     f.variant.value = String(Math.max(selected, 0));
@@ -404,9 +444,27 @@
   //   }
   // }, 1000);
   // An open panel follows the page (Delta's finish swatches change the address): it refreshes instead of closing.
+  // setInterval(() => {
+  //   if (location.href !== lastUrl) {
+  //     lastUrl = location.href;
+  //     const open = panel.style.display === "block";
+  //     if (!open) closePanel();
+  //     setTimeout(async () => {
+  //       await detect();
+  //       if (open) openPanel(true);
+  //     }, 800);
+  //   }
+  // }, 1000);
+  // 2026-11-05: also when the page's shown model or finish changes without a new address (Delta updates the address
+  // after the swatch; Kohler's SKU line), so the panel never keeps an older finish.
+  const pageKey = () => {
+    const v = siteRule && !siteRule.requireModel ? siteValues() : {};
+    return `${location.href}|${v.model || ""}|${v.color || ""}`;
+  };
   setInterval(() => {
-    if (location.href !== lastUrl) {
-      lastUrl = location.href;
+    const key = pageKey();
+    if (key !== lastUrl) {
+      lastUrl = key;
       const open = panel.style.display === "block";
       if (!open) closePanel();
       setTimeout(async () => {
@@ -415,7 +473,8 @@
       }, 800);
     }
   }, 1000);
-  lastUrl = location.href;
+  // lastUrl = location.href;
+  lastUrl = pageKey();
   detect();
   refreshCount();
 })();
