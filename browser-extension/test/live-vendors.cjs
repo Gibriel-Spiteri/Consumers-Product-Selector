@@ -1,0 +1,204 @@
+// Live check of the Consumers Quote Helper on the real vendor websites, with the real extension loaded in a
+// throwaway Chromium profile. It opens one product page per vendor, reads the panel, changes the finish where the
+// site allows it (Delta) or walks a configurator (Fleurco), adds picks to the extension's own storage, and checks the
+// hand-off to the Product Selector's page. Read-only for the vendors and NetSuite: nothing is ordered, sent or saved
+// anywhere else.
+//
+// Run:  node browser-extension/test/live-vendors.cjs [--headed] [vendor ...]
+//       vendor = delta, kohler, toto, ... (default: all). Needs Playwright with its Chromium: set PLAYWRIGHT to a
+//       folder whose node_modules has it, for example PLAYWRIGHT=C:/Users/gspiteri1/Desktop/Git/Bundle63418/Projects/SrrUiTests
+// Exit code 1 when any check fails. Screenshots of each panel go to browser-extension/test/live-shots (gitignored).
+//
+// Prices and finishes are the vendors' own and change over time, so prices are only checked for being there (or not);
+// models, finishes, collections and Types are checked exactly.
+const path = require("path");
+const fs = require("fs");
+const os = require("os");
+
+const PW = process.env.PLAYWRIGHT ? path.join(process.env.PLAYWRIGHT, "node_modules", "playwright") : "playwright";
+const { chromium } = require(PW);
+const EXT = path.resolve(__dirname, "..", "consumers-quote-helper");
+const SHOTS = path.join(__dirname, "live-shots");
+const APP = "https://consumers-product-selector.replit.app/";
+const SITES = JSON.parse(fs.readFileSync(path.join(__dirname, "vendor-sites.json"), "utf8")).sites;
+// A normal desktop Chrome: some vendors (Delta) challenge browsers that say they are automated.
+const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36";
+
+const anyPrice = { price: v => Number(v) > 0 };
+const noPrice = { price: v => v === "" };
+
+// What each vendor's product page should give (checked 2026-11-04).
+const VENDORS = [
+  { key: "delta", url: "https://www.deltafaucet.com/kitchen/product/9190TL-DST.html", add: true,
+    expect: { model: "9190TL-DST", color: "Chrome", collection: "Broderick", type: "KITCHEN FAUCET", ...anyPrice },
+    // Pick another finish with the panel open: the panel follows it.
+    // Clicked from the page: at this window size the open panel sits over Delta's swatches.
+    change: async page => page.evaluate(() => document.querySelector('button.product-attribute__swatch[title^="Finish: Polished Nickel"]').click()),
+    afterChange: { model: "9190TL-PN-DST", color: "Polished Nickel", ...anyPrice } },
+  { key: "kohler", url: "https://www.kohler.com/en/products/kitchen-sinks/shop-kitchen-sinks/cairn-27-1-2-x-18-5-16-x-9-1-2-neoroc-under-mount-single-bowl-kitchen-sink-with-sink-rack-28000?skuId=K-28000-CM6",
+    expect: { model: "K-28000-CM6", color: "Matte White", collection: "Cairn", type: "KITCHEN SINK", options: n => n > 1, ...anyPrice } },
+  { key: "toto", url: "https://www.totousa.com/drake-two-piece-128-gpf-elongated-bowl", add: true,
+    expect: { model: /^CST776CEG#\d\d$/, collection: "Drake", type: "TOILET", ...anyPrice } },
+  { key: "brizo", url: "https://www.brizo.com/bath/product/T66T030-PC",
+    expect: { model: "T66T030-PC", collection: "Virage", type: "SHOWER SYSTEM - VALVE TRIM", ...anyPrice } },
+  { key: "topknobs", url: "https://www.topknobs.com/barrow-knob.html?finish_tk=13603",
+    expect: { model: "TK1050BSN", type: "KNOBS", ...anyPrice } },
+  { key: "richelieu", url: "https://www.richelieu.com/us/en/category/decorative-hardware/cabinet-hardware-pulls-and-knobs/pulls/contemporary-metal-pull-5632/1166124/sku-BP56325128195",
+    expect: { model: "BP56325128195", type: "PULL", ...noPrice } },
+  { key: "elkay", url: "https://www.elkay.com/products/sinks/materials/stainless-steel/ectru24179rt",
+    expect: { model: "ECTRU24179RT", collection: "Crosstown", ...noPrice } },
+  { key: "flusso", url: "https://www.flussofaucets.com/products/10FGC4003CP-hole-in-glass-center-mount-glass-clamp/",
+    expect: { model: "10.FGC.4003CP", color: "Chrome", ...anyPrice } },
+  { key: "neptune", url: "https://produitsneptune.com/product/monza-39-x-59-in-8-mm-pivot-tub-shield-for-alcove-installation/220086/220086-900-084-000",
+    expect: { model: "220086-900-084-000", ...anyPrice } },
+  { key: "craftandmain", url: "https://craftandmain.com/products/craft-main%C2%AE-ashlow%E2%84%A2-vanity-with-engineered-stone-top",
+    expect: { model: "AWWVT2419D", lineShown: true, ...anyPrice } },
+  { key: "johnboos", url: "https://www.johnboos.com/products/cherry-cucina-damico-wine-cart-with-undershelves-and-towel-bar",
+    expect: { model: "CHY-CUCD15WC", type: "", ...anyPrice } }, // a wine cart: no Type guess from "Boos Blocks"
+  { key: "icera", url: "https://icerabath.com/product/antigua-undermount-lavatory/",
+    expect: { model: "1022.000.01", ...anyPrice } },
+  { key: "strategic", url: "https://strategicbrandsincorporated.com/85414/1-1-4-knob-precision-polished-nickel",
+    expect: { model: "85414", lineShown: true, ...noPrice } },
+  { key: "franke", url: "https://www.franke.com/us/en/home-solutions/products/kitchen-faucets/product-detail-page.html/115.0731.726.html",
+    expect: { model: "115.0731.726", ...noPrice } },
+  { key: "fleurco", url: "https://fleurco.com/shower-doors/horizon-sliding-inline", add: true,
+    // The configurator shows the model only after every choice: 60" front, 79" glass, right door, clear glass,
+    // brushed nickel, no Mix & Match Kit.
+    prepare: async page => {
+      await page.selectOption('select[name="drpFront"], #drpFront', "60");
+      await page.waitForTimeout(1500);
+      await page.selectOption('select[name="drpHeight"], #drpHeight', "79");
+      await page.waitForTimeout(1500);
+      for (const [name, value] of [["rdoSide", "R"], ["rdoGlassType", "40"], ["rdoHardwareFinish", "25"]]) {
+        await page.evaluate(([n, v]) => { const r = document.querySelector(`input[name="${n}"][value="${v}"]`); if (r) r.click(); }, [name, value]);
+        await page.waitForTimeout(1200);
+      }
+      await page.getByText("no Mix & Match Kit", { exact: true }).click();
+      await page.waitForTimeout(1500);
+    },
+    expect: { model: "NHS160-25-40R-79", color: "Brushed Nickel", type: "SHOWER DOOR", manual: false, ...anyPrice } },
+  { key: "avance", url: "https://www.avancecabinetry.com/cabinetry/benton/benton-bourbon",
+    expect: { model: "", manual: true, lineShown: true } },
+];
+
+const results = [];
+const record = (vendor, ok, what) => {
+  results.push({ vendor, ok, what });
+  console.log(`${ok ? "PASS" : "FAIL"}  ${vendor.padEnd(12)} ${what}`);
+};
+
+function compare(actual, expect) {
+  const bad = [];
+  for (const [k, want] of Object.entries(expect)) {
+    const got = actual[k];
+    const ok = typeof want === "function" ? want(got) : want instanceof RegExp ? want.test(String(got)) : got === want;
+    if (!ok) bad.push(`${k}: got ${JSON.stringify(got)}, want ${want instanceof RegExp || typeof want === "function" ? String(want) : JSON.stringify(want)}`);
+  }
+  return bad;
+}
+
+async function readPanel(page) {
+  const p = page.locator("[data-consumers-quote-helper]").locator(".panel");
+  return {
+    name: await p.locator(".prod .name").innerText(),
+    model: await p.locator(".model").inputValue(),
+    color: await p.locator(".color").inputValue(),
+    price: await p.locator(".price").inputValue(),
+    collection: await p.locator(".collection").inputValue(),
+    description: await p.locator(".description").inputValue(),
+    type: await p.locator(".type").evaluate(s => (s.value && s.selectedOptions[0] ? s.selectedOptions[0].textContent : "")),
+    options: await p.locator(".variant option").count(),
+    lineShown: await p.locator(".line-wrap").isVisible(),
+    manual: await p.locator(".manual-hint").isVisible(),
+  };
+}
+
+(async () => {
+  const headed = process.argv.includes("--headed");
+  const only = process.argv.slice(2).filter(a => !a.startsWith("--"));
+  const vendors = only.length ? VENDORS.filter(v => only.includes(v.key)) : VENDORS;
+  fs.mkdirSync(SHOTS, { recursive: true });
+  const ctx = await chromium.launchPersistentContext(fs.mkdtempSync(path.join(os.tmpdir(), "cqh-live-")), {
+    channel: "chromium", headless: !headed, viewport: { width: 1400, height: 900 }, userAgent: UA, locale: "en-US",
+    args: [`--disable-extensions-except=${EXT}`, `--load-extension=${EXT}`, "--disable-blink-features=AutomationControlled"],
+  });
+  await ctx.addInitScript(() => Object.defineProperty(navigator, "webdriver", { get: () => undefined }));
+  try {
+    const sw = ctx.serviceWorkers()[0] || await ctx.waitForEvent("serviceworker", { timeout: 15000 });
+    const version = await sw.evaluate(() => chrome.runtime.getManifest().version);
+    console.log(`Consumers Quote Helper ${version}, ${vendors.length} vendor page(s)\n`);
+
+    // The Product Selector's page hands the extension the vendor sites and their Types, as the signed-in app does.
+    const app = await ctx.newPage();
+    await app.goto(APP, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await app.waitForTimeout(2000);
+    await app.evaluate(sites => window.postMessage({ source: "consumers-product-selector", type: "vendor-sites", sites }, location.origin), SITES);
+    await app.waitForTimeout(1500);
+    const stored = await sw.evaluate(() => chrome.storage.local.get("siteLines").then(s => Object.keys(s.siteLines || {}).length));
+    record("setup", stored === 16, `vendor sites with Types in the extension: ${stored} domains`);
+
+    const page = await ctx.newPage();
+    const added = [];
+    for (const v of vendors) {
+      try {
+        await page.goto(v.url, { waitUntil: "domcontentloaded", timeout: 60000 });
+        await page.waitForTimeout(4000);
+        const blocked = await page.evaluate(() => /captcha|are you a human|access denied|verify you are/i.test((document.body && document.body.innerText || "").slice(0, 3000)));
+        if (blocked) { record(v.key, false, "the site showed a bot check"); continue; }
+        if (v.prepare) await v.prepare(page);
+        const fab = page.locator("[data-consumers-quote-helper]").locator(".fab");
+        await fab.waitFor({ state: "visible", timeout: 20000 });
+        await fab.click();
+        const panel = page.locator("[data-consumers-quote-helper]").locator(".panel");
+        await panel.waitFor({ state: "visible", timeout: 10000 });
+        await page.waitForTimeout(500);
+        let got = await readPanel(page);
+        let bad = compare(got, v.expect);
+        record(v.key, bad.length === 0, bad.length ? bad.join("; ") : `${got.model} | ${got.color || "-"} | $${got.price || "-"} | ${got.collection || "-"} | ${got.type || "-"}`);
+        await page.screenshot({ path: path.join(SHOTS, `${v.key}.png`) });
+        if (v.change) {
+          await v.change(page);
+          await page.waitForTimeout(3000);
+          got = await readPanel(page);
+          bad = compare(got, v.afterChange);
+          record(v.key, bad.length === 0 && await panel.isVisible(), `after the change, panel open: ${bad.length ? bad.join("; ") : `${got.model} | ${got.color} | $${got.price}`}`);
+          await page.screenshot({ path: path.join(SHOTS, `${v.key}-changed.png`) });
+        }
+        if (v.add) {
+          await panel.locator(".add").click();
+          await panel.locator(".msg.ok").waitFor({ timeout: 10000 });
+          added.push({ key: v.key, model: got.model, type: got.type, collection: got.collection });
+        }
+      } catch (e) {
+        record(v.key, false, `error: ${String(e.message || e).split("\n")[0]}`);
+        await page.screenshot({ path: path.join(SHOTS, `${v.key}-error.png`) }).catch(() => {});
+      }
+    }
+
+    // The picks reach the Product Selector's page with the special-order fields.
+    if (added.length) {
+      await app.bringToFront();
+      await app.evaluate(() => {
+        window.__fromExt = [];
+        window.addEventListener("message", e => { if (e.data && e.data.source === "consumers-quote-helper") window.__fromExt.push(e.data); });
+        window.postMessage({ source: "consumers-product-selector", type: "request-picks" }, location.origin);
+      });
+      await app.waitForTimeout(2000);
+      const msgs = await app.evaluate(() => window.__fromExt);
+      const picks = (msgs.filter(m => m.type === "vendor-picks").pop() || { picks: [] }).picks;
+      for (const a of added) {
+        const p = picks.find(x => x.model === a.model);
+        const ok = !!p && (!a.type || p.typeName === a.type) && (!a.collection || p.collection === a.collection) && !!p.description;
+        record("hand-off", ok, `${a.key}: ${p ? `${p.model}, Type ${p.typeName || "-"}, Collection ${p.collection || "-"}, ${p.description.slice(0, 40)}` : "not delivered"}`);
+      }
+    }
+  } finally {
+    await ctx.close();
+  }
+  const failed = results.filter(r => !r.ok);
+  console.log(`\n${results.length - failed.length} passed, ${failed.length} failed`);
+  process.exitCode = failed.length ? 1 : 0;
+})().catch(e => {
+  console.error(e);
+  process.exitCode = 1;
+});

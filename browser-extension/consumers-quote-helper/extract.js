@@ -10,6 +10,7 @@
   const TEXT_BEFORE_HEADING = 300; // some sites (John Boos) print "Model#:" just above the product name
   const TEXT_AFTER_HEADING = 1500;
   const PRICE_AFTER_HEADING = 400; // further down are related products and add-ons with their own prices
+  const MIN_TYPE_SCORE = 2; // a Type guess needs a word in the product name, or two in the breadcrumbs or address
 
   function text(value) {
     if (value == null) return "";
@@ -239,9 +240,11 @@
   // Trim"), else a trademarked first word or two of the name ("Cairn® 27-1/2...", "Drake® Two-piece..."). Delta's
   // comes from its own rule. Empty when the page does not say; the customer or rep can type it.
   function guessCollection(item, page) {
-    const heading = plain(page && page.heading);
+    // const heading = plain(page && page.heading);
+    // The heading as written (Brizo styles "Virage" in capitals), and never a model number (Elkay's h1 is the model).
+    const heading = plain(page && (page.headingText || page.heading));
     const name = plain(item.name);
-    if (heading && heading.split(/\s+/).length <= 3 && name && !name.toLowerCase().startsWith(heading.toLowerCase())) return heading;
+    if (heading && !/\d/.test(heading) && heading.split(/\s+/).length <= 3 && name && !name.toLowerCase().startsWith(heading.toLowerCase())) return heading;
     const m = /^([A-Z][A-Za-z0-9'&.-]*(?:\s[A-Z][A-Za-z0-9'&.-]*){0,2})\s?[®™]/.exec(text(item.name));
     return m ? m[1].trim() : "";
   }
@@ -280,8 +283,9 @@
   }
 
   // The product line's special-order Type that fits: words of the Type found in the product name count 2, in the
-  // breadcrumbs or address 1. No guess on a tie, for order-form Types or MISCELLANEOUS. Same rule as the Product
-  // Selector's suggestType (artifacts/product-selector/src/lib/vendor-picks.ts).
+  // breadcrumbs or address 1. It needs at least 2 (one word in the name, or two elsewhere): a lone breadcrumb word
+  // is too weak (John Boos "Boos Blocks > Carts" is not BUTCHER BLOCK). No guess on a tie, for order-form Types or
+  // MISCELLANEOUS. Same rule as the Product Selector's suggestType (artifacts/product-selector/src/lib/vendor-picks.ts).
   function suggestType(pick, typeList) {
     let path = "";
     try {
@@ -292,7 +296,8 @@
     const scored = (typeList || [])
       .filter(t => !t.requiresAttachment && !/^misc/i.test(String(t.name).trim()))
       .map(t => ({ t, score: [...new Set(words(t.name))].reduce((s, w) => s + (nameWords.has(w) ? 2 : otherWords.has(w) ? 1 : 0), 0) }))
-      .filter(s => s.score > 0)
+      // .filter(s => s.score > 0)
+      .filter(s => s.score >= MIN_TYPE_SCORE)
       .sort((a, b) => b.score - a.score);
     if (!scored.length || (scored.length > 1 && scored[1].score === scored[0].score)) return null;
     return scored[0].t;

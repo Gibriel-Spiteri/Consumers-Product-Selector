@@ -112,8 +112,10 @@ The extension runs on these origins: `consumers-product-selector.replit.app`, `c
 
 ## Tests
 
+Unit tests of the page reader (one fixture per vendor page shape):
+
 ```bash
-node --test browser-extension/extract.test.cjs
+node --test browser-extension/test/extract.test.cjs
 ```
 
 The app side runs from `artifacts/api-server`:
@@ -121,3 +123,14 @@ The app side runs from `artifacts/api-server`:
 ```bash
 node --import tsx --test ../product-selector/src/lib/vendor-picks.test.ts
 ```
+
+**Live check on the real vendor sites** (`test/live-vendors.cjs`): it loads this extension in a throwaway Chromium profile and opens one real product page per vendor (all 16). For each page it reads the panel and checks the model, finish, collection, Type and whether a price is shown. It also changes Delta's finish with the panel open and walks Fleurco's configurator. Last, it adds three picks and checks they reach the Product Selector's page with their fields. Nothing is ordered or sent to a vendor or to NetSuite. Run it after changing the extension, and every so often to catch a vendor redesign:
+
+```bash
+PLAYWRIGHT=C:/Users/gspiteri1/Desktop/Git/Bundle63418/Projects/SrrUiTests node browser-extension/test/live-vendors.cjs
+```
+
+- Add `--headed` to watch it, or name vendors to run only those (`delta fleurco`).
+- Screenshots of each panel land in `browser-extension/test/live-shots/`.
+- The Types it hands the extension are in `test/vendor-sites.json`, read from PROD NetSuite on 2026-11-04.
+- Prices are only checked for being there or not, since vendors change them.

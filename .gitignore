@@ -49,3 +49,4 @@ Thumbs.db
 .local/
 
 browser-extension/dist/
+browser-extension/test/live-shots/
