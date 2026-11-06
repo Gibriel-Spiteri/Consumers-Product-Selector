@@ -164,6 +164,7 @@ function cleanPick(raw, sender) {
 }
 
 const vendorPrices = new Map(); // 1.5.10: Richelieu list prices by page, { at, res }
+let richelieuPlantedAt = 0, richelieuSigningIn = null; // 1.5.12: the Richelieu session set in this browser
 
 // 1.5.9: the screenshot at the Product Selector's size: at most 1440 pixels wide and 2 MB as a JPEG (issue-diagnostics.ts).
 async function siteSizeShot(dataUrl) {
@@ -291,6 +292,49 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         } catch {
           return sendResponse({ ok: false, error: "Could not reach the Product Selector" });
         }
+      }
+      // 1.5.12 (Gib 11/6, "#3": sign the sales staff in to richelieu.com): when a Richelieu page shows this browser signed
+      // out, the Product Selector opens a new Richelieu session with Consumers' shared account and SmartAdd sets its
+      // cookies here, for www.richelieu.com only and without an expiry, so they end when the browser closes. Only for a
+      // browser signed in to the Product Selector as an employee. One sign-in serves every tab for 2 minutes.
+      case "richelieu-sign-in": {
+        let page;
+        try { page = new URL(sender.url || sender.tab.url); } catch { return sendResponse({ ok: false }); }
+        if (page.protocol !== "https:" || page.hostname !== "www.richelieu.com") return sendResponse({ ok: false });
+        if (Date.now() - richelieuPlantedAt < 120000) return sendResponse({ ok: true, reused: true });
+        if (!richelieuSigningIn) {
+          richelieuSigningIn = (async () => {
+            const { appSession } = await chrome.storage.session.get("appSession");
+            if (!appSession || !appSession.token) return { ok: false, signIn: true };
+            try {
+              const res = await fetch(`${APP_ORIGINS[0]}/api/vendor-session/richelieu`, {
+                method: "POST", headers: { Authorization: `Bearer ${appSession.token}` }, signal: AbortSignal.timeout(60000),
+              });
+              if (res.status === 401) {
+                await chrome.storage.session.set({ appSession: null });
+                return { ok: false, signIn: true };
+              }
+              const data = await res.json().catch(() => null);
+              if (!res.ok || !data || !Array.isArray(data.cookies) || !data.cookies.length) {
+                return { ok: false, error: (data && data.error) || `The Product Selector answered ${res.status}` };
+              }
+              for (const c of data.cookies.slice(0, 20)) {
+                if (!c || typeof c.name !== "string" || typeof c.value !== "string" || /^(TS|f5_|_ga)/i.test(c.name)) continue;
+                const domain = typeof c.domain === "string" && /(^|\.)richelieu\.com$/i.test(c.domain.replace(/^\./, "")) ? c.domain : undefined;
+                await chrome.cookies.set({
+                  url: "https://www.richelieu.com/", name: c.name, value: c.value, path: typeof c.path === "string" && c.path.startsWith("/") ? c.path : "/",
+                  secure: true, httpOnly: !!c.httpOnly, ...(domain ? { domain } : {}),
+                  ...(["no_restriction", "lax", "strict"].includes(c.sameSite) ? { sameSite: c.sameSite } : {}),
+                });
+              }
+              richelieuPlantedAt = Date.now();
+              return { ok: true };
+            } catch (e) {
+              return { ok: false, error: "Could not reach the Product Selector" };
+            }
+          })().finally(() => { richelieuSigningIn = null; });
+        }
+        return sendResponse(await richelieuSigningIn);
       }
       // 1.5.9: the screenshot the Product Selector's Report Issue takes of its page, here of the vendor tab with the panel
       // as it was when Report issue was clicked (before the form covers it).

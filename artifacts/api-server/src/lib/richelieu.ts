@@ -16,6 +16,13 @@ export const RICHELIEU_HOST = "www.richelieu.com";
 const ORIGIN = `https://${RICHELIEU_HOST}`;
 const USER_AGENT = "ConsumersProductSelector/1.0 (+https://consumersstore.com)";
 export const RICHELIEU_SECRET_NAMES = ["RICHELIEU_EMAIL", "RICHELIEU_PASSWORD"] as const;
+// 11/6: a product page that says "Sign in to view prices" when signed out, to check a browser's new session.
+const BROWSER_PROBE_PATH = "/us/en/category/tools-and-shop-supplies/hand-tools/hammers-and-mallets/pry-wrecking-and-aligning-bars/flat-pry-bar/1428668/sku-08392";
+// A Richelieu cookie for SmartAdd to set in a browser (chrome.cookies.set's sameSite values).
+export interface BrowserCookie {
+  name: string; value: string; path: string; domain: string | null; secure: boolean; httpOnly: boolean;
+  sameSite: "no_restriction" | "lax" | "strict" | "unspecified";
+}
 
 const CACHE_MS = 6 * 3600_000;
 const CACHE_MAX = 500;
@@ -215,11 +222,12 @@ export class RichelieuClient {
     };
   }
 
-  private cookieHeader(): string {
-    return [...this.jar].map(([k, v]) => `${k}=${v}`).join("; ");
+  // 11/6: a jar can be passed in (a browser's own session, see browserSession), and a cookie's attributes kept.
+  private cookieHeader(jar = this.jar): string {
+    return [...jar].map(([k, v]) => `${k}=${v}`).join("; ");
   }
 
-  private keepCookies(setCookies: string[]) {
+  private keepCookies(setCookies: string[], jar = this.jar, kept?: Map<string, BrowserCookie>) {
     for (const c of setCookies) {
       const [pair, ...attrs] = c.split(";");
       const eq = pair.indexOf("=");
@@ -228,12 +236,23 @@ export class RichelieuClient {
       const expired = attrs.some(a => /^\s*max-age=0\s*$/i.test(a))
         || attrs.some(a => { const m = /^\s*expires=(.+)$/i.exec(a); return !!m && Date.parse(m[1]) < this.now(); })
         || value === "" || value === "deleted";
-      if (expired) this.jar.delete(name); else this.jar.set(name, value);
+      if (expired) { jar.delete(name); kept?.delete(name); continue; }
+      jar.set(name, value);
+      if (kept) {
+        const attr = (re: RegExp) => { for (const a of attrs) { const m = re.exec(a.trim()); if (m) return m[1] ?? ""; } return null; };
+        const sameSite = (attr(/^samesite=(\w+)$/i) || "").toLowerCase();
+        kept.set(name, {
+          name, value, path: attr(/^path=(.*)$/i) || "/", domain: attr(/^domain=(.*)$/i) || null,
+          secure: attr(/^(secure)$/i) != null, httpOnly: attr(/^(httponly)$/i) != null,
+          sameSite: sameSite === "none" ? "no_restriction" : sameSite === "lax" || sameSite === "strict" ? sameSite : "unspecified",
+        });
+      }
     }
   }
 
   // One request to Richelieu, paced, with this session's cookies; follows Richelieu-only redirects.
-  private async send(method: "GET" | "POST", path: string, body?: string, extra: Record<string, string> = {}): Promise<RawResponse & { path: string }> {
+  // private async send(method: "GET" | "POST", path: string, body?: string, extra: Record<string, string> = {}): Promise<RawResponse & { path: string }> {
+  private async send(method: "GET" | "POST", path: string, body?: string, extra: Record<string, string> = {}, jar = this.jar, kept?: Map<string, BrowserCookie>): Promise<RawResponse & { path: string }> {
     let current = path, m: "GET" | "POST" = method, b = body;
     for (let hop = 0; hop < 6; hop++) {
       const turn = this.paceChain.then(async () => {
@@ -244,11 +263,11 @@ export class RichelieuClient {
       this.paceChain = turn.catch(() => {});
       await turn;
       const headers: Record<string, string> = { ...extra };
-      const cookie = this.cookieHeader();
+      const cookie = this.cookieHeader(jar);
       if (cookie) headers.Cookie = cookie;
       if (m === "POST") headers["Content-Type"] = "application/x-www-form-urlencoded";
       const res = await this.transport(m, current, headers, b);
-      this.keepCookies(res.setCookies);
+      this.keepCookies(res.setCookies, jar, kept);
       if (res.status >= 300 && res.status < 400 && res.location) {
         const next = new URL(res.location, `${ORIGIN}${current}`);
         if (next.hostname !== RICHELIEU_HOST) return { ...res, path: current };
@@ -282,32 +301,68 @@ export class RichelieuClient {
       if (!email || !password) throw new RichelieuNotConfiguredError("Richelieu pricing is not set up yet.");
       this.jar.clear();
       this.signedInAt = 0;
-      await this.send("GET", "/us/en/");
-      const form = new URLSearchParams({
-        checkLogin: "1",
-        redirect: encodeURIComponent(`${ORIGIN}${probePath}`), // as the page's own hidden field holds it
-        email: email.trim(),
-        password,
-      }).toString();
-      const res = await this.send("POST", "/us/en/user/login", form, { Origin: ORIGIN, Referer: `${ORIGIN}/us/en/` });
-      const human = humanCheck(res.body);
-      if (human) {
-        this.block(human, HUMAN_CHECK_WAIT_MS);
-        logger.error({ reason: human }, "Richelieu sign-in asked for a person; stopped for 6 hours");
-        throw new RichelieuBlockedError(human, this.blockedUntil);
-      }
-      const page = res.path === probePath ? res : await this.send("GET", probePath);
-      if (isSignedOutPage(page.body)) {
-        this.lastSignInError = signInMessage(res.body);
-        this.block("Richelieu did not accept the sign-in (check RICHELIEU_EMAIL and RICHELIEU_PASSWORD)", FAILED_SIGN_IN_WAIT_MS);
-        logger.error({ status: res.status, message: this.lastSignInError }, "Richelieu sign-in failed; next try in 30 minutes");
-        throw new RichelieuBlockedError(this.blockedReason, this.blockedUntil);
-      }
+      // (11/6: the form post and its checks moved to logIn, shared with browserSession.)
+      await this.logIn(email, password, probePath, this.jar);
       this.signedInAt = this.now();
       this.lastSignInError = "";
       logger.info("Richelieu sign-in ok");
     })().finally(() => { this.signingIn = null; });
     return this.signingIn;
+  }
+
+  // Richelieu's own sign-in form (POST /us/en/user/login: checkLogin, redirect, email, password) into the given jar,
+  // then a check with a product page. A CAPTCHA or code stops all sign-ins for 6 hours, a refused sign-in for 30
+  // minutes (it would be the same for every session). Never logs the email, the password or the cookies.
+  private async logIn(email: string, password: string, probePath: string, jar: Map<string, string>, kept?: Map<string, BrowserCookie>): Promise<void> {
+    await this.send("GET", "/us/en/", undefined, {}, jar, kept);
+    const form = new URLSearchParams({
+      checkLogin: "1",
+      redirect: encodeURIComponent(`${ORIGIN}${probePath}`), // as the page's own hidden field holds it
+      email: email.trim(),
+      password,
+    }).toString();
+    const res = await this.send("POST", "/us/en/user/login", form, { Origin: ORIGIN, Referer: `${ORIGIN}/us/en/` }, jar, kept);
+    const human = humanCheck(res.body);
+    if (human) {
+      this.block(human, HUMAN_CHECK_WAIT_MS);
+      logger.error({ reason: human }, "Richelieu sign-in asked for a person; stopped for 6 hours");
+      throw new RichelieuBlockedError(human, this.blockedUntil);
+    }
+    const page = res.path === probePath ? res : await this.send("GET", probePath, undefined, {}, jar, kept);
+    if (isSignedOutPage(page.body)) {
+      this.lastSignInError = signInMessage(res.body);
+      this.block("Richelieu did not accept the sign-in (check RICHELIEU_EMAIL and RICHELIEU_PASSWORD)", FAILED_SIGN_IN_WAIT_MS);
+      logger.error({ status: res.status, message: this.lastSignInError }, "Richelieu sign-in failed; next try in 30 minutes");
+      throw new RichelieuBlockedError(this.blockedReason, this.blockedUntil);
+    }
+  }
+
+  // 11/6 (Gib, "#3": sign the sales staff's browsers in to richelieu.com): a NEW Richelieu session with the shared
+  // account, for one browser, whose cookies SmartAdd sets in that browser. Each browser gets its own session (a rep
+  // signing out ends only theirs) and the server's own session is untouched. Only Richelieu's application cookies are
+  // handed over: not its F5 bot-defense cookies (TS..., f5_...) or analytics (_ga...), which each browser keeps its own.
+  // Sign-ins go one at a time, through the same pacing and pauses as the server's own.
+  private browserChain: Promise<unknown> = Promise.resolve();
+  private browserSessions = 0;
+  private lastBrowserSessionAt = 0;
+  async browserSession(): Promise<BrowserCookie[]> {
+    if (!this.configured()) throw new RichelieuNotConfiguredError("Richelieu pricing is not set up yet.");
+    const run = this.browserChain.then(async () => {
+      this.assertNotBlocked();
+      const { email, password } = this.env();
+      const jar = new Map<string, string>();
+      const kept = new Map<string, BrowserCookie>();
+      await this.logIn(email!, password!, BROWSER_PROBE_PATH, jar, kept);
+      this.browserSessions++;
+      this.lastBrowserSessionAt = this.now();
+      return [...kept.values()].filter(c => jar.has(c.name) && !/^(TS|f5_|_ga|_gid|_gcl)/i.test(c.name)).map(c => ({ ...c, value: jar.get(c.name)! }));
+    });
+    this.browserChain = run.catch(() => {});
+    return run;
+  }
+
+  browserSessionStatus() {
+    return { browserSessions: this.browserSessions, lastBrowserSessionAt: this.lastBrowserSessionAt ? new Date(this.lastBrowserSessionAt).toISOString() : null };
   }
 
   // The prices on one product page (cached 6 hours). Signs in when there is no session or when Richelieu has ended it.

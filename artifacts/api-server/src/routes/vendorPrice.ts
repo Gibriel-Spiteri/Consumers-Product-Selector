@@ -71,7 +71,8 @@ router.get("/vendor-price/richelieu", async (req, res): Promise<void> => {
 // list price). Never the email, the password or the cookies.
 router.get("/vendor-price/richelieu/status", requireVendorPriceAdmin, async (req, res): Promise<void> => {
   res.setHeader("Cache-Control", "no-store");
-  const out: Record<string, unknown> = { ...richelieu.status(), secretNames: RICHELIEU_SECRET_NAMES };
+  // const out: Record<string, unknown> = { ...richelieu.status(), secretNames: RICHELIEU_SECRET_NAMES };
+  const out: Record<string, unknown> = { ...richelieu.status(), ...richelieu.browserSessionStatus(), secretNames: RICHELIEU_SECRET_NAMES };
   if (req.query.url) {
     const path = richelieuPagePath(String(req.query.url));
     if (!path) { out.pageError = "Not a Richelieu product page."; res.json(out); return; }
@@ -83,6 +84,35 @@ router.get("/vendor-price/richelieu/status", requireVendorPriceAdmin, async (req
     Object.assign(out, richelieu.status());
   }
   res.json(out);
+});
+
+// 11/6 (Gib, "#3"): sign a sales rep's browser in to richelieu.com. SmartAdd asks when a Richelieu page shows the
+// browser signed out; the server opens a NEW session with the shared account and hands its cookies to SmartAdd, which
+// sets them in that browser only (until it closes). Gib chose this knowing that anyone at that browser can use the
+// Consumers Richelieu account and that Richelieu may end sessions it does not like. Signed-in employees only; a few per
+// hour per employee; each one is logged with the employee (never the cookies).
+router.use("/vendor-session", requireEmployee);
+const SESSIONS_PER_HOUR = 6;
+const sessionsGiven = new Map<string, number[]>();
+router.post("/vendor-session/richelieu", async (req, res): Promise<void> => {
+  res.setHeader("Cache-Control", "no-store");
+  if (!richelieu.configured()) { res.status(503).json({ error: "Richelieu sign-in is not set up yet.", configured: false }); return; }
+  const employeeId = String(res.locals.employeeId);
+  const now = Date.now();
+  const recent = (sessionsGiven.get(employeeId) ?? []).filter(t => now - t < 3600_000);
+  if (recent.length >= SESSIONS_PER_HOUR) { res.status(429).json({ error: "Too many Richelieu sign-ins this hour." }); return; }
+  try {
+    const cookies = await richelieu.browserSession();
+    if (!cookies.length) { res.status(502).json({ error: "Richelieu gave no session." }); return; }
+    recent.push(now);
+    sessionsGiven.set(employeeId, recent);
+    req.log.info({ employeeId, cookies: cookies.map(c => c.name) }, "Richelieu session handed to a browser");
+    res.json({ ok: true, cookies });
+  } catch (err) {
+    const f = failure(err);
+    req.log.warn({ employeeId, error: err instanceof Error ? err.message : String(err) }, "Richelieu browser sign-in failed");
+    res.status(f.status).json({ ...f.body, error: String(f.body.error).replace("Richelieu prices are paused", "Richelieu sign-in is paused").replace("Could not read the price from Richelieu.", "Could not sign in to Richelieu.") });
+  }
 });
 
 export default router;

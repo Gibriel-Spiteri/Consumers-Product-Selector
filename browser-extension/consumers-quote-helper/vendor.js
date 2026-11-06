@@ -2276,6 +2276,28 @@
   }
 
   (document.body || document.documentElement).appendChild(host);
+
+  // 1.5.12 (Gib 11/6, "#3": sign the sales staff in to richelieu.com): when a Richelieu page shows this browser signed
+  // out (the header's sign-in form, or "Sign in to view prices"), the background sets a Richelieu session the Product
+  // Selector opened with Consumers' shared account, and the page reloads once, signed in. A tab tries at most once
+  // every 10 minutes, so a session Richelieu refuses never loops; without a Product Selector sign-in nothing happens.
+  (async () => {
+    if (location.hostname !== "www.richelieu.com") return;
+    const signedOut = !!document.querySelector('.hdr-LoginPanel form[action*="/user/login"], a.pms-ViewPrice_Button');
+    if (!signedOut) return;
+    const KEY = "consumers-smartadd-richelieu-signin";
+    let last = 0;
+    try { last = Number(sessionStorage.getItem(KEY)) || 0; } catch {}
+    if (Date.now() - last < 10 * 60000) return;
+    let res = null;
+    try {
+      res = await chrome.runtime.sendMessage({ type: "richelieu-sign-in" });
+    } catch {}
+    if (!res || res.signIn) return; // no Product Selector sign-in in this browser yet: the next page tries again
+    try { sessionStorage.setItem(KEY, String(Date.now())); } catch {}
+    if (res.ok) location.reload();
+  })();
+
   // Re-read when a single-page site changes the address without a page load.
   // setInterval(() => {
   //   if (location.href !== lastUrl) {
