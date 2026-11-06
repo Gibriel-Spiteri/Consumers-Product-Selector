@@ -355,6 +355,18 @@ test("1.5.6 sweep 2: kit parts' and trims' Types with the PROD Types of each lin
   ]) assert.equal(g(d, name, url, cat), want, `${d}: ${name}`);
 });
 
+test("1.5.7: the panel's Report issue, shaped like the Product Selector's /api/cases", () => {
+  assert.equal(X.issueReport({ text: "   " }), null);
+  const r = X.issueReport({ text: "The color is wrong\nIt says Cotton", reporter: "Pat", pageUrl: "https://www.us.kohler.com/x?skuId=23484-4-CP",
+    version: "1.5.7", browser: "Edge 141 on Win32", fields: { model: "K-23484-4-CP", color: "Polished Chrome", price: "690.75", quantity: "1" },
+    parts: [{ model: "R35000-WS", type: "SHOWER SYSTEM - VALVE ROUGH", price: "499" }] });
+  assert.equal(r.subject, "QuickAdd issue (kohler.com): The color is wrong");
+  assert.equal(r.employee, null);
+  for (const s of ["It says Cotton", "Reported by: Pat", "Vendor page: https://www.us.kohler.com/x?skuId=23484-4-CP", "QuickAdd version: 1.5.7",
+    "Browser: Edge 141 on Win32", "Model: K-23484-4-CP", "List price: 690.75", "Part 1: R35000-WS | SHOWER SYSTEM - VALVE ROUGH | $499"]) assert.ok(r.detail.includes(s), s);
+  assert.ok(!/\n\n\n/.test(r.detail));
+});
+
 test("vendor domains: subdomains count as the main domain", () => {
   assert.equal(X.registrableDomain("www.us.kohler.com"), "kohler.com");
   assert.equal(X.registrableDomain("craftandmain.com"), "craftandmain.com");

@@ -46,6 +46,14 @@
       .head-btns { display: flex; gap: 6px; align-items: center; } /* 1.5.6 */
       .side { background: transparent; border: 0; color: #dbe4ff; font-size: 18px; cursor: pointer; line-height: 1; padding: 0 2px; }
       .panel.left, .fab.left { left: 20px; right: auto; }
+      /* 1.5.7: Report issue, at the left of the buttons, and its form above them. */
+      .actions .report { margin-right: auto; border-color: transparent; background: transparent; color: #1f4fd1; padding-left: 4px; padding-right: 4px; }
+      .actions .report:hover { text-decoration: underline; }
+      .report-box { display: grid; gap: 8px; padding: 0 16px 12px; }
+      .report-box b { font-size: 14px; font-weight: 650; }
+      textarea { width: 100%; min-width: 0; font-size: 14px; padding: 9px 10px; border: 1px solid #c3c9d6; border-radius: 8px; background: #fff; color: #1d2433;
+        font-family: inherit; text-transform: none; letter-spacing: 0; font-weight: 400; resize: vertical; }
+      .r-actions { display: flex; gap: 8px; justify-content: flex-end; }
       .body { padding: 14px 16px; display: grid; gap: 10px; }
       .prod { display: flex; gap: 12px; align-items: center; }
       .prod img { width: 64px; height: 64px; object-fit: contain; border: 1px solid #e3e6ec; border-radius: 8px; background: #fff; }
@@ -114,16 +122,29 @@
         <div class="parts" hidden></div>
         <div class="hint warn kit-total-hint" hidden></div>
         <div class="row">
-          <label class="price-wrap">Price on this site<input class="price" type="number" min="0" step="0.01" inputmode="decimal"></label>
+          <!-- 1.5.7 (Gib 11/6: the list price, not the sale price): was "Price on this site". -->
+          <label class="price-wrap">List price<input class="price" type="number" min="0" step="0.01" inputmode="decimal"></label>
           <label><span class="qty-label">Quantity</span><input class="qty" type="number" min="1" max="1000000" step="1" value="1" inputmode="numeric"></label>
         </div>
         <div class="hint manual-hint" hidden>We could not read this item from the page. Type the model number and color shown on it.</div>
         <div class="hint warn gone-hint" hidden>This page says the item is discontinued. Check with your sales rep before adding it.</div>
         <div class="hint order-form-hint" hidden>This Type is ordered on the vendor's order form: your sales rep attaches it to your quote.</div>
-        <div class="hint">Your Consumers sales rep confirms the list price and finishes this on your quote.</div>
+        <!-- 1.5.7 (Gib 11/6, "Change to: Confirm all Information Above"). Was:
+        <div class="hint">Your Consumers sales rep confirms the list price and finishes this on your quote.</div> -->
+        <div class="hint confirm-note">Confirm all Information Above</div>
         <div class="msg" hidden></div>
       </div>
-      <div class="actions"><button class="btn cancel" type="button">Close</button><button class="btn primary add" type="button">Add to quote</button></div>
+        <!-- 1.5.7 (Gib 11/6, "add a report issue button to the extension"): sent to the Product Selector's Report Issue. -->
+        <div class="report-box" hidden>
+          <b>Report an issue</b>
+          <label>What went wrong?<textarea class="r-text" rows="3" maxlength="4000" placeholder="For example: the color is wrong, or the price is missing"></textarea></label>
+          <label>Your name (optional)<input class="r-name" maxlength="100"></label>
+          <div class="hint">Goes to Consumers IT as a case, with this page's address, what this panel read, the QuickAdd version and your browser. No customer details are sent.</div>
+          <div class="r-actions"><button class="btn r-cancel" type="button">Cancel</button><button class="btn primary r-send" type="button">Send report</button></div>
+          <div class="msg r-msg" hidden></div>
+        </div>
+      <!-- <div class="actions"><button class="btn cancel" type="button">Close</button><button class="btn primary add" type="button">Add to quote</button></div> -->
+      <div class="actions"><button class="btn link report" type="button">Report issue</button><button class="btn cancel" type="button">Close</button><button class="btn primary add" type="button">Add to quote</button></div>
       <div class="busy" role="status" hidden><div class="spin"></div><span>Updating...</span></div>
     </div>`;
   const $ = sel => root.querySelector(sel);
@@ -379,6 +400,7 @@
 
   // 1.5.5: Flusso's own product lines, shown or in the section only wide windows show.
   const flussoText = sel => textOf(sel) || clean((document.querySelector(sel) || {}).textContent);
+  const anyText = flussoText; // 1.5.7: the same for any site (Kohler's list price line)
 
   // 1.5.6 (sweep 2, 11/6) helpers for parts sold separately.
   // A JSON object a page script assigns ("var product_extras = {...};"): the content script cannot read the page's
@@ -535,7 +557,14 @@
   function kohlerParts(main) {
     const boxes = [...document.querySelectorAll("[class*=BundleChildItems_ChildItems], .child-items")];
     if (boxes.length < 2) return null;
-    const total = amountNum(amountOf(textOf(".product-detail-page__price-value")) || amountOf(textOf(".subtotal span")));
+    // const total = amountNum(amountOf(textOf(".product-detail-page__price-value")) || amountOf(textOf(".subtotal span")));
+    // 1.5.7 (Gib 11/6: list price, not sale price): the items show only their sale price and their own pages fill
+    // prices in by script, so each is scaled by the bundle's own list-to-sale ratio ($1,257.75 / $943.31); the items
+    // then add up to the bundle's list price.
+    const current = amountNum(amountOf(textOf(".product-detail-page__price-value")) || amountOf(textOf(".subtotal span")));
+    const list = amountNum(amountOf(anyText(".product-detail-page__list-value")));
+    const ratio = list && current && list > current ? list / current : 1;
+    const total = list || current;
     const parts = boxes.map(b => {
       const a = b.querySelector("a.list-title") || b.querySelector("a[href*='skuId']");
       let model = "";
@@ -543,8 +572,9 @@
       if (!model) model = clean((b.querySelector("img") || {}).alt);
       const name = clean((b.querySelector("a.list-title, .title, h3, h4") || {}).textContent).replace(/[®™]/g, "");
       const price = [...b.querySelectorAll(".price")].find(p => !p.closest(".mobile"));
+      const sale = amountNum(amountOf(price && price.textContent));
       return { label: "Item", model, name, color: clean((b.querySelector(".attributes-details, .details") || {}).textContent),
-        price: amountNum(amountOf(price && price.textContent)) || null, collection: "", typeName: "", pageTotal: total,
+        price: sale ? Math.round(sale * ratio * 100) / 100 : null, collection: "", typeName: "", pageTotal: total,
         imageUrl: (() => { const i = b.querySelector("img"); try { return i && i.src && new URL(i.src).protocol === "https:" ? i.src : ""; } catch { return ""; } })() };
     }).filter(p => p.model);
     return parts.length > 1 ? parts.map((p, i) => ({ ...p, label: `Item ${i + 1}` })) : null;
@@ -580,7 +610,9 @@
     const file = href => ((/\/product\/([^/?#]+)\.html/i.exec(href || "") || [])[1] || "");
     const total = amountNum(SITE_RULES["deltafaucet.com"].price());
     const parts = docs.map((d, i) => {
-      const priceEl = d && d.querySelector('[itemprop="price"]');
+      // const priceEl = d && d.querySelector('[itemprop="price"]');
+      // 1.5.7: an Outlet item's struck-through list price over its sale price, as the Delta rule does.
+      const priceEl = (d && d.querySelector(".pdp-prod-price-block .old-price")) || (d && d.querySelector('[itemprop="price"]'));
       return { label: `Item ${i + 1}`, model: docText(d, ".model-name").replace(/^\s*model\s*#?\s*:?\s*/i, "") || file(urls[i]),
         name: docText(d, "h1").replace(/[®™]/g, ""), color: main.color || "", collection: docText(d, ".collection-name"),
         price: amountNum(priceEl && (priceEl.getAttribute("content") || priceEl.textContent)) || null, imageUrl: "", pageTotal: total,
@@ -639,13 +671,14 @@
   };
   const boosOpt = (line, re) => ((line && line.selectedVariant && line.selectedVariant.selectedOptions) || []).find(o => re.test(o.name || "")) || null;
   const boosFrameOnly = () => /frame only/i.test(((boosCart()[0] || {}).selectedVariant || {}).title || "");
+  const boosListPrice = v => { const p = amountNum((v.price || {}).amount), c = amountNum((v.compareAtPrice || {}).amount); return c > p ? c : p; }; // 1.5.7
   const htmlText = s => { const d = document.createElement("textarea"); d.innerHTML = String(s || ""); return clean(d.value); };
   function boosParts(main) {
     const lines = boosCart();
     if (lines.length < 2) return null;
     const total = amountNum(amountOf(clean(([...document.querySelectorAll("button")].find(b => /add to cart/i.test(b.textContent || "")) || {}).textContent)));
     return [{ label: "Item", model: main.model || "", price: main.price, name: main.name || "", color: main.color || "", collection: main.collection || "", typeName: "", imageUrl: main.imageUrl || "", pageTotal: total },
-      ...lines.slice(1).map(l => ({ label: "Add-on", model: clean(l.selectedVariant.sku), price: amountNum((l.selectedVariant.price || {}).amount) || null,
+      ...lines.slice(1).map(l => ({ label: "Add-on", model: clean(l.selectedVariant.sku), price: boosListPrice(l.selectedVariant) || null, // 1.5.7: list price
         name: [htmlText((l.selectedVariant.product || {}).title), htmlText(l.selectedVariant.title)].filter(s => s && !/^default title$/i.test(s)).join(", "),
         color: "N/A", collection: "", typeName: "MISCELLANEOUS", imageUrl: "", pageTotal: total }))];
   }
@@ -965,7 +998,10 @@
       // beside it is not used:
       // price: () => amountOf(textOf(".product-detail-page__list-price--associate")),
       // price: () => amountOf(textOf(".product-detail-page__price-value")),
-      price: () => amountOf(textOf(".product-detail-page__price-value")) || amountOf(textOf(".subtotal span")), // 1.5.6: a bundle's "Subtotal"
+      // price: () => amountOf(textOf(".product-detail-page__price-value")) || amountOf(textOf(".subtotal span")), // 1.5.6: a bundle's "Subtotal"
+      // 1.5.7 (Gib 11/6, "Change the app to use the list price for items, not sales price"; reverses "Leave the Kohler
+      // price" of 11/5): the "List Price $946.90" under the sale price ("Current Price $710.17", Spacity K-28020-TBH-0).
+      price: () => amountOf(anyText(".product-detail-page__list-value")) || amountOf(textOf(".product-detail-page__price-value")) || amountOf(textOf(".subtotal span")),
       name: () => textOf("h1"),
       // 1.5.6 (sweep 2, 11/6): a bundle (BNDL-K0002: spout + handles) lists its items with their own SKU, finish and
       // price, adding up to its price; each goes on as its own line. The newer bundle layout (BNDL-K0059) picks the finish
@@ -1127,6 +1163,8 @@
       // name: () => textOf("h1"), // the og:title is an SEO title ("John Boos R-Series ... End Grain" for an edge-grain board)
       name: () => (boosFrameOnly() ? `${textOf("h1")}, frame only` : textOf("h1")),
       typeName: () => (boosFrameOnly() ? "MISCELLANEOUS" : ""), // 1.5.6: the stand alone is no butcher block
+      // 1.5.7 (Gib 11/6: list price, not sale price): a sale keeps the regular price in the variant's compareAtPrice.
+      price: () => { const v = (boosCart()[0] || {}).selectedVariant; return v ? String(boosListPrice(v) || "") : ""; },
       // 1.5.6: the add-on box ("Care & Maintenance Pack" MYSCRMAPP $49.95, "Applicator" APPLICRND1 $24.95) puts a second
       // line in the page's cart; each line is its own item.
       parts: main => boosParts(main),
@@ -1186,6 +1224,9 @@
     "topknobs.com": {
       model: () => { const s = textOf(".product-info-main [itemprop=sku]"); return /\d/.test(s) ? s : ""; },
       price: () => {
+        // 1.5.7 (Gib 11/6: list price, not sale price): an item on special shows its regular price as "oldPrice".
+        const old = document.querySelector('.product-info-main .price-box [data-price-type="oldPrice"][data-price-amount]');
+        if (old && Number(old.getAttribute("data-price-amount")) > 0) return old.getAttribute("data-price-amount");
         const el = [...document.querySelectorAll('.product-info-main .price-box [data-price-amount]')]
           .find(e => /basePrice|finalPrice/i.test(e.getAttribute("data-price-type") || "")) ||
           document.querySelector(".product-info-main .price-box [data-price-amount]");
@@ -1597,7 +1638,7 @@
   // 1.5.5 (Gib 11/6): a kit's parts, one block each with its own Type, model, color, Coll/Desc and price; one quantity
   // for all of them (two doors, two bases). The door's Type is guessed as before; a base is SHOWER BASE, a wall panel
   // SHOWER WALL, and a part with no Type of its own (a drain, a Mix & Match Kit) MISCELLANEOUS.
-  const PART_FIELDS = [["ptype", "Type"], ["pmodel", "Model"], ["pcolor", "Color / finish"], ["pdesc", "Collection / Description"], ["pprice", "Price"]];
+  const PART_FIELDS = [["ptype", "Type"], ["pmodel", "Model"], ["pcolor", "Color / finish"], ["pdesc", "Collection / Description"], ["pprice", "List price"]]; // 1.5.7: was "Price"
   const money = n => String(Math.round(n * 100) / 100);
   // 1.5.6: a part the page sells separately but the item needs (a trim's rough valve) is optional: ticked to start with,
   // untick it when the customer already has one. Unticked parts are not checked or added.
@@ -1636,7 +1677,7 @@
         <label class="ptype-wrap">Type<select class="ptype"></select></label>
         <div class="row"><label>Model<input class="pmodel" maxlength="300"></label><label>Color / finish<input class="pcolor" maxlength="300"></label></div>
         <label>Collection / Description<input class="pdesc" maxlength="300"></label>
-        <label>Price on this site<input class="pprice" type="number" min="0" step="0.01" inputmode="decimal"></label>`;
+        <label>List price<input class="pprice" type="number" min="0" step="0.01" inputmode="decimal"></label>`;
       const q = s => box.querySelector(s);
       q(".ptitle span").textContent = `Part ${i + 1} of ${parts.length}: ${p.label}`;
       if (p.imageUrl) {
@@ -1781,7 +1822,8 @@
     ["model", "Model"],
     ["color", "Color / finish"],
     ["description", "Collection / Description"],
-    ["price", "Price on this site"],
+    // ["price", "Price on this site"],
+    ["price", "List price"], // 1.5.7
     ["qty", "Quantity"],
   ];
   const KIT_OWN = new Set(["type", "model", "color", "description", "price"]); // 1.5.5: each part has its own
@@ -1946,6 +1988,60 @@
     const left = !panel.classList.contains("left");
     applySide(left);
     try { localStorage.setItem(SIDE_KEY, left ? "left" : "right"); } catch {}
+  });
+
+  // 1.5.7 (Gib 11/6): Report issue. What the customer types, plus what this panel read, goes to the Product Selector's
+  // Report Issue (a NetSuite case for IT) through the background script; no sign-in needed, no customer details sent.
+  const rBox = $(".report-box"), rText = $(".r-text"), rName = $(".r-name"), rMsg = $(".r-msg"), rSend = $(".r-send");
+  const browserName = () => {
+    const ua = navigator.userAgent;
+    const m = /Edg\/(\d+)/.exec(ua) || /Chrome\/(\d+)/.exec(ua);
+    return m ? `${/Edg\//.test(ua) ? "Edge" : "Chrome"} ${m[1]}${navigator.platform ? ` on ${navigator.platform}` : ""}` : ua.slice(0, 160);
+  };
+  const optText = sel => (sel && sel.value && sel.selectedOptions[0] ? String(sel.selectedOptions[0].dataset.name || sel.selectedOptions[0].textContent) : "");
+  $(".report").addEventListener("click", () => {
+    rBox.hidden = !rBox.hidden;
+    if (rBox.hidden) return;
+    rMsg.hidden = true;
+    rSend.disabled = false;
+    rText.focus();
+    rBox.scrollIntoView({ block: "nearest" });
+  });
+  $(".r-cancel").addEventListener("click", () => { rBox.hidden = true; });
+  rSend.addEventListener("click", async () => {
+    const what = rText.value.trim();
+    rMsg.hidden = false;
+    if (!what) {
+      rMsg.className = "msg r-msg err";
+      rMsg.textContent = "Please say what went wrong.";
+      rText.focus();
+      return;
+    }
+    rSend.disabled = true;
+    rMsg.className = "msg r-msg";
+    rMsg.textContent = "Sending...";
+    const kit = !!(parts && !f.parts.hidden);
+    const lineName = f.lineWrap.hidden ? (currentLine() || {}).name || "" : optText(f.line);
+    const report = {
+      text: what, reporter: rName.value.trim(), browser: browserName(), message: msg.hidden ? "" : msg.textContent,
+      fields: kit ? { quantity: f.qty.value, line: lineName }
+        : { type: optText(f.type), model: f.model.value, color: f.color.value, description: f.description.value, price: f.price.value, quantity: f.qty.value, line: lineName },
+      parts: kit ? [...f.parts.querySelectorAll(".part")].map(b => ({ model: b.querySelector(".pmodel").value, type: optText(b.querySelector(".ptype")),
+        color: b.querySelector(".pcolor").value, description: b.querySelector(".pdesc").value, price: b.querySelector(".pprice").value })) : [],
+    };
+    let res = null;
+    try {
+      res = await chrome.runtime.sendMessage({ type: "report-issue", report });
+    } catch {}
+    if (res && res.ok) {
+      rMsg.className = "msg r-msg ok";
+      rMsg.textContent = `Sent to Consumers IT${res.caseNumber ? ` as case #${res.caseNumber}` : ""}. Thank you.`;
+      rText.value = "";
+    } else {
+      rMsg.className = "msg r-msg err";
+      rMsg.textContent = `Could not send the report${res && res.error ? ` (${res.error})` : ""}. Try again, or open the Product Selector and use Report Issue at the bottom of any page.`;
+      rSend.disabled = false;
+    }
   });
   $(".cancel").addEventListener("click", closePanel);
   f.variant.addEventListener("change", () => show(Number(f.variant.value)));
