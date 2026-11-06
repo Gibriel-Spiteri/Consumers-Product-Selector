@@ -361,9 +361,11 @@ test("1.5.7: the panel's Report issue, shaped like the Product Selector's /api/c
     version: "1.5.7", browser: "Edge 141 on Win32", fields: { model: "K-23484-4-CP", color: "Polished Chrome", price: "690.75", quantity: "1" },
     parts: [{ model: "R35000-WS", type: "SHOWER SYSTEM - VALVE ROUGH", price: "499" }] });
   assert.equal(r.subject, "QuickAdd issue (kohler.com): The color is wrong");
-  assert.equal(r.employee, null);
+  // 1.5.8: the Product Selector's IssueReportInput (requestId and browserLogs are added by the background).
+  assert.equal(r.pageUrl, "https://www.us.kohler.com/x?skuId=23484-4-CP");
+  assert.equal(r.browserInfo, "Edge 141 on Win32 (QuickAdd 1.5.7)");
   for (const s of ["It says Cotton", "Reported by: Pat", "Vendor page: https://www.us.kohler.com/x?skuId=23484-4-CP", "QuickAdd version: 1.5.7",
-    "Browser: Edge 141 on Win32", "Model: K-23484-4-CP", "List price: 690.75", "Part 1: R35000-WS | SHOWER SYSTEM - VALVE ROUGH | $499"]) assert.ok(r.detail.includes(s), s);
+    "Model: K-23484-4-CP", "List price: 690.75", "Part 1: R35000-WS | SHOWER SYSTEM - VALVE ROUGH | $499"]) assert.ok(r.detail.includes(s), s);
   assert.ok(!/\n\n\n/.test(r.detail));
 });
 

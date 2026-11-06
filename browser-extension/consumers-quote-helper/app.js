@@ -23,6 +23,25 @@
     toPage("vendor-picks", { picks: (res && res.picks) || [] });
   }
 
+  // 1.5.8: the rep's Product Selector sign-in (the page's own "ps_session" token and name), so the QuickAdd panel's Report
+  // issue can send as them: the Product Selector's Report Issue needs a signed-in employee. The background keeps it in
+  // memory only (chrome.storage.session) and forgets it when the browser closes or the page signs out.
+  let lastSession = null;
+  function sendSession() {
+    let token = "", name = "";
+    try {
+      token = localStorage.getItem("ps_session") || "";
+      const who = JSON.parse(localStorage.getItem("ps_auth") || "null");
+      if (who) name = `${who.firstName || ""} ${who.lastName || ""}`.trim();
+    } catch {}
+    const key = `${token}|${name}`;
+    if (key === lastSession) return;
+    lastSession = key;
+    ask({ type: "app-session", token, name });
+  }
+  sendSession();
+  setInterval(sendSession, 15000);
+
   window.addEventListener("message", event => {
     if (event.source !== window || event.origin !== location.origin) return;
     const data = event.data;
@@ -32,6 +51,7 @@
     if (data.type === "request-picks") {
       toPage("extension-ready", { version: chrome.runtime.getManifest().version });
       sendPicks();
+      sendSession(); // 1.5.8: just signed in
     }
     if (data.type === "pick-done" && typeof data.id === "string") ask({ type: "pick-done", id: data.id }).then(sendPicks);
     if (data.type === "vendor-sites" && Array.isArray(data.sites)) ask({ type: "vendor-sites", sites: data.sites.slice(0, 1000) });

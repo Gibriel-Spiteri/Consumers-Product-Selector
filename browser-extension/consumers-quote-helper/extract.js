@@ -701,13 +701,16 @@
       r.reporter ? `Reported by: ${s(r.reporter)}` : "",
       `Vendor page: ${s(r.pageUrl)}`,
       `QuickAdd version: ${s(r.version)}`,
-      `Browser: ${s(r.browser)}`,
+      // `Browser: ${s(r.browser)}`, // 1.5.8: the Product Selector adds the browser and the page itself
       r.message ? `Panel message: ${s(r.message)}` : "",
       "",
       read.length || parts.length ? "What the panel read:" : "The panel had nothing read.",
       ...read, ...parts,
     ].filter((line, i, a) => line !== "" || (a[i - 1] !== "" && i > 0)).join("\n");
-    return { subject: `QuickAdd issue (${domain || "vendor site"}): ${first}`.slice(0, 300), detail, employee: null };
+    // return { subject: `QuickAdd issue (${domain || "vendor site"}): ${first}`.slice(0, 300), detail, employee: null };
+    // 1.5.8: the Product Selector's Report Issue body (IssueReportInput); the background adds requestId and browserLogs.
+    return { subject: `QuickAdd issue (${domain || "vendor site"}): ${first}`.slice(0, 300), detail: detail.slice(0, 9000),
+      pageUrl: String(r.pageUrl || "").slice(0, 2000), browserInfo: `${s(r.browser)} (QuickAdd ${s(r.version)})`.slice(0, 500) };
   }
 
   const api = {

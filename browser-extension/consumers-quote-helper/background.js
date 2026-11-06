@@ -195,15 +195,34 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
       // 1.5.7 (Gib 11/6, "add a report issue button to the extension"): the panel's report goes to the Product Selector's
       // own Report Issue endpoint, which opens a NetSuite case for IT. It needs no sign-in.
+      // 1.5.8: the Product Selector's Report Issue now needs a signed-in employee (Bearer session) and a request id, the
+      // page address, the browser and its logs; the report also shows in Admin > Issues & Bugs. The session comes from
+      // the Product Selector page in this browser (app.js), kept in memory only.
+      case "app-session": {
+        if (!fromApp(sender)) return sendResponse({ ok: false });
+        const token = typeof message.token === "string" && message.token.length < 4000 ? message.token : "";
+        await chrome.storage.session.set({ appSession: token ? { token, name: text(message.name).slice(0, 100), at: Date.now() } : null });
+        return sendResponse({ ok: true });
+      }
       case "report-issue": {
         const host = (() => { try { return new URL(sender.url || sender.tab.url).hostname; } catch { return ""; } })();
         if (!vendorDomains.includes(registrableDomain(host)) || !message.report) return sendResponse({ ok: false, error: "Not a vendor page" });
         const pageUrl = sender.url || (sender.tab && sender.tab.url) || "";
-        const payload = globalThis.ConsumersExtract.issueReport({ ...message.report, pageUrl, version: chrome.runtime.getManifest().version });
-        if (!payload) return sendResponse({ ok: false, error: "Please say what went wrong." });
+        const { appSession } = await chrome.storage.session.get("appSession");
+        const signIn = { ok: false, signIn: true, error: "Sign in to the Product Selector in this browser first" };
+        if (!appSession || !appSession.token) return sendResponse(signIn);
+        const report = globalThis.ConsumersExtract.issueReport({ ...message.report, reporter: message.report.reporter || appSession.name, pageUrl, version: chrome.runtime.getManifest().version });
+        if (!report) return sendResponse({ ok: false, error: "Please say what went wrong." });
+        // const payload = globalThis.ConsumersExtract.issueReport({ ...message.report, pageUrl, version: chrome.runtime.getManifest().version });
+        const payload = { requestId: crypto.randomUUID(), ...report, browserLogs: [] };
         try {
-          const res = await fetch(`${APP_ORIGINS[0]}/api/cases`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+          // const res = await fetch(`${APP_ORIGINS[0]}/api/cases`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+          const res = await fetch(`${APP_ORIGINS[0]}/api/cases`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${appSession.token}` }, body: JSON.stringify(payload) });
           const data = await res.json().catch(() => null);
+          if (res.status === 401) {
+            await chrome.storage.session.set({ appSession: null });
+            return sendResponse(signIn);
+          }
           if (!res.ok) return sendResponse({ ok: false, error: (data && data.error) || `The Product Selector answered ${res.status}` });
           return sendResponse({ ok: true, caseNumber: (data && data.caseNumber) || "", caseId: (data && data.caseId) || "" });
         } catch (e) {
