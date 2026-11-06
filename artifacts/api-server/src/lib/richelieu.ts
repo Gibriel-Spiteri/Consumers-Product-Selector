@@ -131,6 +131,24 @@ export function parseRichelieuPage(html: string, sku: string | null = null): Ric
   return { signedOut, sku, prices, analyticsPrice, listPrice: list ? list.amount : null, boxText: box };
 }
 
+// Admins, while setting up (11/6): the signed-in page's price markup, to tell which amount is the list price. Every
+// element whose class names a price, and the price box's HTML without links, scripts or styles.
+export function priceDiagnostics(html: string) {
+  const body = html.replace(/<script[\s\S]*?<\/script>/gi, "").replace(/<style[\s\S]*?<\/style>/gi, "");
+  const priceElements: { tag: string; cls: string; attrs: string; text: string }[] = [];
+  const re = /<(\w+)([^>]*\bclass="([^"]*(?:pri[cx]|tarif|cost|co[uû]t|msrp|retail)[^"]*)"[^>]*)>/gi;
+  for (let m; (m = re.exec(body)) && priceElements.length < 40; ) {
+    const attrs = (m[2].match(/\b(?:title|data-[\w-]+)="[^"]{0,80}"/g) || []).join(" ").slice(0, 200);
+    const text = textOf(body.slice(m.index, m.index + 800).replace(/^<[^>]*>/, "").split(/<\/(?:div|li|tr|p|section)>/i)[0]).slice(0, 160);
+    priceElements.push({ tag: m[1], cls: m[3].slice(0, 80), attrs, text });
+  }
+  const at = body.indexOf('class="pms-ImagePriceBox"');
+  const boxHtml = at >= 0
+    ? body.slice(Math.max(0, at - 30), at + 6000).replace(/\s(?:href|src|srcset|onclick|style|alt)="[^"]*"/gi, "").replace(/\s+/g, " ").slice(0, 4000)
+    : "";
+  return { priceElements, boxHtml };
+}
+
 export class RichelieuBlockedError extends Error {
   constructor(message: string, readonly until: number) { super(message); }
 }
@@ -271,10 +289,10 @@ export class RichelieuClient {
   }
 
   // The prices on one product page (cached 6 hours). Signs in when there is no session or when Richelieu has ended it.
-  async page(path: string, { fresh = false } = {}): Promise<RichelieuPagePrices & { cached: boolean; checkedAt: string }> {
+  async page(path: string, { fresh = false, diagnostics = false } = {}): Promise<RichelieuPagePrices & { cached: boolean; checkedAt: string; diagnostics?: ReturnType<typeof priceDiagnostics> }> {
     if (!this.configured()) throw new RichelieuNotConfiguredError("Richelieu pricing is not set up yet.");
     const hit = this.cache.get(path);
-    if (!fresh && hit && this.now() - hit.at < CACHE_MS) return { ...hit.page, cached: true, checkedAt: new Date(hit.at).toISOString() };
+    if (!fresh && !diagnostics && hit && this.now() - hit.at < CACHE_MS) return { ...hit.page, cached: true, checkedAt: new Date(hit.at).toISOString() };
     this.assertNotBlocked();
     try {
       if (!this.signedInAt) await this.signIn(path);
@@ -293,7 +311,7 @@ export class RichelieuClient {
       this.cache.set(path, { at, page });
       if (this.cache.size > CACHE_MAX) this.cache.delete(this.cache.keys().next().value!);
       this.lastError = "";
-      return { ...page, cached: false, checkedAt: new Date(at).toISOString() };
+      return { ...page, cached: false, checkedAt: new Date(at).toISOString(), ...(diagnostics ? { diagnostics: priceDiagnostics(res.body) } : {}) };
     } catch (err) {
       this.lastError = err instanceof Error ? err.message : String(err);
       throw err;

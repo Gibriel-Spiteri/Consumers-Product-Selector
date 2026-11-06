@@ -64,7 +64,7 @@ router.get("/vendor-price/richelieu/status", requireVendorPriceAdmin, async (req
     const path = richelieuPagePath(String(req.query.url));
     if (!path) { out.pageError = "Not a Richelieu product page."; res.json(out); return; }
     try {
-      out.page = await richelieu.page(path, { fresh: req.query.fresh === "1" });
+      out.page = await richelieu.page(path, { fresh: req.query.fresh === "1", diagnostics: req.query.markup === "1" });
     } catch (err) {
       out.pageError = failure(err).body.error;
     }
