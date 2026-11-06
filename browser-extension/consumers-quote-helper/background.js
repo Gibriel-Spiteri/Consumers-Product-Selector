@@ -163,6 +163,8 @@ function cleanPick(raw, sender) {
   };
 }
 
+const vendorPrices = new Map(); // 1.5.10: Richelieu list prices by page, { at, res }
+
 // 1.5.9: the screenshot at the Product Selector's size: at most 1440 pixels wide and 2 MB as a JPEG (issue-diagnostics.ts).
 async function siteSizeShot(dataUrl) {
   const blob = await (await fetch(dataUrl)).blob();
@@ -255,6 +257,40 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const origin = (() => { try { return new URL(sender.url || sender.tab?.url).origin; } catch { return ""; } })();
         await chrome.storage.session.set({ appSession: token ? { token, name: text(message.name).slice(0, 100), origin, at: Date.now() } : null });
         return sendResponse({ ok: true });
+      }
+      // 1.5.11 (Gib 11/6): Richelieu's price, read by the Product Selector with Consumers' Richelieu account (the
+      // account and its session stay on the server; the list price the shared sales login sees). Asked as the rep signed in to the
+      // Product Selector in this browser, for the page the panel is on; kept here for 30 minutes per page.
+      case "vendor-price": {
+        let page;
+        try { page = new URL(sender.url || sender.tab.url); } catch { return sendResponse({ ok: false }); }
+        if (page.protocol !== "https:" || page.hostname !== "www.richelieu.com") return sendResponse({ ok: false });
+        const key = page.origin + page.pathname;
+        const hit = vendorPrices.get(key);
+        if (hit && Date.now() - hit.at < 30 * 60000) return sendResponse(hit.res);
+        const { appSession } = await chrome.storage.session.get("appSession");
+        if (!appSession || !appSession.token) return sendResponse({ ok: false, signIn: true });
+        try {
+          const res = await fetch(`${APP_ORIGINS[0]}/api/vendor-price/richelieu?url=${encodeURIComponent(key)}`, {
+            headers: { Authorization: `Bearer ${appSession.token}` }, signal: AbortSignal.timeout(45000),
+          });
+          if (res.status === 401) {
+            await chrome.storage.session.set({ appSession: null });
+            return sendResponse({ ok: false, signIn: true });
+          }
+          const data = await res.json().catch(() => null);
+          if (!res.ok || !data) return sendResponse({ ok: false, error: (data && data.error) || `The Product Selector answered ${res.status}` });
+          // const out = { ok: true, listPrice: Number(data.listPrice) > 0 ? Number(data.listPrice) : null };
+          // 1.5.11 (Gib 11/6): the price to fill (Richelieu's list price: a labeled "Suggested retail", else the one price
+          // the shared sales login sees), its kind, and the page's SKU so the panel fills only the item it shows.
+          const price = Number(data.price) > 0 ? Number(data.price) : null;
+          const out = { ok: true, price, kind: price ? String(data.priceKind || "") : "", sku: text(data.sku), listPrice: Number(data.listPrice) > 0 ? Number(data.listPrice) : null };
+          vendorPrices.set(key, { at: Date.now(), res: out });
+          if (vendorPrices.size > 200) vendorPrices.delete(vendorPrices.keys().next().value);
+          return sendResponse(out);
+        } catch {
+          return sendResponse({ ok: false, error: "Could not reach the Product Selector" });
+        }
       }
       // 1.5.9: the screenshot the Product Selector's Report Issue takes of its page, here of the vendor tab with the panel
       // as it was when Report issue was clicked (before the form covers it).

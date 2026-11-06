@@ -8,6 +8,8 @@ import {
 // Vendor prices for QuickAdd (11/6/2026): Richelieu's price for the product page a rep has open, read on the server
 // with Consumers' shared Richelieu account (lib/richelieu.ts). Signed-in employees only. Only the list price leaves
 // the server: the QuickAdd panel can be in front of a customer.
+// 11/6: the price the shared sales login sees is Richelieu's list price (Gib, with screenshots), so that is what
+// leaves the server; a corporate login's cost never does (its "Suggested retail" is taken instead).
 const router: IRouter = Router();
 router.use("/vendor-price", requireEmployee);
 
@@ -44,9 +46,19 @@ router.get("/vendor-price/richelieu", async (req, res): Promise<void> => {
   if (overLimit(String(res.locals.employeeId))) { res.status(429).json({ error: "Too many Richelieu price lookups this hour." }); return; }
   try {
     const page = await richelieu.page(path);
+    // res.json({
+    //   ok: true, listPrice: page.listPrice, currency: path.startsWith("/ca/") ? "CAD" : "USD",
+    //   sku: page.sku, cached: page.cached, checkedAt: page.checkedAt,
+    // });
+    // 11/6: the shared "Consumers Sales" login (the Replit Secrets) sees one price, Richelieu's list price (Gib checked
+    // it against a corporate login, which shows our cost and the list price as "Suggested retail"). So SmartAdd fills
+    // that price as the list price. A labeled list price ("Suggested retail") comes first, so a login that sees our
+    // cost never fills it.
+    const price = page.listPrice ?? page.accountPrice;
     res.json({
-      ok: true, listPrice: page.listPrice, currency: path.startsWith("/ca/") ? "CAD" : "USD",
-      sku: page.sku, cached: page.cached, checkedAt: page.checkedAt,
+      // ok: true, listPrice: page.listPrice, price, priceKind: page.listPrice != null ? "list" : price != null ? "account" : null,
+      ok: true, listPrice: page.listPrice ?? page.accountPrice, price, priceKind: price != null ? "list" : null,
+      currency: path.startsWith("/ca/") ? "CAD" : "USD", sku: page.sku, cached: page.cached, checkedAt: page.checkedAt,
     });
   } catch (err) {
     const f = failure(err);

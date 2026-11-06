@@ -150,6 +150,7 @@
           <label class="price-wrap">List price<input class="price" type="number" min="0" step="0.01" inputmode="decimal"></label>
           <label><span class="qty-label">Quantity</span><input class="qty" type="number" min="1" max="1000000" step="1" value="1" inputmode="numeric"></label>
         </div>
+        <div class="hint server-price-hint" hidden></div><!-- 1.5.10: Richelieu's list price from the Product Selector -->
         <div class="hint manual-hint" hidden>We could not read this item from the page. Type the model number and color shown on it.</div>
         <div class="hint warn gone-hint" hidden>This page says the item is discontinued. Check with your sales rep before adding it.</div>
         <div class="hint order-form-hint" hidden>This Type is ordered on the vendor's order form: your sales rep attaches it to your quote.</div>
@@ -200,7 +201,7 @@
     lineWrap: $(".line-wrap"), line: $(".line"), typeWrap: $(".type-wrap"), type: $(".type"),
     description: $(".description"), // was also collection: $(".collection") (until 1.4.1)
     single: $(".single"), parts: $(".parts"), kitHint: $(".kit-hint"), kitTotalHint: $(".kit-total-hint"), // 1.5.5
-    priceWrap: $(".price-wrap"), qtyLabel: $(".qty-label") };
+    priceWrap: $(".price-wrap"), qtyLabel: $(".qty-label"), serverPriceHint: $(".server-price-hint") };
   const busy = $(".busy"), head = $(".head"), bodyEl = $(".body"), actionsEl = $(".actions");
   const reportBox = $(".report-box"); // 1.5.9
 
@@ -1153,6 +1154,9 @@
       // heading, and a family page says "The model 8160 is available in 8 finishes".
       model: () => textOf("#pm2_topInfo .pms-ProductNumber").replace(/^\s*product\s*#\s*/i, ""),
       productOnlyWithModel: true,
+      // 1.5.10 (Gib 11/6): Richelieu shows prices only to a signed-in account, and a signed-in page may show our cost.
+      // The page's own price is never used; the Product Selector reads the list price with Consumers' account.
+      serverPrice: true,
       // The size is part of what the customer picked: "Modern Metal Pull - 7325, 3 25/32 in".
       name: () => {
         const size = richelieuOption(/^center to center/i) || richelieuSpec(/^center to center/i) || richelieuSpec(/^diameter/i);
@@ -1580,6 +1584,7 @@
     // color, Top Knobs before a size and finish): no model or price yet, and the panel says what to pick.
     pickNeeded = !manual && !!(siteRule && siteRule.pickFirst && siteRule.pickFirst());
     if (pickNeeded) items = items.map(it => ({ ...it, model: "", price: null }));
+    if (siteRule && siteRule.serverPrice) items = items.map(it => ({ ...it, price: null })); // 1.5.10: Richelieu
     // 1.5.5 (Gib 11/6): a kit (Fleurco's door with a base, a drain or a Mix & Match Kit) goes on as one line per part.
     parts = null;
     if (!manual && !pickNeeded && siteRule && siteRule.parts) {
@@ -1624,6 +1629,47 @@
     // page with nothing to read, where the heading is a category or a slogan ("TURN ROUTINE INTO RITUAL").
     f.description.value = manual && !it.ruleNamed ? "" : X.collDesc(it.collection, X.descName(it.name || "", it.model, it.color));
     fillTypes();
+    fillServerPrice(); // 1.5.10
+  }
+
+  // 1.5.10 (Gib 11/6, from Jim): Richelieu shows prices only to a signed-in account. Gib: "We have a service agreement
+  // with Richelieu for automated sign in", so the Product Selector signs in with Consumers' shared account on its server
+  // and returns the page's price (the account and its session stay on the server; 1.5.11: the list price the shared
+  // sales login sees). The panel asks
+  // as the rep signed in to the Product Selector in this browser, as Report issue does. A price already typed is kept.
+  let serverPriceFor = "";
+  async function fillServerPrice() {
+    f.serverPriceHint.hidden = true;
+    if (!siteRule || !siteRule.serverPrice || manual || pickNeeded || !f.model.value) return;
+    const key = location.pathname;
+    serverPriceFor = key;
+    if (f.price.value) return;
+    // f.serverPriceHint.textContent = "Getting the list price from Richelieu...";
+    f.serverPriceHint.textContent = "Getting the price from Richelieu...";
+    f.serverPriceHint.hidden = false;
+    let res = null;
+    try {
+      res = await chrome.runtime.sendMessage({ type: "vendor-price" });
+    } catch {}
+    if (serverPriceFor !== key || location.pathname !== key) return; // another item since
+    // if (res && res.ok && Number(res.listPrice) > 0) {
+    //   ...f.price.value = Number(res.listPrice).toFixed(2); ... "List price from Consumers' Richelieu account."
+    // 1.5.11 (Gib 11/6): the shared sales login sees one price, Richelieu's list price (Gib checked it against a
+    // corporate login, which shows our cost with the list as "Suggested retail"); it fills the price field. Only for the
+    // item the panel shows (the page's SKU is the panel's model).
+    const sameItem = !res || !res.sku || String(res.sku).toUpperCase() === String(f.model.value).trim().toUpperCase();
+    if (res && res.ok && Number(res.price) > 0 && sameItem) {
+      if (!f.price.value) {
+        f.price.value = Number(res.price).toFixed(2);
+        f.price.classList.remove("missing");
+      }
+      f.serverPriceHint.textContent = res.kind === "list" ? "List price from Consumers' Richelieu account." : "Price from Consumers' Richelieu account.";
+    } else if (res && res.signIn) {
+      // f.serverPriceHint.textContent = "Richelieu's list price fills in when the Product Selector is signed in on this browser.";
+      f.serverPriceHint.textContent = "Richelieu's price fills in when the Product Selector is signed in on this browser.";
+    } else {
+      f.serverPriceHint.hidden = true;
+    }
   }
 
   // The vendor's product lines (only asked for when the site has several, like Foremost) and the chosen line's
