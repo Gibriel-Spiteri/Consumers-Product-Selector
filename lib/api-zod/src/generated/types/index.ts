@@ -22,3 +22,4 @@ export * from "./specialOrderProductLine";
 export * from "./specialOrderProductLineCategoriesItem";
 export * from "./specialOrderType";
 export * from "./syncResponse";
+export * from "./syncTiming";

@@ -8,6 +8,15 @@
 import * as zod from "zod";
 
 /**
+ * @summary Actual next scheduled NetSuite sync time
+ */
+export const GetSyncTimingResponse = zod.object({
+  nextSyncAt: zod.string().nullable(),
+  enabled: zod.boolean(),
+  syncing: zod.boolean(),
+});
+
+/**
  * @summary Active product lines with a special-order item and types
  */
 export const GetSpecialOrderProductLinesResponseItem = zod.object({

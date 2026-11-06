@@ -5,6 +5,13 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface SyncTiming {
+  /** @nullable */
+  nextSyncAt: string | null;
+  enabled: boolean;
+  syncing: boolean;
+}
+
 export type SpecialOrderProductLineCategoriesItem = {
   id: string;
   name: string;

@@ -17,6 +17,17 @@ tags:
   - name: netsuite
     description: NetSuite sync operations
 paths:
+  /dev/sync/timing:
+    get:
+      operationId: getSyncTiming
+      summary: Actual next scheduled NetSuite sync time
+      responses:
+        "200":
+          description: Current scheduler timing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncTiming"
   /special-orders/product-lines:
     get:
       operationId: getSpecialOrderProductLines
@@ -167,6 +178,16 @@ paths:
                 $ref: "#/components/schemas/NetSuiteStatus"
 components:
   schemas:
+    SyncTiming:
+      type: object
+      required: [nextSyncAt, enabled, syncing]
+      properties:
+        nextSyncAt:
+          type: ["string", "null"]
+        enabled:
+          type: boolean
+        syncing:
+          type: boolean
     SpecialOrderProductLine:
       type: object
       required: [id, name, netsuiteItemId, sku, costMultiplier, retailMultiplier, crdMultiplier, categories]

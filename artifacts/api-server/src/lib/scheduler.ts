@@ -32,6 +32,7 @@ const INTERVAL_HOURS: Record<ScheduleInterval, number> = {
 };
 
 let timeoutId: ReturnType<typeof setTimeout> | null = null;
+let nextSyncAt: string | null = null;
 let isScheduledSyncing = false;
 let isManualSyncing = false;
 let currentInterval: ScheduleInterval = "6h";
@@ -191,6 +192,7 @@ async function runSync() {
 }
 
 function scheduleNext() {
+  nextSyncAt = null;
   if (timeoutId !== null) {
     clearTimeout(timeoutId);
     timeoutId = null;
@@ -198,16 +200,26 @@ function scheduleNext() {
   if (currentInterval === "off") return;
 
   const delayMs = msUntilNextSyncSlot();
+  nextSyncAt = new Date(Date.now() + delayMs).toISOString();
   logger.info({ delayMin: Math.round(delayMs / 60000) }, "Next sync check scheduled");
 
   timeoutId = setTimeout(() => {
     timeoutId = null;
+    nextSyncAt = null;
     runSync();
   }, delayMs);
 }
 
 export function getScheduleInterval(): ScheduleInterval {
   return currentInterval;
+}
+
+export function getSyncTiming() {
+  return {
+    nextSyncAt,
+    enabled: currentInterval !== "off",
+    syncing: isScheduledSyncing || isManualSyncing,
+  };
 }
 
 export function getTimeWindow(): TimeWindow | null {
@@ -229,6 +241,7 @@ export async function setScheduleInterval(interval: ScheduleInterval) {
     timeoutId = null;
   }
   if (interval === "off") {
+    nextSyncAt = null;
     logger.info("Scheduled sync disabled");
     return;
   }
@@ -295,6 +308,7 @@ export async function triggerManualSync(syncedBy?: string) {
 }
 
 export function stopScheduledSync() {
+  nextSyncAt = null;
   if (timeoutId !== null) {
     clearTimeout(timeoutId);
     timeoutId = null;

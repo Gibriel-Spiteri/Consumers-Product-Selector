@@ -27,6 +27,7 @@ import type {
   SpecialOrderProductLine,
   SpecialOrderType,
   SyncResponse,
+  SyncTiming,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -37,6 +38,81 @@ type AwaitedInput<T> = PromiseLike<T> | T;
 type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
+/**
+ * @summary Actual next scheduled NetSuite sync time
+ */
+export const getGetSyncTimingUrl = () => {
+  return `/api/dev/sync/timing`;
+};
+
+export const getSyncTiming = async (
+  options?: RequestInit,
+): Promise<SyncTiming> => {
+  return customFetch<SyncTiming>(getGetSyncTimingUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetSyncTimingQueryKey = () => {
+  return [`/api/dev/sync/timing`] as const;
+};
+
+export const getGetSyncTimingQueryOptions = <
+  TData = Awaited<ReturnType<typeof getSyncTiming>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getSyncTiming>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetSyncTimingQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getSyncTiming>>> = ({
+    signal,
+  }) => getSyncTiming({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getSyncTiming>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetSyncTimingQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getSyncTiming>>
+>;
+export type GetSyncTimingQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Actual next scheduled NetSuite sync time
+ */
+
+export function useGetSyncTiming<
+  TData = Awaited<ReturnType<typeof getSyncTiming>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getSyncTiming>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetSyncTimingQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Active product lines with a special-order item and types

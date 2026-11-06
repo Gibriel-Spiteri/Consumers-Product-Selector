@@ -4,6 +4,7 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { RefreshCw, Upload, ImageIcon, Shield, ArrowLeft, Clock, PackageX, BarChart3, ChevronRight } from "lucide-react";
 import { Link } from "wouter";
 import AdminCollapsibleSection from "@/components/admin-collapsible-section";
+import { getGetSyncTimingQueryKey, useGetSyncTiming } from "@workspace/api-client-react";
 
 type ScheduleInterval = "off" | "1h" | "2h" | "4h" | "6h" | "12h" | "24h";
 
@@ -91,10 +92,12 @@ function formatDuration(ms: number) {
 }
 
 function SyncSection({ employeeName }: { employeeName: string }) {
+  const timing = useGetSyncTiming({ query: { queryKey: getGetSyncTimingQueryKey(), refetchInterval: 30000, staleTime: 0 } });
   const [syncing, setSyncing] = useState(false);
   const [progress, setProgress] = useState<{ percent: number; detail: string } | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const [lastSync, setLastSync] = useState<SyncStats | null>(null);
+  const [lastSyncStatus, setLastSyncStatus] = useState<"loading" | "ready" | "error">("loading");
   const [schedule, setSchedule] = useState<ScheduleInterval>("6h");
   const [windowEnabled, setWindowEnabled] = useState(false);
   const [windowStart, setWindowStart] = useState(9);
@@ -115,10 +118,15 @@ function SyncSection({ employeeName }: { employeeName: string }) {
   useEffect(() => () => stopPolling(), []);
 
   useEffect(() => {
-    fetch("/api/dev/sync/last")
-      .then(r => r.json())
-      .then(data => { if (data) setLastSync(data); })
-      .catch(() => {});
+    const refreshLast = () => fetch("/api/dev/sync/last")
+      .then(r => {
+        if (!r.ok) throw new Error("Could not load last sync");
+        return r.json();
+      })
+      .then(data => { setLastSync(data); setLastSyncStatus("ready"); })
+      .catch(() => setLastSyncStatus("error"));
+    void refreshLast();
+    const refreshTimer = setInterval(refreshLast, 30000);
     fetch("/api/dev/sync/schedule")
       .then(r => r.json())
       .then(data => {
@@ -130,10 +138,23 @@ function SyncSection({ employeeName }: { employeeName: string }) {
         }
       })
       .catch(() => {});
+    return () => clearInterval(refreshTimer);
   }, []);
 
   return (
-    <AdminCollapsibleSection title="NetSuite Sync">
+    <AdminCollapsibleSection title="NetSuite Sync" preview={
+      <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-gray-500">
+        <span><span className="font-semibold">Last sync: </span>{lastSyncStatus === "error" ? "Unavailable"
+          : lastSyncStatus === "loading" ? "Loading…" : lastSync?.completedAt
+          ? `${formatSyncDate(lastSync.completedAt)} ${formatSyncTimeOfDay(lastSync.completedAt)} ET${lastSync.success ? "" : " (failed)"}`
+          : "No sync recorded"}</span>
+        <span><span className="font-semibold">Next sync: </span>{timing.isError ? "Unavailable"
+          : !timing.data ? "Loading…"
+          : timing.data.nextSyncAt ? `${formatSyncDate(timing.data.nextSyncAt)} ${formatSyncTimeOfDay(timing.data.nextSyncAt)} ET`
+          : timing.data.syncing ? "Sync in progress"
+          : !timing.data.enabled ? "Automatic sync off" : "Not scheduled"}</span>
+      </div>
+    }>
       <p className="text-sm text-gray-500 mb-4">
         Pull the latest products, categories, and pricing from NetSuite into the local database.
       </p>
@@ -255,6 +276,7 @@ function SyncSection({ employeeName }: { employeeName: string }) {
               stopPolling();
               setResult("Sync failed");
             } finally {
+              void qc.invalidateQueries({ queryKey: getGetSyncTimingQueryKey() });
               setSyncing(false);
               setTimeout(() => { setResult(null); setProgress(null); }, 6000);
             }
@@ -365,6 +387,7 @@ function SyncSection({ employeeName }: { employeeName: string }) {
                   setWindowEnabled(false);
                 }
                 setScheduleSaved(true);
+                void qc.invalidateQueries({ queryKey: getGetSyncTimingQueryKey() });
                 setTimeout(() => setScheduleSaved(false), 2000);
               } catch {}
               setSavingSchedule(false);
@@ -452,7 +475,14 @@ function LogoSection({ employeeId }: { employeeId: string }) {
   const previewDataUrl = svg ? `data:image/svg+xml;utf8,${encodeURIComponent(svg)}` : null;
 
   return (
-    <AdminCollapsibleSection title="Header Logo">
+    <AdminCollapsibleSection title="Header Logo" preview={
+      <div className="inline-flex h-12 max-w-full items-center rounded-lg border border-gray-200 bg-gray-50 px-3">
+        {mode === "image" && previewDataUrl
+          ? <img src={previewDataUrl} alt="Current header logo thumbnail" className="h-8 w-auto max-w-[160px] object-contain" />
+          : mode === "text" ? <span className="font-bold text-gray-900 tracking-tight text-lg">CONSUMERS</span>
+          : <span className="text-xs text-gray-400">No logo uploaded</span>}
+      </div>
+    }>
       <p className="text-sm text-gray-500 mb-4">
         Choose between the default "CONSUMERS" text and an uploaded SVG logo. Recommended display height ~40px, max width ~180px.
       </p>
@@ -555,7 +585,11 @@ function HeroImageSection({ employeeId }: { employeeId: string }) {
   };
 
   return (
-    <AdminCollapsibleSection title="Homepage Hero Image">
+    <AdminCollapsibleSection title="Homepage Hero Image" preview={
+      previewUrl
+        ? <img src={previewUrl} alt="Current homepage hero thumbnail" className="h-14 w-32 rounded-lg border border-gray-200 object-cover" onError={() => setPreviewUrl(null)} />
+        : <span className="text-xs text-gray-400">No hero image set</span>
+    }>
       <p className="text-sm text-gray-500 mb-4">
         This image is displayed as the banner on the homepage. Recommended size: 1920×800 or similar wide aspect ratio.
       </p>
