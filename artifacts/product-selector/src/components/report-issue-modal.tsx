@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { X, Loader2, AlertCircle, CheckCircle2, Send } from "lucide-react";
-import { useAuth } from "@/context/auth-context";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetAdminIssuesQueryKey, requestIssueScreenshotUpload, submitIssueReport, type BrowserIssueLog } from "@workspace/api-client-react";
 import { browserIssueLogs, captureIssueScreenshot, reportPageUrl } from "@/lib/issue-diagnostics";
@@ -9,7 +8,6 @@ import { cn } from "@/lib/utils";
 type Step = "compose" | "sending" | "success" | "error";
 
 export function ReportIssueModal({ open, onClose, initialDetail = "" }: { open: boolean; onClose: () => void; initialDetail?: string }) {
-  const { employee } = useAuth();
   const [step, setStep] = useState<Step>("compose");
   const [issue, setIssue] = useState("");
   const [detail, setDetail] = useState("");
@@ -67,16 +65,6 @@ export function ReportIssueModal({ open, onClose, initialDetail = "" }: { open: 
 
   const trimmedIssue = issue.trim();
   const trimmedDetail = detail.trim();
-  const toTitleCase = (s: string) =>
-    s
-      .toLowerCase()
-      .split(/\s+/)
-      .filter(Boolean)
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(" ");
-  const userName = employee
-    ? toTitleCase(`${employee.firstName ?? ""} ${employee.lastName ?? ""}`.trim())
-    : "";
 
   const handleSend = async () => {
     setStep("sending");
@@ -173,10 +161,6 @@ export function ReportIssueModal({ open, onClose, initialDetail = "" }: { open: 
                   className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-300 focus:border-amber-300 resize-y"
                 />
               </div>
-              <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-500" role="status">
-                <p>{captureState === "capturing" ? "Capturing the reporting page…" : captureState === "ready" ? "Page screenshot captured. Entered form values are hidden." : captureError}</p>
-                <p className="mt-1">Includes the page URL, browser details and {logs.length} recent warnings/errors. Diagnostic images and logs are visible to administrators.</p>
-              </div>
             </>
           )}
 
@@ -213,19 +197,6 @@ export function ReportIssueModal({ open, onClose, initialDetail = "" }: { open: 
             </div>
           )}
 
-          {/* Combined Signed in as / Page URL info box */}
-          {step === "compose" && (
-            <div className="bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-[12px] divide-y divide-gray-200/60">
-              <div className="flex items-center justify-between py-1.5">
-                <span className="text-gray-500 uppercase tracking-widest font-semibold">Signed in as</span>
-                <span className="text-gray-800 font-normal">{userName || "—"}</span>
-              </div>
-              <div className="flex items-start justify-between gap-3 py-1.5">
-                <span className="text-gray-500 uppercase tracking-widest font-semibold shrink-0">Page URL</span>
-                <span className="text-gray-700 font-mono text-[11px] break-all text-right">{currentUrl}</span>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Footer actions */}
@@ -250,7 +221,7 @@ export function ReportIssueModal({ open, onClose, initialDetail = "" }: { open: 
                     : "bg-amber-500 text-white hover:bg-amber-600",
                 )}
               >
-                <Send size={14} />
+                {captureState === "capturing" ? <Loader2 size={14} className="animate-spin" aria-label="Preparing report" /> : <Send size={14} />}
                 Send
               </button>
             </>
