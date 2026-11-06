@@ -3,6 +3,7 @@ import { useAuth } from "@/context/auth-context";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { RefreshCw, Upload, ImageIcon, Shield, ArrowLeft, Clock, PackageX, BarChart3, ChevronRight } from "lucide-react";
 import { Link } from "wouter";
+import AdminCollapsibleSection from "@/components/admin-collapsible-section";
 
 type ScheduleInterval = "off" | "1h" | "2h" | "4h" | "6h" | "12h" | "24h";
 
@@ -132,8 +133,7 @@ function SyncSection({ employeeName }: { employeeName: string }) {
   }, []);
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-1">NetSuite Sync</h3>
+    <AdminCollapsibleSection title="NetSuite Sync">
       <p className="text-sm text-gray-500 mb-4">
         Pull the latest products, categories, and pricing from NetSuite into the local database.
       </p>
@@ -383,7 +383,7 @@ function SyncSection({ employeeName }: { employeeName: string }) {
           )}
         </div>
       </div>
-    </div>
+    </AdminCollapsibleSection>
   );
 }
 
@@ -452,8 +452,7 @@ function LogoSection({ employeeId }: { employeeId: string }) {
   const previewDataUrl = svg ? `data:image/svg+xml;utf8,${encodeURIComponent(svg)}` : null;
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-1">Header Logo</h3>
+    <AdminCollapsibleSection title="Header Logo">
       <p className="text-sm text-gray-500 mb-4">
         Choose between the default "CONSUMERS" text and an uploaded SVG logo. Recommended display height ~40px, max width ~180px.
       </p>
@@ -512,7 +511,7 @@ function LogoSection({ employeeId }: { employeeId: string }) {
         <Upload size={14} />
         {saving ? "Saving…" : svg ? "Replace SVG" : "Upload SVG"}
       </button>
-    </div>
+    </AdminCollapsibleSection>
   );
 }
 
@@ -556,8 +555,7 @@ function HeroImageSection({ employeeId }: { employeeId: string }) {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-1">Homepage Hero Image</h3>
+    <AdminCollapsibleSection title="Homepage Hero Image">
       <p className="text-sm text-gray-500 mb-4">
         This image is displayed as the banner on the homepage. Recommended size: 1920×800 or similar wide aspect ratio.
       </p>
@@ -603,7 +601,7 @@ function HeroImageSection({ employeeId }: { employeeId: string }) {
         <Upload size={14} />
         {uploading ? "Uploading…" : "Change Image"}
       </button>
-    </div>
+    </AdminCollapsibleSection>
   );
 }
 
