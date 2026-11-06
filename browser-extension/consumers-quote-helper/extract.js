@@ -684,7 +684,44 @@
   // 1.5.7 (Gib 11/6, "add a report issue button to the extension"): the panel's report, shaped like the Product Selector's
   // own Report Issue (POST /api/cases { subject, detail, employee }), which opens a NetSuite case for IT. What the
   // customer typed, the vendor page, what the panel read, the QuickAdd version and the browser; no customer details.
+  // 1.5.9 (Gib 11/6, "The report an issue fields don't match the original report an issue"): the panel's form is now the
+  // Product Selector's Report Issue window field for field (Issue, a brief summary, and Detail), so the case is built the
+  // same way: the Issue is the case title as typed, the Detail is the description as typed, and the browser line is the
+  // site's "<user agent> | viewport <w>x<h>" with the QuickAdd version after it. What the panel read follows the Detail
+  // under "Sent from the Consumers QuickAdd panel." (the NetSuite email's QuickAdd marker); the form does not show it.
+  // There is no "Reported by" line: the case is the signed-in rep's, as on the site.
   function issueReport(r) {
+    const s = v => text(v).slice(0, 500);
+    const issue = text(r && r.issue).slice(0, 300);
+    const typed = String(r && r.detail || "").replace(/\r/g, "").trim().slice(0, 10000);
+    if (!issue || !typed) return null;
+    const fields = r.fields || {};
+    const read = [["Type", fields.type], ["Model", fields.model], ["Color / finish", fields.color], ["Collection / Description", fields.description],
+      ["List price", fields.price], ["Quantity", fields.quantity], ["Product line", fields.line]].filter(([, v]) => text(v)).map(([k, v]) => `${k}: ${s(v)}`);
+    const parts = (Array.isArray(r.parts) ? r.parts : []).slice(0, 20).map((p, i) => `Part ${i + 1}: ${[p.model, p.type, p.color, p.description, p.price ? `$${p.price}` : ""].map(s).filter(Boolean).join(" | ")}`);
+    const context = [
+      "Sent from the Consumers QuickAdd panel.",
+      `Vendor page: ${s(r.pageUrl)}`,
+      `QuickAdd version: ${s(r.version)}`,
+      r.message ? `Panel message: ${s(r.message)}` : "",
+      "",
+      read.length || parts.length ? "What the panel read:" : "The panel had nothing read.",
+      ...read, ...parts,
+    ].filter((line, i, a) => line !== "" || (a[i - 1] !== "" && i > 0)).join("\n");
+    // The Product Selector takes at most 10,000 characters of detail: the typed Detail always fits, the panel's part is
+    // cut to what is left.
+    const room = 10000 - typed.length - 2;
+    const detail = room > 40 ? `${typed}\n\n${context.slice(0, room)}` : typed;
+    const viewport = r.viewport && r.viewport.width ? ` | viewport ${Math.round(r.viewport.width)}×${Math.round(r.viewport.height)}` : "";
+    return {
+      subject: issue, detail,
+      pageUrl: String(r.pageUrl || "").slice(0, 2000),
+      browserInfo: `${String(r.userAgent || r.browser || "")}${viewport} | QuickAdd ${s(r.version)}`.slice(0, 500),
+    };
+  }
+
+  // 1.5.7 / 1.5.8 version (one "What went wrong?" box and an optional name). Kept for reference.
+  function issueReport158(r) {
     const s = v => text(v).slice(0, 500);
     const what = String(r && r.text || "").replace(/\r/g, "").trim().slice(0, 4000);
     if (!what) return null;

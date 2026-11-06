@@ -419,14 +419,37 @@ async function readPanel(page) {
         const priceLabel = (await p.locator(".price-wrap").evaluate(l => l.firstChild.textContent)).trim(); // the label text (shown in capitals by CSS)
         record("wording", note === "Confirm all Information Above" && priceLabel === "List price", `footer "${note}", price label "${priceLabel}"`);
         // 1.5.7: Report issue opens its form and refuses an empty report. Never sent from here (it opens a NetSuite case).
+        // await p.locator(".report").click();
+        // const formShown = await p.locator(".report-box").isVisible();
+        // await p.locator(".r-send").click();
+        // await first.waitForTimeout(300);
+        // const refusal = (await p.locator(".r-msg").innerText()).trim();
+        // await p.locator(".r-cancel").click();
+        // record("report", formShown && refusal === "Please say what went wrong." && !(await p.locator(".report-box").isVisible()), ...);
+        // 1.5.9: the form is the Product Selector's Report Issue window: title, Issue and Detail with the site's placeholders
+        // and lengths, Cancel and Send; Send stays off until both are filled; the page is captured for the screenshot;
+        // Cancel brings the panel back. Never sent from here (it opens a NetSuite case).
         await p.locator(".report").click();
+        await p.locator(".report-box").waitFor({ state: "visible", timeout: 10000 }).catch(() => {});
         const formShown = await p.locator(".report-box").isVisible();
-        await p.locator(".r-send").click();
-        await first.waitForTimeout(300);
-        const refusal = (await p.locator(".r-msg").innerText()).trim();
-        await p.locator(".r-cancel").click();
-        record("report", formShown && refusal === "Please say what went wrong." && !(await p.locator(".report-box").isVisible()),
-          `Report issue form ${formShown ? "opens" : "DID NOT OPEN"}, empty send: "${refusal}", Cancel closes it`);
+        const form = formShown ? await p.locator(".report-box").evaluate(b => ({
+          title: b.querySelector(".r-head b").textContent,
+          labels: [...b.querySelectorAll(".r-compose label")].map(l => l.firstChild.textContent.trim()).join("/"),
+          issue: `${b.querySelector(".r-issue").placeholder}|${b.querySelector(".r-issue").maxLength}`,
+          detail: `${b.querySelector(".r-text").placeholder}|${b.querySelector(".r-text").maxLength}|${b.querySelector(".r-text").rows}`,
+          buttons: [...b.querySelectorAll(".r-actions button")].filter(x => !x.hidden).map(x => x.textContent).join("/"),
+        })) : {};
+        const offEmpty = formShown && await p.locator(".r-send").isDisabled();
+        if (formShown) await p.locator(".r-issue").fill("Live check only");
+        const offIssueOnly = formShown && await p.locator(".r-send").isDisabled();
+        if (formShown) await p.locator(".r-text").fill("Live check only, never sent");
+        const onBoth = formShown && await p.locator(".r-send").isEnabled();
+        if (formShown) await p.locator(".r-cancel").click();
+        const back = !(await p.locator(".report-box").isVisible()) && await p.locator(".actions").isVisible();
+        const same = form.title === "Report an Issue" && form.labels === "Issue/Detail" && form.issue === "Brief summary|300"
+          && form.detail === "Describe what happened, what you expected, and any steps to reproduce.|10000|5" && form.buttons === "Cancel/Send";
+        record("report", formShown && same && offEmpty && offIssueOnly && onBoth && back,
+          `Report an Issue ${formShown ? "opens" : "DID NOT OPEN"}: ${JSON.stringify(form)}; Send off empty ${offEmpty}, off with Issue only ${offIssueOnly}, on with both ${onBoth}; Cancel brings the panel back ${back}`);
         await first.screenshot({ path: path.join(SHOTS, "seed-delta.png") });
       } catch (e) {
         record("seed", false, `error: ${String(e.message || e).split("\n")[0]}`);

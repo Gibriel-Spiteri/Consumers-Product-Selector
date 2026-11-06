@@ -355,18 +355,42 @@ test("1.5.6 sweep 2: kit parts' and trims' Types with the PROD Types of each lin
   ]) assert.equal(g(d, name, url, cat), want, `${d}: ${name}`);
 });
 
-test("1.5.7: the panel's Report issue, shaped like the Product Selector's /api/cases", () => {
-  assert.equal(X.issueReport({ text: "   " }), null);
-  const r = X.issueReport({ text: "The color is wrong\nIt says Cotton", reporter: "Pat", pageUrl: "https://www.us.kohler.com/x?skuId=23484-4-CP",
-    version: "1.5.7", browser: "Edge 141 on Win32", fields: { model: "K-23484-4-CP", color: "Polished Chrome", price: "690.75", quantity: "1" },
+// 1.5.7 / 1.5.8 test (one "What went wrong?" box, subject "QuickAdd issue (<domain>): ..."). Was:
+// test("1.5.7: the panel's Report issue, shaped like the Product Selector's /api/cases", () => {
+//   assert.equal(X.issueReport({ text: "   " }), null);
+//   const r = X.issueReport({ text: "The color is wrong\nIt says Cotton", reporter: "Pat", pageUrl: "https://www.us.kohler.com/x?skuId=23484-4-CP",
+//     version: "1.5.7", browser: "Edge 141 on Win32", fields: { model: "K-23484-4-CP", color: "Polished Chrome", price: "690.75", quantity: "1" },
+//     parts: [{ model: "R35000-WS", type: "SHOWER SYSTEM - VALVE ROUGH", price: "499" }] });
+//   assert.equal(r.subject, "QuickAdd issue (kohler.com): The color is wrong");
+//   assert.equal(r.pageUrl, "https://www.us.kohler.com/x?skuId=23484-4-CP");
+//   assert.equal(r.browserInfo, "Edge 141 on Win32 (QuickAdd 1.5.7)");
+//   ...
+// });
+
+test("1.5.9: Report an Issue sends what the site's window sends (Issue, Detail), with the panel's read after the Detail", () => {
+  // Both fields are required, as on the site.
+  assert.equal(X.issueReport({ issue: "Wrong color", detail: "  " }), null);
+  assert.equal(X.issueReport({ issue: " ", detail: "It says Cotton" }), null);
+  const ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0";
+  const r = X.issueReport({ issue: "The color is wrong", detail: "It says Cotton\nThe page shows Polished Chrome", pageUrl: "https://www.us.kohler.com/x?skuId=23484-4-CP",
+    version: "1.5.9", userAgent: ua, viewport: { width: 1536, height: 730 },
+    fields: { model: "K-23484-4-CP", color: "Polished Chrome", price: "690.75", quantity: "1" },
     parts: [{ model: "R35000-WS", type: "SHOWER SYSTEM - VALVE ROUGH", price: "499" }] });
-  assert.equal(r.subject, "QuickAdd issue (kohler.com): The color is wrong");
-  // 1.5.8: the Product Selector's IssueReportInput (requestId and browserLogs are added by the background).
+  // The Issue is the case title as typed; the Detail comes first, as typed.
+  assert.equal(r.subject, "The color is wrong");
+  assert.ok(r.detail.startsWith("It says Cotton\nThe page shows Polished Chrome\n\nSent from the Consumers QuickAdd panel.\n"));
   assert.equal(r.pageUrl, "https://www.us.kohler.com/x?skuId=23484-4-CP");
-  assert.equal(r.browserInfo, "Edge 141 on Win32 (QuickAdd 1.5.7)");
-  for (const s of ["It says Cotton", "Reported by: Pat", "Vendor page: https://www.us.kohler.com/x?skuId=23484-4-CP", "QuickAdd version: 1.5.7",
+  // The site's browser line ("<user agent> | viewport <w>x<h>") with the QuickAdd version after it.
+  assert.equal(r.browserInfo, `${ua} | viewport 1536×730 | QuickAdd 1.5.9`);
+  for (const s of ["Vendor page: https://www.us.kohler.com/x?skuId=23484-4-CP", "QuickAdd version: 1.5.9",
     "Model: K-23484-4-CP", "List price: 690.75", "Part 1: R35000-WS | SHOWER SYSTEM - VALVE ROUGH | $499"]) assert.ok(r.detail.includes(s), s);
+  assert.ok(!/Reported by/.test(r.detail)); // the case is the signed-in rep's, as on the site
   assert.ok(!/\n\n\n/.test(r.detail));
+  // A full 10,000-character Detail still fits the Product Selector's limit.
+  const long = X.issueReport({ issue: "Long", detail: "x".repeat(10000), pageUrl: "https://www.kohler.com/x", version: "1.5.9" });
+  assert.equal(long.detail.length, 10000);
+  assert.ok(X.issueReport({ issue: "Near", detail: "y".repeat(9900), pageUrl: "https://www.kohler.com/x", version: "1.5.9" }).detail.length <= 10000);
+  assert.equal(X.issueReport({ issue: "i".repeat(400), detail: "d" }).subject.length, 300);
 });
 
 test("vendor domains: subdomains count as the main domain", () => {
