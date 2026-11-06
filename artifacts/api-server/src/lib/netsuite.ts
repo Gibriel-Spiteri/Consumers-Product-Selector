@@ -274,6 +274,28 @@ export async function netsuiteRequest<T>(
 }
 
 /**
+ * POST JSON to a RESTlet (2026-11-06, first use: the special-order picture upload, lib/spImages.ts). Same token and
+ * concurrency limiter as the REST calls; RESTlets live on the account's restlets host.
+ */
+export async function netsuiteRestlet<T>(scriptId: string, deployId: string, body: unknown): Promise<T> {
+  const token = await getAccessToken();
+  const host = getBaseUrl().replace(".suitetalk.api.netsuite.com", ".restlets.api.netsuite.com");
+  const url = `${host}/app/site/hosting/restlet.nl?script=${encodeURIComponent(scriptId)}&deploy=${encodeURIComponent(deployId)}`;
+  const response = await fetchNetSuite(url, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    logger.error({ status: response.status, scriptId, body: text.slice(0, 500) }, "NetSuite RESTlet request failed");
+    if (response.status === 401) cachedToken = null;
+    throw new Error(`NetSuite RESTlet ${scriptId} failed: ${response.status} ${text.slice(0, 300)}`);
+  }
+  return response.json() as Promise<T>;
+}
+
+/**
  * POST a new record and return the new internal id parsed from the Location
  * header. NetSuite returns 204 No Content on create with a Location header
  * pointing at the created record.

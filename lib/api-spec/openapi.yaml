@@ -472,6 +472,13 @@ components:
           maximum: 1000000
         specialOrder:
           $ref: "#/components/schemas/SpecialOrderDetails"
+        imageUrl:
+          type: string
+          maxLength: 2048
+          pattern: "^https?://"
+          description: >-
+            Special orders picked on a vendor website: the product picture the extension read. The server saves a small
+            copy in NetSuite for the estimate and sales order printouts (custcol_sp_thumbnail). Ignored on catalog lines.
     EstimateItemsInput:
       type: object
       required: [items]
@@ -503,6 +510,12 @@ components:
           description: Special-order lines as priced on the estimate (list price x product line multipliers, as NetSuite does)
           items:
             $ref: "#/components/schemas/SpecialOrderLineResult"
+        imagesSaved:
+          type: integer
+          description: Special-order pictures saved for the printouts
+        imagesFailed:
+          type: integer
+          description: Special-order pictures that could not be saved (those lines print without one)
     SpecialOrderLineResult:
       type: object
       required: [netsuiteId, model, quantity, listPrice, rate, amount]

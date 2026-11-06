@@ -247,6 +247,11 @@ export const addEstimateItemsBodyItemsItemSpecialOrderColorMax = 300;
 export const addEstimateItemsBodyItemsItemSpecialOrderListPriceMin = 0;
 export const addEstimateItemsBodyItemsItemSpecialOrderListPriceMax = 99999999;
 
+export const addEstimateItemsBodyItemsItemImageUrlMax = 2048;
+
+export const addEstimateItemsBodyItemsItemImageUrlRegExp = new RegExp(
+  "^https?:\/",
+);
 export const addEstimateItemsBodyItemsMax = 500;
 
 export const AddEstimateItemsBody = zod.object({
@@ -296,6 +301,14 @@ export const AddEstimateItemsBody = zod.object({
               .max(addEstimateItemsBodyItemsItemSpecialOrderListPriceMax),
           })
           .optional(),
+        imageUrl: zod
+          .string()
+          .max(addEstimateItemsBodyItemsItemImageUrlMax)
+          .regex(addEstimateItemsBodyItemsItemImageUrlRegExp)
+          .optional()
+          .describe(
+            "Special orders picked on a vendor website: the product picture the extension read. The server saves a small copy in NetSuite for the estimate and sales order printouts (custcol_sp_thumbnail). Ignored on catalog lines.",
+          ),
       }),
     )
     .min(1)
@@ -322,6 +335,16 @@ export const AddEstimateItemsResponse = zod.object({
     .optional()
     .describe(
       "Special-order lines as priced on the estimate (list price x product line multipliers, as NetSuite does)",
+    ),
+  imagesSaved: zod
+    .number()
+    .optional()
+    .describe("Special-order pictures saved for the printouts"),
+  imagesFailed: zod
+    .number()
+    .optional()
+    .describe(
+      "Special-order pictures that could not be saved (those lines print without one)",
     ),
 });
 
