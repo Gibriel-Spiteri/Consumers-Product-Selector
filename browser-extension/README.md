@@ -19,6 +19,23 @@ Lets a customer pick products on a vendor's own website (Delta, Kohler, Brizo, .
    - Collection / Description goes to NetSuite's Coll/Desc as is. It starts as the collection, then the product name, the way reps type it; the collection is left out when the name already has it.
    - The customer picks the option, sets the quantity and clicks **Add to quote**. Every field is required (1.5.2): **Add to quote** outlines the empty ones in red and names them, so a page that gives no color (Icera, since the 1.5.3 color readers) or no price (Elkay, Franke, Richelieu, Strategic Brands) needs the customer, or the sales rep, to type it in.
    - **Kits (1.5.5, Gib 11/6):** a Fleurco build can be several items: "NHZ160-25-40-75 + ATAS2-3260 + DRAINABS-33 + NH-CONVKIT-11-MX Total : $3517" is the door, a base and its drain (from **Add a base**), and a Mix & Match Kit. NetSuite needs each as its own line at its own price, so the panel says "This is 4 items", shows one block per part (Type, Model, Color / finish, Collection / Description, Price) and one **Quantity of each**, and **Add 4 items to quote** puts them on the Quote List as four lines in one go. The prices come from the page (the door's own price, the kit's tile price, each added item's card) and add up to its total; if a part's price is changed so they no longer do, the panel says so. Each part's fields are required like a single item's ("Color / finish (part 3)"). Types: the door as before, a base SHOWER BASE, wall panels SHOWER WALL, a bathtub BATH TUB, a drain or kit MISCELLANEOUS.
+   - **Kits on every vendor (1.5.6, sweep 2 of 11/6):** the same parts view for what the sweep found sold as one selection but ordered as several items, each priced from the page:
+
+     | Vendor | Kit | Where each part's model and price come from |
+     |---|---|---|
+     | Brizo | combos ("--" addresses) and trims shown with their rough valve, handle kit, union or escutcheon | "Product(s) Shown" rows (row class says rough, handles, accessory) |
+     | Kohler | bundles (BNDL-K0002 spout + handles, BNDL-K0059 shower head + arm) | the bundle's item list (SKU in the link or picture), prices load a moment after the page |
+     | Delta | bundles (FVS6-LI0201: faucet, trim and 4 accessories) | each item's own page in the bundle's finish (the tiles only show ranges) |
+     | Grohe | a trim and the rough-in it REQUIRES (29137000 + 35601000) | the REQUIRED box; a choice of several roughs (Essence) is a note instead |
+     | TOTO | a toilet and its add-ons (14″ rough-in TSU10W.14R, trip lever, push button) | the page script's add-on list |
+     | Bain Ultra | the tub, its drain & overflow kit and each option card (waste kit, AromaCloud, skirt) | the configurator's data; the drain kit is what is left of the total |
+     | Fleurco | also bathtubs with drains and covers, base pages with a drain, Fibo walls with install kit and grip, spacers | the picked options' own codes and prices, the page's price list |
+     | Sofia | a cabinet or mirror and its accessories (LGT-30 light, MSK side kit by depth, defogger, outlets, shelves) | each accessory's label ("MSK 4-30/MSK 6-30 $111 (-1) \| $138 (-2)") |
+     | John Boos | an item and the add-on box (Care & Maintenance Pack MYSCRMAPP, Applicator) | the page's cart form |
+
+     A part the item needs but that is sold separately (Grohe's required rough-in) shows ticked with "Add this part"; untick it when the customer already has one. Parts sold separately are not in the page's total check. Where the needed part is only named on the page (Flusso's "Use with TVH.4201" trims, TOTO's "Requires tub filler base rough-in TBN01105U", Kohler's "Items Required for Install"), the panel says which part to add from its own page.
+     Not split, because they are one orderable SKU: Elkay "Sink Kits" (cheaper than their parts), Franke workcenter sinks, TOTO two-piece and WASHLET+ toilets, Icera two-piece toilets and vanity + top (one price for the pair), Flusso shower sets and valve-with-trim SKUs, Strategic Brands value packs, Craft & Main doors.
+   - The panel's &#8644; button moves it to the other side of the page when it covers the page's own pickers (Richelieu's finish chips at 1440 px wide); the side is kept for that site.
 3. **It lands on the Quote List.** When the Product Selector is open (signed in) in that browser, each pick goes straight onto the Quote List as a special-order line, and leaves the extension.
    - Model, description, color, list price and quantity come from the vendor page, with a **Picked on** link back to it. The Type is guessed from the product name and the vendor's address (KITCHEN FAUCET, TOILET, KNOBS, SHOWER DOOR); on a tie, or for order-form Types, it is left for the rep.
    - A line the vendor page left incomplete shows an amber **Needs Type, Color, List price** (whatever is missing). Clicking it opens the Edit Special Order form; fill in the rest and click **Save Changes**. The Quote List will not push to an estimate until every line is complete.
@@ -74,6 +91,22 @@ Checked on 11/4/2026 in Chrome, one product page per product line:
 **Flusso finish squares** (1.5.5, Gib 11/6: "Flusso Kitchen Faucets aren't working when we change the finish"): on pages like the Vasco kitchen faucet, a finish square (`li.finish-color-box`) changes the item without loading a page and leaves thin product data behind (name "K.1390MB", no finish, no price), so the panel showed the model alone. The panel now reads the page's own lines, which follow the square: "Model#:" (`.product-model-no-p`), the finish ("Matte Black (FAST SHIP FINISH)" gives Matte Black) and the list price (`#product-price-span`), with the heading as the name. Matte Black reads K.1390MB at $833, Crimson K.1390CR at $1058.
 
 **Fleurco picture** (1.5.5): Fleurco has no `og:image`, and the panel showed a broken picture (the page's own address); it now shows the door's photo.
+
+**Sweep 2 of 11/6/2026 (1.5.6).** Gib asked how the Flusso finish squares fell through the 11/5 sweep: its testers loaded each finish's own address instead of clicking the squares, and only the click changes the page in place. Sweep 2 had four testers click every kind of option control on all 17 vendor sites (Avance left out) with the panel open, about 180 product pages and 450 clicks, and look for kits. Besides the kits above it fixed:
+- Delta: clicking the finish already chosen unselects it ("Model#: Master-9190TL-DST", no price); the panel now asks for a finish instead of keeping the old one with another price.
+- Brizo: an address with a part of 5 or more letters (694767-BNXBL, 65368LF-PCLHP-ECO) gave an empty panel; Brizo is now read from "Product(s) Shown" on every product page.
+- Flusso: a finish square left trims and valves without a Type (the breadcrumbs are now read); a pot filler was a TUB FILLER, a kitchen soap dispenser a BATH ACCESSORY.
+- TOTO: Coll/Desc repeated the add-ons of the page's hidden products ("Rough-In 14″" four times).
+- Bain Ultra: "Reversible (L/R)" tubs showed the configurator's code and total (Meridian 50 is BMEFRI00N-01, $2,300); a freestanding tub's name said "Freestanding" twice and had no Type.
+- Fleurco: a drain left in the code line after a door change (not in the total) is dropped; a bathtub added to a tub door had "Left" as its color.
+- Craft & Main: a size, color and glass combination that is not made kept the last SKU; the page's variant list now decides, and the panel asks for another combination.
+- John Boos: the Color option (Alabaster, Caviar Black) instead of the wood; Laforza "Frame Only" is the stand, MISCELLANEOUS, not the cherry block.
+- Sofia: pages with a Frame dropdown (Georgia, Pharos, Valentina, Olympia) now get the price for the picked frame; "$0" lines are skipped.
+- Franke: model codes after a plain space ("Maris Lario Pull-Down Faucet LAR-PD-MBK" read "PD-MBK"); a sink reached from "All products" gets KITCHEN SINK.
+- Elkay: "Sink Kit" pages get KITCHEN SINK; a discontinued finish shows the discontinued note.
+- Strategic Brands: the product line from the brand in the page's shopping link (LAUREY, MNG); "ORB" is Oil Rubbed Bronze, "Brush Satin Nickel" Brushed Satin Nickel, a bare "Steel" is no finish.
+- Types: tub fillers, valve and shower trims, shower bundles, "sink faucet" handles, towel bars with a backplate.
+The live check now has a click-path case for each vendor (finish squares, tiles, add-on boxes, configurator options, bundles).
 
 **Sweep of 11/5/2026 (1.5.3):** four testers went through about 230 product pages and 40 other pages on all 17 special-order vendor sites (Avance left out), with about 110 finish, color, size and configurator changes made while the panel was open. What it found is fixed by these site rules in `vendor.js` (each value they read also tells the open panel to follow a change):
 

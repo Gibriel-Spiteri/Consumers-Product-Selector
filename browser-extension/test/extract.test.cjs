@@ -321,6 +321,40 @@ test("1.5.3 sweep: a page that says the item is discontinued", () => {
   assert.equal(X.discontinued({ heading: "Fireclay Farmhouse Sink", text: "Fireclay Farmhouse Sink Model #: SWUF28179WH $1,154.00" }), false);
 });
 
+test("1.5.6 sweep 2: pot fillers, shower sets and the other room's Type", () => {
+  const T = (...names) => names.map((name, i) => ({ id: String(i + 1), name, requiresAttachment: false }));
+  const name = t => (t ? t.name : null);
+  const flusso = T("BATH ACCESSORY", "BATH FAUCET", "DIVERTER", "HANDSHOWER", "KITCHEN FAUCET", "MISCELLANEOUS", "ROUGH",
+    "SHOWERHEAD", "TRIP LEVER", "TUB / SHOWER FAUCET", "TUB FILLER");
+  const url = "https://www.flussofaucets.com/products/x/";
+  assert.equal(name(X.suggestType({ name: "Wall Mounted Pot Filler", pageUrl: url, category: "Kitchen / Pot Fillers" }, flusso)), "KITCHEN FAUCET");
+  assert.equal(name(X.suggestType({ name: "Kitchen Soap Dispenser", pageUrl: url, category: "Kitchen / Kitchen Accessories" }, flusso)), null);
+  assert.equal(name(X.suggestType({ name: "Soap Dispenser", pageUrl: url, category: "Bathroom / Bath Accessories" }, flusso)), "BATH ACCESSORY");
+  assert.equal(name(X.suggestType({ name: "Two Output Shower Set With Shower Head, Hand Held And Slide Bar", pageUrl: url, category: "Showering / Shower Sets" }, flusso)), "TUB / SHOWER FAUCET");
+  assert.equal(name(X.suggestType({ name: "Trim For 3/4\" Thermostatic Valve", pageUrl: url, category: "Showering / Shower Faucets / Shower Faucet Trims" }, flusso)), "TUB / SHOWER FAUCET");
+});
+
+test("1.5.6 sweep 2: kit parts' and trims' Types with the PROD Types of each line", () => {
+  const sites = require("./vendor-sites.json").sites;
+  const T = d => sites.find(s => s.websiteUrl.includes(d)).types;
+  const g = (d, name, url, cat) => { const t = X.suggestType({ name, pageUrl: url, category: cat || "" }, T(d), { orderForms: true }); return t ? t.name : null; };
+  for (const [d, name, url, cat, want] of [
+    ["topknobs", "Edwardian Towel Bar with Oval Backplate", "https://www.topknobs.com/x", "", null],
+    ["topknobs", "Hollin Knob Backplate", "https://www.topknobs.com/x", "", "BACKPLATES"],
+    ["elkay", "Crosstown 18 Gauge Stainless Steel Single Bowl Undermount Sink Kit", "https://www.elkay.com/products/sinks/collections/kits/x", "Kitchen", "KITCHEN SINK"],
+    ["franke", "Maris Workcenter Sink MAG11031OW-MBK-WKC", "https://www.franke.com/us/en/home-solutions/all-products/x.html", "Kitchen", "KITCHEN SINK"],
+    ["brizo", "Floor Mount Tub Filler", "https://www.brizo.com/bath/product/T70367-PC", "", "BATH - TUB FAUCET"],
+    ["brizo", "Wall Mount Pot Filler", "https://www.brizo.com/kitchen/product/62820LF-PC", "", "KITCHEN - POT FILLER"],
+    ["brizo", "TempAssure Thermostatic Tub/Shower Trim", "https://www.brizo.com/bath/product/x", "", "SHOWER SYSTEM - VALVE TRIM"],
+    ["grohe", "Grohtherm SmartControl Dual Function Thermostatic Valve Trim", "https://www.grohe.us/products/x", "", "TUB/ / SHOWER FAUCET"],
+    ["grohe", "2-Handle Dual Function Thermostatic Shower Bundle", "https://www.grohe.us/products/x", "", "TUB/ / SHOWER FAUCET"],
+    ["delta", "Monitor 14 Series Tub & Shower Trim", "https://www.deltafaucet.com/bathroom/product/T14462.html", "", "TUB / SHOWER FAUCET"],
+    ["delta", "Freestanding Tub Filler", "https://www.deltafaucet.com/bathroom/product/T4759-FL.html", "", "TUB FILLER"],
+    ["kohler", "Occasion Lever bathroom sink faucet handles", "https://www.kohler.com/x", "", "BATH FAUCET"],
+    ["bainultra", "AMMA OVAL 7242 Freestanding 72\" x 42\", Soaker tub", "https://www.bainultra.com/products/amma-oval", "Soaker", "SOAKER"],
+  ]) assert.equal(g(d, name, url, cat), want, `${d}: ${name}`);
+});
+
 test("vendor domains: subdomains count as the main domain", () => {
   assert.equal(X.registrableDomain("www.us.kohler.com"), "kohler.com");
   assert.equal(X.registrableDomain("craftandmain.com"), "craftandmain.com");

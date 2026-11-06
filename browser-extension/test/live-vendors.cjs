@@ -26,6 +26,10 @@ const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
 
 const anyPrice = { price: v => Number(v) > 0 };
 const noPrice = { price: v => v === "" };
+// 1.5.6: a kit's parts by model (in order), and their prices adding up.
+const models = (...want) => ps => ps.length === want.length && want.every((m, i) => (m instanceof RegExp ? m.test(ps[i].model) : ps[i].model === m));
+const sumIs = total => ps => Math.abs(ps.reduce((s, p) => s + Number(p.price || 0), 0) - total) < 0.02;
+const all = (...fns) => v => fns.every(f => f(v));
 
 // What each vendor's product page should give (checked 2026-11-04).
 const VENDORS = [
@@ -59,7 +63,10 @@ const VENDORS = [
     }),
     afterChange: { model: "CST776EF#51", color: "Ebony", ...anyPrice } },
   { key: "brizo", url: "https://www.brizo.com/bath/product/T66T030-PC",
-    expect: { model: "T66T030-PC", color: "Polished Chrome", collDesc: v => v.toLowerCase().includes("virage"), type: "SHOWER SYSTEM - VALVE TRIM", ...anyPrice } },
+    // expect: { model: "T66T030-PC", color: "Polished Chrome", collDesc: v => v.toLowerCase().includes("virage"), type: "SHOWER SYSTEM - VALVE TRIM", ...anyPrice } },
+    // 1.5.6 (sweep 2): the page shows the trim with its rough valve R35000-WS ($952 + $499): two lines.
+    expect: { parts: all(models("T66T030-PC", "R35000-WS"), ps => ps[0].color === "Polished Chrome" && ps[0].collDesc.toLowerCase().includes("virage") &&
+      ps[0].type === "SHOWER SYSTEM - VALVE TRIM" && ps[1].type === "SHOWER SYSTEM - VALVE ROUGH"), totalWarning: false } },
   { key: "topknobs", url: "https://www.topknobs.com/barrow-knob.html?finish_tk=13603",
     expect: { model: "TK1050BSN", color: "Brushed Satin Nickel", type: "KNOBS", ...anyPrice } },
   { key: "richelieu", url: "https://www.richelieu.com/us/en/category/decorative-hardware/cabinet-hardware-pulls-and-knobs/pulls/contemporary-metal-pull-5632/1166124/sku-BP56325128195",
@@ -234,6 +241,79 @@ const VENDORS = [
       [["NHZ148-25-40-75", "SHOWER DOOR"], ["NH-CONVKIT-11-MX", "MISCELLANEOUS"], ["ATAS2-3648", "SHOWER BASE"], ["DRAINABS-33", "MISCELLANEOUS"]]
         .every(([m, t], i) => ps[i].model === m && ps[i].type === t && !!ps[i].color && Number(ps[i].price) > 0 && !!ps[i].collDesc),
       totalWarning: false, button: "Add 4 items to quote" } },
+  // 1.5.6 (Gib 11/6: "We need to be vigorous in our testing"; sweep 2 found kits on most vendors and changes made on the
+  // page that the panel did not follow). Each case clicks what a customer clicks, with the panel open.
+  { key: "brizo-kit", url: "https://www.brizo.com/bath/product/T60267-PCLHP--HL6067-PC--R60000-UNWS", settle: 7000,
+    expect: { parts: all(models("T60267-PCLHP", "HL6067-PC", "R60000-UNWS"), ps => ps[2].type === "SHOWER SYSTEM - VALVE ROUGH"), totalWarning: false } },
+  { key: "brizo-rough", url: "https://www.brizo.com/bath/product/T60405-PC", settle: 7000,
+    expect: { parts: models("T60405-PC", /^R60000-/), totalWarning: false },
+    change: async page => page.evaluate(() => [...document.querySelectorAll(".part-products[data-target=Rough_Valve_PAS]")].find(p => p.getAttribute("data-modalno") === "R60000-UNBX").click()),
+    afterChange: { parts: models("T60405-PC", "R60000-UNBX"), totalWarning: false } },
+  { key: "brizo-5ltr", url: "https://www.brizo.com/bath/product/694767-BNXBL", settle: 7000,
+    expect: { model: "694767-BNXBL", manual: false, ...anyPrice } }, // was a blank panel (an address part of 5+ letters)
+  { key: "kohler-kit", url: "https://www.kohler.com/en/products/showers/shop-shower-heads/statement-bndl-k0059?skuId=BNDL-K0059", settle: 9000,
+    expect: { parts: models(/^26290-/, /^26318-/), totalWarning: false },
+    change: async page => page.evaluate(() => document.querySelector('#finish-type-list input[aria-label="Vibrant Titanium"]').click()),
+    afterChange: { parts: models("26290-TT", "26318-TT"), totalWarning: false } },
+  { key: "delta-kit", url: "https://www.deltafaucet.com/bathroom/product/FVS6-LI0201.html", settle: 7000,
+    expect: { parts: ps => ps.length === 6, totalWarning: false },
+    change: async page => page.evaluate(() => [...document.querySelectorAll("button.product-attribute__swatch")].find(s => /Matte Black/i.test(s.title || "")).click()),
+    afterChange: { parts: ps => ps.length === 6 && ps.every(p => /BL/.test(p.model)), totalWarning: false } },
+  { key: "delta-reclick", url: "https://www.deltafaucet.com/kitchen/product/9190TL-DST.html", settle: 6000,
+    expect: { model: "9190TL-DST", ...anyPrice },
+    change: async page => page.evaluate(() => document.querySelector("button.product-attribute__swatch.selected").click()),
+    afterChange: { model: "", manual: true } }, // the page shows "Master-9190TL-DST" with no finish picked
+  { key: "grohe-rough", url: "https://www.grohe.us/products/dual-function-thermostatic-valve-trim-9?variant=51098896630073", settle: 7000,
+    expect: { parts: all(models("29137000", "35601000"), ps => ps[1].type === "ROUGH") } },
+  { key: "toto-addon", url: "https://www.totousa.com/nexus-two-piece-toilet-128-gpf-elongated-bowl", settle: 6000,
+    expect: { model: /^MS442124CEFG/, ...anyPrice },
+    change: async page => page.evaluate(() => [...document.querySelectorAll("fieldset.extras label[for]")].find(l => /14″/.test(l.textContent)).click()),
+    afterChange: { parts: models(/^MS442124CEFG/, "TSU10W.14R"), totalWarning: false } },
+  { key: "toto-note", url: "https://www.totousa.com/gb-freestanding-tub-filler", settle: 6000, expect: { note: /TBN01105U/ } },
+  { key: "flusso-note", url: "https://www.flussofaucets.com/products/2404201TSB-trim-for-34-thermostatic-valve-use-with-tvh4201", settle: 6000,
+    expect: { note: /TVH\.4201/, type: "TUB / SHOWER FAUCET" } },
+  { key: "bain-kit", url: "https://www.bainultra.com/products/amma-6030", settle: 9000,
+    expect: { parts: models(/^BAMBRA0/, /^BOVER/), totalWarning: false },
+    change: async page => page.evaluate(() => document.querySelector("article.bu-configurator__option-card[data-option-sku=BDRCB] button").click()),
+    afterChange: { parts: ps => ps.length === 3 && ps[2].model === "BDRCB", totalWarning: false } },
+  { key: "sofia-kit", url: "http://shop.sofiamedicinecabinets.com/artemis-collection-cabinets.php?h=30&d=d1",
+    prepare: async page => {
+      await page.selectOption("select[name=model_number]", "ART 1530 1D");
+      await page.waitForTimeout(1500);
+      await page.selectOption("select[name=depth]", "5 3/16 DEPTH");
+      await page.waitForTimeout(1500);
+      for (const sel of ["input[name=ls][value='3/4 Bevel']", "input[name=interior_design][value=White]", "input[name='LGT-30']"]) {
+        await page.evaluate(s => document.querySelector(s).click(), sel);
+        await page.waitForTimeout(1200);
+      }
+    },
+    expect: { parts: all(models("ART 1530 1D-1", "LGT-30"), ps => ps[1].type === "LIGHT") },
+    change: async page => page.evaluate(() => document.querySelector("input[name=msk]").click()),
+    afterChange: { parts: ps => ps.some(p => p.model === "MSK 4-30" && p.type === "SURFACE MOUNT SIDE KIT") } },
+  { key: "boos-addon", url: "https://www.johnboos.com/products/aa-maple-butcher-block-with-16-thick-end-grain-top", settle: 6000,
+    expect: { model: "AA01", ...anyPrice },
+    change: async page => page.evaluate(() => document.querySelector("#product-add-on-checkbox").click()),
+    afterChange: { parts: models("AA01", "MYSCRMAPP"), totalWarning: false } },
+  { key: "fleurco-tub", url: "https://fleurco.com/bathtubs/tonnetz-petite", settle: 6000,
+    prepare: async page => {
+      await page.evaluate(() => jQuery(document.getElementById("drpDrain1")).val("19").change());
+      await page.waitForTimeout(1800);
+      await page.evaluate(() => { const r = document.querySelector('input[name="rdoDrainCover"][value="TUBDRAINCOVER-33"]'); if (r) (r.closest("label") || r).click(); });
+      await page.waitForTimeout(1800);
+    },
+    expect: { parts: ps => ps.length >= 2 && ps[0].type === "BATH TUB" && ps.every(p => Number(p.price) > 0), totalWarning: false } },
+  { key: "cm-notmade", url: "https://craftandmain.com/collections/all-shower-doors-1/products/craft-main%C2%AE-marina%C2%AE-frameless-hinged-shower-door", settle: 6000,
+    expect: { model: /^MRHG\d+-CL-BN$/ },
+    change: async page => page.evaluate(() => { const r = document.querySelector('input[name="Glass"][value="Grid"]'); (r.closest("label") || r).click(); }),
+    afterChange: { model: "", manual: true } }, // Grid glass is made in Matte Black only
+  { key: "sb-line", url: "https://strategicbrandsincorporated.com/86514/128mm-kensington-pull-polished-nickel", settle: 6000,
+    expect: { line: /laurey/i, color: "Polished Nickel" } },
+  { key: "sb-orb", url: "https://strategicbrandsincorporated.com/59907/10-pc-item-54666-1-3-8-hollow-steel-knob-orb-value-pack", settle: 6000,
+    expect: { color: "Oil Rubbed Bronze" } },
+  { key: "franke-code", url: "https://www.franke.com/us/en/home-solutions/products/kitchen-faucets/product-detail-page.html/115.0740.013.html", settle: 6000,
+    expect: { model: /^LAR-PD-[A-Z]+$/, type: "KITCHEN FAUCET" } },
+  { key: "elkay-kit", url: "https://www.elkay.com/products/sinks/collections/kits/ectru30179rtc", settle: 6000,
+    expect: { model: "ECTRU30179RTC", type: "KITCHEN SINK", ...anyPrice } },
   { key: "avance", url: "https://www.avancecabinetry.com/cabinetry/benton/benton-bourbon",
     expect: { model: "", manual: true, lineShown: false } }, // one Avance line since 11/5 (Avance Cabinetry is no longer special-order)
 ];
@@ -278,6 +358,9 @@ async function readPanel(page) {
     })),
     totalWarning: await p.locator(".kit-total-hint").isVisible(),
     button: (await p.locator(".add").innerText()).trim(),
+    // 1.5.6: the kit or "sold separately" note, and the chosen product line.
+    note: (await p.locator(".kit-hint").isVisible()) ? (await p.locator(".kit-hint").innerText()).trim() : "",
+    line: await p.locator(".line").evaluate(s => (s.value && s.selectedOptions[0] ? s.selectedOptions[0].textContent : "")),
   };
 }
 
