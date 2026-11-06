@@ -46,6 +46,22 @@ test("signed in: the labeled list price is the one QuickAdd gets; our cost never
   assert.equal(parseRichelieuPage(signedIn(`<span>Retail price:</span> $1,012.50`)).listPrice, 1012.5);
 });
 
+test("11/6, real account markup: the account price is the 1-unit price break (our cost); no list price on the page", () => {
+  const html = `<div class="pms-ImagePriceBox"><div class="name">Modern Metal Pull - 4085</div> Product # <strong>4085750219415</strong>
+    <a><img>Order history</a><div class="pms-PriceBlock count2"><ul>
+    <li class="pms-PriceBlock_Main" data-min="1" data-max="9"><div class="pms-PriceBlock_Breaks"><div class="pms-PriceBlock_BreaksPrice">$173.49</div></div></li>
+    <li class="pms-PriceBlock_Main" data-min="10" data-max="9223372036854775807"><div class="pms-PriceBlock_Breaks"><div class="pms-PriceBlock_BreaksPrice">$165.00</div></div></li>
+    </ul></div><div class="pms-AddCartBlocTopPrixEtAutres"><div class="pms-AddCartBlocTop_UnitPrice ">$173.49</div></div><button>ADD TO CART</button></div>`;
+  const p = parseRichelieuPage(html, "4085750219415");
+  assert.equal(p.signedOut, false);
+  assert.equal(p.listPrice, null);
+  assert.equal(p.accountPrice, 173.49);
+  // Only the cart's unit price.
+  assert.equal(parseRichelieuPage(`<div class="pms-AddCartBlocTop_UnitPrice">$1,012.50</div>`).accountPrice, 1012.5);
+  // Signed out: none.
+  assert.equal(parseRichelieuPage(SIGNED_OUT).accountPrice, null);
+});
+
 test("a CAPTCHA widget or a verification code at sign-in stops it", () => {
   assert.match(humanCheck(`<div class="g-recaptcha" data-sitekey="abc"></div>`), /CAPTCHA/);
   assert.match(humanCheck(`<script src="https://www.google.com/recaptcha/api.js"></script>`), /CAPTCHA/);

@@ -8,6 +8,8 @@ import {
 // Vendor prices for QuickAdd (11/6/2026): Richelieu's price for the product page a rep has open, read on the server
 // with Consumers' shared Richelieu account (lib/richelieu.ts). Signed-in employees only. Only the list price leaves
 // the server: the QuickAdd panel can be in front of a customer.
+// 11/6: Gib chose to fill Consumers' own Richelieu price (our cost) when there is no list price ("Yes, fill our
+// cost"), knowing the panel can be in front of a customer and the Quote List takes it as the list price.
 const router: IRouter = Router();
 router.use("/vendor-price", requireEmployee);
 
@@ -44,9 +46,16 @@ router.get("/vendor-price/richelieu", async (req, res): Promise<void> => {
   if (overLimit(String(res.locals.employeeId))) { res.status(429).json({ error: "Too many Richelieu price lookups this hour." }); return; }
   try {
     const page = await richelieu.page(path);
+    // res.json({
+    //   ok: true, listPrice: page.listPrice, currency: path.startsWith("/ca/") ? "CAD" : "USD",
+    //   sku: page.sku, cached: page.cached, checkedAt: page.checkedAt,
+    // });
+    // 11/6 (Gib, "Yes, fill our cost"): Richelieu shows the account no list price, so SmartAdd fills Consumers' own
+    // Richelieu price (our cost). A list price, if Richelieu ever labels one, still comes first.
+    const price = page.listPrice ?? page.accountPrice;
     res.json({
-      ok: true, listPrice: page.listPrice, currency: path.startsWith("/ca/") ? "CAD" : "USD",
-      sku: page.sku, cached: page.cached, checkedAt: page.checkedAt,
+      ok: true, listPrice: page.listPrice, price, priceKind: page.listPrice != null ? "list" : price != null ? "account" : null,
+      currency: path.startsWith("/ca/") ? "CAD" : "USD", sku: page.sku, cached: page.cached, checkedAt: page.checkedAt,
     });
   } catch (err) {
     const f = failure(err);

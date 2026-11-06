@@ -93,7 +93,26 @@ export interface RichelieuPagePrices {
   analyticsPrice: number | null;
   // The amount labeled as a list / retail price, if the page shows one. The only price QuickAdd gets.
   listPrice: number | null;
+  // 11/6 (Gib, "Yes, fill our cost"): Consumers' own price on Richelieu for one unit, the price block's first
+  // quantity break (data-min="1"), else the cart's unit price. Richelieu shows no list price to the account.
+  accountPrice: number | null;
   boxText: string;
+}
+
+// The signed-in price block (11/6, real account): <li class="pms-PriceBlock_Main" data-min="1" data-max="...">
+// <div class="pms-PriceBlock_Breaks"><div class="pms-PriceBlock_BreaksPrice">$11.23</div>, and the cart's
+// <div class="pms-AddCartBlocTop_UnitPrice">$11.23</div>.
+function accountPriceOf(html: string): number | null {
+  const amount = (s: string | undefined) => {
+    const m = /\$\s*(\d{1,3}(?:,\d{3})+(?:\.\d{1,4})?|\d+(?:\.\d{1,4})?)|(\d{1,3}(?:[  ]\d{3})*,\d{2,4}|\d+,\d{2,4})\s*\$/.exec(decode(String(s || "").replace(/<[^>]+>/g, " ")));
+    if (!m) return null;
+    const n = m[1] ? Number(m[1].replace(/,/g, "")) : Number(m[2].replace(/[  ]/g, "").replace(",", "."));
+    return Number.isFinite(n) && n > 0 ? n : null;
+  };
+  const first = /class="pms-PriceBlock_Main[^"]*"[^>]*\bdata-min="1"[^>]*>([\s\S]{0,1500}?)<\/li>/i.exec(html);
+  const fromBreak = first && /class="pms-PriceBlock_BreaksPrice[^"]*"[^>]*>([\s\S]{0,300}?)<\/div>/i.exec(first[1]);
+  const fromCart = /class="pms-AddCartBlocTop_UnitPrice[^"]*"[^>]*>([\s\S]{0,300}?)<\/div>/i.exec(html);
+  return amount(fromBreak ? fromBreak[1] : undefined) ?? amount(fromCart ? fromCart[1] : undefined);
 }
 
 export function parseRichelieuPage(html: string, sku: string | null = null): RichelieuPagePrices {
@@ -128,7 +147,8 @@ export function parseRichelieuPage(html: string, sku: string | null = null): Ric
   const ga = /gaEvent\('view_item',\s*JSON\.parse\(`[^`]*?"price":\s*([\d.]+)/.exec(html);
   const analyticsPrice = ga ? Number(ga[1]) : null;
   const list = prices.find(p => LIST_LABEL.test(p.label) && !NOT_LIST_LABEL.test(p.label));
-  return { signedOut, sku, prices, analyticsPrice, listPrice: list ? list.amount : null, boxText: box };
+  // return { signedOut, sku, prices, analyticsPrice, listPrice: list ? list.amount : null, boxText: box };
+  return { signedOut, sku, prices, analyticsPrice, listPrice: list ? list.amount : null, accountPrice: signedOut ? null : accountPriceOf(html), boxText: box };
 }
 
 // Admins, while setting up (11/6): the signed-in page's price markup, to tell which amount is the list price. Every
