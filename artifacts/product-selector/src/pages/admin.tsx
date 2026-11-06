@@ -750,6 +750,10 @@ export default function AdminPage() {
       </div>
 
       <div className="space-y-6">
+        <LogoSection employeeId={employee.id} />
+        <HeroImageSection employeeId={employee.id} />
+        <AdminIssuesSection />
+        <SyncSection employeeName={`${employee.firstName} ${employee.lastName}`} />
         <Link
           href="/admin/analytics"
           className="block bg-white rounded-xl border border-gray-200 p-6 hover:border-amber-300 hover:bg-amber-50/30 transition-colors"
@@ -759,11 +763,6 @@ export default function AdminPage() {
             <ChevronRight size={18} className="text-gray-400" />
           </div>
         </Link>
-        <SyncSection employeeName={`${employee.firstName} ${employee.lastName}`} />
-        <LogoSection employeeId={employee.id} />
-        <HeroImageSection employeeId={employee.id} />
-        <AdminIssuesSection />
-
       </div>
     </div>
   );
