@@ -5,7 +5,7 @@
     "eyebrow": "Consumers Kitchen & Bath · Product Selector guide",
     "title": "From a product on a vendor's website to a priced special-order line on the estimate",
     "lede": "Where each step happens: on the vendor's own website with the customer, in the Consumers QuickAdd browser extension (Edge or Chrome), in the Product Selector on the sales PC, and in NetSuite. Click any numbered box to read its exact buttons.",
-    "meta": "Mapped from the code on 11/5/2026: Product Selector Special Order page, Quote List and the Consumers QuickAdd extension 1.5.3 (1.5.4 on 11/6: newest copy wins)."
+    "meta": "Mapped from the code on 11/5/2026: Product Selector Special Order page, Quote List and the Consumers QuickAdd extension 1.5.3 (1.5.4 on 11/6: newest copy wins; 1.5.5: kits split into parts, Flusso finish squares)."
   },
   "lanes": {
     "VS": {
@@ -179,7 +179,7 @@
           "kind": "decision",
           "lane": "VS",
           "label": "QuickAdd read the item from the page?",
-          "detail": "The Add to CPS Quote List button shows at the bottom right on every page of a product line's vendor site, and reads the page again on each click. On a product page QuickAdd fills in the model, name and usually the price: from the page's product data, or from the model and price printed next to the product name. On Fleurco it reads the model and total once every configurator choice is made."
+          "detail": "The Add to CPS Quote List button shows at the bottom right on every page of a product line's vendor site, and reads the page again on each click. On a product page QuickAdd fills in the model, name and usually the price: from the page's product data, or from the model and price printed next to the product name. On Fleurco it reads the model and total once every configurator choice is made; a build of several items (a door with a base, drain or Mix & Match Kit) is split into its parts, each at its own price (1.5.5)."
         },
         {
           "id": "l_hand",
@@ -199,7 +199,7 @@
           "kind": "action",
           "lane": "VS",
           "label": "Check Type, model, finish, Coll/Desc, quantity; click Add to quote",
-          "detail": "Choose the Option (color or finish) if the page does not say; picking another finish on the page greys the panel out with an Updating... spinner until it shows the new finish. Check the Type (the best fit is preselected), Model, Color / finish, Collection / Description (one field, as NetSuite's Coll/Desc), Price on this site and Quantity, then click Add to quote. Some sites show no price (Elkay, Franke, Richelieu, Strategic Brands); the rep enters the list price."
+          "detail": "Choose the Option (color or finish) if the page does not say; picking another finish on the page greys the panel out with an Updating... spinner until it shows the new finish. Check the Type (the best fit is preselected), Model, Color / finish, Collection / Description (one field, as NetSuite's Coll/Desc), Price on this site and Quantity, then click Add to quote. Some sites show no price (Elkay, Franke, Richelieu, Strategic Brands); the rep enters the list price. A Fleurco kit shows one block per part and Add 4 items to quote puts each part on the Quote List as its own line."
         },
         {
           "id": "a_wait",
@@ -472,5 +472,5 @@
     "When a vendor's website changes, update the product line's website on its PRD page in NetSuite; QuickAdd follows the next time the Product Selector is open.",
     "A vendor site can show a sale price. The list price is what counts, so always check it before Add to List."
   ],
-  "footer": "Vendor site special orders · Mapped from the code (Product Selector Special Order page and Quote List, Consumers QuickAdd extension 1.5.3) on 11/5/2026, extension 1.5.4 on 11/6."
+  "footer": "Vendor site special orders · Mapped from the code (Product Selector Special Order page and Quote List, Consumers QuickAdd extension 1.5.3) on 11/5/2026, extension 1.5.5 on 11/6."
 }

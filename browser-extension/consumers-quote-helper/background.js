@@ -181,6 +181,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         await broadcastPicks(next);
         return sendResponse({ ok: true, count: next.length });
       }
+      // 1.5.5 (Gib 11/6): a kit's parts (Fleurco's door, base, drain and Mix & Match Kit), one pick each, stored together
+      // so none is left out.
+      case "add-picks": {
+        const host = (() => { try { return new URL(sender.url || sender.tab.url).hostname; } catch { return ""; } })();
+        if (!vendorDomains.includes(registrableDomain(host)) || !Array.isArray(message.picks)) return sendResponse({ ok: false });
+        const kit = message.picks.slice(0, 20).map(raw => cleanPick(raw || {}, sender));
+        if (!kit.length || kit.some(p => !p.name && !p.model)) return sendResponse({ ok: false });
+        const next = [...picks, ...kit].slice(-MAX_PICKS);
+        await chrome.storage.local.set({ picks: next });
+        await broadcastPicks(next);
+        return sendResponse({ ok: true, count: next.length, added: kit.length });
+      }
       case "pick-count":
         return sendResponse({ count: picks.length });
       case "site-info": {
