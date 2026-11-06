@@ -88,7 +88,9 @@ function SpecialOrderRow({ item, prices, pricingFallback, editing, onEdit, onRem
           <dt className="text-gray-400">Type</dt><dd className="text-gray-700" data-testid={`text-so-type-${id}`}>{so.typeName || needed}</dd>
           <dt className="text-gray-400">Model</dt><dd className="text-gray-700 break-words" data-testid={`text-so-model-${id}`}>{so.model || needed}</dd>
           <dt className="text-gray-400">Color</dt><dd className="text-gray-700 break-words" data-testid={`text-so-color-${id}`}>{so.color || needed}</dd>
-          <dt className="text-gray-400">Collection</dt><dd className="text-gray-700 break-words whitespace-pre-line" data-testid={`text-so-description-${id}`}>{so.description || needed}</dd>
+          {/* 2026-11-06 (Gib): labeled "Coll/Desc" as in NetSuite. Was:
+          <dt className="text-gray-400">Collection</dt> */}
+          <dt className="text-gray-400">Coll/Desc</dt><dd className="text-gray-700 break-words whitespace-pre-line" data-testid={`text-so-description-${id}`}>{so.description || needed}</dd>
         </dl>
         {pick && (
           <p className="mt-1 text-[11px] text-gray-400">

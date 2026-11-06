@@ -265,7 +265,8 @@ export function missingDetails(item: { specialOrder?: SpecialOrderDetails; vendo
   if (!so.typeId) out.push("Type");
   if (!so.model.trim()) out.push("Model");
   if (!so.color.trim()) out.push("Color");
-  if (!so.description.trim()) out.push("Description");
+  // if (!so.description.trim()) out.push("Description");
+  if (!so.description.trim()) out.push("Coll/Desc"); // 11/6: the row's label, as in NetSuite
   if (item.vendorPick?.priceMissing) out.push("List price");
   return out;
 }
