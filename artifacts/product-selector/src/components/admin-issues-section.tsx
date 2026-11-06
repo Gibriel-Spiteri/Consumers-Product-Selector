@@ -74,7 +74,7 @@ function IssueScreenshot({ issue }: { issue: AdminIssue }) {
     return (
       <div className="flex items-start gap-2 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-3 text-xs text-gray-500" data-testid={`text-screenshot-missing-${issue.id}`}>
         <ImageOff size={14} className="mt-0.5 shrink-0 text-gray-400" />
-        <span>No screenshot{issue.captureError ? `. Capture failed: ${issue.captureError}` : "."}</span>
+        <span>{issue.captureError || "No screenshot."}</span>
       </div>
     );
   }

@@ -4,6 +4,7 @@ import { startScheduledSync, stopScheduledSync, loadPersistedSchedule } from "./
 import { loadPersistedSyncResult } from "./lib/syncService";
 import { startAnalyticsPurgeJob, stopAnalyticsPurgeJob } from "./lib/analyticsPurge";
 import { startUserImagePurgeJob, stopUserImagePurgeJob } from "./lib/userImagePurge";
+import { startIssueScreenshotPurgeJob, stopIssueScreenshotPurgeJob } from "./lib/issue-screenshot-purge";
 
 const rawPort = process.env["PORT"];
 
@@ -33,12 +34,14 @@ app.listen(port, (err) => {
   });
   startAnalyticsPurgeJob();
   startUserImagePurgeJob();
+  startIssueScreenshotPurgeJob();
 
   const shutdown = () => {
     logger.info("Shutting down gracefully");
     stopScheduledSync();
     stopAnalyticsPurgeJob();
     stopUserImagePurgeJob();
+    stopIssueScreenshotPurgeJob();
     process.exit(0);
   };
   process.on("SIGTERM", shutdown);

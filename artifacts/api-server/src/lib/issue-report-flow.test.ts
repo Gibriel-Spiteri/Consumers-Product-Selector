@@ -5,6 +5,7 @@ import vm from "node:vm";
 import ts from "typescript";
 import * as schemas from "@workspace/api-zod";
 import * as privacy from "./issue-diagnostics";
+import * as retention from "./issue-retention";
 
 // Run real route handlers with an in-memory store and a fake NetSuite writer.
 // No live employee sessions, storage objects or NetSuite cases are created.
@@ -63,6 +64,8 @@ function harness() {
     "../lib/objectStorage": { ObjectStorageService: class {} },
     "../lib/issue-reports": services,
     "../lib/issue-diagnostics": privacy,
+    "../lib/issue-retention": retention,
+    "../lib/issue-screenshot-purge": { checkIssueScreenshotRetention: async () => {} },
   };
   const source = readFileSync(new URL("../routes/issues.ts", import.meta.url), "utf8");
   const compiled = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;

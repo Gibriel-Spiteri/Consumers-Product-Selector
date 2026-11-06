@@ -14,3 +14,9 @@ Only cases sent through Consumers Product Selector belong in the Admin section, 
 **Why:** The user explicitly clarified that the Admin section is limited to Consumers Product Selector submissions.
 
 **How to apply:** Use the app's own report history as the source of the list; read NetSuite only to retrieve case numbers and statuses for those reports. Do not import unrelated cases.
+
+Include the CPS Admin page URL in new NetSuite case information. Delete report screenshots after 12 months from the report creation date; retain the report and other diagnostics.
+
+**Why:** The user requested a direct Admin link in case information and a 12-month image retention limit.
+
+**How to apply:** Apply retention to existing and new report images, not only closed cases. Do not delete the NetSuite case or the CPS report record.

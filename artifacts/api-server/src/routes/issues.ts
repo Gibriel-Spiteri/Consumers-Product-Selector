@@ -8,6 +8,8 @@ import { isNetSuiteConfigured } from "../lib/netsuite";
 import { ObjectStorageService } from "../lib/objectStorage";
 import { createReportedCase, findEmployeeReport, issueTotal, listIssuePage, refreshIssueCaseStatuses } from "../lib/issue-reports";
 import { redactDiagnosticText, safeReportUrl } from "../lib/issue-diagnostics";
+import { issueScreenshotExpired, ISSUE_SCREENSHOT_EXPIRED } from "../lib/issue-retention";
+import { checkIssueScreenshotRetention } from "../lib/issue-screenshot-purge";
 
 const router: IRouter = Router();
 const storage = new ObjectStorageService();
@@ -107,6 +109,8 @@ router.post("/cases", requireEmployee, async (req, res): Promise<void> => {
 
 router.use("/admin/issues", requireEmployee, requireIssueAdmin);
 router.get("/admin/issues", async (req, res): Promise<void> => {
+  // Also catch up after autoscale idle periods, without blocking admin requests.
+  void checkIssueScreenshotRetention();
   const page = req.query.page == null ? 1 : Number(req.query.page);
   if (!Number.isSafeInteger(page) || page < 1 || page > 100000) { res.status(400).json({ error: "Invalid page." }); return; }
   try {
@@ -117,7 +121,8 @@ router.get("/admin/issues", async (req, res): Promise<void> => {
     res.json(GetAdminIssuesResponse.parse({
       items: rows.map(({ employeeId: _employeeId, screenshotPath, createdAt, statusCheckedAt, ...row }) => ({
         ...row, createdAt: createdAt.toISOString(), statusCheckedAt: statusCheckedAt?.toISOString() ?? null,
-        screenshotUrl: screenshotPath ? `/api/admin/issues/${row.id}/screenshot` : null,
+        captureError: screenshotPath && issueScreenshotExpired(createdAt) ? ISSUE_SCREENSHOT_EXPIRED : row.captureError,
+        screenshotUrl: screenshotPath && !issueScreenshotExpired(createdAt) ? `/api/admin/issues/${row.id}/screenshot` : null,
       })),
       total: await issueTotal(), page, pageSize: 20, statusSyncError,
     }));
@@ -130,8 +135,12 @@ router.get("/admin/issues", async (req, res): Promise<void> => {
 router.get("/admin/issues/:id/screenshot", async (req, res): Promise<void> => {
   try {
     const id = String(req.params.id);
-    const [report] = await db.select({ path: issueReportsTable.screenshotPath }).from(issueReportsTable).where(eq(issueReportsTable.id, id)).limit(1);
+    const [report] = await db.select({ path: issueReportsTable.screenshotPath, createdAt: issueReportsTable.createdAt }).from(issueReportsTable).where(eq(issueReportsTable.id, id)).limit(1);
     if (!report?.path) { res.status(404).json({ error: "Screenshot not available." }); return; }
+    if (issueScreenshotExpired(report.createdAt)) {
+      void checkIssueScreenshotRetention();
+      res.status(410).json({ error: ISSUE_SCREENSHOT_EXPIRED }); return;
+    }
     const file = await storage.getObjectEntityFile(report.path);
     res.setHeader("Cache-Control", "private, no-store");
     res.setHeader("Content-Type", "image/jpeg");

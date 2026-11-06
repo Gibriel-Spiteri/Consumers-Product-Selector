@@ -5,7 +5,7 @@ import { caseStatusFields } from "./issue-diagnostics";
 
 export async function createReportedCase(report: IssueReportRecord) {
   const departmentId = process.env.NETSUITE_INNOVATION_TECH_DEPT_ID?.trim() || "12";
-  const detail = `${report.detail}\n\nPage URL: ${report.pageUrl}\nReport reference: ${report.id}\nBrowser: ${report.browserInfo}\nScreenshot and filtered browser logs are available in Product Selector Admin → Issues & Bugs.`;
+  const detail = `${report.detail}\n\nPage URL: ${report.pageUrl}\nReport reference: ${report.id}\nBrowser: ${report.browserInfo}\nCPS Admin: https://consumersstore.com/admin\nScreenshot and filtered browser logs are available in Product Selector Admin → Issues & Bugs. Screenshots are retained for 12 months from the report creation date.`;
   const id = await netsuiteCreate("/supportCase", {
     externalId: `cps-issue-${report.id}`,
     title: report.subject,
