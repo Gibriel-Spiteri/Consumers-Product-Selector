@@ -12,6 +12,7 @@ import storageRouter from "./storage";
 import productImagesRouter from "./productImages";
 import quoteHelperRouter from "./quoteHelper";
 import issuesRouter from "./issues";
+import vendorPriceRouter from "./vendorPrice"; // 11/6: Richelieu prices for QuickAdd
 
 const router: IRouter = Router();
 
@@ -28,5 +29,6 @@ router.use(analyticsRouter);
 router.use(storageRouter);
 router.use(productImagesRouter);
 router.use(quoteHelperRouter);
+router.use(vendorPriceRouter);
 
 export default router;
