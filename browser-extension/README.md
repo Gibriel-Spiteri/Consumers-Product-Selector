@@ -187,6 +187,7 @@ After the first install, open the Product Selector once (signed in), so the exte
 
 - **Group Policy (since 1.5.1, no store):** the PCs are on the `WORKGROUP.com` domain, so Edge accepts an extension from our own server when Group Policy installs it. Sales staff do nothing, cannot remove it, and get each new version within hours. See the next section.
 - **By hand (testing, or a PC off the domain):** download it from the Product Selector and Load unpacked, as above. Edge may show a "developer mode extensions" reminder. To update, download again, extract over the folder and click **Reload** on `edge://extensions`.
+- **A PC off the domain, kept current (11/6, LAPTOP-CWC03):** `offdomain/Update-QuickAdd.ps1` (admin PowerShell, or a NinjaOne script running as SYSTEM) puts the newest version from the public update link in `C:\ProgramData\ConsumersQuickAdd\consumers-quickadd`, checking the package's SHA-256. Load unpacked that folder once. Run the script again (a daily NinjaOne schedule is simplest) and each new version is used at Edge's next restart; it does nothing when the PC already has the newest.
 - **Later, if needed:** a hidden listing on Microsoft Edge Add-ons works on PCs off the domain too. A store listing must not have `update_url` in `manifest.json`.
 
 ## Install on every PC with Group Policy
