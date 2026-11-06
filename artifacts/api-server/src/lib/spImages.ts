@@ -3,6 +3,7 @@ import { lookup } from "node:dns/promises";
 import net from "node:net";
 import { logger } from "./logger";
 import { netsuiteRestlet } from "./netsuite";
+import { cutoutProduct, modelPredict, type Predict } from "./spCutout";
 
 // Special-order pictures on the NetSuite printouts (Gib 2026-11-06: "We'd like to get the thumbnail from the special
 // items we grab from the product selector to make it to the estimate & sales order printouts").
@@ -10,7 +11,9 @@ import { netsuiteRestlet } from "./netsuite";
 // A pick from a vendor website carries the product picture's address (vendorPick.imageUrl). Vendor addresses change
 // and some sites refuse other sites' requests, so the printout never points at them. When the line is pushed:
 //   1. fetch the picture here (server side, so no browser CORS limits),
-//   2. shrink it to a 300 x 300 white-backed JPEG (a few KB; the printout draws it about an inch square),
+//   2. shrink it to a 300 x 300 white-backed JPEG (a few KB; the printout draws it about an inch square). A room or
+//      lifestyle shot first has the product cut out and cropped tight (spCutout.ts, Jim 11/6); a picture already on
+//      white, or one the cutout gets wrong, is cropped as it is,
 //   3. save it in the NetSuite File Cabinet through the SP Image Upload RESTlet (customscript_sp_image_upload, folder
 //      "* Documents : Special Order Images"; the name is a hash of the JPEG, so one picture is one file),
 //   4. write the file id to the line's custcol_sp_thumbnail (estimates.ts). It carries to the sales order.
@@ -110,22 +113,49 @@ function loadSharp(): Promise<SharpFn> {
   return sharpModule;
 }
 
-// A 300 x 300 JPEG on white: transparency flattened to white, the plain border around the product trimmed, the
-// product fitted inside a small margin. Works for anything sharp reads (JPEG, PNG, WebP, AVIF, GIF, SVG, TIFF).
-export async function makeThumbnail(source: Buffer): Promise<Buffer> {
+// How a thumbnail was made: "cutout" = product cut out of its background (spCutout.ts); "plain" = the picture was already
+// on white, so it is only cropped; "plain-fallback" = the cutout was refused or failed (reason), so it is only cropped.
+export type ThumbnailMethod = "cutout" | "plain" | "plain-fallback";
+export interface ThumbnailOptions { cutout?: boolean; predict?: Predict }
+
+// A 300 x 300 JPEG on white: transparency flattened to white, the product cut out of a room or tinted backdrop when the
+// cutout looks right, otherwise the plain border around it trimmed; the product fitted inside a small margin. Works
+// for anything sharp reads (JPEG, PNG, WebP, AVIF, GIF, SVG, TIFF).
+export async function makeThumbnailDetailed(source: Buffer, opts: ThumbnailOptions = {}): Promise<{ jpeg: Buffer; method: ThumbnailMethod; reason?: string }> {
   const sharp = await loadSharp();
   const inner = THUMB_PX - 2 * THUMB_MARGIN_PX;
+  let fitted: Buffer | null = null;
+  let method: ThumbnailMethod = "plain";
+  let reason: string | undefined;
+  // SP_CUTOUT=off turns the cutout off without a code change.
+  if (opts.cutout !== false && process.env.SP_CUTOUT !== "off") {
+    try {
+      const cut = await cutoutProduct(sharp, source, opts.predict ?? modelPredict(sharp));
+      if (cut.status === "cutout") {
+        fitted = await sharp(cut.image.data, { raw: { width: cut.image.width, height: cut.image.height, channels: 3 } })
+          .resize(inner, inner, { fit: "contain", background: "#ffffff" }).png().toBuffer();
+        method = "cutout";
+      } else if (cut.status === "rejected") {
+        method = "plain-fallback";
+        reason = cut.reason;
+      }
+    } catch (err: any) {
+      method = "plain-fallback";
+      reason = err?.message ?? String(err);
+    }
+  }
   const base = () => sharp(source, { failOn: "none", limitInputPixels: 50_000_000, animated: false })
     .rotate()
     .flatten({ background: "#ffffff" });
-  let fitted: Buffer;
-  try {
-    // trim: product photos usually sit in a wide white border, which would leave a tiny product in a small square.
-    const trimmed = await base().trim({ threshold: 12 }).toBuffer();
-    fitted = await sharp(trimmed).resize(inner, inner, { fit: "contain", background: "#ffffff" }).toBuffer();
-  } catch {
-    // trim refuses a picture that is all one colour; use it untrimmed.
-    fitted = await base().resize(inner, inner, { fit: "contain", background: "#ffffff" }).toBuffer();
+  if (!fitted) {
+    try {
+      // trim: product photos usually sit in a wide white border, which would leave a tiny product in a small square.
+      const trimmed = await base().trim({ threshold: 12 }).toBuffer();
+      fitted = await sharp(trimmed).resize(inner, inner, { fit: "contain", background: "#ffffff" }).toBuffer();
+    } catch {
+      // trim refuses a picture that is all one colour; use it untrimmed.
+      fitted = await base().resize(inner, inner, { fit: "contain", background: "#ffffff" }).toBuffer();
+    }
   }
   for (const quality of [82, 70, 55]) {
     const jpeg = await sharp(fitted)
@@ -133,9 +163,13 @@ export async function makeThumbnail(source: Buffer): Promise<Buffer> {
       .flatten({ background: "#ffffff" })
       .jpeg({ quality, mozjpeg: true })
       .toBuffer();
-    if (jpeg.length <= MAX_THUMB_BYTES) return jpeg;
+    if (jpeg.length <= MAX_THUMB_BYTES) return { jpeg, method, reason };
   }
   throw new SpImageError("thumbnail too large");
+}
+
+export async function makeThumbnail(source: Buffer, opts: ThumbnailOptions = {}): Promise<Buffer> {
+  return (await makeThumbnailDetailed(source, opts)).jpeg;
 }
 
 // File name = a hash of the JPEG, so the same picture pushed onto many estimates is one File Cabinet file.
@@ -144,7 +178,10 @@ export function thumbnailName(jpeg: Buffer): string {
 }
 
 export async function prepareThumbnail(imageUrl: string): Promise<Buffer> {
-  return makeThumbnail(await fetchVendorImage(imageUrl));
+  const started = Date.now();
+  const { jpeg, method, reason } = await makeThumbnailDetailed(await fetchVendorImage(imageUrl));
+  logger.info({ imageUrl, method, reason, ms: Date.now() - started, bytes: jpeg.length }, "Special-order picture prepared");
+  return jpeg;
 }
 
 // Save the JPEG in NetSuite; returns the File Cabinet id.
