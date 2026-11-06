@@ -38,7 +38,7 @@ export default function SpecialOrderCategories({ categories, selected, onSelect 
         {Array.from(groups).sort(([a], [b]) => a.localeCompare(b)).map(([group, entries]) => (
           <fieldset key={group} className="min-w-0 rounded-xl border border-gray-200 bg-gray-50/70 p-3">
             <legend className="px-1 text-[13px] font-bold uppercase tracking-widest text-gray-500">{group}</legend>
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               {entries.sort((a, b) => a.label.localeCompare(b.label)).map(category => {
                 const active = selected === category.id;
                 return (
@@ -50,7 +50,7 @@ export default function SpecialOrderCategories({ categories, selected, onSelect 
                     aria-pressed={active}
                     onClick={() => onSelect(category.id)}
                     className={cn(
-                      "w-full min-h-11 flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-[15px] leading-5 font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7B4DA8] focus-visible:ring-offset-2",
+                      "w-full min-h-8 flex items-center justify-between gap-2 rounded-lg border px-3 py-1 text-left text-[15px] leading-5 font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7B4DA8] focus-visible:ring-offset-2",
                       active ? "border-[#7B4DA8] bg-[#7B4DA8] text-white shadow-sm" : "border-transparent text-gray-700 hover:border-purple-200 hover:bg-white"
                     )}
                   >
