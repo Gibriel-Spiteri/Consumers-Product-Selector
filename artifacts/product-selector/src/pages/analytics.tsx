@@ -110,7 +110,8 @@ const EVENT_TYPE_LABEL: Record<string, string> = {
   add_to_list: "Add to List",
   push_to_estimate: "Sent to Estimate",
   vendor_site_visit: "Vendor Site Opened",
-  quickadd_capture: "QuickAdd Capture",
+  // quickadd_capture: "QuickAdd Capture",
+  quickadd_capture: "SmartAdd Capture", // 11/6: Consumers SmartAdd (was QuickAdd)
 };
 
 const EVENT_TYPE_COLOR: Record<string, string> = {
@@ -861,13 +862,13 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
               <div className="text-[10px] text-sky-700/70 mt-0.5">Vendor sites opened from CPS links · view sites and people</div>
             </button>
             <button type="button" data-testid="metric-quickadd_capture" onClick={() => setDrilldown("quickadd_capture")} className="text-left bg-violet-50 rounded-lg px-4 py-3 ring-1 ring-transparent hover:ring-violet-300 transition">
-              <div className="text-xs uppercase tracking-wide text-violet-700 font-semibold">QuickAdd Captures</div>
+              <div className="text-xs uppercase tracking-wide text-violet-700 font-semibold">SmartAdd Captures</div>
               <div className="text-xl font-bold text-gray-900">{(data.totals.quickaddCaptures ?? 0).toLocaleString()}</div>
               <div className="text-[10px] text-violet-700/70 mt-0.5">Captured by the browser extension · view sites and people</div>
             </button>
           </div>
           <p className="text-[11px] text-gray-400 -mt-3">
-            Site visits and QuickAdd captures are tracked starting with this update; earlier activity is not available. Counts are actions, not distinct users or estimates.
+            Site visits and SmartAdd captures are tracked starting with this update; earlier activity is not available. Counts are actions, not distinct users or estimates.
           </p>
 
           <div>

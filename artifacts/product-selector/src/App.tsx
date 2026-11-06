@@ -87,6 +87,8 @@ function App() {
                   <Route path="/list" component={QuoteListPage} />
                   <Route path="/special-order" component={SpecialOrderPage} />
                   <Route path="/quote-helper" component={QuoteHelperPage} />
+            {/* 11/6: the extension is Consumers SmartAdd; the old address keeps working. */}
+            <Route path="/smartadd" component={QuoteHelperPage} />
                   <Route path="/admin/analytics" component={AnalyticsPage} />
                   <Route path="/admin" component={AdminPage} />
                   <Route component={NotFound} />

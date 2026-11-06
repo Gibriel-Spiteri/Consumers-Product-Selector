@@ -378,11 +378,11 @@ test("1.5.9: Report an Issue sends what the site's window sends (Issue, Detail),
     parts: [{ model: "R35000-WS", type: "SHOWER SYSTEM - VALVE ROUGH", price: "499" }] });
   // The Issue is the case title as typed; the Detail comes first, as typed.
   assert.equal(r.subject, "The color is wrong");
-  assert.ok(r.detail.startsWith("It says Cotton\nThe page shows Polished Chrome\n\nSent from the Consumers QuickAdd panel.\n"));
+  assert.ok(r.detail.startsWith("It says Cotton\nThe page shows Polished Chrome\n\nSent from the Consumers SmartAdd panel.\n")); // 1.5.10: renamed
   assert.equal(r.pageUrl, "https://www.us.kohler.com/x?skuId=23484-4-CP");
-  // The site's browser line ("<user agent> | viewport <w>x<h>") with the QuickAdd version after it.
-  assert.equal(r.browserInfo, `${ua} | viewport 1536×730 | QuickAdd 1.5.9`);
-  for (const s of ["Vendor page: https://www.us.kohler.com/x?skuId=23484-4-CP", "QuickAdd version: 1.5.9",
+  // The site's browser line ("<user agent> | viewport <w>x<h>") with the SmartAdd (was QuickAdd) version after it.
+  assert.equal(r.browserInfo, `${ua} | viewport 1536×730 | SmartAdd 1.5.9`);
+  for (const s of ["Vendor page: https://www.us.kohler.com/x?skuId=23484-4-CP", "SmartAdd version: 1.5.9",
     "Model: K-23484-4-CP", "List price: 690.75", "Part 1: R35000-WS | SHOWER SYSTEM - VALVE ROUGH | $499"]) assert.ok(r.detail.includes(s), s);
   assert.ok(!/Reported by/.test(r.detail)); // the case is the signed-in rep's, as on the site
   assert.ok(!/\n\n\n/.test(r.detail));

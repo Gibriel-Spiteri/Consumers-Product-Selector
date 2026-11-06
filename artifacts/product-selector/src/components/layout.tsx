@@ -199,7 +199,8 @@ function EmployeeBadge() {
           >
             <Puzzle size={14} />
             {/* Quote Helper (renamed Consumers QuickAdd on 11/5) */}
-            QuickAdd
+            {/* QuickAdd (renamed Consumers SmartAdd on 11/6, Gib) */}
+            SmartAdd
           </Link>
           <button
             onClick={() => { setOpen(false); logout(); }}

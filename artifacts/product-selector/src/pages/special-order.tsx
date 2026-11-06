@@ -26,7 +26,9 @@ function QuoteHelperPrompt() {
     >
       <Puzzle size={13} className="text-[#7B4DA8]" />
       {/* {status === "outdated" ? `Update the Quote Helper to ${info.data?.version}` : "Get the Quote Helper for vendor websites"} */}
-      {status === "outdated" ? `Update Consumers QuickAdd to ${info.data?.version}` : "Get Consumers QuickAdd for vendor websites"}
+      {/* {status === "outdated" ? `Update Consumers QuickAdd to ${info.data?.version}` : "Get Consumers QuickAdd for vendor websites"} */}
+      {/* 11/6 (Gib): renamed Consumers SmartAdd. */}
+      {status === "outdated" ? `Update Consumers SmartAdd to ${info.data?.version}` : "Get Consumers SmartAdd for vendor websites"}
     </Link>
   );
 }

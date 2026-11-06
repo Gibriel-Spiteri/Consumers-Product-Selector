@@ -25,7 +25,8 @@ router.get("/quote-helper", (_req, res) => {
 router.get("/quickadd/update.xml", (_req, res) => {
   const release = quickAddRelease();
   if (!release) {
-    res.status(404).type("text/plain").send("No QuickAdd release on this server.");
+    // res.status(404).type("text/plain").send("No QuickAdd release on this server.");
+    res.status(404).type("text/plain").send("No Consumers SmartAdd release on this server."); // 11/6: renamed (URLs stay /quickadd)
     return;
   }
   res.setHeader("Cache-Control", "no-cache");
@@ -47,7 +48,8 @@ router.get("/quickadd/:file", (req, res) => {
 router.get("/quote-helper/download", (req, res) => {
   const pkg = quoteHelperPackage();
   if (!pkg) {
-    res.status(404).json({ error: "The Quote Helper files are not on this server." });
+    // res.status(404).json({ error: "The Quote Helper files are not on this server." });
+    res.status(404).json({ error: "The Consumers SmartAdd files are not on this server." });
     return;
   }
   req.log.info({ employeeId: res.locals.employeeId, version: pkg.version }, "Quote Helper downloaded");
