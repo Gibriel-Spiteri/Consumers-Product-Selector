@@ -6,11 +6,24 @@
   window.__consumersQuoteHelper = true;
   // 1.5.1: another copy of the extension (one loaded by hand next to the Group Policy one) already put its button on
   // this page; one button is enough. Each copy runs in its own isolated world, so only the shared DOM shows it.
-  if (document.querySelector("[data-consumers-quote-helper]")) return;
+  // if (document.querySelector("[data-consumers-quote-helper]")) return;
+  // 1.5.4 (Gib 11/6: an old copy let an item through with a field missing): the newest copy wins. Each button carries
+  // its copy's version; a copy before 1.5.4 carries none. A newer copy takes an older one's place on the page, so a
+  // PC that still has a hand-loaded copy next to the Group Policy one shows the current panel.
+  const MY_VERSION = (() => { try { return chrome.runtime.getManifest().version; } catch { return "0"; } })();
+  const newer = (a, b) => { // a newer than b ("1.5.10" > "1.5.9")
+    const pa = String(a || "0").split(".").map(Number), pb = String(b || "0").split(".").map(Number);
+    for (let i = 0; i < Math.max(pa.length, pb.length); i++) if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) > (pb[i] || 0);
+    return false;
+  };
+  const others = () => [...document.querySelectorAll("[data-consumers-quote-helper]")];
+  if (others().some(h => !newer(MY_VERSION, h.getAttribute("data-consumers-quote-helper")))) return; // as new or newer is there
+  for (const h of others()) h.remove(); // older copies' buttons
   const X = globalThis.ConsumersExtract;
 
   const host = document.createElement("div");
-  host.setAttribute("data-consumers-quote-helper", "");
+  // host.setAttribute("data-consumers-quote-helper", "");
+  host.setAttribute("data-consumers-quote-helper", MY_VERSION);
   const root = host.attachShadow({ mode: "open" });
   root.innerHTML = `
     <style>
@@ -1091,6 +1104,15 @@
   // after the first. Only the newest read fills the panel.
   let refreshTimer = 0, firstChange = 0, refreshRun = 0;
   setInterval(() => {
+    // 1.5.4: an older copy that drew its button after this one (copies before 1.5.1 never checked) is removed; a newer
+    // copy's button, or the same version drawn first, means this one steps aside.
+    for (const h of others()) {
+      if (h === host) continue;
+      const theirs = h.getAttribute("data-consumers-quote-helper");
+      if (newer(MY_VERSION, theirs)) h.remove();
+      else if (newer(theirs, MY_VERSION) || (h.compareDocumentPosition(host) & Node.DOCUMENT_POSITION_FOLLOWING)) host.remove();
+    }
+    if (!host.isConnected) return;
     const key = pageKey();
     if (key === lastUrl) return;
     lastUrl = key;

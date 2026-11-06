@@ -150,7 +150,7 @@ Extension ID: **`fdfhmjjacillkifkpnekcncfinoaoiem`** (fixed by the signing key).
 4. OK, then close the editor.
 5. For Chrome PCs, the same value goes in **Google > Google Chrome > Extensions > Configure the list of force-installed apps and extensions**.
 
-**On each PC:** nothing, apart from removing any copy loaded with Load unpacked (`edge://extensions`, **Remove**), or the PC can show two buttons. The policy arrives at the next refresh (about 90 minutes) or right away with `gpupdate /force` in a Command Prompt and an Edge restart. Check `edge://extensions`: Consumers QuickAdd shows as installed by your organization, and `edge://policy` lists `ExtensionInstallForcelist`. Then open the Product Selector once (signed in) in that browser.
+**On each PC:** nothing, apart from removing any copy loaded with Load unpacked (`edge://extensions`, **Remove**). Since 1.5.4 a PC with two copies shows only the newer one (each copy marks its button with its version, and the newer copy removes the older button, whichever loaded first); before that the first copy to load won, so an old hand-loaded copy could hide the Group Policy one and let an item through with a field missing (Gib, 11/6, a John Boos cutting board with no color). The Quote List still flags such an item ("Needs Color") and will not push it until the rep fills it in. The policy arrives at the next refresh (about 90 minutes) or right away with `gpupdate /force` in a Command Prompt and an Edge restart. Check `edge://extensions`: Consumers QuickAdd shows as installed by your organization, and `edge://policy` lists `ExtensionInstallForcelist`. Then open the Product Selector once (signed in) in that browser.
 
 **Releasing a new version:**
 1. Change the extension and bump `version` in `manifest.json`.
