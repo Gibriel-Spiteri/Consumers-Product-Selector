@@ -258,8 +258,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         await chrome.storage.session.set({ appSession: token ? { token, name: text(message.name).slice(0, 100), origin, at: Date.now() } : null });
         return sendResponse({ ok: true });
       }
-      // 1.5.10 (Gib 11/6): Richelieu's list price, read by the Product Selector with Consumers' Richelieu account (the
-      // account and its session stay on the server; only the list price comes back). Asked as the rep signed in to the
+      // 1.5.11 (Gib 11/6): Richelieu's price, read by the Product Selector with Consumers' Richelieu account (the
+      // account and its session stay on the server; Consumers' own price, as Gib chose). Asked as the rep signed in to the
       // Product Selector in this browser, for the page the panel is on; kept here for 30 minutes per page.
       case "vendor-price": {
         let page;
@@ -280,7 +280,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           }
           const data = await res.json().catch(() => null);
           if (!res.ok || !data) return sendResponse({ ok: false, error: (data && data.error) || `The Product Selector answered ${res.status}` });
-          const out = { ok: true, listPrice: Number(data.listPrice) > 0 ? Number(data.listPrice) : null };
+          // const out = { ok: true, listPrice: Number(data.listPrice) > 0 ? Number(data.listPrice) : null };
+          // 1.5.11 (Gib 11/6, "Yes, fill our cost"): the price to fill (a list price if Richelieu labels one, else
+          // Consumers' own Richelieu price), its kind, and the page's SKU so the panel fills only the item it shows.
+          const price = Number(data.price) > 0 ? Number(data.price) : null;
+          const out = { ok: true, price, kind: price ? String(data.priceKind || "") : "", sku: text(data.sku), listPrice: Number(data.listPrice) > 0 ? Number(data.listPrice) : null };
           vendorPrices.set(key, { at: Date.now(), res: out });
           if (vendorPrices.size > 200) vendorPrices.delete(vendorPrices.keys().next().value);
           return sendResponse(out);

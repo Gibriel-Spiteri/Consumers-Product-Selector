@@ -1634,7 +1634,8 @@
 
   // 1.5.10 (Gib 11/6, from Jim): Richelieu shows prices only to a signed-in account. Gib: "We have a service agreement
   // with Richelieu for automated sign in", so the Product Selector signs in with Consumers' shared account on its server
-  // and returns the page's list price (never our cost; the account and its session stay on the server). The panel asks
+  // and returns the page's price (the account and its session stay on the server; 1.5.11: Consumers' own Richelieu
+  // price, as Gib chose, since Richelieu shows the account no list price). The panel asks
   // as the rep signed in to the Product Selector in this browser, as Report issue does. A price already typed is kept.
   let serverPriceFor = "";
   async function fillServerPrice() {
@@ -1643,21 +1644,28 @@
     const key = location.pathname;
     serverPriceFor = key;
     if (f.price.value) return;
-    f.serverPriceHint.textContent = "Getting the list price from Richelieu...";
+    // f.serverPriceHint.textContent = "Getting the list price from Richelieu...";
+    f.serverPriceHint.textContent = "Getting the price from Richelieu...";
     f.serverPriceHint.hidden = false;
     let res = null;
     try {
       res = await chrome.runtime.sendMessage({ type: "vendor-price" });
     } catch {}
     if (serverPriceFor !== key || location.pathname !== key) return; // another item since
-    if (res && res.ok && Number(res.listPrice) > 0) {
+    // if (res && res.ok && Number(res.listPrice) > 0) {
+    //   ...f.price.value = Number(res.listPrice).toFixed(2); ... "List price from Consumers' Richelieu account."
+    // 1.5.11 (Gib 11/6, "Yes, fill our cost"): Richelieu shows the account no list price, only Consumers' own price,
+    // so that fills the price field. Only for the item the panel shows (the page's SKU is the panel's model).
+    const sameItem = !res || !res.sku || String(res.sku).toUpperCase() === String(f.model.value).trim().toUpperCase();
+    if (res && res.ok && Number(res.price) > 0 && sameItem) {
       if (!f.price.value) {
-        f.price.value = Number(res.listPrice).toFixed(2);
+        f.price.value = Number(res.price).toFixed(2);
         f.price.classList.remove("missing");
       }
-      f.serverPriceHint.textContent = "List price from Consumers' Richelieu account.";
+      f.serverPriceHint.textContent = res.kind === "list" ? "List price from Consumers' Richelieu account." : "Price from Consumers' Richelieu account.";
     } else if (res && res.signIn) {
-      f.serverPriceHint.textContent = "Richelieu's list price fills in when the Product Selector is signed in on this browser.";
+      // f.serverPriceHint.textContent = "Richelieu's list price fills in when the Product Selector is signed in on this browser.";
+      f.serverPriceHint.textContent = "Richelieu's price fills in when the Product Selector is signed in on this browser.";
     } else {
       f.serverPriceHint.hidden = true;
     }
