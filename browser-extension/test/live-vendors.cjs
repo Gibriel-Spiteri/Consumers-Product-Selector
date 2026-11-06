@@ -79,6 +79,12 @@ const VENDORS = [
     expect: { model: "250.1000CP", color: "Chrome", collDesc: "Serie 250 Single Hole Bathroom Faucet", type: "BATH FAUCET", ...anyPrice } },
   { key: "flusso3", url: "https://www.flussofaucets.com/products/K1200CR-caso-semi-professional-dual-spray-stainless-steel-kitchen-faucet-with-pull-out/",
     expect: { model: "K.1200CR", color: "Crimson", collDesc: v => v.startsWith("Caso"), type: "KITCHEN FAUCET", ...anyPrice } },
+  // 1.5.5 (Gib 11/6, "Flusso Kitchen Faucets aren't working when we change the finish"): a finish square changes the
+  // item in place and leaves thin product data (name "K.1390MB", no finish, no price).
+  { key: "flusso4", url: "https://www.flussofaucets.com/products/K1390SS-vasco-dual-spray-stainless-steel-kitchen-faucet-with-pull-out-knurling/",
+    expect: { model: "K.1390SS", color: "Stainless Steel", type: "KITCHEN FAUCET", ...anyPrice },
+    change: async page => page.evaluate(() => document.querySelector('li.finish-color-box[model-no="K.1390MB"]').click()),
+    afterChange: { model: "K.1390MB", color: "Matte Black", collDesc: v => v.startsWith("Vasco"), type: "KITCHEN FAUCET", ...anyPrice } },
   // The Monza tub shield used on 11/4 was gone by 11/5; Neptune's addresses keep this shape.
   // Neptune stopped being a special-order line in NetSuite on 11/4 (EPS unchecked), so the extension no longer runs there.
   // { key: "neptune", url: "https://produitsneptune.com/product/belaya-32-36-x-72-in-6mm-pivot-shower-door-for-alcove-installation/220333/220333-900-084-000",
@@ -203,6 +209,31 @@ const VENDORS = [
     expect: { model: "", manual: true },
     change: async page => page.evaluate(() => { const r = document.querySelector('input[name="rdoHardwareFinish"][value="12"]'); if (r) r.click(); }),
     afterChange: { model: "VP4836-12-40-79", color: "Brushed Gold", collDesc: "Vespero Pivot, 2 sided, Clear Glass (6mm)", manual: false, ...anyPrice } }, // 1.5.3: with the subtitle
+  // 1.5.5 (Gib 11/6): a door with a Mix & Match Kit, then a base and its drain from "Add a base", is four items: the
+  // panel shows one block per part, priced from the page, adding up to the total, and adds them as four picks.
+  { key: "fleurco3", url: "https://fleurco.com/shower-doors/horizon-sliding-inline-reversible", add: true,
+    prepare: async page => {
+      await page.selectOption("#drpFront", "48");
+      await page.waitForTimeout(1500);
+      await page.selectOption("#drpHeight", "75");
+      await page.waitForTimeout(1500);
+      for (const [name, value] of [["rdoHardwareFinish", "25"], ["rdoHardwareKit", "NH-CONVKIT-11-MX"]]) {
+        await page.evaluate(([n, v]) => { const r = document.querySelector(`input[name="${n}"][value="${v}"]`); if (r) (r.closest("label") || r).click(); }, [name, value]);
+        await page.waitForTimeout(1500);
+      }
+      await page.evaluate(() => basepopup());
+      await page.waitForTimeout(1500);
+      for (const [name, value] of [["rdoBase", "110"], ["rdoDrainBase", "DRAINABS"]]) {
+        await page.evaluate(([n, v]) => { const r = document.querySelector(`input[name="${n}"][value="${v}"]`); if (r) (r.closest("label") || r).click(); }, [name, value]);
+        await page.waitForTimeout(1800);
+      }
+      await page.evaluate(() => addBase());
+      await page.waitForTimeout(3000);
+    },
+    expect: { parts: ps => ps.length === 4 &&
+      [["NHZ148-25-40-75", "SHOWER DOOR"], ["NH-CONVKIT-11-MX", "MISCELLANEOUS"], ["ATAS2-3648", "SHOWER BASE"], ["DRAINABS-33", "MISCELLANEOUS"]]
+        .every(([m, t], i) => ps[i].model === m && ps[i].type === t && !!ps[i].color && Number(ps[i].price) > 0 && !!ps[i].collDesc),
+      totalWarning: false, button: "Add 4 items to quote" } },
   { key: "avance", url: "https://www.avancecabinetry.com/cabinetry/benton/benton-bourbon",
     expect: { model: "", manual: true, lineShown: false } }, // one Avance line since 11/5 (Avance Cabinetry is no longer special-order)
 ];
@@ -238,6 +269,15 @@ async function readPanel(page) {
     manual: await p.locator(".manual-hint").isVisible(),
     optionsShown: await p.locator(".variant-wrap").isVisible(),
     header: await p.locator(".head").evaluate(h => getComputedStyle(h).backgroundImage),
+    // 1.5.5: a kit's part blocks, the total check and the Add button's wording.
+    parts: await p.locator(".part").evaluateAll(boxes => boxes.map(b => {
+      const v = s => b.querySelector(s).value;
+      const t = b.querySelector(".ptype");
+      return { model: v(".pmodel"), color: v(".pcolor"), collDesc: v(".pdesc"), description: v(".pdesc"), price: v(".pprice"),
+        type: t.value && t.selectedOptions[0] ? t.selectedOptions[0].textContent : "" };
+    })),
+    totalWarning: await p.locator(".kit-total-hint").isVisible(),
+    button: (await p.locator(".add").innerText()).trim(),
   };
 }
 
@@ -322,7 +362,11 @@ async function readPanel(page) {
         await page.waitForTimeout(500);
         let got = await readPanel(page);
         let bad = compare(got, v.expect);
-        record(v.key, bad.length === 0, bad.length ? bad.join("; ") : `${got.model} | ${got.color || "-"} | $${got.price || "-"} | ${(got.collDesc || "-").slice(0, 45)} | ${got.type || "-"}`);
+        // record(v.key, bad.length === 0, bad.length ? bad.join("; ") : `${got.model} | ${got.color || "-"} | $${got.price || "-"} | ${(got.collDesc || "-").slice(0, 45)} | ${got.type || "-"}`);
+        const summary = got.parts.length // 1.5.5: a kit lists its parts
+          ? `${got.parts.length} parts: ${got.parts.map(x => `${x.model} ${x.type} ${x.color} $${x.price}`).join(" + ")}`
+          : `${got.model} | ${got.color || "-"} | $${got.price || "-"} | ${(got.collDesc || "-").slice(0, 45)} | ${got.type || "-"}`;
+        record(v.key, bad.length === 0, bad.length ? bad.join("; ") + (got.parts.length ? ` (${summary})` : "") : summary);
         await page.screenshot({ path: path.join(SHOTS, `${v.key}.png`) });
         if (v.change) {
           await v.change(page);
@@ -363,7 +407,9 @@ async function readPanel(page) {
           }
           await panel.locator(".add").click();
           await panel.locator(".msg.ok").waitFor({ timeout: 10000 });
-          added.push({ key: v.key, model: got.model, type: got.type, collDesc: got.collDesc });
+          // added.push({ key: v.key, model: got.model, type: got.type, collDesc: got.collDesc });
+          if (got.parts.length) for (const x of got.parts) added.push({ key: `${v.key} part`, model: x.model, type: x.type, collDesc: x.collDesc });
+          else added.push({ key: v.key, model: got.model, type: got.type, collDesc: got.collDesc });
         }
       } catch (e) {
         record(v.key, false, `error: ${String(e.message || e).split("\n")[0]}`);

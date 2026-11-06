@@ -18,6 +18,7 @@ Lets a customer pick products on a vendor's own website (Delta, Kohler, Brizo, .
    - When a page gives no color, a finish at the end of the product name is used ("128mm Austin Pull - Satin Nickel", "...Brushed Satin Nickel"). Strategic Brands' collection comes from its "parts in this collection" link.
    - Collection / Description goes to NetSuite's Coll/Desc as is. It starts as the collection, then the product name, the way reps type it; the collection is left out when the name already has it.
    - The customer picks the option, sets the quantity and clicks **Add to quote**. Every field is required (1.5.2): **Add to quote** outlines the empty ones in red and names them, so a page that gives no color (Icera, since the 1.5.3 color readers) or no price (Elkay, Franke, Richelieu, Strategic Brands) needs the customer, or the sales rep, to type it in.
+   - **Kits (1.5.5, Gib 11/6):** a Fleurco build can be several items: "NHZ160-25-40-75 + ATAS2-3260 + DRAINABS-33 + NH-CONVKIT-11-MX Total : $3517" is the door, a base and its drain (from **Add a base**), and a Mix & Match Kit. NetSuite needs each as its own line at its own price, so the panel says "This is 4 items", shows one block per part (Type, Model, Color / finish, Collection / Description, Price) and one **Quantity of each**, and **Add 4 items to quote** puts them on the Quote List as four lines in one go. The prices come from the page (the door's own price, the kit's tile price, each added item's card) and add up to its total; if a part's price is changed so they no longer do, the panel says so. Each part's fields are required like a single item's ("Color / finish (part 3)"). Types: the door as before, a base SHOWER BASE, wall panels SHOWER WALL, a bathtub BATH TUB, a drain or kit MISCELLANEOUS.
 3. **It lands on the Quote List.** When the Product Selector is open (signed in) in that browser, each pick goes straight onto the Quote List as a special-order line, and leaves the extension.
    - Model, description, color, list price and quantity come from the vendor page, with a **Picked on** link back to it. The Type is guessed from the product name and the vendor's address (KITCHEN FAUCET, TOILET, KNOBS, SHOWER DOOR); on a tie, or for order-form Types, it is left for the rep.
    - A line the vendor page left incomplete shows an amber **Needs Type, Color, List price** (whatever is missing). Clicking it opens the Edit Special Order form; fill in the rest and click **Save Changes**. The Quote List will not push to an estimate until every line is complete.
@@ -70,6 +71,10 @@ Checked on 11/4/2026 in Chrome, one product page per product line:
 
 **Flusso** (1.5.3): the collection comes from the details row ("Collection | Serie 250"; a bare "Kitchen" is skipped), and a barcode with a dashed check digit in `mpn` ("716894070509-7") no longer beats the model in `sku` (K.1200CR).
 
+**Flusso finish squares** (1.5.5, Gib 11/6: "Flusso Kitchen Faucets aren't working when we change the finish"): on pages like the Vasco kitchen faucet, a finish square (`li.finish-color-box`) changes the item without loading a page and leaves thin product data behind (name "K.1390MB", no finish, no price), so the panel showed the model alone. The panel now reads the page's own lines, which follow the square: "Model#:" (`.product-model-no-p`), the finish ("Matte Black (FAST SHIP FINISH)" gives Matte Black) and the list price (`#product-price-span`), with the heading as the name. Matte Black reads K.1390MB at $833, Crimson K.1390CR at $1058.
+
+**Fleurco picture** (1.5.5): Fleurco has no `og:image`, and the panel showed a broken picture (the page's own address); it now shows the door's photo.
+
 **Sweep of 11/5/2026 (1.5.3):** four testers went through about 230 product pages and 40 other pages on all 17 special-order vendor sites (Avance left out), with about 110 finish, color, size and configurator changes made while the panel was open. What it found is fixed by these site rules in `vendor.js` (each value they read also tells the open panel to follow a change):
 
 | Vendor | Reads |
@@ -88,7 +93,7 @@ Checked on 11/4/2026 in Chrome, one product page per product line:
 | Strategic Brands | the finish part of the name (not a size), the collection from its own link, LAUREY or MNG preselected from the breadcrumbs |
 | John Boos | the title (the og:title is an SEO title), the wood from the description when the title has none |
 | Craft & Main | the shown variant SKU (the product data keeps the first); no price (hidden on the site) |
-| Fleurco | the whole code before "Total" (door + kit / drain), nothing while a shown finish has no choice, the finish or material outside doors, the subtitle (Tub enclosure) |
+| Fleurco | the whole code before "Total" (door + kit / drain), nothing while a shown finish has no choice, the finish or material outside doors, the subtitle (Tub enclosure). Since 1.5.5 a build of several items is split into its parts, see Kits above |
 | Flusso | as before, plus no "Universal Fixtures" collection and image addresses without a scheme |
 | Sofia (new) | the shop's model number plus depth code (ART 2430 1D-1), the price line for the chosen depth and edge, the edge and interior or frame finish; also on plain http |
 

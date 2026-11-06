@@ -71,6 +71,12 @@
       input.missing, select.missing { border-color: #d93025; box-shadow: 0 0 0 2px rgba(217, 48, 37, .15); outline-color: #d93025; }
       /* 1.5.3: the page says the item is discontinued. */
       .hint.warn { background: #fff4e5; color: #8a4b00; border-radius: 8px; padding: 8px 10px; }
+      /* 1.5.5: a kit's parts, one block each. */
+      .single, .parts { display: grid; gap: 10px; }
+      .part { display: grid; gap: 8px; border: 1px solid #e3e6ec; border-radius: 10px; padding: 10px; background: #fafbfd; }
+      .part .ptitle { display: flex; gap: 10px; align-items: center; font-size: 13px; font-weight: 650; color: #1d2433; }
+      .part .ptitle img { width: 36px; height: 36px; object-fit: contain; border: 1px solid #e3e6ec; border-radius: 6px; background: #fff; }
+      .hint.kit { background: #eef3ff; color: #1d3a8a; border-radius: 8px; padding: 8px 10px; }
     </style>
     <!-- 1.5.0 (Gib 11/5): "Add to CPS Quote List", and the subtext asks to check the fields. Was:
     <button class="fab" type="button" part="fab"><span>Add to Consumers Quote</span><span class="dot" hidden></span></button>
@@ -83,6 +89,8 @@
         <div class="prod"><img alt=""><div class="name"></div></div>
         <label class="variant-wrap">Option<select class="variant"></select></label>
         <label class="line-wrap" hidden>Product line<select class="line"></select></label>
+        <!-- 1.5.5: the one item's fields; a kit shows one block per part instead (.parts). -->
+        <div class="single">
         <label class="type-wrap" hidden>Type<select class="type"></select></label>
         <div class="row">
           <label>Model<input class="model" maxlength="300"></label>
@@ -92,9 +100,13 @@
         <label>Collection<input class="collection" maxlength="300"></label>
         <label>Description<input class="description" maxlength="300"></label> -->
         <label>Collection / Description<input class="description" maxlength="300"></label>
+        </div>
+        <div class="hint kit kit-hint" hidden></div>
+        <div class="parts" hidden></div>
+        <div class="hint warn kit-total-hint" hidden></div>
         <div class="row">
-          <label>Price on this site<input class="price" type="number" min="0" step="0.01" inputmode="decimal"></label>
-          <label>Quantity<input class="qty" type="number" min="1" max="1000000" step="1" value="1" inputmode="numeric"></label>
+          <label class="price-wrap">Price on this site<input class="price" type="number" min="0" step="0.01" inputmode="decimal"></label>
+          <label><span class="qty-label">Quantity</span><input class="qty" type="number" min="1" max="1000000" step="1" value="1" inputmode="numeric"></label>
         </div>
         <div class="hint manual-hint" hidden>We could not read this item from the page. Type the model number and color shown on it.</div>
         <div class="hint warn gone-hint" hidden>This page says the item is discontinued. Check with your sales rep before adding it.</div>
@@ -111,7 +123,9 @@
     model: $(".model"), color: $(".color"), price: $(".price"), qty: $(".qty"), add: $(".add"),
     manualHint: $(".manual-hint"), goneHint: $(".gone-hint"), orderFormHint: $(".order-form-hint"), // 1.5.3
     lineWrap: $(".line-wrap"), line: $(".line"), typeWrap: $(".type-wrap"), type: $(".type"),
-    description: $(".description") }; // was also collection: $(".collection") (until 1.4.1)
+    description: $(".description"), // was also collection: $(".collection") (until 1.4.1)
+    single: $(".single"), parts: $(".parts"), kitHint: $(".kit-hint"), kitTotalHint: $(".kit-total-hint"), // 1.5.5
+    priceWrap: $(".price-wrap"), qtyLabel: $(".qty-label") };
   const busy = $(".busy"), head = $(".head"), bodyEl = $(".body"), actionsEl = $(".actions");
 
   // 1.4.2: grey the open panel out with a spinner while it re-reads the page; nothing under it can be clicked or typed.
@@ -130,6 +144,7 @@
   let pickNeeded = false; // 1.5.3: the page needs a size, finish or color picked first
   let lastUrl = ""; // since 11/5 the address plus the shown model and finish (pageKey)
   let followsPage = false; // the page shows which variant is chosen, so no Option list
+  let parts = null; // 1.5.5: the page's item is a kit (Fleurco door + base + drain + Mix & Match Kit): one line per part
   const MANUAL_HINT = f.manualHint.textContent;
   let category = ""; // the vendor's breadcrumbs, for the Type guess
   let siteLines = []; // this vendor's product lines and their special-order Types, from the Product Selector
@@ -307,6 +322,98 @@
   // Fleurco's product title without its own tags: "*New* Vespero Pivot" is the Vespero Pivot (1.5.2).
   const fleurcoTitle = () => textOf(".product-page .title").replace(/\*[^*]*\*/g, " ").replace(/\s+/g, " ").trim();
 
+  // 1.5.5: Flusso's own product lines, shown or in the section only wide windows show.
+  const flussoText = sel => textOf(sel) || clean((document.querySelector(sel) || {}).textContent);
+
+  // 1.5.5 (Gib 11/6: "some selections are actually multiple parts in a kit ... break down and price the kit into its
+  // individual parts"): a Fleurco build can be several items, "NHZ160-25-40-75 + ATAS2-3260 + DRAINABS-33 +
+  // NH-CONVKIT-11-MX Total : $3517": the door, a base and its drain picked with "Add a base", and a Mix & Match Kit.
+  // NetSuite needs each as its own line at its own price. The page keeps the door's price in #hidPrice (a spacer's in
+  // #hidSpacerPrice), the kit's in #hidHardwareKitPrice and on its tile ("114 $"), and shows each added item as a card:
+  // "ATAS2-3648 <i>$1315</i> ... Tavia 2.0 Low Profile Base - Solid surface base, with center drain & square drain cover,
+  // Slate, 36 x 48". The parts add up to the total. Fewer than two codes: not a kit.
+  const hidVal = id => clean((document.getElementById(id) || {}).value);
+  const amountNum = s => { const n = Number(String(s || "").replace(/[$,\s]/g, "")); return Number.isFinite(n) && n > 0 ? n : 0; };
+  const fleurcoCodes = () => clean(textOf(".product-total")).split(/\s*Total\s*:/i)[0].split("+").map(clean).filter(Boolean);
+  const bgImage = el => {
+    const m = el && /url\((['"]?)(.*?)\1\)/.exec(el.style.backgroundImage || "");
+    try { return m ? new URL(m[2], location.href).href : ""; } catch { return ""; }
+  };
+  // A card's color: what follows the item's own name ("..., Slate, 36 x 48" after the base's name), else a finish at the
+  // end ("ABS No-Calk 2" Drain, Matte Black"). Parts with digits are sizes, not colors.
+  const cardColor = (desc, main) => {
+    const rest = main && desc.startsWith(main) && desc.length > main.length ? desc.slice(main.length) : "";
+    if (rest) return rest.split(",").map(clean).find(s => s && !/\d/.test(s)) || "";
+    const segs = desc.split(",").map(clean).filter(Boolean);
+    const last = segs.length > 1 ? segs[segs.length - 1] : "";
+    return last && !/\d/.test(last) && (X.guessFinish(last) || last.split(/\s+/).length <= 3) ? last : "";
+  };
+  const withoutColor = (desc, color) => (color ? desc.split(",").map(clean).filter(s => s && s !== color).join(", ") : desc);
+  const CARD_ROLES = [ // card id or box -> what it is and its Type
+    [/^(base|secondbase)$/i, "Base", "SHOWER BASE"], [/^bathtub$/i, "Bathtub", "BATH TUB"], [/^fibowall$/i, "Wall panels", "SHOWER WALL"],
+    [/^accessory$/i, "Drain", ""], [/^baseaccessory$/i, "Base accessory", ""], [/^installkit/i, "Installation kit", ""],
+    [/^accent/i, "Accent", ""], [/^grip/i, "Grip", ""],
+  ];
+  function fleurcoParts() {
+    const codes = fleurcoCodes();
+    if (codes.length < 2) return null;
+    const rule = SITE_RULES["fleurco.com"];
+    const title = fleurcoTitle();
+    const meta = p => (document.querySelector(`meta[property="${p}"]`) || {}).content || "";
+    const image = src => { if (!src) return ""; try { const u = new URL(src, location.href); return u.protocol === "https:" ? u.href : ""; } catch { return ""; } };
+    const parts = [];
+    const spacerCode = clean(textOf("#product-sku-spacer")).replace(/^\+\s*/, "");
+    const door = clean(textOf(".product-total .product-sku")) || codes[0];
+    parts.push({ label: "Shower door", model: door, typeName: "",
+      price: amountNum(hidVal("hidPrice")) + (spacerCode ? 0 : amountNum(hidVal("hidSpacerPrice"))),
+      name: X.text(rule.name()), color: X.text(rule.color()), collection: title,
+      imageUrl: image(hidVal("hidImage") || meta("og:image")) });
+    if (spacerCode) parts.push({ label: "Spacer", model: spacerCode, price: amountNum(hidVal("hidSpacerPrice")), name: `${title} spacer`.trim(), color: "", collection: "", typeName: "MISCELLANEOUS", imageUrl: "" });
+    // The Mix & Match (or hardware) kit, from its code beside the total and its tile ("NH-CONVKIT-11-MX (Chrome)").
+    const kitCode = clean(textOf("#product-code-hardware-kit")).replace(/^\+\s*/, "");
+    if (kitCode) {
+      const tile = [...document.querySelectorAll('input[name="rdoHardwareKit"]')].find(r => r.value === kitCode);
+      const lab = tile && tile.closest("label");
+      const kitTitle = clean(lab && lab.querySelector("span") ? lab.querySelector("span").textContent : hidVal("hidHardwareKitTitleEn"));
+      const mixMatch = [...document.querySelectorAll("label.mixMatchKit")].some(l => l.getClientRects().length);
+      const kind = mixMatch ? "Mix & Match Kit" : "Hardware Kit";
+      const priceTag = document.getElementById(`hardwareKitCost-${kitCode}`);
+      parts.push({ label: kind, model: kitCode, typeName: "MISCELLANEOUS",
+        price: amountNum(hidVal("hidHardwareKitPrice")) || amountNum(priceTag && priceTag.textContent),
+        name: `${title} ${kind}`.trim(), color: clean((/\(([^)]+)\)\s*$/.exec(kitTitle) || [])[1]), collection: "",
+        imageUrl: image((tile && tile.getAttribute("data-image")) || hidVal("hidHardwareKitImage")) });
+    }
+    // The cards of what "Add a base" (or "Add a Fibowall") added: code, price and description.
+    const seen = new Set(parts.map(p => p.model.toUpperCase()));
+    for (const i of document.querySelectorAll(".divbasechosen i, .divbathtubchosen i, .divfibowallchosen i")) {
+      if (!/^\$\s?\d/.test(clean(i.textContent))) continue;
+      const head = i.parentElement, card = head && head.parentElement;
+      if (!card) continue;
+      const model = clean(head.textContent.replace(i.textContent, ""));
+      if (!model || seen.has(model.toUpperCase())) continue;
+      seen.add(model.toUpperCase());
+      const descEl = [...card.children].reverse().find(c => c.tagName === "DIV" && c !== head);
+      const desc = clean(descEl && descEl.textContent);
+      const isBase = !card.id && [hidVal("hidBaseSku"), hidVal("hidBaseSkuAll")].some(s => s && s.toUpperCase() === model.toUpperCase());
+      const id = card.id || (isBase ? "base" : card.closest(".divfibowallchosen") ? "fibowall" : "");
+      const role = CARD_ROLES.find(([re]) => re.test(id));
+      const main = isBase ? hidVal("hidBaseEn") : id === "accessory" ? hidVal("hidAccessoryEn") : "";
+      const color = cardColor(desc, main);
+      parts.push({ label: role ? role[1] : "Add-on", model, typeName: role ? role[2] : "", price: amountNum(i.textContent),
+        name: withoutColor(desc, color), color, collection: "", imageUrl: bgImage(card.querySelector("label div")) });
+    }
+    // A code beside the total that no card or field explains still goes on the quote: priced from the total when it is
+    // the only one, else left for the customer or the sales rep.
+    const unknown = codes.filter(c => !parts.some(p => p.model.toUpperCase() === c.toUpperCase()));
+    const total = amountNum(amountOf(textOf("#product-total-amount")) || amountOf(textOf(".product-total")));
+    const known = parts.reduce((s, p) => s + (p.price || 0), 0);
+    for (const code of unknown) {
+      parts.push({ label: "Item", model: code, typeName: "", name: "", color: "", collection: "", imageUrl: "",
+        price: unknown.length === 1 && total > known ? Math.round((total - known) * 100) / 100 : 0 });
+    }
+    return parts.length > 1 ? parts.map(p => ({ ...p, price: p.price || null, pageTotal: total })) : null;
+  }
+
   // Vendor sites that need their own rule, by main domain.
   const SITE_RULES = {
     // Fleurco's shower door configurator (2026-11-04) prints the model number and total only once every choice is
@@ -335,6 +442,8 @@
       name: () => [fleurcoTitle(), clean(textOf(".product-page .subtitle")).split("|")[0].split(",")[0].trim(),
         checkedLabel("rdoGlassType")].filter(Boolean).join(", "),
       collection: () => fleurcoTitle(),
+      parts: () => fleurcoParts(), // 1.5.5: a door with a base, drain or Mix & Match Kit is one line per part
+      image: () => hidVal("hidImage"), // 1.5.5: the door's photo (the page has no og:image)
       hint: "Choose every option on the page, Mix & Match Kit included, until the model number shows under them. Then click Add to CPS Quote List again, or type the model here.",
     },
     // Delta (2026-11-04): picking a finish changes the address (/9190TL-DST.html -> /9190TL-PN-DST.html) and the
@@ -558,6 +667,15 @@
         // return /^(kitchen|bath|bathroom|shower|showering|tub|accessories)$/i.test(v) ? "" : v;
         return /^(kitchen|bath|bathroom|shower|showering|tub|accessories|universal fixtures)$/i.test(v) ? "" : v; // 1.5.3: a catch-all
       },
+      // 1.5.5 (Gib 11/6, "Flusso Kitchen Faucets aren't working when we change the finish"): a finish square
+      // (li.finish-color-box model-no="K.1390MB") changes the address, the "Model#:" line, the finish line ("Matte Black
+      // (FAST SHIP FINISH)") and the list price in place, and swaps the product data for a thin copy (name "K.1390MB", no
+      // finish, no price). Those page lines follow the square; the heading names the item. The model line sits in a
+      // section shown only on wide windows, so a hidden one counts too.
+      model: () => flussoText(".product-model-no-p"),
+      color: () => flussoText("#product-finish-detail-span").replace(/\s*\((?:fast ship|special)[^)]*\)\s*$/i, ""),
+      price: () => flussoText("#product-price-span").replace(/,/g, ""),
+      name: () => flussoText("h1"),
     },
     // Sofia (1.5.3, a special-order line since 11/5): the shop builds the item from a model number (size), a depth,
     // an edge or LED option and an interior or frame finish, then lists a price per depth and edge ("5 3/16 DEPTH (-1)
@@ -653,7 +771,13 @@
     return {
       name, model: v.model, color: v.color || "", price: X.number(v.price),
       currency: "USD", priceIsList: false, collection: v.collection || X.guessCollection({ name }, pageText()),
-      imageUrl: (() => { try { const u = new URL(meta("og:image"), location.href); return u.protocol === "https:" ? u.href : ""; } catch { return ""; } })(),
+      // imageUrl: (() => { try { const u = new URL(meta("og:image"), location.href); return u.protocol === "https:" ? u.href : ""; } catch { return ""; } })(),
+      // 1.5.5: a page with no og:image (Fleurco) gave the page's own address, a broken picture; the rule's photo first.
+      imageUrl: (() => {
+        const src = (siteRule.image && X.text(siteRule.image())) || meta("og:image");
+        if (!src) return "";
+        try { const u = new URL(src, location.href); return u.protocol === "https:" ? u.href : ""; } catch { return ""; }
+      })(),
     };
   }
 
@@ -799,6 +923,15 @@
     // color, Top Knobs before a size and finish): no model or price yet, and the panel says what to pick.
     pickNeeded = !manual && !!(siteRule && siteRule.pickFirst && siteRule.pickFirst());
     if (pickNeeded) items = items.map(it => ({ ...it, model: "", price: null }));
+    // 1.5.5 (Gib 11/6): a kit (Fleurco's door with a base, a drain or a Mix & Match Kit) goes on as one line per part.
+    parts = null;
+    if (!manual && !pickNeeded && siteRule && siteRule.parts) {
+      try {
+        parts = siteRule.parts();
+      } catch {
+        parts = null;
+      }
+    }
     // The page says which color or finish is chosen (Kohler's shown SKU, the model in the address): the panel follows
     // it and needs no Option list. Jim (11/5): it should work the same on every site.
     const url = location.href.toUpperCase();
@@ -877,6 +1010,90 @@
     f.type.value = guess ? guess.id : "";
     f.typeWrap.hidden = options.length === 0;
     showOrderForm();
+    fillPartTypes(); // 1.5.5
+  }
+
+  // 1.5.5 (Gib 11/6): a kit's parts, one block each with its own Type, model, color, Coll/Desc and price; one quantity
+  // for all of them (two doors, two bases). The door's Type is guessed as before; a base is SHOWER BASE, a wall panel
+  // SHOWER WALL, and a part with no Type of its own (a drain, a Mix & Match Kit) MISCELLANEOUS.
+  const PART_FIELDS = [["ptype", "Type"], ["pmodel", "Model"], ["pcolor", "Color / finish"], ["pdesc", "Collection / Description"], ["pprice", "Price"]];
+  const money = n => String(Math.round(n * 100) / 100);
+  function renderParts() {
+    const kit = !!(parts && parts.length > 1);
+    f.single.hidden = kit;
+    f.parts.hidden = !kit;
+    f.priceWrap.hidden = kit;
+    f.kitHint.hidden = !kit;
+    f.kitTotalHint.hidden = true;
+    f.qtyLabel.textContent = kit ? "Quantity of each" : "Quantity";
+    f.add.textContent = kit ? `Add ${parts.length} items to quote` : "Add to quote";
+    f.parts.innerHTML = "";
+    if (!kit) return;
+    f.variantWrap.style.display = "none";
+    f.kitHint.textContent = `This is ${parts.length} items (${parts.map(p => p.label.toLowerCase()).join(", ")}). ` +
+      "Each one goes on your quote list as its own line, at its own price.";
+    parts.forEach((p, i) => {
+      const box = document.createElement("div");
+      box.className = "part";
+      box.innerHTML = `<div class="ptitle"><img alt="" hidden><span></span></div>
+        <label class="ptype-wrap">Type<select class="ptype"></select></label>
+        <div class="row"><label>Model<input class="pmodel" maxlength="300"></label><label>Color / finish<input class="pcolor" maxlength="300"></label></div>
+        <label>Collection / Description<input class="pdesc" maxlength="300"></label>
+        <label>Price on this site<input class="pprice" type="number" min="0" step="0.01" inputmode="decimal"></label>`;
+      const q = s => box.querySelector(s);
+      q(".ptitle span").textContent = `Part ${i + 1} of ${parts.length}: ${p.label}`;
+      if (p.imageUrl) {
+        q(".ptitle img").src = p.imageUrl;
+        q(".ptitle img").hidden = false;
+      }
+      q(".pmodel").value = p.model || "";
+      q(".pcolor").value = p.color || "";
+      q(".pdesc").value = X.collDesc(p.collection || "", X.descName(p.name || "", p.model, p.color));
+      q(".pprice").value = p.price != null ? String(p.price) : "";
+      for (const el of box.querySelectorAll("input, select")) {
+        for (const ev of ["input", "change"]) {
+          el.addEventListener(ev, () => {
+            el.classList.remove("missing");
+            if (el.classList.contains("pprice")) checkKitTotal();
+          });
+        }
+      }
+      f.parts.appendChild(box);
+    });
+    fillPartTypes();
+    checkKitTotal();
+  }
+  function fillPartTypes() {
+    if (!parts || f.parts.hidden) return;
+    const line = currentLine();
+    const options = line ? (line.types || []) : [];
+    const byName = n => (n ? options.find(t => String(t.name).toUpperCase() === n.toUpperCase()) : null);
+    f.parts.querySelectorAll(".part").forEach((box, i) => {
+      const p = parts[i] || {};
+      const sel = box.querySelector(".ptype");
+      sel.innerHTML = "";
+      sel.appendChild(new Option("Choose a type", ""));
+      for (const t of options) {
+        const o = new Option(t.requiresAttachment ? `${t.name} (order form)` : t.name, t.id);
+        o.dataset.name = t.name;
+        sel.appendChild(o);
+      }
+      // Only the door is guessed with the page's address and breadcrumbs: a drain on a shower door page is no door.
+      const guess = byName(p.typeName) ||
+        X.suggestType(i === 0 ? { name: p.name || p.label, pageUrl: location.href, category } : { name: `${p.label} ${p.name || ""}` }, options, { orderForms: true }) ||
+        byName("MISCELLANEOUS");
+      sel.value = guess ? guess.id : "";
+      box.querySelector(".ptype-wrap").hidden = options.length === 0;
+    });
+  }
+  // The parts should add up to the page's total; a part priced by hand, or a price the page did not give, can break that.
+  function checkKitTotal() {
+    if (!parts || f.parts.hidden) return;
+    const total = Number(parts[0].pageTotal) || 0;
+    const sum = [...f.parts.querySelectorAll(".pprice")].reduce((s, el) => s + (Number(el.value) || 0), 0);
+    const off = total > 0 && Math.abs(sum - total) > 0.5;
+    f.kitTotalHint.hidden = !off;
+    if (off) f.kitTotalHint.textContent = `These prices add up to $${money(sum)}, but the page's total is $${money(total)}. Check them before adding.`;
   }
   function showOrderForm() {
     const o = f.type.selectedOptions[0];
@@ -919,6 +1136,7 @@
     msg.hidden = true;
     f.add.disabled = false;
     show(Math.max(selected, 0));
+    renderParts(); // 1.5.5
     clearMissing();
     panel.style.display = "block";
     fab.style.display = "none";
@@ -935,11 +1153,14 @@
     ["price", "Price on this site"],
     ["qty", "Quantity"],
   ];
+  const KIT_OWN = new Set(["type", "model", "color", "description", "price"]); // 1.5.5: each part has its own
   function missingFields() {
     const out = [];
+    const kit = !!(parts && !f.parts.hidden);
     for (const [key, label, shown] of REQUIRED) {
       const el = f[key];
-      if (shown && !shown()) {
+      // if (shown && !shown()) {
+      if ((shown && !shown()) || (kit && KIT_OWN.has(key))) {
         el.classList.remove("missing");
         continue;
       }
@@ -950,10 +1171,24 @@
       el.classList.toggle("missing", !ok);
       if (!ok) out.push({ el, label });
     }
+    // 1.5.5: every part's own fields, named with the part ("Color / finish (part 3)").
+    if (kit) {
+      f.parts.querySelectorAll(".part").forEach((box, i) => {
+        for (const [cls, label] of PART_FIELDS) {
+          const el = box.querySelector(`.${cls}`);
+          if (cls === "ptype" && box.querySelector(".ptype-wrap").hidden) continue;
+          const v = String(el.value || "").trim();
+          const ok = v !== "" && (cls !== "pprice" || Number(v) > 0);
+          el.classList.toggle("missing", !ok);
+          if (!ok) out.push({ el, label: `${label} (part ${i + 1})` });
+        }
+      });
+    }
     return out;
   }
   function clearMissing() {
     for (const [key] of REQUIRED) f[key].classList.remove("missing");
+    for (const el of f.parts.querySelectorAll(".missing")) el.classList.remove("missing"); // 1.5.5
   }
 
   function closePanel() {
@@ -979,6 +1214,37 @@
       msg.textContent = `Please fill in ${missing.map(m => m.label).join(", ")} before adding.` +
         (missing.some(m => m.el === f.price) ? " If this site shows no price, ask your sales rep for it." : "");
       missing[0].el.focus();
+      return;
+    }
+    // 1.5.5 (Gib 11/6): a kit goes on as one line per part, all in one message so none is left out.
+    if (parts && !f.parts.hidden) {
+      const kitLine = currentLine();
+      const picks = [...f.parts.querySelectorAll(".part")].map((box, i) => {
+        const p = parts[i] || {};
+        const sel = box.querySelector(".ptype"), o = sel.selectedOptions[0];
+        const desc = box.querySelector(".pdesc").value;
+        return {
+          name: p.name || desc || "", model: box.querySelector(".pmodel").value, color: box.querySelector(".pcolor").value,
+          price: box.querySelector(".pprice").value, currency: "USD", imageUrl: p.imageUrl || "", quantity: f.qty.value,
+          productLineId: kitLine ? kitLine.id : "", typeId: sel.value, typeName: sel.value && o ? o.dataset.name || o.textContent : "",
+          collection: "", description: desc, category,
+        };
+      });
+      f.add.disabled = true;
+      let kitRes = null;
+      try {
+        kitRes = await chrome.runtime.sendMessage({ type: "add-picks", picks });
+      } catch {}
+      msg.hidden = false;
+      if (kitRes && kitRes.ok) {
+        msg.className = "msg ok";
+        msg.textContent = `Added ${picks.length} items to the CPS Quote List, one line per part. ${kitRes.count} item${kitRes.count === 1 ? "" : "s"} waiting for your sales rep.`;
+        refreshCount();
+      } else {
+        msg.className = "msg err";
+        msg.textContent = "Could not add these items. Please ask your sales rep.";
+        f.add.disabled = false;
+      }
       return;
     }
     const it = items[selected] || {};
