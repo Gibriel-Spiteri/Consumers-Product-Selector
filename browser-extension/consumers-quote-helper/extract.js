@@ -681,10 +681,40 @@
     return { items, selected: pickDefault(items, pageUrl), category: breadcrumbs(blocks, page) };
   }
 
+  // 1.5.7 (Gib 11/6, "add a report issue button to the extension"): the panel's report, shaped like the Product Selector's
+  // own Report Issue (POST /api/cases { subject, detail, employee }), which opens a NetSuite case for IT. What the
+  // customer typed, the vendor page, what the panel read, the QuickAdd version and the browser; no customer details.
+  function issueReport(r) {
+    const s = v => text(v).slice(0, 500);
+    const what = String(r && r.text || "").replace(/\r/g, "").trim().slice(0, 4000);
+    if (!what) return null;
+    const domain = (() => { try { return registrableDomain(new URL(String(r.pageUrl)).hostname); } catch { return ""; } })();
+    const first = what.split("\n")[0].slice(0, 120);
+    const fields = r.fields || {};
+    const read = [["Type", fields.type], ["Model", fields.model], ["Color / finish", fields.color], ["Collection / Description", fields.description],
+      ["List price", fields.price], ["Quantity", fields.quantity], ["Product line", fields.line]].filter(([, v]) => text(v)).map(([k, v]) => `${k}: ${s(v)}`);
+    const parts = (Array.isArray(r.parts) ? r.parts : []).slice(0, 20).map((p, i) => `Part ${i + 1}: ${[p.model, p.type, p.color, p.description, p.price ? `$${p.price}` : ""].map(s).filter(Boolean).join(" | ")}`);
+    const detail = [
+      what,
+      "",
+      "Sent from the Consumers QuickAdd panel.",
+      r.reporter ? `Reported by: ${s(r.reporter)}` : "",
+      `Vendor page: ${s(r.pageUrl)}`,
+      `QuickAdd version: ${s(r.version)}`,
+      `Browser: ${s(r.browser)}`,
+      r.message ? `Panel message: ${s(r.message)}` : "",
+      "",
+      read.length || parts.length ? "What the panel read:" : "The panel had nothing read.",
+      ...read, ...parts,
+    ].filter((line, i, a) => line !== "" || (a[i - 1] !== "" && i > 0)).join("\n");
+    return { subject: `QuickAdd issue (${domain || "vendor site"}): ${first}`.slice(0, 300), detail, employee: null };
+  }
+
   const api = {
     extract, scanHtml, fromJsonLd, fromOpenGraph, fromPageText, fillGaps, blankItem, urlModel, labeledModels,
     registrableDomain, pickDefault, text, number, suggestType, printedPrice, breadcrumbs, guessFinish, collDesc,
     descName, discontinued, words, guessCollection, // 1.5.3
+    issueReport, // 1.5.7
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.ConsumersExtract = api;

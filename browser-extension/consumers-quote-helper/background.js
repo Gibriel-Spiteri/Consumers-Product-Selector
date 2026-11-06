@@ -193,6 +193,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         await broadcastPicks(next);
         return sendResponse({ ok: true, count: next.length, added: kit.length });
       }
+      // 1.5.7 (Gib 11/6, "add a report issue button to the extension"): the panel's report goes to the Product Selector's
+      // own Report Issue endpoint, which opens a NetSuite case for IT. It needs no sign-in.
+      case "report-issue": {
+        const host = (() => { try { return new URL(sender.url || sender.tab.url).hostname; } catch { return ""; } })();
+        if (!vendorDomains.includes(registrableDomain(host)) || !message.report) return sendResponse({ ok: false, error: "Not a vendor page" });
+        const pageUrl = sender.url || (sender.tab && sender.tab.url) || "";
+        const payload = globalThis.ConsumersExtract.issueReport({ ...message.report, pageUrl, version: chrome.runtime.getManifest().version });
+        if (!payload) return sendResponse({ ok: false, error: "Please say what went wrong." });
+        try {
+          const res = await fetch(`${APP_ORIGINS[0]}/api/cases`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+          const data = await res.json().catch(() => null);
+          if (!res.ok) return sendResponse({ ok: false, error: (data && data.error) || `The Product Selector answered ${res.status}` });
+          return sendResponse({ ok: true, caseNumber: (data && data.caseNumber) || "", caseId: (data && data.caseId) || "" });
+        } catch (e) {
+          return sendResponse({ ok: false, error: "Could not reach the Product Selector" });
+        }
+      }
       case "pick-count":
         return sendResponse({ count: picks.length });
       case "site-info": {

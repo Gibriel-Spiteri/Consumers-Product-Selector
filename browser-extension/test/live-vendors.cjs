@@ -145,7 +145,22 @@ const VENDORS = [
   // Kohler: the list price, not the sale price in its product data.
   // 11/5: Gib kept the price Kohler shows (the sale price), so this only checks one is read.
   { key: "kohler2", url: "https://www.kohler.com/en/products/kitchen-faucets/shop-kitchen-faucets/crue-pull-down-kitchen-sink-faucet-w-three-function-sprayhead-22972?skuId=22972-CP",
-    expect: { model: "K-22972-CP", type: "KITCHEN FAUCET", ...anyPrice } }, // sale $431.25, list $575 on 11/5
+    // expect: { model: "K-22972-CP", type: "KITCHEN FAUCET", ...anyPrice } }, // sale $431.25, list $575 on 11/5
+    // 1.5.7 (Gib 11/6, "use the list price for items, not sales price"): the "List Price", not the sale price.
+    expect: { model: "K-22972-CP", type: "KITCHEN FAUCET", price: v => Number(v) > 500 } }, // sale $431.25, list $575 on 11/5
+  // 1.5.7: Gib's case (Spacity K-28020-TBH-0: $710.17 sale, "$946.90 List"); the Parallel faucet shows "Current Price
+  // $518.06" and "List Price $690.75" the same way.
+  { key: "kohler-list", url: "https://www.kohler.com/en/products/bathroom-faucets/shop-bathroom-sink-faucets/parallel-widespread-bathroom-sink-faucet-with-lever-handles-23484-4?skuId=23484-4-CP", settle: 8000,
+    expect: { model: "K-23484-4-CP", price: v => Number(v) > 600, type: "BATH FAUCET" } },
+  { key: "kohler-listkit", url: "https://www.kohler.com/en/products/bathroom-faucets/shop-bathroom-sink-faucets/occasion-bundle-bndl-k0002?skuId=BNDL-K0002", settle: 9000,
+    // The items' prices load a while after they scroll into view; the open panel follows them (partsKey).
+    prepare: async page => {
+      await page.evaluate(() => window.scrollTo(0, 1500));
+      await page.waitForFunction(() => [...document.querySelectorAll("[class*=BundleChildItems_ChildItems] .price-group:not(.mobile) .price")]
+        .every(p => /\$\s?[1-9]/.test(p.textContent || "")), null, { timeout: 20000 }).catch(() => {});
+      await page.waitForTimeout(1500);
+    },
+    expect: { parts: all(models(/^2700\d|^27010/, /^2700\d|^27010/), ps => ps.reduce((s, p) => s + Number(p.price), 0) > 1200), totalWarning: false } }, // list $1,257.75, sale $943.31
   // Brizo: a combo's parts and its "List price as shown".
   { key: "brizo2", url: "https://www.brizo.com/bath/product/65368LF-PCLHP-ECO--HL5368-PCCL", settle: 8000, // its "as shown" block draws late
     expect: { model: "65368LF-PCLHP-ECO + HL5368-PCCL", color: "Polished Chrome", type: "BATH - LAVATORY FAUCET", price: v => Number(v) > 900 } },
@@ -399,6 +414,19 @@ async function readPanel(page) {
         const wording = fabText === "Add to CPS Quote List" && head === "Add to CPS Quote List" && sub === "Confirm all fields are correct before adding";
         record("seed", typeShown && type === "KITCHEN FAUCET", `before the Product Selector is opened: Type ${typeShown ? type || "(none chosen)" : "hidden"}`);
         record("wording", wording, `button "${fabText}", header "${head}" / "${sub}"`);
+        // 1.5.7 (Gib 11/6): the footer note and the list price label.
+        const note = (await p.locator(".confirm-note").innerText()).trim();
+        const priceLabel = (await p.locator(".price-wrap").evaluate(l => l.firstChild.textContent)).trim(); // the label text (shown in capitals by CSS)
+        record("wording", note === "Confirm all Information Above" && priceLabel === "List price", `footer "${note}", price label "${priceLabel}"`);
+        // 1.5.7: Report issue opens its form and refuses an empty report. Never sent from here (it opens a NetSuite case).
+        await p.locator(".report").click();
+        const formShown = await p.locator(".report-box").isVisible();
+        await p.locator(".r-send").click();
+        await first.waitForTimeout(300);
+        const refusal = (await p.locator(".r-msg").innerText()).trim();
+        await p.locator(".r-cancel").click();
+        record("report", formShown && refusal === "Please say what went wrong." && !(await p.locator(".report-box").isVisible()),
+          `Report issue form ${formShown ? "opens" : "DID NOT OPEN"}, empty send: "${refusal}", Cancel closes it`);
         await first.screenshot({ path: path.join(SHOTS, "seed-delta.png") });
       } catch (e) {
         record("seed", false, `error: ${String(e.message || e).split("\n")[0]}`);

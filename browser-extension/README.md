@@ -47,6 +47,23 @@ What the extension holds and where it runs:
 - **Vendor sites.** The extension runs only on the vendor domains of the special-order product lines. The Product Selector sends that list whenever it is open, so a product line added in NetSuite (with a website) is picked up automatically. Until then, the 18 domains from PROD on 2026-11-05 are built in (`SEED_DOMAINS` in `background.js`, Types in `seed-sites.js`). On 11/5 Bain Ultra, Grohe and Sofia Medicine Cabinets became special-order lines and Neptune, Foremost Bath and Avance Cabinetry stopped being ones; the Product Selector picks such changes up on its own, the built-in list is refreshed with each release.
 - **Other sites.** On any other site the extension does nothing.
 
+**List price, not sale price (1.5.7, Gib 11/6: "Change the app to use the list price for items, not sales price"):** wherever a page shows a list or regular price next to a sale price, the panel takes the list price; a page with one price keeps it. This reverses the 11/5 Kohler decision. Per vendor:
+
+| Vendor | List price read from |
+|---|---|
+| Kohler | "List Price $690.75" under "Current Price $518.06" (`.product-detail-page__list-value`); bundle items are scaled by the bundle's own list-to-sale ratio (their own pages fill prices in by script), so they add up to the bundle's list price |
+| Delta | the struck-through list price on Outlet / Recertified items (since 1.5.3), now also for bundle items |
+| Top Knobs | Magento's regular price (`oldPrice`) when an item is on special |
+| John Boos | the variant's `compareAtPrice` when it is on sale, also for the add-on box |
+| Grohe, TOTO, Brizo, Flusso, Elkay | already the list price ("List price", "MSRP LIST PRICE", "List price as shown", "List Price", "Show List Price") |
+| Icera | WooCommerce prints the regular price first when an item is on sale |
+| Fleurco, Bain Ultra, Sofia | one price per item |
+| Richelieu, Strategic Brands, Franke, Craft & Main | no public price |
+
+The panel's price field is now labeled **List price**, and the line under it reads "Confirm all Information Above" (Gib 11/6; was "Your Consumers sales rep confirms the list price and finishes this on your quote.").
+
+**Report issue (1.5.7, Gib 11/6):** a **Report issue** link at the left of the panel's buttons opens a short form (what went wrong, an optional name). **Send report** posts it through the extension's background to the Product Selector's own Report Issue endpoint (`POST /api/cases`), which opens a NetSuite case for IT, so it works without signing in. The case carries the vendor page, what the panel read (fields or parts), the QuickAdd version and the browser; no customer details. If it cannot be sent, the panel says to use Report Issue at the bottom of any Product Selector page. Each case also emails Gib, Phil Peluso and Gordon Griswold ("Product Selector issue: <case #> - <issue>") through the NetSuite script `customscript_ps_issue_email_ue` (Case, after create, REST cases in Innovation & Technology; source in Bundle63418 `Projects/ProductSelectorIssueEmail/sdf_prod`); a failed email is logged and never blocks the case.
+
 **Price check:** a vendor site can show a sale price. Delta's Outlet / Recertified items, for example, show $215 instead of the $449 list. The rep always confirms the list price. Since 1.5.3 the panel takes the list price where the page prints it next to a sale price (Delta's struck-through price, Grohe's "List price"; not Kohler, whose shown price Gib kept on 11/5) and no price from a range ("$680.00 - $1,061.00") or a "from" price.
 
 ## What it reads
