@@ -139,7 +139,8 @@
           <b>Report an issue</b>
           <label>What went wrong?<textarea class="r-text" rows="3" maxlength="4000" placeholder="For example: the color is wrong, or the price is missing"></textarea></label>
           <label>Your name (optional)<input class="r-name" maxlength="100"></label>
-          <div class="hint">Goes to Consumers IT as a case, with this page's address, what this panel read, the QuickAdd version and your browser. No customer details are sent.</div>
+          <!-- 1.5.8: sent as the rep signed in to the Product Selector in this browser. Was: "Goes to Consumers IT as a case, with this page's address, ..." -->
+          <div class="hint">Goes to Consumers IT as a case, as the person signed in to the Product Selector in this browser, with this page's address, what this panel read, the QuickAdd version and your browser. No customer details are sent.</div>
           <div class="r-actions"><button class="btn r-cancel" type="button">Cancel</button><button class="btn primary r-send" type="button">Send report</button></div>
           <div class="msg r-msg" hidden></div>
         </div>
@@ -2037,6 +2038,17 @@
       rMsg.className = "msg r-msg ok";
       rMsg.textContent = `Sent to Consumers IT${res.caseNumber ? ` as case #${res.caseNumber}` : ""}. Thank you.`;
       rText.value = "";
+    } else if (res && res.signIn) {
+      // 1.5.8: Report Issue needs the rep signed in to the Product Selector in this browser; the report stays typed.
+      rMsg.className = "msg r-msg err";
+      rMsg.textContent = "To send this, open the Product Selector in this browser and sign in, then click Send report again. ";
+      const a = document.createElement("a");
+      a.href = "https://consumers-product-selector.replit.app/";
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.textContent = "Open the Product Selector";
+      rMsg.appendChild(a);
+      rSend.disabled = false;
     } else {
       rMsg.className = "msg r-msg err";
       rMsg.textContent = `Could not send the report${res && res.error ? ` (${res.error})` : ""}. Try again, or open the Product Selector and use Report Issue at the bottom of any page.`;
