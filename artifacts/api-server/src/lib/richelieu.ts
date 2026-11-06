@@ -93,8 +93,10 @@ export interface RichelieuPagePrices {
   analyticsPrice: number | null;
   // The amount labeled as a list / retail price, if the page shows one. The only price QuickAdd gets.
   listPrice: number | null;
-  // 11/6 (Gib, "Yes, fill our cost"): Consumers' own price on Richelieu for one unit, the price block's first
-  // quantity break (data-min="1"), else the cart's unit price. Richelieu shows no list price to the account.
+  // The one price the signed-in account sees for one unit: the price block's first quantity break (data-min="1"),
+  // else the cart's unit price. Gib (11/6, with screenshots): the shared "Consumers Sales" login in the Replit Secrets
+  // sees Richelieu's LIST price there ("When using given log-in: I get our List Price of 18.49"); a corporate login
+  // sees our cost there instead, with the list price beside it as "Suggested retail" (that one is listPrice above).
   accountPrice: number | null;
   boxText: string;
 }

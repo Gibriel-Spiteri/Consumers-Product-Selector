@@ -62,6 +62,20 @@ test("11/6, real account markup: the account price is the 1-unit price break (ou
   assert.equal(parseRichelieuPage(SIGNED_OUT).accountPrice, null);
 });
 
+test("11/6: a corporate login sees our cost with 'Suggested retail' beside it: the suggested retail is the list price", () => {
+  const html = `<div class="pms-ImagePriceBox"><div class="name">Transitional Metal Pull - 8695</div> Product # <strong>BP869596195</strong>
+    <div>Purchase planner</div><a><img>Order history</a><div class="pms-PriceBlock count1"><ul>
+    <li class="pms-PriceBlock_Main" data-min="1" data-max="9223372036854775807"><div class="pms-PriceBlock_Breaks"><div class="pms-PriceBlock_BreaksPrice">$7.49</div></div>
+    <div class="pms-SuggestedRetail"><span>Suggested retail</span><span>$18.49</span></div></li></ul></div><button>ADD TO CART</button></div>`;
+  const p = parseRichelieuPage(html, "BP869596195");
+  assert.equal(p.accountPrice, 7.49); // the corporate login's own price: our cost
+  assert.equal(p.listPrice, 18.49); // what SmartAdd gets (listPrice comes first)
+  // The shared sales login sees only the list price: $18.49 in the 1-unit break (checked live 11/6).
+  const sales = parseRichelieuPage(`<div class="pms-ImagePriceBox">Product # <strong>BP869596195</strong><a>Order history</a>
+    <li class="pms-PriceBlock_Main" data-min="1" data-max="9"><div class="pms-PriceBlock_BreaksPrice">$18.49</div></li><button>ADD TO CART</button></div>`);
+  assert.equal(sales.listPrice ?? sales.accountPrice, 18.49);
+});
+
 test("a CAPTCHA widget or a verification code at sign-in stops it", () => {
   assert.match(humanCheck(`<div class="g-recaptcha" data-sitekey="abc"></div>`), /CAPTCHA/);
   assert.match(humanCheck(`<script src="https://www.google.com/recaptcha/api.js"></script>`), /CAPTCHA/);

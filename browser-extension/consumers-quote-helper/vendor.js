@@ -1634,8 +1634,8 @@
 
   // 1.5.10 (Gib 11/6, from Jim): Richelieu shows prices only to a signed-in account. Gib: "We have a service agreement
   // with Richelieu for automated sign in", so the Product Selector signs in with Consumers' shared account on its server
-  // and returns the page's price (the account and its session stay on the server; 1.5.11: Consumers' own Richelieu
-  // price, as Gib chose, since Richelieu shows the account no list price). The panel asks
+  // and returns the page's price (the account and its session stay on the server; 1.5.11: the list price the shared
+  // sales login sees). The panel asks
   // as the rep signed in to the Product Selector in this browser, as Report issue does. A price already typed is kept.
   let serverPriceFor = "";
   async function fillServerPrice() {
@@ -1654,8 +1654,9 @@
     if (serverPriceFor !== key || location.pathname !== key) return; // another item since
     // if (res && res.ok && Number(res.listPrice) > 0) {
     //   ...f.price.value = Number(res.listPrice).toFixed(2); ... "List price from Consumers' Richelieu account."
-    // 1.5.11 (Gib 11/6, "Yes, fill our cost"): Richelieu shows the account no list price, only Consumers' own price,
-    // so that fills the price field. Only for the item the panel shows (the page's SKU is the panel's model).
+    // 1.5.11 (Gib 11/6): the shared sales login sees one price, Richelieu's list price (Gib checked it against a
+    // corporate login, which shows our cost with the list as "Suggested retail"); it fills the price field. Only for the
+    // item the panel shows (the page's SKU is the panel's model).
     const sameItem = !res || !res.sku || String(res.sku).toUpperCase() === String(f.model.value).trim().toUpperCase();
     if (res && res.ok && Number(res.price) > 0 && sameItem) {
       if (!f.price.value) {

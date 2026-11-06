@@ -259,7 +259,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         return sendResponse({ ok: true });
       }
       // 1.5.11 (Gib 11/6): Richelieu's price, read by the Product Selector with Consumers' Richelieu account (the
-      // account and its session stay on the server; Consumers' own price, as Gib chose). Asked as the rep signed in to the
+      // account and its session stay on the server; the list price the shared sales login sees). Asked as the rep signed in to the
       // Product Selector in this browser, for the page the panel is on; kept here for 30 minutes per page.
       case "vendor-price": {
         let page;
@@ -281,8 +281,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           const data = await res.json().catch(() => null);
           if (!res.ok || !data) return sendResponse({ ok: false, error: (data && data.error) || `The Product Selector answered ${res.status}` });
           // const out = { ok: true, listPrice: Number(data.listPrice) > 0 ? Number(data.listPrice) : null };
-          // 1.5.11 (Gib 11/6, "Yes, fill our cost"): the price to fill (a list price if Richelieu labels one, else
-          // Consumers' own Richelieu price), its kind, and the page's SKU so the panel fills only the item it shows.
+          // 1.5.11 (Gib 11/6): the price to fill (Richelieu's list price: a labeled "Suggested retail", else the one price
+          // the shared sales login sees), its kind, and the page's SKU so the panel fills only the item it shows.
           const price = Number(data.price) > 0 ? Number(data.price) : null;
           const out = { ok: true, price, kind: price ? String(data.priceKind || "") : "", sku: text(data.sku), listPrice: Number(data.listPrice) > 0 ? Number(data.listPrice) : null };
           vendorPrices.set(key, { at: Date.now(), res: out });
