@@ -10,7 +10,7 @@ import { useQuoteList, type PriceBasis, type QuoteItem } from "@/context/quote-l
 import { authHeaders } from "@/context/auth-context";
 import { cn, fmtPrice } from "@/lib/utils";
 import { trackPushToEstimate } from "@/lib/analytics";
-import { missingDetails } from "@/lib/vendor-picks";
+import { missingDetails, pushableImageUrl } from "@/lib/vendor-picks";
 
 interface Estimate {
   id: number;
@@ -503,6 +503,8 @@ export default function QuoteListPage() {
       netsuiteId: i.netsuiteId,
       quantity: i.quantity,
       ...(i.specialOrder ? { specialOrder: { ...i.specialOrder } } : {}),
+      // 2026-11-06: the vendor picture goes along so the estimate / sales order printouts can show it.
+      ...(i.specialOrder && pushableImageUrl(i.vendorPick?.imageUrl) ? { imageUrl: pushableImageUrl(i.vendorPick?.imageUrl)! } : {}),
     }));
 
     let data;
@@ -527,6 +529,11 @@ export default function QuoteListPage() {
     const pricedSpecials = data?.specialOrderLines ?? [];
     if (pricedSpecials.length > 0) {
       msg += `. Special orders priced at ${pricedSpecials.map(l => `${l.model} $${fmtPrice(l.rate)}${l.quantity > 1 ? ` x ${l.quantity}` : ""}`).join(", ")}`;
+    }
+    // 2026-11-06: product pictures for the printouts. Only a problem is worth a mention.
+    const imagesFailed = data?.imagesFailed ?? 0;
+    if (imagesFailed > 0) {
+      msg += `. ${imagesFailed} product picture${imagesFailed === 1 ? "" : "s"} could not be saved, so ${imagesFailed === 1 ? "that line prints" : "those lines print"} without one`;
     }
     trackPushToEstimate({
       estimateId,

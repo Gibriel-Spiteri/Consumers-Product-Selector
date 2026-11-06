@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { executeSuiteQL, netsuiteRequest, isNetSuiteConfigured } from "../lib/netsuite";
 import { logger } from "../lib/logger";
+import { saveThumbnails, startThumbnail } from "../lib/spImages";
 import {
   EstimateItemsSchema, fillSpecialOrderOptions, getSpecialOrderPricing, getSpecialOrderProductLines, getSpecialOrderTypes,
   positiveId, specialOrderLine, specialOrderSpecs, SpecialOrderValidationError,
@@ -171,6 +172,7 @@ router.post("/estimates/:estimateId/add-items", async (req, res) => {
     const specialOrders: Array<{
       index: number; netsuiteId: string; quantity: number; details: NonNullable<(typeof goodItems)[number]["specialOrder"]>;
       type: Awaited<ReturnType<typeof getSpecialOrderTypes>>[number]; rate: number; amount: number;
+      imageUrl: string | null;
     }> = [];
     for (const item of goodItems) {
       if (!item.specialOrder) {
@@ -203,9 +205,16 @@ router.post("/estimates/:estimateId/add-items", async (req, res) => {
       const line = specialOrderLine(item.netsuiteId, item.quantity, details, productLine, type, itemPricing, pricingContext);
       specialOrders.push({
         index: newLines.length, netsuiteId: item.netsuiteId, quantity: item.quantity, details, type, rate: line.rate, amount: line.amount,
+        imageUrl: item.imageUrl ?? null,
       });
       newLines.push(line);
     }
+
+    // 2026-11-06: the vendor pictures for the printouts. Fetching and shrinking them starts now and runs while NetSuite
+    // adds the lines; they are saved and linked once the lines exist (below). Never fails the push.
+    const thumbnailJobs = specialOrders.map(so => startThumbnail(so.imageUrl));
+    // REST line ids of the special-order lines, in specialOrders order, once they are on the estimate.
+    let specialOrderLineIds: number[] = [];
 
     await netsuiteRequest(
       `/estimate/${estimateId}`,
@@ -219,6 +228,8 @@ router.post("/estimates/:estimateId/add-items", async (req, res) => {
         },
       }
     );
+    // The lines exist now, so the pictures can go to the File Cabinet while the options are written below.
+    const savedThumbnails = thumbnailJobs.some(Boolean) ? saveThumbnails(thumbnailJobs) : null;
 
     if (specialOrders.length > 0) try {
       // Type, Model, Coll/Desc and Color are item options, which REST only takes through each line's
@@ -248,6 +259,7 @@ router.post("/estimates/:estimateId/add-items", async (req, res) => {
       if (missing.length > 0) {
         throw new Error(`Special-order Type/Model did not save on estimate line(s) ${missing.map(u => u.line).join(", ")}`);
       }
+      specialOrderLineIds = optionUpdates.map(u => u.line);
     } catch (err: any) {
       // The lines are already on the estimate, so a retry would duplicate them.
       logger.error({ err, estimateId }, "Added items but could not save special-order options");
@@ -258,8 +270,29 @@ router.post("/estimates/:estimateId/add-items", async (req, res) => {
       });
     }
 
+    // 2026-11-06 (Gib: "We'd like to get the thumbnail from the special items we grab from the product selector to make
+    // it to the estimate & sales order printouts"): save each vendor picture in NetSuite and link it to its line
+    // (custcol_sp_thumbnail, a hidden column the printouts read; it carries to the sales order). A separate PATCH, so
+    // an account without the column or the upload RESTlet only loses the pictures, never the lines or their options.
+    let imagesSaved = 0, imagesFailed = 0;
+    if (savedThumbnails && specialOrderLineIds.length === specialOrders.length) {
+      const { fileIds, failed } = await savedThumbnails;
+      imagesFailed = failed;
+      const thumbUpdates = fileIds.flatMap((fileId, i) =>
+        fileId ? [{ line: specialOrderLineIds[i], custcol_sp_thumbnail: Number(fileId) }] : []);
+      if (thumbUpdates.length > 0) {
+        try {
+          await netsuiteRequest(`/estimate/${estimateId}`, "PATCH", { item: { items: thumbUpdates } });
+          imagesSaved = thumbUpdates.length;
+        } catch (err: any) {
+          imagesFailed += thumbUpdates.length;
+          logger.warn({ err: err?.message ?? String(err), estimateId }, "Special-order pictures saved but not linked to their lines");
+        }
+      }
+    }
+
     logger.info(
-      { estimateId, tranId: existing.tranId, newItemCount: goodItems.length, skipped: invalidIds },
+      { estimateId, tranId: existing.tranId, newItemCount: goodItems.length, skipped: invalidIds, imagesSaved, imagesFailed },
       "Added items to estimate"
     );
 
@@ -274,6 +307,8 @@ router.post("/estimates/:estimateId/add-items", async (req, res) => {
         netsuiteId: so.netsuiteId, model: specialOrderSpecs(so.details, so.type).model, quantity: so.quantity,
         listPrice: so.details.listPrice, rate: so.rate, amount: so.amount,
       })),
+      imagesSaved,
+      imagesFailed,
     });
   } catch (err: any) {
     if (err instanceof SpecialOrderValidationError) {

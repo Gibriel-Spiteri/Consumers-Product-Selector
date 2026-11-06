@@ -42,6 +42,13 @@ function httpsUrl(v: unknown): string {
   }
 }
 
+// The picture address a special order sends with the push (2026-11-06, for the estimate / sales order printouts): an
+// https address the API accepts (2048 characters at most), else nothing. Picks already keep only https pictures.
+export function pushableImageUrl(v: unknown): string | null {
+  const url = httpsUrl(v);
+  return url && url.length <= 2048 ? url : null;
+}
+
 export function parsePick(raw: unknown): VendorPick | null {
   if (!raw || typeof raw !== "object") return null;
   const p = raw as Record<string, unknown>;

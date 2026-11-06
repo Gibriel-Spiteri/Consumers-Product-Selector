@@ -15,4 +15,8 @@ export interface EstimateItemsResult {
   skippedNetsuiteIds: string[];
   /** Special-order lines as priced on the estimate (list price x product line multipliers, as NetSuite does) */
   specialOrderLines?: SpecialOrderLineResult[];
+  /** Special-order pictures saved for the printouts */
+  imagesSaved?: number;
+  /** Special-order pictures that could not be saved (those lines print without one) */
+  imagesFailed?: number;
 }

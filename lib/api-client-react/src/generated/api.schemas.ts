@@ -183,6 +183,12 @@ export interface EstimateLineInput {
    */
   quantity: number;
   specialOrder?: SpecialOrderDetails;
+  /**
+   * Special orders picked on a vendor website: the product picture the extension read. The server saves a small copy in NetSuite for the estimate and sales order printouts (custcol_sp_thumbnail). Ignored on catalog lines.
+   * @maxLength 2048
+   * @pattern ^https?://
+   */
+  imageUrl?: string;
 }
 
 export interface EstimateItemsInput {
@@ -210,6 +216,10 @@ export interface EstimateItemsResult {
   skippedNetsuiteIds: string[];
   /** Special-order lines as priced on the estimate (list price x product line multipliers, as NetSuite does) */
   specialOrderLines?: SpecialOrderLineResult[];
+  /** Special-order pictures saved for the printouts */
+  imagesSaved?: number;
+  /** Special-order pictures that could not be saved (those lines print without one) */
+  imagesFailed?: number;
 }
 
 export interface HealthStatus {

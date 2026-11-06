@@ -16,4 +16,10 @@ export interface EstimateLineInput {
    */
   quantity: number;
   specialOrder?: SpecialOrderDetails;
+  /**
+   * Special orders picked on a vendor website: the product picture the extension read. The server saves a small copy in NetSuite for the estimate and sales order printouts (custcol_sp_thumbnail). Ignored on catalog lines.
+   * @maxLength 2048
+   * @pattern ^https?://
+   */
+  imageUrl?: string;
 }

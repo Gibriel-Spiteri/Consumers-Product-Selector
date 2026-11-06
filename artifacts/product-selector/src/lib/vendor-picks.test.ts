@@ -156,3 +156,13 @@ test("the new pick fields are taken only when well-formed", () => {
   assert.deepEqual(vendorSites([{ ...line("88", "DELTA", "https://www.deltafaucet.com/"), types: [{ id: "5", name: "KITCHEN FAUCET", requiresAttachment: false }] }])[0].types,
     [{ id: "5", name: "KITCHEN FAUCET", requiresAttachment: false }]);
 });
+
+test("pushableImageUrl: only an https picture address of 2048 characters or less goes with the push (2026-11-06)", async () => {
+  const { pushableImageUrl } = await import("./vendor-picks");
+  assert.equal(pushableImageUrl("https://www.johnboos.com/cdn/shop/files/MPL1610125.jpg?v=1"), "https://www.johnboos.com/cdn/shop/files/MPL1610125.jpg?v=1");
+  assert.equal(pushableImageUrl("http://example.com/a.jpg"), null);
+  assert.equal(pushableImageUrl("javascript:alert(1)"), null);
+  assert.equal(pushableImageUrl(""), null);
+  assert.equal(pushableImageUrl(undefined), null);
+  assert.equal(pushableImageUrl(`https://example.com/${"a".repeat(2100)}.jpg`), null);
+});
