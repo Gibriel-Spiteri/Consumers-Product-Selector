@@ -86,7 +86,8 @@ test("a CAPTCHA widget or a verification code at sign-in stops it", () => {
 // A fake Richelieu: cookies, the sign-in form, and product pages signed in or out by session.
 function fakeRichelieu(opts: { password?: string; loginBody?: string; expireAfter?: number } = {}) {
   const calls: { method: string; path: string; headers: Record<string, string>; body?: string }[] = [];
-  let session = 0, signedInSession = 0, pagesSinceSignIn = 0;
+  let session = 0, pagesSinceSignIn = 0;
+  const signedInSessions = new Set<number>(); // a shared account can have several sessions open
   const transport: Transport = async (method, path, headers, body) => {
     calls.push({ method, path, headers, body });
     const r = (status: number, html: string, extra: Partial<RawResponse> = {}): RawResponse => ({ status, location: null, setCookies: [], body: html, ...extra });
@@ -98,7 +99,7 @@ function fakeRichelieu(opts: { password?: string; loginBody?: string; expireAfte
       const form = new URLSearchParams(body);
       if (opts.loginBody) return r(200, opts.loginBody);
       if (form.get("password") === (opts.password ?? "right") && form.get("checkLogin") === "1") {
-        signedInSession = Number((/PHPSESSID=s(\d+)/.exec(headers.Cookie ?? "") ?? [])[1]);
+        signedInSessions.add(Number((/PHPSESSID=s(\d+)/.exec(headers.Cookie ?? "") ?? [])[1]));
         pagesSinceSignIn = 0;
         return r(302, "", { location: decodeURIComponent(form.get("redirect")!) });
       }
@@ -107,7 +108,7 @@ function fakeRichelieu(opts: { password?: string; loginBody?: string; expireAfte
     if (method === "GET" && path === PAGE) {
       const sid = Number((/PHPSESSID=s(\d+)/.exec(headers.Cookie ?? "") ?? [])[1]);
       const expired = opts.expireAfter != null && pagesSinceSignIn >= opts.expireAfter;
-      if (sid && sid === signedInSession && !expired) {
+      if (sid && signedInSessions.has(sid) && !expired) {
         pagesSinceSignIn++;
         return r(200, signedIn(`<span>List price</span> $12.50 <span>Your price</span> $7.80`));
       }
@@ -176,6 +177,33 @@ test("a CAPTCHA at sign-in stops it for 6 hours", async () => {
   const c = client(f.transport);
   await assert.rejects(c.page(PAGE), (e: unknown) => e instanceof RichelieuBlockedError && /CAPTCHA/.test(e.message));
   assert.match(String(c.status().blocked?.reason), /CAPTCHA/);
+});
+
+test("11/6 (#3): a browser gets its own new session's cookies, without F5 or analytics cookies; the server's session stays", async () => {
+  const f = fakeRichelieu();
+  const c = client(f.transport);
+  await c.page(PAGE); // the server's own session (s1)
+  const cookies = await c.browserSession(); // a new one (s2)
+  assert.deepEqual(cookies.map(x => x.name), ["PHPSESSID"]);
+  assert.equal(cookies[0].value, "s2");
+  assert.equal(cookies[0].httpOnly, true);
+  assert.equal(cookies[0].path, "/");
+  // The server's own session is still s1: the next price lookup does not sign in again.
+  const posts = f.calls.filter(x => x.method === "POST").length;
+  await c.page(PAGE, { fresh: true });
+  assert.equal(f.calls.filter(x => x.method === "POST").length, posts);
+  assert.match(f.calls[f.calls.length - 1].headers.Cookie, /PHPSESSID=s1/);
+  assert.equal(c.browserSessionStatus().browserSessions, 1);
+});
+
+test("11/6 (#3): a refused browser sign-in pauses every sign-in (one shared account)", async () => {
+  const f = fakeRichelieu({ password: "other" });
+  const c = client(f.transport);
+  await assert.rejects(c.browserSession(), RichelieuBlockedError);
+  const n = f.calls.length;
+  await assert.rejects(c.page(PAGE), RichelieuBlockedError);
+  await assert.rejects(c.browserSession(), RichelieuBlockedError);
+  assert.equal(f.calls.length, n);
 });
 
 test("requests to Richelieu are at least a second apart", async () => {
