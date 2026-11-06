@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useAuth } from "@/context/auth-context";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
-import { RefreshCw, Upload, ImageIcon, Shield, ArrowLeft, Clock, PackageX, BarChart3, ChevronRight } from "lucide-react";
+import { RefreshCw, Upload, ImageIcon, Shield, ArrowLeft, Clock, PackageX, ChevronRight } from "lucide-react";
 import { Link } from "wouter";
 import AdminCollapsibleSection from "@/components/admin-collapsible-section";
 import { getGetSyncTimingQueryKey, useGetSyncTiming } from "@workspace/api-client-react";
@@ -143,7 +143,7 @@ function SyncSection({ employeeName }: { employeeName: string }) {
 
   return (
     <AdminCollapsibleSection title="NetSuite Sync" preview={
-      <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-gray-500">
+      <div className="flex flex-col gap-1 text-right text-xs text-gray-500">
         <span><span className="font-semibold">Last sync: </span>{lastSyncStatus === "error" ? "Unavailable"
           : lastSyncStatus === "loading" ? "Loading…" : lastSync?.completedAt
           ? `${formatSyncDate(lastSync.completedAt)} ${formatSyncTimeOfDay(lastSync.completedAt)} ET${lastSync.success ? "" : " (failed)"}`
@@ -754,17 +754,7 @@ export default function AdminPage() {
           className="block bg-white rounded-xl border border-gray-200 p-6 hover:border-amber-300 hover:bg-amber-50/30 transition-colors"
         >
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center">
-                <BarChart3 size={20} className="text-amber-500" />
-              </div>
-              <div>
-                <h2 className="font-semibold text-gray-900 text-[14px]">Usage Analytics</h2>
-                <p className="text-sm text-gray-500">
-                  Active users, top categories and products, per-user activity
-                </p>
-              </div>
-            </div>
+            <h2 className="text-lg font-semibold text-gray-900">Usage Analytics</h2>
             <ChevronRight size={18} className="text-gray-400" />
           </div>
         </Link>
