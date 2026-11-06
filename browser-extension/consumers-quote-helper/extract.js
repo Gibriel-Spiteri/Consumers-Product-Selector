@@ -388,6 +388,24 @@
     [/\b(freestanding|alcove|drop-in|undermount|soaking|corner)\s+bath\b(?!\s*(?:faucet|filler|sink|room))/gi, "$1 tub"],
     [/\blavator(?:y|ies)\b(?!\s+faucets?)/gi, "bath sink"],
     [/\b(?:bar|prep)(?:\s*\/\s*(?:bar|prep))?\s+faucets?\b/gi, "bar prep"], // Brizo's "Prep Faucet" is KITCHEN - BAR/PREP
+    // 1.5.6 (sweep 2, 11/6): a pot filler is a kitchen faucet, not a TUB FILLER (Flusso P.1000); a shower set (valve, trim,
+    // head and hand shower) is ordered as the shower faucet (Flusso 250.7100).
+    // [/\bpot\s+fillers?\b/gi, "kitchen faucet"],
+    // Kept as its own word too, so a line with a POT FILLER Type (Brizo) still picks it; a tub filler is a tub faucet
+    // where the line has no TUB FILLER Type (Brizo T70367 got KITCHEN - POT FILLER).
+    [/\bpot\s+fillers?\b/gi, "potfiller kitchen faucet"],
+    [/\btub\s+fillers?\b/gi, "tubfiller tub faucet"],
+    // A "bathroom sink faucet" is a faucet, not a sink; its "faucet handles" are ordered as the faucet (Kohler bundles).
+    [/\bsink\s+faucets?\b/gi, "faucet"],
+    // An Elkay "Sink Kit" (sink with grid and drain, one SKU) is the sink, not a part of one ("kit" after a fixture).
+    [/\bsink\s+kits?\b/gi, "sink"],
+    [/\bfaucet\s+handles?\b/gi, "faucet"],
+    // [/\bshower\s+(?:sets?|systems?)\b/gi, "shower faucet"],
+    [/\bshower\s+(?:sets?|systems?|bundles?)\b/gi, "shower faucet"], // Grohe's "Thermostatic Shower Bundle"
+    // A shower or valve trim is ordered as the shower faucet where the line has no trim Type (Grohe 29137000, Delta
+    // T14462); a line with a VALVE TRIM Type still picks it (its words say trim too).
+    [/\btub\s*(?:\/|&|and)\s*shower\s+trims?\b/gi, "tub shower faucet trim"],
+    [/\b(?:valve|shower)\s+trims?\b/gi, "shower faucet trim"],
   ];
   const SAME_WORD = { bathroom: "bath", bathtub: "tub", accessorie: "accessory" };
   function words(s) {
@@ -442,14 +460,23 @@
     // The main part of the name; the whole name when that part is just a collection ("Caso - ... Kitchen Faucet"), not
     // when it describes something no Type fits ("Elongated Toilet with Seat, Left-Hand Trip Lever" is no TRIP LEVER).
     const mainList = words(full.split(/\s+(?:with|w\/)\s+|\s+-\s+|,\s*/i)[0]);
-    const nameList = allowed.some(t => mainList.includes(head(t))) || mainList.length > 2 ? mainList : words(full);
+    // const nameList = allowed.some(t => mainList.includes(head(t))) || mainList.length > 2 ? mainList : words(full);
+    // 1.5.6 (sweep 2): a main part that names an accessory (a towel bar) decides too: Top Knobs' "Edwardian Towel Bar with
+    // Oval Backplate" is no BACKPLATES.
+    const nameList = allowed.some(t => mainList.includes(head(t))) || mainList.length > 2 || mainList.includes("accessory") ? mainList : words(full);
     const nameWords = new Set(nameList);
     const otherWords = new Set([...words(path), ...words(pick.category || "")]);
     // The Type's last word is its main noun (BASE, DOOR, FAUCET, SINK, TRIM) and must be there too: a shower door is
     // not a SHOWER BASE just because both say "shower" (live check 11/5). A part after it ("Toilet Seat") is not it.
     const inName = t => { const i = nameList.lastIndexOf(head(t)); return i >= 0 && !PART_AFTER.has(nameList[i + 1]); };
     const partOf = t => { const i = nameList.lastIndexOf(head(t)); return i >= 0 && PART_AFTER.has(nameList[i + 1]); };
-    let cands = allowed.filter(t => !partOf(t) && (inName(t) || otherWords.has(head(t))));
+    // let cands = allowed.filter(t => !partOf(t) && (inName(t) || otherWords.has(head(t))));
+    // 1.5.6 (sweep 2, 11/6): a Type for the other room is not it: a kitchen soap dispenser (Flusso K.A100, "Kitchen >
+    // Kitchen Accessories") is no BATH ACCESSORY. Only when the item names one room and not the other.
+    const said = new Set([...nameWords, ...otherWords]);
+    const otherRoom = t => { const w = words(t.name); return (said.has("kitchen") && !said.has("bath") && w.includes("bath") && !w.includes("kitchen")) ||
+      (said.has("bath") && !said.has("kitchen") && w.includes("kitchen") && !w.includes("bath")); };
+    let cands = allowed.filter(t => !partOf(t) && !otherRoom(t) && (inName(t) || otherWords.has(head(t))));
     if (cands.some(inName)) cands = cands.filter(inName);
     const scored = cands.map(t => {
       const ws = [...new Set(words(t.name))];
