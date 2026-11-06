@@ -699,10 +699,12 @@
     const read = [["Type", fields.type], ["Model", fields.model], ["Color / finish", fields.color], ["Collection / Description", fields.description],
       ["List price", fields.price], ["Quantity", fields.quantity], ["Product line", fields.line]].filter(([, v]) => text(v)).map(([k, v]) => `${k}: ${s(v)}`);
     const parts = (Array.isArray(r.parts) ? r.parts : []).slice(0, 20).map((p, i) => `Part ${i + 1}: ${[p.model, p.type, p.color, p.description, p.price ? `$${p.price}` : ""].map(s).filter(Boolean).join(" | ")}`);
+    // 1.5.10 (Gib 11/6): the extension is Consumers SmartAdd. Was "Sent from the Consumers QuickAdd panel." and
+    // "QuickAdd version:"; the NetSuite issue email recognizes both markers.
     const context = [
-      "Sent from the Consumers QuickAdd panel.",
+      "Sent from the Consumers SmartAdd panel.",
       `Vendor page: ${s(r.pageUrl)}`,
-      `QuickAdd version: ${s(r.version)}`,
+      `SmartAdd version: ${s(r.version)}`,
       r.message ? `Panel message: ${s(r.message)}` : "",
       "",
       read.length || parts.length ? "What the panel read:" : "The panel had nothing read.",
@@ -716,7 +718,8 @@
     return {
       subject: issue, detail,
       pageUrl: String(r.pageUrl || "").slice(0, 2000),
-      browserInfo: `${String(r.userAgent || r.browser || "")}${viewport} | QuickAdd ${s(r.version)}`.slice(0, 500),
+      // browserInfo: `${String(r.userAgent || r.browser || "")}${viewport} | QuickAdd ${s(r.version)}`.slice(0, 500),
+      browserInfo: `${String(r.userAgent || r.browser || "")}${viewport} | SmartAdd ${s(r.version)}`.slice(0, 500), // 1.5.10
     };
   }
 

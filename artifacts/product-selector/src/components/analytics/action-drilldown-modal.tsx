@@ -36,10 +36,13 @@ const META: Record<DrilldownEventType, { title: string; accent: string; note: st
     accent: "text-sky-700",
     note: "Outbound vendor website opens from CPS special-order links (source cps_link). Tracked starting with this update.",
   },
+  // 11/6 (Gib): the extension is Consumers SmartAdd (was QuickAdd); the event and source names stay quickadd.
   quickadd_capture: {
-    title: "QuickAdd Captures",
+    // title: "QuickAdd Captures",
+    title: "SmartAdd Captures",
     accent: "text-violet-700",
-    note: "Products captured by the QuickAdd browser extension (source quickadd). Tracked starting with this update.",
+    // note: "Products captured by the QuickAdd browser extension (source quickadd). Tracked starting with this update.",
+    note: "Products captured by the Consumers SmartAdd browser extension (was QuickAdd; source quickadd). Tracked starting with this update.",
   },
 };
 

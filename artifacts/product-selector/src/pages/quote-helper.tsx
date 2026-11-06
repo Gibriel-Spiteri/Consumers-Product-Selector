@@ -43,7 +43,8 @@ function InstallSteps({ browser, address, developerModeWhere }: { browser: strin
       <li>Turn on <b>Developer mode</b> ({developerModeWhere}).</li>
       <li>Click <b>Load unpacked</b> and choose the <b>consumers-quote-helper</b> folder (the one with manifest.json in it).</li>
       {/* <li>Optional: click the puzzle icon in the toolbar and pin <b>Consumers Quote Helper</b>.</li> */}
-      <li>Optional: click the puzzle icon in the toolbar and pin <b>Consumers QuickAdd</b>.</li>
+      {/* <li>Optional: click the puzzle icon in the toolbar and pin <b>Consumers QuickAdd</b>.</li> */}
+      <li>Optional: click the puzzle icon in the toolbar and pin <b>Consumers SmartAdd</b>.</li>
       <li>Refresh this page. The box at the top should say it is installed.</li>
     </ol>
   );
@@ -53,7 +54,10 @@ function InstallSteps({ browser, address, developerModeWhere }: { browser: strin
 // Quote Helper" in its title, breadcrumb, heading and steps; its address stays /quote-helper.
 export default function QuoteHelperPage() {
   // useDocumentTitle("Quote Helper | Consumers Product Selector");
-  useDocumentTitle("QuickAdd | Consumers Product Selector");
+  // useDocumentTitle("QuickAdd | Consumers Product Selector");
+  // 11/6 (Gib): "Change the name of the extension and feature to Consumers SmartAdd" (1.5.10). The page also answers at
+  // /smartadd; /quote-helper stays.
+  useDocumentTitle("SmartAdd | Consumers Product Selector");
   const info = useQuoteHelperInfo();
   const { extensionReady, extensionVersion } = useVendorPicks();
   const latest = info.data?.version ?? null;
@@ -92,11 +96,13 @@ export default function QuoteHelperPage() {
       <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-[12px] text-gray-400 mb-6">
         <Link href="/" className="hover:text-gray-600 transition-colors">Home</Link>
         <ChevronRight size={11} className="text-gray-300" />
-        <span className="text-gray-600">QuickAdd</span>
+        {/* <span className="text-gray-600">QuickAdd</span> */}
+        <span className="text-gray-600">SmartAdd</span>
       </nav>
       <h1 className="text-2xl font-semibold text-gray-900 flex items-center gap-2 mb-2">
         <Puzzle size={24} className="text-[#7B4DA8]" />
-        Consumers QuickAdd
+        {/* Consumers QuickAdd */}
+        Consumers SmartAdd
       </h1>
       {/* 2026-11-05: picks go straight onto the Quote List since PR #11. Was: "...and the items land on the Special Order
           page under Picked on vendor websites, ready to add to the quote list." */}
@@ -107,7 +113,7 @@ export default function QuoteHelperPage() {
         left incomplete is marked <b>Needs ...</b> for you to finish before pushing it to an estimate.
       </p>
 
-      <section aria-label="QuickAdd in this browser" className="mb-6" data-testid="quote-helper-status">
+      <section aria-label="SmartAdd in this browser" className="mb-6" data-testid="quote-helper-status">
         {status === "current" && (
           <div className="flex items-start gap-2 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
             <CheckCircle2 size={18} className="mt-0.5 shrink-0" />
@@ -117,17 +123,20 @@ export default function QuoteHelperPage() {
         {status === "outdated" && (
           <div className="flex items-start gap-2 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
             <AlertTriangle size={18} className="mt-0.5 shrink-0" />
+            {/* <span>... click <b>Reload</b> under Consumers Quote Helper (its name before 1.5.0) on the extensions page. It
+              shows as Consumers QuickAdd after that.</span> */}
             <span>
               This browser has version {extensionVersion}. Version {latest} is ready: download it, extract it over the old
-              folder, then click <b>Reload</b> under Consumers Quote Helper (its name before 1.5.0) on the extensions
-              page. It shows as Consumers QuickAdd after that.
+              folder, then click <b>Reload</b> under its current name on the extensions page (Consumers QuickAdd before
+              1.5.10, Consumers Quote Helper before 1.5.0). It shows as Consumers SmartAdd after that.
             </span>
           </div>
         )}
         {status === "unknown" && (
           <div className="rounded-xl bg-gray-50 px-4 py-3 text-sm text-gray-700">
             Installed in this browser{extensionVersion ? ` (version ${extensionVersion})` : ""}.
-            {latest && !extensionVersion && ` The newest version is ${latest}; on the extensions page, check the version under Consumers QuickAdd (Consumers Quote Helper before 1.5.0).`}
+            {/* {latest && !extensionVersion && ` The newest version is ${latest}; on the extensions page, check the version under Consumers QuickAdd (Consumers Quote Helper before 1.5.0).`} */}
+            {latest && !extensionVersion && ` The newest version is ${latest}; on the extensions page, check the version under Consumers SmartAdd (Consumers QuickAdd before 1.5.10, Consumers Quote Helper before 1.5.0).`}
           </div>
         )}
         {status === "not-installed" && (
@@ -168,9 +177,10 @@ export default function QuoteHelperPage() {
           <ol className="list-decimal pl-5 space-y-2 text-sm text-gray-700">
             <li>Download it again and extract it over the old <b>consumers-quote-helper</b> folder, replacing the files.</li>
             {/* <li>On the extensions page, click <b>Reload</b> under Consumers Quote Helper.</li> */}
+            {/* <li>On the extensions page, click <b>Reload</b> under Consumers QuickAdd (called Consumers Quote Helper before 1.5.0).</li> */}
             <li>
-              On the extensions page, click <b>Reload</b> under Consumers QuickAdd (called Consumers Quote Helper before
-              1.5.0).
+              On the extensions page, click <b>Reload</b> under Consumers SmartAdd (called Consumers QuickAdd before 1.5.10,
+              and Consumers Quote Helper before 1.5.0).
             </li>
           </ol>
         </div>

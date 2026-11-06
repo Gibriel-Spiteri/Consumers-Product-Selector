@@ -4,8 +4,8 @@
     "pageTitle": "Vendor Site Special Orders",
     "eyebrow": "Consumers Kitchen & Bath · Product Selector guide",
     "title": "From a product on a vendor's website to a priced special-order line on the estimate",
-    "lede": "Where each step happens: on the vendor's own website with the customer, in the Consumers QuickAdd browser extension (Edge or Chrome), in the Product Selector on the sales PC, and in NetSuite. Click any numbered box to read its exact buttons.",
-    "meta": "Mapped from the code on 11/5/2026: Product Selector Special Order page, Quote List and the Consumers QuickAdd extension 1.5.3 (1.5.4 on 11/6: newest copy wins; 1.5.5: kits split into parts, Flusso finish squares; 1.5.6: kits on every vendor after sweep 2; 1.5.7: list price, Report issue; 1.5.8: report as the signed-in rep; 1.5.9: the Report an Issue form matches the site's, with a screenshot)."
+    "lede": "Where each step happens: on the vendor's own website with the customer, in the Consumers SmartAdd browser extension (Edge or Chrome), in the Product Selector on the sales PC, and in NetSuite. Click any numbered box to read its exact buttons.",
+    "meta": "Mapped from the code on 11/5/2026: Product Selector Special Order page, Quote List and the Consumers SmartAdd extension 1.5.3 (1.5.4 on 11/6: newest copy wins; 1.5.5: kits split into parts, Flusso finish squares; 1.5.6: kits on every vendor after sweep 2; 1.5.7: list price, Report issue; 1.5.8: report as the signed-in rep; 1.5.9: the Report an Issue form matches the site's, with a screenshot; 1.5.10: renamed Consumers SmartAdd, was Consumers QuickAdd)."
   },
   "lanes": {
     "VS": {
@@ -14,7 +14,7 @@
       "tone": "ok"
     },
     "EX": {
-      "name": "QuickAdd",
+      "name": "SmartAdd",
       "who": "Edge or Chrome extension",
       "tone": "auto"
     },
@@ -32,7 +32,7 @@
     {
       "id": "p1",
       "title": "Vendor site to estimate",
-      "intro": "The customer picks products on the vendor's own website; the Consumers QuickAdd extension carries each pick to the Product Selector, where the rep finishes it as a special order and pushes it to the estimate.",
+      "intro": "The customer picks products on the vendor's own website; the Consumers SmartAdd extension carries each pick to the Product Selector, where the rep finishes it as a special order and pushes it to the estimate.",
       "caption": "Read top to bottom. The dashed arrow is optional (adding more products). A dashed round box sends you to another way of doing the step.",
       "cols": [
         [
@@ -118,8 +118,8 @@
           "col": "EX",
           "kind": "action",
           "lane": "EX",
-          "label": "Once per PC, ahead of time: install Consumers QuickAdd",
-          "detail": "In the Product Selector, click your name, then QuickAdd, and click Download. Extract the zip, go to edge://extensions (Chrome: chrome://extensions), turn on Developer mode, click Load unpacked and choose the consumers-quote-helper folder. The QuickAdd page then says it is installed, and later tells you when there is a newer version. If a browser has two copies (an old hand-loaded one and the Group Policy one), only the newer copy shows its button (1.5.4), but remove the old one anyway."
+          "label": "Once per PC, ahead of time: install Consumers SmartAdd",
+          "detail": "In the Product Selector, click your name, then SmartAdd, and click Download. Extract the zip, go to edge://extensions (Chrome: chrome://extensions), turn on Developer mode, click Load unpacked and choose the consumers-quote-helper folder. The SmartAdd page then says it is installed, and later tells you when there is a newer version. If a browser has two copies (an old hand-loaded one and the Group Policy one), only the newer copy shows its button (1.5.4), but remove the old one anyway."
         },
         {
           "id": "s_signin",
@@ -129,7 +129,7 @@
           "kind": "start",
           "lane": "PS",
           "label": "Sign in to the Product Selector",
-          "detail": "Sign in with your NetSuite email and webstore password on the same PC and browser that has QuickAdd."
+          "detail": "Sign in with your NetSuite email and webstore password on the same PC and browser that has SmartAdd."
         },
         {
           "id": "a_sites",
@@ -138,8 +138,8 @@
           "col": "EX",
           "kind": "auto",
           "lane": "EX",
-          "label": "QuickAdd turns on for the vendor sites",
-          "detail": "The Product Selector sends every special-order product line's website (the PRD page's website link in NetSuite). QuickAdd works only on those vendor domains and does nothing on other sites."
+          "label": "SmartAdd turns on for the vendor sites",
+          "detail": "The Product Selector sends every special-order product line's website (the PRD page's website link in NetSuite). SmartAdd works only on those vendor domains and does nothing on other sites."
         },
         {
           "id": "n_cat",
@@ -178,8 +178,8 @@
           "col": "VS",
           "kind": "decision",
           "lane": "VS",
-          "label": "QuickAdd read the item from the page?",
-          "detail": "The Add to CPS Quote List button shows at the bottom right on every page of a product line's vendor site, and reads the page again on each click. On a product page QuickAdd fills in the model, name and usually the price: from the page's product data, or from the model and price printed next to the product name. On Fleurco it reads the model and total once every configurator choice is made; a build of several items (a door with a base, drain or Mix & Match Kit) is split into its parts, each at its own price (1.5.5). Since 1.5.6 the same goes for Brizo combos and trims with their rough, Kohler and Delta bundles, Grohe required rough-ins, TOTO add-ons, Bain Ultra drain kits and options, Sofia accessories and John Boos add-ons. Since 1.5.7 it takes the list price, not a sale price, wherever the page shows both (Kohler's \"List Price\", Delta Outlet, Top Knobs specials, John Boos sales)."
+          "label": "SmartAdd read the item from the page?",
+          "detail": "The Add to CPS Quote List button shows at the bottom right on every page of a product line's vendor site, and reads the page again on each click. On a product page SmartAdd fills in the model, name and usually the price: from the page's product data, or from the model and price printed next to the product name. On Fleurco it reads the model and total once every configurator choice is made; a build of several items (a door with a base, drain or Mix & Match Kit) is split into its parts, each at its own price (1.5.5). Since 1.5.6 the same goes for Brizo combos and trims with their rough, Kohler and Delta bundles, Grohe required rough-ins, TOTO add-ons, Bain Ultra drain kits and options, Sofia accessories and John Boos add-ons. Since 1.5.7 it takes the list price, not a sale price, wherever the page shows both (Kohler's \"List Price\", Delta Outlet, Top Knobs specials, John Boos sales)."
         },
         {
           "id": "l_hand",
@@ -208,7 +208,7 @@
           "col": "EX",
           "kind": "auto",
           "lane": "EX",
-          "label": "Pick waits in QuickAdd for the sales rep",
+          "label": "Pick waits in SmartAdd for the sales rep",
           "detail": "The panel says Added to the CPS Quote List. N items waiting for your sales rep. The toolbar icon shows the count; its popup lists the waiting items and has Clear waiting items."
         },
         {
@@ -258,8 +258,8 @@
           "col": "EX",
           "kind": "auto",
           "lane": "EX",
-          "label": "Pick cleared from QuickAdd",
-          "detail": "As soon as it is on the Quote List, the pick leaves QuickAdd's waiting list and the counts go down."
+          "label": "Pick cleared from SmartAdd",
+          "detail": "As soon as it is on the Quote List, the pick leaves SmartAdd's waiting list and the counts go down."
         },
         {
           "id": "n_search",
@@ -443,15 +443,15 @@
       ]
     }
   ],
-  "gapsIntro": "What this process needs that the app or QuickAdd does not do yet.",
+  "gapsIntro": "What this process needs that the app or SmartAdd does not do yet.",
   "gaps": [
     {
       "title": "Some pages leave fields for the customer.",
-      "text": "QuickAdd reads the item on 17 special-order vendor sites (checked page by page on 11/5/2026, about 230 product pages). Avance pages are door styles with no model numbers, so the customer types the model. Richelieu, Strategic Brands, Franke and Craft & Main show no price to the public, so the rep enters the list price. Configurators (Fleurco, Sofia, Bain Ultra) fill in once every choice is made."
+      "text": "SmartAdd reads the item on 17 special-order vendor sites (checked page by page on 11/5/2026, about 230 product pages). Avance pages are door styles with no model numbers, so the customer types the model. Richelieu, Strategic Brands, Franke and Craft & Main show no price to the public, so the rep enters the list price. Configurators (Fleurco, Sofia, Bain Ultra) fill in once every choice is made."
     },
     {
       "title": "Picks stay in one browser.",
-      "text": "QuickAdd keeps picks on the PC where they were made. A customer browsing on their own phone or tablet cannot send picks, and the extension does not run on an iPad."
+      "text": "SmartAdd keeps picks on the PC where they were made. A customer browsing on their own phone or tablet cannot send picks, and the extension does not run on an iPad."
     },
     {
       "title": "Picks are not tied to a customer.",
@@ -459,18 +459,18 @@
     },
     {
       "title": "The Type is only suggested when the name settles it.",
-      "text": "QuickAdd suggests the Type from the product name, the breadcrumbs and the vendor address (34 of 34 sweep cases right). When two Types fit equally the customer picks it; the panel requires it. Order-form Types (Bain Ultra tubs) go to NetSuite as Per Attached Order Form, so the rep attaches the vendor order form. Craft & Main shower bases and walls have no Type in NetSuite yet."
+      "text": "SmartAdd suggests the Type from the product name, the breadcrumbs and the vendor address (34 of 34 sweep cases right). When two Types fit equally the customer picks it; the panel requires it. Order-form Types (Bain Ultra tubs) go to NetSuite as Per Attached Order Form, so the rep attaches the vendor order form. Craft & Main shower bases and walls have no Type in NetSuite yet."
     },
     {
-      "title": "New vendor sites need a QuickAdd release for the built-in list.",
-      "text": "QuickAdd goes to every PC by Group Policy and updates itself from the Product Selector. A product line made special-order in NetSuite works as soon as the Product Selector is open in that browser; the list built into QuickAdd (used before that) is refreshed with each release."
+      "title": "New vendor sites need a SmartAdd release for the built-in list.",
+      "text": "SmartAdd goes to every PC by Group Policy and updates itself from the Product Selector. A product line made special-order in NetSuite works as soon as the Product Selector is open in that browser; the list built into SmartAdd (used before that) is refreshed with each release."
     }
   ],
   "tips": [
-    "After installing QuickAdd, open the Product Selector once while signed in so it gets the current vendor sites. The QuickAdd page (your name, then QuickAdd) shows whether this browser has it and if it is up to date.",
-    "QuickAdd's toolbar icon shows how many picks are waiting; its popup lists them and can clear them.",
-    "When a vendor's website changes, update the product line's website on its PRD page in NetSuite; QuickAdd follows the next time the Product Selector is open.",
-    "QuickAdd takes the list price where the vendor page shows one next to a sale price (since 1.5.7). Still check the List Price before Add to List."
+    "After installing SmartAdd, open the Product Selector once while signed in so it gets the current vendor sites. The SmartAdd page (your name, then SmartAdd) shows whether this browser has it and if it is up to date.",
+    "SmartAdd's toolbar icon shows how many picks are waiting; its popup lists them and can clear them.",
+    "When a vendor's website changes, update the product line's website on its PRD page in NetSuite; SmartAdd follows the next time the Product Selector is open.",
+    "SmartAdd takes the list price where the vendor page shows one next to a sale price (since 1.5.7). Still check the List Price before Add to List."
   ],
-  "footer": "Vendor site special orders · Mapped from the code (Product Selector Special Order page and Quote List, Consumers QuickAdd extension 1.5.3) on 11/5/2026, extension 1.5.8 on 11/6."
+  "footer": "Vendor site special orders · Mapped from the code (Product Selector Special Order page and Quote List, Consumers SmartAdd extension 1.5.3) on 11/5/2026, extension 1.5.8 on 11/6."
 }

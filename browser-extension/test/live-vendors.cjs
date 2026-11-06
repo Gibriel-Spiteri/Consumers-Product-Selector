@@ -392,7 +392,7 @@ async function readPanel(page) {
   try {
     const sw = ctx.serviceWorkers()[0] || await ctx.waitForEvent("serviceworker", { timeout: 15000 });
     const version = await sw.evaluate(() => chrome.runtime.getManifest().version);
-    console.log(`Consumers QuickAdd ${version}, ${vendors.length} vendor page(s)\n`);
+    console.log(`Consumers SmartAdd ${version}, ${vendors.length} vendor page(s)\n`);
 
     // 1.5.0 (Gib 11/5, "still missing Type"): before any Product Selector tab has sent the vendor sites, the bundled
     // PROD list (seed-sites.js) still gives the panel its Types. Also the 1.5.0 button and header wording.

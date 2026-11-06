@@ -141,7 +141,7 @@ if (require.main === module) {
   };
   fs.writeFileSync(path.join(OUT, "release.json"), JSON.stringify(release, null, 2) + "\n");
   fs.rmSync(stage, { recursive: true, force: true });
-  console.log(`Packed Consumers QuickAdd ${version}: id ${id}, ${crx.length} bytes, signature verified.`);
+  console.log(`Packed Consumers SmartAdd (was QuickAdd) ${version}: id ${id}, ${crx.length} bytes, signature verified.`);
 }
 
 module.exports = { readCrx };
