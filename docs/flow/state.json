@@ -5,7 +5,7 @@
     "eyebrow": "Consumers Kitchen & Bath · Product Selector guide",
     "title": "From a product on a vendor's website to a priced special-order line on the estimate",
     "lede": "Where each step happens: on the vendor's own website with the customer, in the Consumers QuickAdd browser extension (Edge or Chrome), in the Product Selector on the sales PC, and in NetSuite. Click any numbered box to read its exact buttons.",
-    "meta": "Mapped from the code on 11/5/2026: Product Selector Special Order page, Quote List and the Consumers QuickAdd extension 1.5.3."
+    "meta": "Mapped from the code on 11/5/2026: Product Selector Special Order page, Quote List and the Consumers QuickAdd extension 1.5.3 (1.5.4 on 11/6: newest copy wins)."
   },
   "lanes": {
     "VS": {
@@ -119,7 +119,7 @@
           "kind": "action",
           "lane": "EX",
           "label": "Once per PC, ahead of time: install Consumers QuickAdd",
-          "detail": "In the Product Selector, click your name, then QuickAdd, and click Download. Extract the zip, go to edge://extensions (Chrome: chrome://extensions), turn on Developer mode, click Load unpacked and choose the consumers-quote-helper folder. The QuickAdd page then says it is installed, and later tells you when there is a newer version."
+          "detail": "In the Product Selector, click your name, then QuickAdd, and click Download. Extract the zip, go to edge://extensions (Chrome: chrome://extensions), turn on Developer mode, click Load unpacked and choose the consumers-quote-helper folder. The QuickAdd page then says it is installed, and later tells you when there is a newer version. If a browser has two copies (an old hand-loaded one and the Group Policy one), only the newer copy shows its button (1.5.4), but remove the old one anyway."
         },
         {
           "id": "s_signin",
@@ -472,5 +472,5 @@
     "When a vendor's website changes, update the product line's website on its PRD page in NetSuite; QuickAdd follows the next time the Product Selector is open.",
     "A vendor site can show a sale price. The list price is what counts, so always check it before Add to List."
   ],
-  "footer": "Vendor site special orders · Mapped from the code (Product Selector Special Order page and Quote List, Consumers QuickAdd extension 1.5.3) on 11/5/2026."
+  "footer": "Vendor site special orders · Mapped from the code (Product Selector Special Order page and Quote List, Consumers QuickAdd extension 1.5.3) on 11/5/2026, extension 1.5.4 on 11/6."
 }
