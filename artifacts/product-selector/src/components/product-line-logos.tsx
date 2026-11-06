@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { SpecialOrderProductLine } from "@workspace/api-client-react";
 import { Check, ExternalLink, ImageOff } from "lucide-react";
+import { trackVendorSiteVisit } from "@/lib/analytics";
 
 function ProductLineLogo({ line }: { line: SpecialOrderProductLine }) {
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
@@ -40,6 +41,8 @@ function ProductLineLogo({ line }: { line: SpecialOrderProductLine }) {
   return (
     <a
       href={line.websiteUrl}
+      onClick={() => trackVendorSiteVisit(line)}
+      onAuxClick={event => { if (event.button === 1) trackVendorSiteVisit(line); }}
       target="_blank"
       rel="noopener noreferrer"
       className="group block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7B4DA8] focus-visible:ring-offset-2"
@@ -84,6 +87,8 @@ function PickableProductLine({ line, selected, onPick }: { line: SpecialOrderPro
       {line.websiteUrl && (
         <a
           href={line.websiteUrl}
+          onClick={() => trackVendorSiteVisit(line)}
+          onAuxClick={event => { if (event.button === 1) trackVendorSiteVisit(line); }}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-1 text-[11px] font-semibold text-[#7B4DA8] hover:underline"

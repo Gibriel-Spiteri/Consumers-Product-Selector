@@ -4,3 +4,4 @@
 - [Special-order requirements](special-order-requirements.md) — Type choices belong to each product line’s Special Order Types subtab; never use one shared list.
 - [Vendor sites + Quote Helper extension](vendor-site-quote-helper.md) - product line cards open the vendor site; extension picks pre-fill the Special Order form.
 - [Issue reporting](issue-reporting-requirements.md) — Admin reports need NetSuite case numbers/statuses and the reporter’s page screenshot, URL, and browser logs.
+- [Analytics scope](analytics-scope.md) — totals and drill-downs must share date/admin filters; attribute vendor openings and QuickAdd actions to signed-in users.

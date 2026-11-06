@@ -17,6 +17,24 @@ tags:
   - name: netsuite
     description: NetSuite sync operations
 paths:
+  /admin/analytics/drilldown:
+    get:
+      operationId: getAnalyticsDrilldown
+      summary: Who performed an action, with site breakdown and paginated history
+      parameters:
+        - {name: range, in: query, schema: {type: string, enum: [today, yesterday, 7d, 30d, 90d]}}
+        - {name: includeAdmins, in: query, schema: {type: string, enum: ["0", "1"]}}
+        - {name: eventType, in: query, required: true, schema: {type: string, enum: [add_to_list, push_to_estimate, vendor_site_visit, quickadd_capture]}}
+        - {name: employeeId, in: query, schema: {type: string}}
+        - {name: vendorDomain, in: query, schema: {type: string}}
+        - {name: page, in: query, schema: {type: integer, minimum: 1}}
+      responses:
+        "200":
+          description: Matching actions and complete user and site breakdowns
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalyticsDrilldown"
   /cases:
     post:
       operationId: submitIssueReport
@@ -242,6 +260,48 @@ paths:
                 $ref: "#/components/schemas/NetSuiteStatus"
 components:
   schemas:
+    AnalyticsActor:
+      type: object
+      required: [employeeId, employeeName, count, lastSeen]
+      properties:
+        employeeId: {type: ["string", "null"]}
+        employeeName: {type: string}
+        count: {type: integer}
+        lastSeen: {type: string}
+    AnalyticsSite:
+      type: object
+      required: [domain, count]
+      properties:
+        domain: {type: string}
+        count: {type: integer}
+    AnalyticsAction:
+      type: object
+      required: [id, createdAt, employeeId, employeeName, metadata, productName]
+      properties:
+        id: {type: integer}
+        createdAt: {type: string}
+        employeeId: {type: ["string", "null"]}
+        employeeName: {type: string}
+        productName: {type: ["string", "null"]}
+        metadata:
+          type: ["object", "null"]
+          additionalProperties: true
+    AnalyticsDrilldown:
+      type: object
+      required: [total, page, pageSize, actors, sites, events]
+      properties:
+        total: {type: integer}
+        page: {type: integer}
+        pageSize: {type: integer}
+        actors:
+          type: array
+          items: {$ref: "#/components/schemas/AnalyticsActor"}
+        sites:
+          type: array
+          items: {$ref: "#/components/schemas/AnalyticsSite"}
+        events:
+          type: array
+          items: {$ref: "#/components/schemas/AnalyticsAction"}
     BrowserIssueLog:
       type: object
       required: [timestamp, level, message]

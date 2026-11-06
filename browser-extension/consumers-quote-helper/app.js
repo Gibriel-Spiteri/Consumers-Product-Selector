@@ -37,7 +37,7 @@
     const key = `${token}|${name}`;
     if (key === lastSession) return;
     lastSession = key;
-    ask({ type: "app-session", token, name });
+    ask({ type: "app-session", token, name, origin: location.origin });
   }
   sendSession();
   setInterval(sendSession, 15000);

@@ -29,6 +29,29 @@ const VENDOR_SCRIPT_ID = "consumers-vendor";
 const MAX_PICKS = 50;
 const { registrableDomain, text, number } = globalThis.ConsumersExtract;
 
+// Only signed-in CPS activity on known vendor domains is reported. No general
+// browsing history, URL queries, form contents or credentials are sent.
+async function trackVendorAction(eventType, sender, details = {}) {
+  try {
+    const page = new URL(sender.url || sender.tab?.url || "");
+    const { appSession } = await chrome.storage.session.get("appSession");
+    if (!appSession?.token || !APP_ORIGINS.includes(appSession.origin)) return;
+    const response = await fetch(`${appSession.origin}/api/analytics/event`, {
+      method: "POST",
+      signal: AbortSignal.timeout(3000),
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${appSession.token}` },
+      body: JSON.stringify({
+        sessionId: `quickadd-${sender.tab?.id ?? "vendor"}`,
+        events: [{ eventType, path: "/special-order", metadata: {
+          ...details, pageUrl: `${page.origin}${page.pathname}`, source: "quickadd",
+          extensionVersion: chrome.runtime.getManifest().version,
+        } }],
+      }),
+    });
+    if (response.status === 401) await chrome.storage.session.set({ appSession: null });
+  } catch { /* Analytics must never prevent a vendor pick. No ambiguous retries. */ }
+}
+
 async function state() {
   // return chrome.storage.local.get({ vendorDomains: SEED_DOMAINS, picks: [], siteLines: {} });
   const s = await chrome.storage.local.get({ vendorDomains: SEED_DOMAINS, picks: [], siteLines: {} });
@@ -199,7 +222,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const next = [...picks, pick].slice(-MAX_PICKS);
         await chrome.storage.local.set({ picks: next });
         await broadcastPicks(next);
-        return sendResponse({ ok: true, count: next.length });
+        sendResponse({ ok: true, count: next.length });
+        await trackVendorAction("quickadd_capture", sender, {
+          productName: pick.name, productLineId: pick.productLineId, itemCount: 1,
+        });
+        return;
       }
       // 1.5.5 (Gib 11/6): a kit's parts (Fleurco's door, base, drain and Mix & Match Kit), one pick each, stored together
       // so none is left out.
@@ -211,7 +238,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const next = [...picks, ...kit].slice(-MAX_PICKS);
         await chrome.storage.local.set({ picks: next });
         await broadcastPicks(next);
-        return sendResponse({ ok: true, count: next.length, added: kit.length });
+        sendResponse({ ok: true, count: next.length, added: kit.length });
+        await trackVendorAction("quickadd_capture", sender, {
+          productName: kit[0].name, productLineId: kit[0].productLineId, itemCount: kit.length,
+        });
+        return;
       }
       // 1.5.7 (Gib 11/6, "add a report issue button to the extension"): the panel's report goes to the Product Selector's
       // own Report Issue endpoint, which opens a NetSuite case for IT. It needs no sign-in.
@@ -221,7 +252,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       case "app-session": {
         if (!fromApp(sender)) return sendResponse({ ok: false });
         const token = typeof message.token === "string" && message.token.length < 4000 ? message.token : "";
-        await chrome.storage.session.set({ appSession: token ? { token, name: text(message.name).slice(0, 100), at: Date.now() } : null });
+        const origin = (() => { try { return new URL(sender.url || sender.tab?.url).origin; } catch { return ""; } })();
+        await chrome.storage.session.set({ appSession: token ? { token, name: text(message.name).slice(0, 100), origin, at: Date.now() } : null });
         return sendResponse({ ok: true });
       }
       // 1.5.9: the screenshot the Product Selector's Report Issue takes of its page, here of the vendor tab with the panel

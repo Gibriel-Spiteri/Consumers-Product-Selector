@@ -1,5 +1,5 @@
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
-import { trackAddToList } from "@/lib/analytics";
+import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from "react";
+import { trackAddToList, trackSpecialOrderAdd } from "@/lib/analytics";
 import type { SpecialOrderDetails } from "@workspace/api-client-react";
 import type { VendorPickSource } from "@/lib/vendor-picks";
 
@@ -85,6 +85,7 @@ function toSpecialItem(productId: number, input: SpecialOrderInput): QuoteItem {
 
 export function QuoteListProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<QuoteItem[]>(loadFromStorage);
+  const trackedPicks = useRef(new Set(items.flatMap(item => item.vendorPick ? [item.vendorPick.id] : [])));
 
   useEffect(() => {
     saveToStorage(items);
@@ -117,6 +118,12 @@ export function QuoteListProvider({ children }: { children: ReactNode }) {
   const clearList = useCallback(() => setItems([]), []);
 
   const addSpecialOrder = useCallback((input: SpecialOrderInput) => {
+    if (input.vendorPick) {
+      if (trackedPicks.current.has(input.vendorPick.id)) return;
+      trackedPicks.current.add(input.vendorPick.id);
+    }
+    // Keep analytics outside React's state updater (StrictMode may call it twice).
+    trackSpecialOrderAdd(input);
     setItems(prev => {
       // A vendor pick is added once, even if the extension sends it again before it hears it was taken.
       if (input.vendorPick && prev.some(i => i.vendorPick?.id === input.vendorPick?.id)) return prev;

@@ -8,6 +8,54 @@
 import * as zod from "zod";
 
 /**
+ * @summary Who performed an action, with site breakdown and paginated history
+ */
+
+export const GetAnalyticsDrilldownQueryParams = zod.object({
+  range: zod.enum(["today", "yesterday", "7d", "30d", "90d"]).optional(),
+  includeAdmins: zod.enum(["0", "1"]).optional(),
+  eventType: zod.enum([
+    "add_to_list",
+    "push_to_estimate",
+    "vendor_site_visit",
+    "quickadd_capture",
+  ]),
+  employeeId: zod.coerce.string().optional(),
+  vendorDomain: zod.coerce.string().optional(),
+  page: zod.coerce.number().min(1).optional(),
+});
+
+export const GetAnalyticsDrilldownResponse = zod.object({
+  total: zod.number(),
+  page: zod.number(),
+  pageSize: zod.number(),
+  actors: zod.array(
+    zod.object({
+      employeeId: zod.string().nullable(),
+      employeeName: zod.string(),
+      count: zod.number(),
+      lastSeen: zod.string(),
+    }),
+  ),
+  sites: zod.array(
+    zod.object({
+      domain: zod.string(),
+      count: zod.number(),
+    }),
+  ),
+  events: zod.array(
+    zod.object({
+      id: zod.number(),
+      createdAt: zod.string(),
+      employeeId: zod.string().nullable(),
+      employeeName: zod.string(),
+      productName: zod.string().nullable(),
+      metadata: zod.record(zod.string(), zod.unknown()).nullable(),
+    }),
+  ),
+});
+
+/**
  * @summary Create a NetSuite case with captured diagnostic context
  */
 export const submitIssueReportBodySubjectMax = 300;

@@ -8,6 +8,11 @@
 
 export * from "./adminIssue";
 export * from "./adminIssueList";
+export * from "./analyticsAction";
+export * from "./analyticsActionMetadata";
+export * from "./analyticsActor";
+export * from "./analyticsDrilldown";
+export * from "./analyticsSite";
 export * from "./browserIssueLog";
 export * from "./browserIssueLogLevel";
 export * from "./category";
@@ -16,6 +21,10 @@ export * from "./estimateItemsInput";
 export * from "./estimateItemsResult";
 export * from "./estimateLineInput";
 export * from "./getAdminIssuesParams";
+export * from "./getAnalyticsDrilldownEventType";
+export * from "./getAnalyticsDrilldownIncludeAdmins";
+export * from "./getAnalyticsDrilldownParams";
+export * from "./getAnalyticsDrilldownRange";
 export * from "./healthStatus";
 export * from "./issueReportInput";
 export * from "./issueReportResult";

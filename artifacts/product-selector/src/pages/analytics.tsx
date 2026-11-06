@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
-import { useAuth } from "@/context/auth-context";
+import { useAuth, authHeaders } from "@/context/auth-context";
+import { ActionDrilldownModal, type DrilldownEventType } from "@/components/analytics/action-drilldown-modal";
 import { useQuery } from "@tanstack/react-query";
 import { RefreshCw, Shield, ArrowLeft, BarChart3, X, ChevronUp, ChevronDown, ChevronsUpDown, Info } from "lucide-react";
 import { Link } from "wouter";
@@ -12,6 +13,8 @@ interface AnalyticsSummary {
     users: number;
     addToList: number;
     pushToEstimate: number;
+    vendorSiteVisits?: number;
+    quickaddCaptures?: number;
   };
   activeUsers: Array<{
     employeeId: string | null;
@@ -106,6 +109,8 @@ const EVENT_TYPE_LABEL: Record<string, string> = {
   search: "Search",
   add_to_list: "Add to List",
   push_to_estimate: "Sent to Estimate",
+  vendor_site_visit: "Vendor Site Opened",
+  quickadd_capture: "QuickAdd Capture",
 };
 
 const EVENT_TYPE_COLOR: Record<string, string> = {
@@ -115,6 +120,8 @@ const EVENT_TYPE_COLOR: Record<string, string> = {
   search: "bg-gray-100 text-gray-700",
   add_to_list: "bg-amber-50 text-amber-700",
   push_to_estimate: "bg-emerald-50 text-emerald-700",
+  vendor_site_visit: "bg-sky-50 text-sky-700",
+  quickadd_capture: "bg-violet-50 text-violet-700",
 };
 
 function fmtAbsTime(iso: string | null) {
@@ -129,21 +136,36 @@ function fmtAbsTime(iso: string | null) {
   });
 }
 
+type Range = "today" | "yesterday" | "7d" | "30d" | "90d";
+
+const RANGE_LABEL: Record<Range, string> = {
+  today: "Today",
+  yesterday: "Yesterday",
+  "7d": "Last 7 days",
+  "30d": "Last 30 days",
+  "90d": "Last 90 days",
+};
+
 function UserActivityModal({
   user,
+  range,
+  includeAdmins,
   adminEmployeeId,
   onClose,
 }: {
   user: { employeeId: string; employeeName: string };
+  range: Range;
+  includeAdmins: boolean;
   adminEmployeeId: string;
   onClose: () => void;
 }) {
   const { data, isLoading, isError } = useQuery<UserActivityResponse>({
-    queryKey: ["adminUserActivity", user.employeeId],
+    queryKey: ["adminUserActivity", user.employeeId, range, includeAdmins],
+    staleTime: 0,
     queryFn: async () => {
       const res = await fetch(
-        `/api/admin/analytics/user/${encodeURIComponent(user.employeeId)}`,
-        { headers: { "X-Employee-Id": adminEmployeeId } },
+        `/api/admin/analytics/user/${encodeURIComponent(user.employeeId)}?range=${range}&includeAdmins=${includeAdmins ? "1" : "0"}`,
+        { headers: authHeaders() },
       );
       if (!res.ok) throw new Error("Failed to load user activity");
       return res.json();
@@ -175,7 +197,7 @@ function UserActivityModal({
               {user.employeeName || `Employee #${user.employeeId}`}
             </h3>
             <p className="text-xs text-gray-500 mt-0.5">
-              Recent activity · #{user.employeeId}
+              {RANGE_LABEL[range]} · {includeAdmins ? "admins included" : "admins hidden"} · #{user.employeeId}
               {data ? ` · ${events.length} event${events.length === 1 ? "" : "s"}` : ""}
               {data?.truncated ? ` (last ${data.limit})` : ""}
             </p>
@@ -198,7 +220,7 @@ function UserActivityModal({
             </div>
           ) : events.length === 0 ? (
             <div className="py-12 text-center text-sm text-gray-400">
-              No recent activity for this user.
+              No activity for this user in {RANGE_LABEL[range].toLowerCase()}.
             </div>
           ) : (
             <table className="w-full text-sm">
@@ -313,7 +335,7 @@ function ProductAddsModal({
   onClose,
 }: {
   product: { productId: number; name: string; sku: string | null };
-  range: "today" | "yesterday" | "7d" | "30d" | "90d";
+  range: Range;
   includeAdmins: boolean;
   adminEmployeeId: string;
   onClose: () => void;
@@ -323,7 +345,7 @@ function ProductAddsModal({
     queryFn: async () => {
       const res = await fetch(
         `/api/admin/analytics/product-adds/${product.productId}?range=${range}&includeAdmins=${includeAdmins ? "1" : "0"}`,
-        { headers: { "X-Employee-Id": adminEmployeeId } },
+        { headers: authHeaders() },
       );
       if (!res.ok) throw new Error("Failed to load product adds");
       return res.json();
@@ -361,7 +383,7 @@ function ProductAddsModal({
             {data && (
               <p className="text-xs text-gray-500 mt-1">
                 {events.length} add{events.length === 1 ? "" : "s"} · {totalQty} units
-                {data.truncated ? ` (last ${data.limit})` : ""} · last {range}
+                {data.truncated ? ` (last ${data.limit})` : ""} · {RANGE_LABEL[range]}
               </p>
             )}
           </div>
@@ -419,19 +441,24 @@ function ProductAddsModal({
 
 function EstimateDetailModal({
   estimate,
+  range,
+  includeAdmins,
   adminEmployeeId,
   onClose,
 }: {
   estimate: { estimateId: number; tranId: string | null };
+  range: Range;
+  includeAdmins: boolean;
   adminEmployeeId: string;
   onClose: () => void;
 }) {
   const { data, isLoading, isError } = useQuery<EstimateDetailResponse>({
-    queryKey: ["adminEstimateDetail", estimate.estimateId],
+    queryKey: ["adminEstimateDetail", estimate.estimateId, range, includeAdmins],
+    staleTime: 0,
     queryFn: async () => {
       const res = await fetch(
-        `/api/admin/analytics/estimate-detail/${estimate.estimateId}`,
-        { headers: { "X-Employee-Id": adminEmployeeId } },
+        `/api/admin/analytics/estimate-detail/${estimate.estimateId}?range=${range}&includeAdmins=${includeAdmins ? "1" : "0"}`,
+        { headers: authHeaders() },
       );
       if (!res.ok) throw new Error("Failed to load estimate detail");
       return res.json();
@@ -609,9 +636,10 @@ function SortTh({
 }
 
 function AnalyticsSection({ employeeId }: { employeeId: string }) {
-  const [range, setRange] = useState<"today" | "yesterday" | "7d" | "30d" | "90d">("7d");
+  const [range, setRange] = useState<Range>("7d");
   const [includeAdmins, setIncludeAdmins] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
+  const [drilldown, setDrilldown] = useState<DrilldownEventType | null>(null);
 
   const [selectedUser, setSelectedUser] = useState<{
     employeeId: string;
@@ -631,7 +659,7 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
     queryFn: async () => {
       const res = await fetch(
         `/api/admin/analytics/summary?range=${range}&includeAdmins=${includeAdmins ? "1" : "0"}`,
-        { headers: { "X-Employee-Id": employeeId } },
+        { headers: authHeaders() },
       );
       if (!res.ok) throw new Error("Failed to load analytics");
       return res.json();
@@ -647,7 +675,7 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
     queryFn: async () => {
       const res = await fetch(
         `/api/admin/analytics/recent?limit=50&range=${range}&includeAdmins=${includeAdmins ? "1" : "0"}`,
-        { headers: { "X-Employee-Id": employeeId } },
+        { headers: authHeaders() },
       );
       if (!res.ok) throw new Error("Failed to load recent activity");
       return res.json();
@@ -814,15 +842,33 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
               <div className="text-xs uppercase tracking-wide text-gray-400 font-semibold">Anon Views</div>
               <div className="text-xl font-bold text-gray-900">{data.anonymous.pageViews.toLocaleString()}</div>
             </div>
-            <div className="bg-amber-50 rounded-lg px-4 py-3">
+            <button type="button" data-testid="metric-add_to_list" onClick={() => setDrilldown("add_to_list")} title="See who did this, then their action history" className="text-left bg-amber-50 rounded-lg px-4 py-3 ring-1 ring-transparent hover:ring-amber-300 transition">
               <div className="text-xs uppercase tracking-wide text-amber-700 font-semibold">Added to List</div>
               <div className="text-xl font-bold text-gray-900">{(data.totals.addToList ?? 0).toLocaleString()}</div>
-            </div>
-            <div className="bg-emerald-50 rounded-lg px-4 py-3">
+              <div className="text-[10px] text-amber-700/70 mt-0.5">View breakdown</div>
+            </button>
+            <button type="button" data-testid="metric-push_to_estimate" onClick={() => setDrilldown("push_to_estimate")} title="See who did this, then their action history" className="text-left bg-emerald-50 rounded-lg px-4 py-3 ring-1 ring-transparent hover:ring-emerald-300 transition">
               <div className="text-xs uppercase tracking-wide text-emerald-700 font-semibold">Estimates Sent</div>
               <div className="text-xl font-bold text-gray-900">{(data.totals.pushToEstimate ?? 0).toLocaleString()}</div>
-            </div>
+              <div className="text-[10px] text-emerald-700/70 mt-0.5">View breakdown</div>
+            </button>
           </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button type="button" data-testid="metric-vendor_site_visit" onClick={() => setDrilldown("vendor_site_visit")} className="text-left bg-sky-50 rounded-lg px-4 py-3 ring-1 ring-transparent hover:ring-sky-300 transition">
+              <div className="text-xs uppercase tracking-wide text-sky-700 font-semibold">Special-Order Site Visits</div>
+              <div className="text-xl font-bold text-gray-900">{(data.totals.vendorSiteVisits ?? 0).toLocaleString()}</div>
+              <div className="text-[10px] text-sky-700/70 mt-0.5">Vendor sites opened from CPS links · view sites and people</div>
+            </button>
+            <button type="button" data-testid="metric-quickadd_capture" onClick={() => setDrilldown("quickadd_capture")} className="text-left bg-violet-50 rounded-lg px-4 py-3 ring-1 ring-transparent hover:ring-violet-300 transition">
+              <div className="text-xs uppercase tracking-wide text-violet-700 font-semibold">QuickAdd Captures</div>
+              <div className="text-xl font-bold text-gray-900">{(data.totals.quickaddCaptures ?? 0).toLocaleString()}</div>
+              <div className="text-[10px] text-violet-700/70 mt-0.5">Captured by the browser extension · view sites and people</div>
+            </button>
+          </div>
+          <p className="text-[11px] text-gray-400 -mt-3">
+            Site visits and QuickAdd captures are tracked starting with this update; earlier activity is not available. Counts are actions, not distinct users or estimates.
+          </p>
 
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -1208,6 +1254,8 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
       {selectedUser && (
         <UserActivityModal
           user={selectedUser}
+          range={range}
+          includeAdmins={includeAdmins}
           adminEmployeeId={employeeId}
           onClose={() => setSelectedUser(null)}
         />
@@ -1224,8 +1272,20 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
       {selectedEstimate && (
         <EstimateDetailModal
           estimate={selectedEstimate}
+          range={range}
+          includeAdmins={includeAdmins}
           adminEmployeeId={employeeId}
           onClose={() => setSelectedEstimate(null)}
+        />
+      )}
+      {drilldown && (
+        <ActionDrilldownModal
+          key={`${drilldown}-${range}-${includeAdmins}`}
+          eventType={drilldown}
+          range={range}
+          rangeLabel={RANGE_LABEL[range]}
+          includeAdmins={includeAdmins}
+          onClose={() => setDrilldown(null)}
         />
       )}
     </div>

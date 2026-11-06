@@ -5,6 +5,45 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface AnalyticsActor {
+  /** @nullable */
+  employeeId: string | null;
+  employeeName: string;
+  count: number;
+  lastSeen: string;
+}
+
+export interface AnalyticsSite {
+  domain: string;
+  count: number;
+}
+
+/**
+ * @nullable
+ */
+export type AnalyticsActionMetadata = { [key: string]: unknown } | null;
+
+export interface AnalyticsAction {
+  id: number;
+  createdAt: string;
+  /** @nullable */
+  employeeId: string | null;
+  employeeName: string;
+  /** @nullable */
+  productName: string | null;
+  /** @nullable */
+  metadata: AnalyticsActionMetadata;
+}
+
+export interface AnalyticsDrilldown {
+  total: number;
+  page: number;
+  pageSize: number;
+  actors: AnalyticsActor[];
+  sites: AnalyticsSite[];
+  events: AnalyticsAction[];
+}
+
 export type BrowserIssueLogLevel =
   (typeof BrowserIssueLogLevel)[keyof typeof BrowserIssueLogLevel];
 
@@ -260,6 +299,47 @@ export interface NetSuiteStatus {
   accountId: string | null;
   lastSyncAt: string | null;
 }
+
+export type GetAnalyticsDrilldownParams = {
+  range?: GetAnalyticsDrilldownRange;
+  includeAdmins?: GetAnalyticsDrilldownIncludeAdmins;
+  eventType: GetAnalyticsDrilldownEventType;
+  employeeId?: string;
+  vendorDomain?: string;
+  /**
+   * @minimum 1
+   */
+  page?: number;
+};
+
+export type GetAnalyticsDrilldownRange =
+  (typeof GetAnalyticsDrilldownRange)[keyof typeof GetAnalyticsDrilldownRange];
+
+export const GetAnalyticsDrilldownRange = {
+  today: "today",
+  yesterday: "yesterday",
+  "7d": "7d",
+  "30d": "30d",
+  "90d": "90d",
+} as const;
+
+export type GetAnalyticsDrilldownIncludeAdmins =
+  (typeof GetAnalyticsDrilldownIncludeAdmins)[keyof typeof GetAnalyticsDrilldownIncludeAdmins];
+
+export const GetAnalyticsDrilldownIncludeAdmins = {
+  NUMBER_0: "0",
+  NUMBER_1: "1",
+} as const;
+
+export type GetAnalyticsDrilldownEventType =
+  (typeof GetAnalyticsDrilldownEventType)[keyof typeof GetAnalyticsDrilldownEventType];
+
+export const GetAnalyticsDrilldownEventType = {
+  add_to_list: "add_to_list",
+  push_to_estimate: "push_to_estimate",
+  vendor_site_visit: "vendor_site_visit",
+  quickadd_capture: "quickadd_capture",
+} as const;
 
 export type GetAdminIssuesParams = {
   /**

@@ -18,10 +18,12 @@ import type {
 
 import type {
   AdminIssueList,
+  AnalyticsDrilldown,
   CategoryTreeResponse,
   EstimateItemsInput,
   EstimateItemsResult,
   GetAdminIssuesParams,
+  GetAnalyticsDrilldownParams,
   HealthStatus,
   IssueReportInput,
   IssueReportResult,
@@ -43,6 +45,109 @@ type AwaitedInput<T> = PromiseLike<T> | T;
 type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
+/**
+ * @summary Who performed an action, with site breakdown and paginated history
+ */
+export const getGetAnalyticsDrilldownUrl = (
+  params: GetAnalyticsDrilldownParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/analytics/drilldown?${stringifiedParams}`
+    : `/api/admin/analytics/drilldown`;
+};
+
+export const getAnalyticsDrilldown = async (
+  params: GetAnalyticsDrilldownParams,
+  options?: RequestInit,
+): Promise<AnalyticsDrilldown> => {
+  return customFetch<AnalyticsDrilldown>(getGetAnalyticsDrilldownUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetAnalyticsDrilldownQueryKey = (
+  params?: GetAnalyticsDrilldownParams,
+) => {
+  return [
+    `/api/admin/analytics/drilldown`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getGetAnalyticsDrilldownQueryOptions = <
+  TData = Awaited<ReturnType<typeof getAnalyticsDrilldown>>,
+  TError = ErrorType<unknown>,
+>(
+  params: GetAnalyticsDrilldownParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getAnalyticsDrilldown>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetAnalyticsDrilldownQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getAnalyticsDrilldown>>
+  > = ({ signal }) =>
+    getAnalyticsDrilldown(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getAnalyticsDrilldown>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetAnalyticsDrilldownQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getAnalyticsDrilldown>>
+>;
+export type GetAnalyticsDrilldownQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Who performed an action, with site breakdown and paginated history
+ */
+
+export function useGetAnalyticsDrilldown<
+  TData = Awaited<ReturnType<typeof getAnalyticsDrilldown>>,
+  TError = ErrorType<unknown>,
+>(
+  params: GetAnalyticsDrilldownParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getAnalyticsDrilldown>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetAnalyticsDrilldownQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Create a NetSuite case with captured diagnostic context

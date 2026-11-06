@@ -9,6 +9,9 @@ import {
 } from "@workspace/db";
 import { logger } from "../lib/logger";
 import { netsuiteRequest, isNetSuiteConfigured } from "../lib/netsuite";
+import { bearerToken, requireEmployee, verifySession } from "../lib/session";
+import { analyticsWhere, rangeToWindow as sharedRangeToWindow } from "../lib/analytics-filters";
+import { registerAnalyticsDrilldown } from "./analytics-drilldown";
 import {
   getAdminEmployeeIds,
   getEmployeeNames,
@@ -23,7 +26,6 @@ const MAX_PATH_LEN = 512;
 const MAX_TYPE_LEN = 64;
 const MAX_UA_LEN = 512;
 const MAX_SESSION_LEN = 64;
-const MAX_EMPLOYEE_ID_LEN = 64;
 
 const ALLOWED_EVENT_TYPES = new Set([
   "page_view",
@@ -32,6 +34,8 @@ const ALLOWED_EVENT_TYPES = new Set([
   "search",
   "add_to_list",
   "push_to_estimate",
+  "vendor_site_visit",
+  "quickadd_capture",
 ]);
 
 const ipBuckets = new Map<string, { count: number; resetAt: number }>();
@@ -96,17 +100,10 @@ router.post("/analytics/event", async (req, res) => {
       return res.status(400).json({ error: "sessionId required" });
     }
 
-    // Identity is server-attached from the trusted X-Employee-Id header
-    // (same header the rest of the app uses for auth). Body-supplied identity
-    // is intentionally ignored to prevent client-side spoofing.
-    const employeeIdHeader = trimStr(
-      req.headers["x-employee-id"],
-      MAX_EMPLOYEE_ID_LEN,
-    );
-    const numericEmployeeId = employeeIdHeader ? Number(employeeIdHeader) : NaN;
-    const employeeId = Number.isInteger(numericEmployeeId)
-      ? String(numericEmployeeId)
-      : null;
+    // Signed sessions only. An employee id supplied by a browser is not proof of identity.
+    const token = bearerToken(req);
+    const employeeId = verifySession(token);
+    if (token && !employeeId) { res.status(401).json({ error: "Sign in again to record activity." }); return; }
 
     const rawEvents = Array.isArray(body.events) ? body.events.slice(0, MAX_BATCH) : [];
     if (rawEvents.length === 0) return res.json({ ok: true, inserted: 0 });
@@ -121,6 +118,26 @@ router.post("/analytics/event", async (req, res) => {
       const path = trimStr(raw.path, MAX_PATH_LEN);
       // Defense in depth: never store admin-route activity.
       if (path && path.startsWith("/admin")) continue;
+      let metadata = raw.metadata && typeof raw.metadata === "object" ? raw.metadata : null;
+      if (eventType === "vendor_site_visit" || eventType === "quickadd_capture") {
+        if (!employeeId) continue;
+        const details = metadata as Record<string, unknown> | null;
+        try {
+          const url = new URL(String(details?.pageUrl ?? ""));
+          if (url.protocol !== "https:" && url.protocol !== "http:") continue;
+          // Never store query strings, fragments, credentials or arbitrary extension metadata.
+          metadata = {
+            vendorDomain: url.hostname.toLowerCase().replace(/^www\./, ""),
+            pageUrl: `${url.origin}${url.pathname}`.slice(0, 2048),
+            source: details?.source === "quickadd" ? "quickadd" : "cps_link",
+            productLineId: trimStr(details?.productLineId, 64),
+            productLineName: trimStr(details?.productLineName, 200),
+            productName: trimStr(details?.productName, 300),
+            extensionVersion: trimStr(details?.extensionVersion, 40),
+            itemCount: Math.min(20, Math.max(1, toIntOrNull(details?.itemCount) ?? 1)),
+          };
+        } catch { continue; }
+      }
       rows.push({
         employeeId,
         sessionId,
@@ -128,8 +145,7 @@ router.post("/analytics/event", async (req, res) => {
         path,
         categoryId: toIntOrNull(raw.categoryId),
         productId: toIntOrNull(raw.productId),
-        metadata:
-          raw.metadata && typeof raw.metadata === "object" ? raw.metadata : null,
+        metadata,
         userAgent,
       });
     }
@@ -144,22 +160,11 @@ router.post("/analytics/event", async (req, res) => {
   }
 });
 
-async function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  const raw = req.headers["x-employee-id"];
-  const headerStr = Array.isArray(raw) ? raw[0] : raw;
-  if (typeof headerStr !== "string" || !headerStr.trim()) {
-    logger.warn({ raw }, "Analytics admin gate rejected: missing X-Employee-Id");
-    return res.status(401).json({ error: "Authentication required" });
-  }
-  const trimmed = headerStr.trim();
-  const numericId = Number(trimmed);
-  if (!Number.isFinite(numericId)) {
-    logger.warn({ trimmed }, "Analytics admin gate rejected: non-numeric X-Employee-Id");
-    return res.status(401).json({ error: "Invalid employee id" });
-  }
-  const safeId = Math.trunc(numericId);
+router.use("/admin/analytics", requireEmployee);
+
+async function requireAdmin(_req: Request, res: Response, next: NextFunction) {
   try {
-    const emp = await getEmployeeByNetsuiteId(safeId);
+    const emp = await getEmployeeByNetsuiteId(res.locals.employeeId);
     if (!isAdminRecord(emp)) {
       return res.status(403).json({ error: "Admin access required" });
     }
@@ -169,66 +174,11 @@ async function requireAdmin(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-const ET_TZ = "America/New_York";
-
-/**
- * Returns the UTC Date that equals midnight of the given YYYY-MM-DD string in
- * Eastern Time, correctly accounting for EST vs EDT (DST).
- * Strategy: try both possible ET offsets (UTC-4 and UTC-5); verify by
- * re-formatting the candidate back to ET and checking it reads "00:00".
- */
-function etMidnight(dateStr: string): Date {
-  for (const offsetH of [4, 5]) {
-    const candidate = new Date(
-      `${dateStr}T${String(offsetH).padStart(2, "0")}:00:00Z`,
-    );
-    const etTime = new Intl.DateTimeFormat("en-US", {
-      timeZone: ET_TZ,
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }).format(candidate);
-    if (etTime === "00:00") return candidate;
-  }
-  // Fallback (shouldn't happen for valid dates)
-  return new Date(`${dateStr}T05:00:00Z`);
-}
-
-/** Returns today's date string (YYYY-MM-DD) in Eastern Time. */
-function etTodayStr(now: Date): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: ET_TZ }).format(now);
-}
-
-/** Returns YYYY-MM-DD string daysAgo days before the given ET date string. */
-function etDateMinusDays(etStr: string, days: number): string {
-  const [y, m, d] = etStr.split("-").map(Number);
-  const shifted = new Date(Date.UTC(y, m - 1, d - days));
-  return shifted.toISOString().slice(0, 10);
-}
-
-function rangeToWindow(range: unknown): { since: Date; until?: Date; label: string } {
-  const now = new Date();
-  const todayET = etTodayStr(now);
-
-  if (range === "today") {
-    return { since: etMidnight(todayET), label: "today" };
-  }
-  if (range === "yesterday") {
-    const yesterdayET = etDateMinusDays(todayET, 1);
-    return { since: etMidnight(yesterdayET), until: etMidnight(todayET), label: "yesterday" };
-  }
-  if (range === "30d") return { since: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000), label: "30d" };
-  if (range === "90d") return { since: new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000), label: "90d" };
-  return { since: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000), label: "7d" };
-}
+const rangeToWindow = sharedRangeToWindow;
 
 async function fetchAdminEmployeeIds(): Promise<string[]> {
-  try {
-    return await getAdminEmployeeIds();
-  } catch (err) {
-    logger.warn({ err }, "Failed to fetch admin employee ids from DB");
-    return [];
-  }
+  // Do not silently include admins when their exclusion list cannot be read.
+  return getAdminEmployeeIds();
 }
 
 async function fetchEmployeeNames(
@@ -242,29 +192,16 @@ async function fetchEmployeeNames(
   }
 }
 
+registerAnalyticsDrilldown(router, requireAdmin);
+
 router.get("/admin/analytics/summary", requireAdmin, async (req, res) => {
   try {
-    const { since, until, label: rangeLabel } = rangeToWindow(req.query.range);
+    const { label: rangeLabel } = rangeToWindow(req.query.range);
 
     const includeAdmins = req.query.includeAdmins === "1";
     const adminIds = includeAdmins ? [] : await fetchAdminEmployeeIds();
-    const adminFilter =
-      adminIds.length > 0
-        ? or(
-            isNull(analyticsEventsTable.employeeId),
-            notInArray(analyticsEventsTable.employeeId, adminIds),
-          )
-        : undefined;
 
-    const timeFilter = until
-      ? and(gte(analyticsEventsTable.createdAt, since), lt(analyticsEventsTable.createdAt, until))
-      : gte(analyticsEventsTable.createdAt, since);
-
-    const notHomePage = sql`NOT (${analyticsEventsTable.eventType} = 'page_view' AND ${analyticsEventsTable.path} = '/')`;
-
-    const baseWhere = adminFilter
-      ? and(timeFilter, adminFilter, notHomePage)!
-      : and(timeFilter, notHomePage)!;
+    const baseWhere = analyticsWhere(req.query.range, adminIds);
 
     const [totals] = await db
       .select({
@@ -273,6 +210,8 @@ router.get("/admin/analytics/summary", requireAdmin, async (req, res) => {
         totalUsers: sql<number>`count(distinct ${analyticsEventsTable.employeeId})::int`,
         addToListEvents: sql<number>`coalesce(sum(case when ${analyticsEventsTable.eventType} = 'add_to_list' then 1 else 0 end), 0)::int`,
         pushToEstimateEvents: sql<number>`coalesce(sum(case when ${analyticsEventsTable.eventType} = 'push_to_estimate' then 1 else 0 end), 0)::int`,
+        vendorSiteVisits: sql<number>`count(*) filter (where ${analyticsEventsTable.eventType} = 'vendor_site_visit')::int`,
+        quickaddCaptures: sql<number>`count(*) filter (where ${analyticsEventsTable.eventType} = 'quickadd_capture')::int`,
       })
       .from(analyticsEventsTable)
       .where(baseWhere);
@@ -290,8 +229,7 @@ router.get("/admin/analytics/summary", requireAdmin, async (req, res) => {
       .from(analyticsEventsTable)
       .where(and(baseWhere, isNotNull(analyticsEventsTable.employeeId)))
       .groupBy(analyticsEventsTable.employeeId)
-      .orderBy(desc(sql`count(*)`))
-      .limit(50);
+      .orderBy(desc(sql`count(*)`));
 
     const employeeNames = await fetchEmployeeNames(
       activeUsersRaw
@@ -427,21 +365,19 @@ router.get("/admin/analytics/summary", requireAdmin, async (req, res) => {
     });
 
     const useHourly = rangeLabel === "today" || rangeLabel === "yesterday";
+    const localTime = sql`(${analyticsEventsTable.createdAt} AT TIME ZONE 'UTC' AT TIME ZONE 'America/New_York')`;
+    const bucket = useHourly ? sql`date_trunc('hour', ${localTime})` : sql`date_trunc('day', ${localTime})`;
     const dailyPageViews = await db
       .select({
         day: useHourly
-          ? sql<string>`to_char(date_trunc('hour', ${analyticsEventsTable.createdAt}), 'YYYY-MM-DD"T"HH24:MI')`
-          : sql<string>`to_char(date_trunc('day', ${analyticsEventsTable.createdAt}), 'YYYY-MM-DD')`,
+          ? sql<string>`to_char(${bucket}, 'YYYY-MM-DD"T"HH24:MI')`
+          : sql<string>`to_char(${bucket}, 'YYYY-MM-DD')`,
         views: sql<number>`count(*)::int`,
       })
       .from(analyticsEventsTable)
       .where(and(baseWhere, eq(analyticsEventsTable.eventType, "page_view")))
-      .groupBy(useHourly
-        ? sql`date_trunc('hour', ${analyticsEventsTable.createdAt})`
-        : sql`date_trunc('day', ${analyticsEventsTable.createdAt})`)
-      .orderBy(useHourly
-        ? sql`date_trunc('hour', ${analyticsEventsTable.createdAt})`
-        : sql`date_trunc('day', ${analyticsEventsTable.createdAt})`);
+      .groupBy(bucket)
+      .orderBy(bucket);
 
     const topAddedRaw = await db
       .select({
@@ -547,6 +483,8 @@ router.get("/admin/analytics/summary", requireAdmin, async (req, res) => {
         users: totals?.totalUsers ?? 0,
         addToList: totals?.addToListEvents ?? 0,
         pushToEstimate: totals?.pushToEstimateEvents ?? 0,
+        vendorSiteVisits: totals?.vendorSiteVisits ?? 0,
+        quickaddCaptures: totals?.quickaddCaptures ?? 0,
       },
       activeUsers,
       anonymous: anonAgg[0] ?? { sessions: 0, pageViews: 0, events: 0, lastSeen: null },
@@ -573,24 +511,9 @@ router.get("/admin/analytics/recent", requireAdmin, async (req, res) => {
         ? limitParam
         : 50;
 
-    const { since, until } = rangeToWindow(req.query.range);
-
     const adminIds = includeAdmins ? [] : await fetchAdminEmployeeIds();
-    const adminFilter =
-      adminIds.length > 0
-        ? or(
-            isNull(analyticsEventsTable.employeeId),
-            notInArray(analyticsEventsTable.employeeId, adminIds),
-          )
-        : undefined;
 
-    const timeFilter = until
-      ? and(gte(analyticsEventsTable.createdAt, since), lt(analyticsEventsTable.createdAt, until))
-      : gte(analyticsEventsTable.createdAt, since);
-
-    const notHomePage = sql`NOT (${analyticsEventsTable.eventType} = 'page_view' AND ${analyticsEventsTable.path} = '/')`;
-
-    const whereClause = adminFilter ? and(timeFilter, adminFilter, notHomePage)! : and(timeFilter, notHomePage)!;
+    const whereClause = analyticsWhere(req.query.range, adminIds);
 
     const events = await db
       .select({
@@ -686,6 +609,7 @@ router.get("/admin/analytics/user/:id", requireAdmin, async (req, res) => {
       return;
     }
     const employeeId = String(numericId);
+    const adminIds = req.query.includeAdmins === "1" ? [] : await fetchAdminEmployeeIds();
 
     const events = await db
       .select({
@@ -699,7 +623,7 @@ router.get("/admin/analytics/user/:id", requireAdmin, async (req, res) => {
         metadata: analyticsEventsTable.metadata,
       })
       .from(analyticsEventsTable)
-      .where(eq(analyticsEventsTable.employeeId, employeeId))
+      .where(analyticsWhere(req.query.range, adminIds, employeeId))
       .orderBy(desc(analyticsEventsTable.createdAt))
       .limit(USER_EVENTS_MAX);
 
@@ -831,7 +755,7 @@ router.get("/admin/analytics/product-adds/:productId", requireAdmin, async (req,
       productId,
       name: productRow[0]?.name ?? null,
       sku: productRow[0]?.sku ?? null,
-      range: `${days}d`,
+      range: rangeToWindow(req.query.range).label,
       limit: PRODUCT_ADDS_LIMIT,
       truncated: events.length === PRODUCT_ADDS_LIMIT,
       events: events.map((e) => {
@@ -865,6 +789,7 @@ router.get("/admin/analytics/estimate-detail/:estimateId", requireAdmin, async (
       return res.status(400).json({ error: "Invalid estimateId" });
     }
 
+    const adminIds = req.query.includeAdmins === "1" ? [] : await fetchAdminEmployeeIds();
     const events = await db
       .select({
         id: analyticsEventsTable.id,
@@ -876,6 +801,7 @@ router.get("/admin/analytics/estimate-detail/:estimateId", requireAdmin, async (
       .from(analyticsEventsTable)
       .where(
         and(
+          analyticsWhere(req.query.range, adminIds),
           eq(analyticsEventsTable.eventType, "push_to_estimate"),
           sql`(${analyticsEventsTable.metadata}->>'estimateId') = ${String(estimateId)}`,
         ),
