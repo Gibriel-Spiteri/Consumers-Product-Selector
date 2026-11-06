@@ -140,6 +140,26 @@ function cleanPick(raw, sender) {
   };
 }
 
+// 1.5.9: the screenshot at the Product Selector's size: at most 1440 pixels wide and 2 MB as a JPEG (issue-diagnostics.ts).
+async function siteSizeShot(dataUrl) {
+  const blob = await (await fetch(dataUrl)).blob();
+  const bmp = await createImageBitmap(blob);
+  const scale = Math.min(1, 1440 / bmp.width);
+  let out = blob;
+  if (scale < 1) {
+    const canvas = new OffscreenCanvas(Math.round(bmp.width * scale), Math.round(bmp.height * scale));
+    canvas.getContext("2d").drawImage(bmp, 0, 0, canvas.width, canvas.height);
+    out = await canvas.convertToBlob({ type: "image/jpeg", quality: 0.8 });
+  }
+  bmp.close();
+  if (out.size > 2 * 1024 * 1024) throw new Error("Screenshot exceeds the image size limit.");
+  if (out === blob) return dataUrl;
+  const bytes = new Uint8Array(await out.arrayBuffer());
+  let bin = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return `data:image/jpeg;base64,${btoa(bin)}`;
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
     const { vendorDomains, picks, siteLines } = await state();
@@ -204,6 +224,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         await chrome.storage.session.set({ appSession: token ? { token, name: text(message.name).slice(0, 100), at: Date.now() } : null });
         return sendResponse({ ok: true });
       }
+      // 1.5.9: the screenshot the Product Selector's Report Issue takes of its page, here of the vendor tab with the panel
+      // as it was when Report issue was clicked (before the form covers it).
+      case "capture-tab": {
+        const host = (() => { try { return new URL(sender.url || sender.tab.url).hostname; } catch { return ""; } })();
+        if (!vendorDomains.includes(registrableDomain(host)) || !sender.tab) return sendResponse({ ok: false });
+        try {
+          const shot = await chrome.tabs.captureVisibleTab(sender.tab.windowId, { format: "jpeg", quality: 80 });
+          return sendResponse({ ok: true, dataUrl: await siteSizeShot(shot) });
+        } catch (e) {
+          return sendResponse({ ok: false, error: String((e && e.message) || e).slice(0, 200) });
+        }
+      }
+      // 1.5.9: as the site's Report Issue (report-issue-modal.tsx): upload the screenshot (POST /api/issues/screenshot-upload,
+      // then PUT the JPEG), then POST /api/cases with the report reference, Issue, Detail, page, browser, screenshot path
+      // and capture note. The screenshot path and note come back so Back and Send again reuse them, as on the site.
       case "report-issue": {
         const host = (() => { try { return new URL(sender.url || sender.tab.url).hostname; } catch { return ""; } })();
         if (!vendorDomains.includes(registrableDomain(host)) || !message.report) return sendResponse({ ok: false, error: "Not a vendor page" });
@@ -211,24 +246,73 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const { appSession } = await chrome.storage.session.get("appSession");
         const signIn = { ok: false, signIn: true, error: "Sign in to the Product Selector in this browser first" };
         if (!appSession || !appSession.token) return sendResponse(signIn);
-        const report = globalThis.ConsumersExtract.issueReport({ ...message.report, reporter: message.report.reporter || appSession.name, pageUrl, version: chrome.runtime.getManifest().version });
-        if (!report) return sendResponse({ ok: false, error: "Please say what went wrong." });
-        // const payload = globalThis.ConsumersExtract.issueReport({ ...message.report, pageUrl, version: chrome.runtime.getManifest().version });
-        const payload = { requestId: crypto.randomUUID(), ...report, browserLogs: [] };
+        const r = message.report;
+        const report = globalThis.ConsumersExtract.issueReport({ ...r, pageUrl, version: chrome.runtime.getManifest().version });
+        if (!report) return sendResponse({ ok: false, error: "Please provide an issue and details." });
+        const auth = { Authorization: `Bearer ${appSession.token}` };
+        let screenshotPath = typeof r.screenshotPath === "string" ? r.screenshotPath.slice(0, 500) : "";
+        let captureError = text(r.captureError).slice(0, 300);
+        const back = extra => sendResponse({ screenshotPath, captureError, ...extra });
+        if (!screenshotPath && typeof r.screenshot === "string" && r.screenshot.startsWith("data:image/jpeg;base64,")) {
+          try {
+            const up = await fetch(`${APP_ORIGINS[0]}/api/issues/screenshot-upload`, { method: "POST", headers: auth, signal: AbortSignal.timeout(10000) });
+            const grant = await up.json().catch(() => null);
+            if (up.status === 404) return back({ ok: false, error: "The issue reporting update is not active yet. Please try after it is activated." });
+            if (up.status === 401) {
+              await chrome.storage.session.set({ appSession: null });
+              return back(signIn);
+            }
+            if (up.status === 403) return back({ ok: false, error: (grant && grant.error) || "Forbidden" });
+            if (!up.ok || !grant || !grant.uploadUrl || !grant.objectPath) throw new Error("No upload address");
+            const image = await (await fetch(r.screenshot)).blob();
+            const put = await fetch(grant.uploadUrl, { method: "PUT", headers: { "Content-Type": "image/jpeg" }, body: image, signal: AbortSignal.timeout(15000) });
+            if (!put.ok) throw new Error("Screenshot upload failed");
+            screenshotPath = String(grant.objectPath);
+          } catch {
+            captureError = "Screenshot could not be uploaded. The issue, URL and browser logs were saved without an image.";
+          }
+        }
+        const requestId = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(r.requestId)) ? String(r.requestId) : crypto.randomUUID();
+        const payload = { requestId, ...report, browserLogs: [], screenshotPath: screenshotPath || null, captureError: captureError || null };
         try {
-          // const res = await fetch(`${APP_ORIGINS[0]}/api/cases`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-          const res = await fetch(`${APP_ORIGINS[0]}/api/cases`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${appSession.token}` }, body: JSON.stringify(payload) });
+          const res = await fetch(`${APP_ORIGINS[0]}/api/cases`, { method: "POST", headers: { "Content-Type": "application/json", ...auth }, body: JSON.stringify(payload), signal: AbortSignal.timeout(60000) });
           const data = await res.json().catch(() => null);
           if (res.status === 401) {
             await chrome.storage.session.set({ appSession: null });
-            return sendResponse(signIn);
+            return back(signIn);
           }
-          if (!res.ok) return sendResponse({ ok: false, error: (data && data.error) || `The Product Selector answered ${res.status}` });
-          return sendResponse({ ok: true, caseNumber: (data && data.caseNumber) || "", caseId: (data && data.caseId) || "" });
+          if (!res.ok) return back({ ok: false, error: (data && data.error) || `The Product Selector answered ${res.status}` });
+          return back({ ok: true, caseNumber: (data && data.caseNumber) || "", caseId: (data && data.caseId) || "" });
         } catch (e) {
-          return sendResponse({ ok: false, error: "Could not reach the Product Selector" });
+          return back({ ok: false, error: (e && e.message) || "Failed to send" });
         }
       }
+      // 1.5.8 version (no screenshot, the old form's fields). Was:
+      // case "report-issue-158": {
+        // const host = (() => { try { return new URL(sender.url || sender.tab.url).hostname; } catch { return ""; } })();
+        // if (!vendorDomains.includes(registrableDomain(host)) || !message.report) return sendResponse({ ok: false, error: "Not a vendor page" });
+        // const pageUrl = sender.url || (sender.tab && sender.tab.url) || "";
+        // const { appSession } = await chrome.storage.session.get("appSession");
+        // const signIn = { ok: false, signIn: true, error: "Sign in to the Product Selector in this browser first" };
+        // if (!appSession || !appSession.token) return sendResponse(signIn);
+        // const report = globalThis.ConsumersExtract.issueReport({ ...message.report, reporter: message.report.reporter || appSession.name, pageUrl, version: chrome.runtime.getManifest().version });
+        // if (!report) return sendResponse({ ok: false, error: "Please say what went wrong." });
+        // // const payload = globalThis.ConsumersExtract.issueReport({ ...message.report, pageUrl, version: chrome.runtime.getManifest().version });
+        // const payload = { requestId: crypto.randomUUID(), ...report, browserLogs: [] };
+        // try {
+          // // const res = await fetch(`${APP_ORIGINS[0]}/api/cases`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+          // const res = await fetch(`${APP_ORIGINS[0]}/api/cases`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${appSession.token}` }, body: JSON.stringify(payload) });
+          // const data = await res.json().catch(() => null);
+          // if (res.status === 401) {
+            // await chrome.storage.session.set({ appSession: null });
+            // return sendResponse(signIn);
+          // }
+          // if (!res.ok) return sendResponse({ ok: false, error: (data && data.error) || `The Product Selector answered ${res.status}` });
+          // return sendResponse({ ok: true, caseNumber: (data && data.caseNumber) || "", caseId: (data && data.caseId) || "" });
+        // } catch (e) {
+          // return sendResponse({ ok: false, error: "Could not reach the Product Selector" });
+        // }
+      // }
       case "pick-count":
         return sendResponse({ count: picks.length });
       case "site-info": {

@@ -5,7 +5,7 @@
     "eyebrow": "Consumers Kitchen & Bath · Product Selector guide",
     "title": "From a product on a vendor's website to a priced special-order line on the estimate",
     "lede": "Where each step happens: on the vendor's own website with the customer, in the Consumers QuickAdd browser extension (Edge or Chrome), in the Product Selector on the sales PC, and in NetSuite. Click any numbered box to read its exact buttons.",
-    "meta": "Mapped from the code on 11/5/2026: Product Selector Special Order page, Quote List and the Consumers QuickAdd extension 1.5.3 (1.5.4 on 11/6: newest copy wins; 1.5.5: kits split into parts, Flusso finish squares; 1.5.6: kits on every vendor after sweep 2; 1.5.7: list price, Report issue; 1.5.8: report as the signed-in rep)."
+    "meta": "Mapped from the code on 11/5/2026: Product Selector Special Order page, Quote List and the Consumers QuickAdd extension 1.5.3 (1.5.4 on 11/6: newest copy wins; 1.5.5: kits split into parts, Flusso finish squares; 1.5.6: kits on every vendor after sweep 2; 1.5.7: list price, Report issue; 1.5.8: report as the signed-in rep; 1.5.9: the Report an Issue form matches the site's, with a screenshot)."
   },
   "lanes": {
     "VS": {
@@ -199,7 +199,7 @@
           "kind": "action",
           "lane": "VS",
           "label": "Check Type, model, finish, Coll/Desc, quantity; click Add to quote",
-          "detail": "Choose the Option (color or finish) if the page does not say; picking another finish on the page greys the panel out with an Updating... spinner until it shows the new finish. Check the Type (the best fit is preselected), Model, Color / finish, Collection / Description (one field, as NetSuite's Coll/Desc), Price on this site and Quantity, then click Add to quote. Some sites show no price (Elkay, Franke, Richelieu, Strategic Brands); the rep enters the list price. A Fleurco kit shows one block per part and Add 4 items to quote puts each part on the Quote List as its own line. The price field is labeled List price and the line under it reads \"Confirm all Information Above\". Report issue, at the left of the buttons, sends a short report to IT as a NetSuite case, as the rep signed in to the Product Selector in this browser (it also shows in Admin, Issues & Bugs), and emails Gib, Phil and Gordon. Without a sign-in the panel says to open the Product Selector and sign in."
+          "detail": "Choose the Option (color or finish) if the page does not say; picking another finish on the page greys the panel out with an Updating... spinner until it shows the new finish. Check the Type (the best fit is preselected), Model, Color / finish, Collection / Description (one field, as NetSuite's Coll/Desc), Price on this site and Quantity, then click Add to quote. Some sites show no price (Elkay, Franke, Richelieu, Strategic Brands); the rep enters the list price. A Fleurco kit shows one block per part and Add 4 items to quote puts each part on the Quote List as its own line. The price field is labeled List price and the line under it reads \"Confirm all Information Above\". Report issue, at the left of the buttons, opens the same Report an Issue form as the Product Selector (Issue and Detail) and sends it to IT as a NetSuite case with a screenshot of the page, as the rep signed in to the Product Selector in this browser (it also shows in Admin, Issues & Bugs), and emails Jim, Gib, Phil and Gordon. Without a sign-in the panel says to open the Product Selector and sign in."
         },
         {
           "id": "a_wait",

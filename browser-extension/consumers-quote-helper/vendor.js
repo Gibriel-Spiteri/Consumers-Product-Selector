@@ -49,11 +49,35 @@
       /* 1.5.7: Report issue, at the left of the buttons, and its form above them. */
       .actions .report { margin-right: auto; border-color: transparent; background: transparent; color: #1f4fd1; padding-left: 4px; padding-right: 4px; }
       .actions .report:hover { text-decoration: underline; }
-      .report-box { display: grid; gap: 8px; padding: 0 16px 12px; }
-      .report-box b { font-size: 14px; font-weight: 650; }
+      /* .report-box { display: grid; gap: 8px; padding: 0 16px 12px; }
+      .report-box b { font-size: 14px; font-weight: 650; } */
       textarea { width: 100%; min-width: 0; font-size: 14px; padding: 9px 10px; border: 1px solid #c3c9d6; border-radius: 8px; background: #fff; color: #1d2433;
         font-family: inherit; text-transform: none; letter-spacing: 0; font-weight: 400; resize: vertical; }
-      .r-actions { display: flex; gap: 8px; justify-content: flex-end; }
+      /* .r-actions { display: flex; gap: 8px; justify-content: flex-end; } */
+      /* 1.5.9: Report an Issue, laid out as the Product Selector's window (title, Issue, Detail, Cancel and Send). It takes
+         the panel's place while open. */
+      .report-box { display: grid; gap: 14px; padding: 14px 16px 16px; }
+      .r-head { display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; border-bottom: 1px solid #eef0f4; }
+      .r-head b { font-size: 15px; font-weight: 650; color: #111827; }
+      .r-x { background: transparent; border: 0; color: #9ca3af; font-size: 20px; line-height: 1; cursor: pointer; padding: 2px 6px; border-radius: 6px; }
+      .r-x:hover { color: #374151; background: #f3f4f6; }
+      .r-compose { display: grid; gap: 14px; }
+      .r-sending { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 22px 0; font-size: 14px; color: #4b5563; }
+      .spin.small { width: 16px; height: 16px; border-width: 2px; }
+      /* .r-ok, .r-err { display: grid; gap: 3px; } */
+      .r-ok, .r-err { display: flex; gap: 8px; align-items: flex-start; }
+      .r-txt { display: grid; gap: 3px; min-width: 0; }
+      .r-ico { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; margin-top: 1px; }
+      .r-send { display: inline-flex; align-items: center; gap: 6px; }
+      .r-send .r-ico { width: 14px; height: 14px; margin-top: 0; }
+      .r-ok b, .r-err b { font-size: 14px; font-weight: 600; }
+      .r-sub { font-size: 12px; }
+      .r-capture { font-size: 12px; color: #b45309; }
+      .r-err-msg { font-size: 12px; overflow-wrap: anywhere; }
+      .r-actions { display: flex; gap: 8px; justify-content: flex-end; padding-top: 12px; border-top: 1px solid #eef0f4; }
+      .btn.plain { border-color: transparent; background: transparent; color: #4b5563; }
+      .btn.plain:hover { background: #f9fafb; color: #111827; }
+      .btn.dark { background: #111827; border-color: #111827; color: #fff; }
       .body { padding: 14px 16px; display: grid; gap: 10px; }
       .prod { display: flex; gap: 12px; align-items: center; }
       .prod img { width: 64px; height: 64px; object-fit: contain; border: 1px solid #e3e6ec; border-radius: 8px; background: #fff; }
@@ -135,14 +159,34 @@
         <div class="msg" hidden></div>
       </div>
         <!-- 1.5.7 (Gib 11/6, "add a report issue button to the extension"): sent to the Product Selector's Report Issue. -->
+        <!-- 1.5.7 / 1.5.8 form. Was:
         <div class="report-box" hidden>
           <b>Report an issue</b>
           <label>What went wrong?<textarea class="r-text" rows="3" maxlength="4000" placeholder="For example: the color is wrong, or the price is missing"></textarea></label>
           <label>Your name (optional)<input class="r-name" maxlength="100"></label>
-          <!-- 1.5.8: sent as the rep signed in to the Product Selector in this browser. Was: "Goes to Consumers IT as a case, with this page's address, ..." -->
           <div class="hint">Goes to Consumers IT as a case, as the person signed in to the Product Selector in this browser, with this page's address, what this panel read, the QuickAdd version and your browser. No customer details are sent.</div>
           <div class="r-actions"><button class="btn r-cancel" type="button">Cancel</button><button class="btn primary r-send" type="button">Send report</button></div>
           <div class="msg r-msg" hidden></div>
+        </div> -->
+        <!-- 1.5.9 (Gib 11/6, "The report an issue fields don't match the original report an issue"): the Product
+        Selector's Report Issue window field for field (report-issue-modal.tsx): the same title, labels, placeholders,
+        lengths, buttons and messages. The vendor page, what the panel read, the QuickAdd version and a screenshot of the
+        page go with it without being shown. -->
+        <div class="report-box" role="dialog" aria-label="Report an Issue" hidden>
+          <div class="r-head"><b>Report an Issue</b><button class="r-x" type="button" aria-label="Close">&times;</button></div>
+          <div class="r-compose">
+            <label>Issue<input class="r-issue" type="text" maxlength="300" placeholder="Brief summary"></label>
+            <label>Detail<textarea class="r-text" rows="5" maxlength="10000" placeholder="Describe what happened, what you expected, and any steps to reproduce."></textarea></label>
+          </div>
+          <div class="r-sending" role="status" hidden><div class="spin small"></div><span>Creating case in NetSuite&hellip;</span></div>
+          <!-- The site's icons (lucide circle-check, circle-alert and send). -->
+          <div class="ok r-ok" hidden><svg class="r-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg><div class="r-txt"><b class="r-ok-title">Case sent.</b><div class="r-sub">An Innovation &amp; Technology team member will follow up.</div><div class="r-sub r-note" hidden>The case number will appear in Admin once NetSuite provides it.</div><div class="r-capture" hidden></div></div></div>
+          <div class="err r-err" hidden><svg class="r-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg><div class="r-txt"><b>Could not create the case.</b><div class="r-err-msg" hidden></div></div></div>
+          <div class="r-actions">
+            <button class="btn plain r-cancel" type="button">Cancel</button><button class="btn primary r-send" type="button" disabled><svg class="r-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg>Send</button>
+            <button class="btn plain r-sending-btn" type="button" disabled hidden>Sending&hellip;</button>
+            <button class="btn plain r-back" type="button" hidden>Back</button><button class="btn dark r-close" type="button" hidden>Close</button>
+          </div>
         </div>
       <!-- <div class="actions"><button class="btn cancel" type="button">Close</button><button class="btn primary add" type="button">Add to quote</button></div> -->
       <div class="actions"><button class="btn link report" type="button">Report issue</button><button class="btn cancel" type="button">Close</button><button class="btn primary add" type="button">Add to quote</button></div>
@@ -158,11 +202,20 @@
     single: $(".single"), parts: $(".parts"), kitHint: $(".kit-hint"), kitTotalHint: $(".kit-total-hint"), // 1.5.5
     priceWrap: $(".price-wrap"), qtyLabel: $(".qty-label") };
   const busy = $(".busy"), head = $(".head"), bodyEl = $(".body"), actionsEl = $(".actions");
+  const reportBox = $(".report-box"); // 1.5.9
+
+  // 1.5.9: the Report an Issue view takes the panel's place; closing it brings the panel's fields and buttons back.
+  function closeReport() {
+    reportBox.hidden = true;
+    bodyEl.hidden = false;
+    actionsEl.hidden = false;
+  }
 
   // 1.4.2: grey the open panel out with a spinner while it re-reads the page; nothing under it can be clicked or typed.
   function setBusy(on) {
     if (on) busy.style.top = head.offsetHeight + "px";
-    busy.hidden = !on;
+    // busy.hidden = !on;
+    busy.hidden = !on || !reportBox.hidden; // 1.5.9: never over a report being typed
     bodyEl.inert = on;
     actionsEl.inert = on;
     panel.setAttribute("aria-busy", String(on));
@@ -1868,6 +1921,7 @@
 
   function closePanel() {
     setBusy(false);
+    closeReport(); // 1.5.9
     panel.style.display = "none";
     fab.style.display = items.length ? "flex" : "none";
   }
@@ -1993,6 +2047,7 @@
 
   // 1.5.7 (Gib 11/6): Report issue. What the customer types, plus what this panel read, goes to the Product Selector's
   // Report Issue (a NetSuite case for IT) through the background script; no sign-in needed, no customer details sent.
+  /* 1.5.7 / 1.5.8 form, replaced in 1.5.9 (below).
   const rBox = $(".report-box"), rText = $(".r-text"), rName = $(".r-name"), rMsg = $(".r-msg"), rSend = $(".r-send");
   const browserName = () => {
     const ua = navigator.userAgent;
@@ -2054,6 +2109,115 @@
       rMsg.textContent = `Could not send the report${res && res.error ? ` (${res.error})` : ""}. Try again, or open the Product Selector and use Report Issue at the bottom of any page.`;
       rSend.disabled = false;
     }
+  });
+  end of the 1.5.7 / 1.5.8 form */
+
+  // 1.5.9 (Gib 11/6, "The report an issue fields don't match the original report an issue"): the Product Selector's
+  // Report Issue window (report-issue-modal.tsx), step for step. Opening it takes a screenshot of the page with the
+  // panel as it is (the site leaves its own window out of its screenshot the same way) and a new report reference;
+  // Send stays off until Issue and Detail are both filled; sending shows "Creating case in NetSuite...", then the case
+  // number or the error, with Back and Close. The background uploads the screenshot and creates the case as the rep
+  // signed in to the Product Selector in this browser.
+  const rBox = reportBox, rIssue = $(".r-issue"), rText = $(".r-text"), rSend = $(".r-send");
+  const rView = { compose: $(".r-compose"), sending: $(".r-sending"), success: $(".r-ok"), error: $(".r-err") };
+  const rBtn = { cancel: $(".r-cancel"), sending: $(".r-sending-btn"), back: $(".r-back"), close: $(".r-close") };
+  const rOkTitle = $(".r-ok-title"), rNote = $(".r-note"), rCapture = $(".r-capture"), rErrMsg = $(".r-err-msg");
+  const CAPTURE_FAILED = "The browser could not capture this page. URL and browser logs are still included.";
+  const optText = sel => (sel && sel.value && sel.selectedOptions[0] ? String(sel.selectedOptions[0].dataset.name || sel.selectedOptions[0].textContent) : "");
+  // A v4 UUID; crypto.randomUUID is missing on plain-http pages (Sofia's shop).
+  const uuid = () => {
+    if (crypto.randomUUID) return crypto.randomUUID();
+    const b = crypto.getRandomValues(new Uint8Array(16));
+    b[6] = (b[6] & 0x0f) | 0x40;
+    b[8] = (b[8] & 0x3f) | 0x80;
+    const h = [...b].map(x => x.toString(16).padStart(2, "0")).join("");
+    return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+  };
+  let rState = null; // { requestId, screenshot, screenshotPath, captureError } for the open form
+  const rCheck = () => { rSend.disabled = !rState || !rIssue.value.trim() || !rText.value.trim(); };
+  function rStep(step) {
+    for (const [k, el] of Object.entries(rView)) el.hidden = k !== step;
+    rBtn.cancel.hidden = rSend.hidden = step !== "compose";
+    rBtn.sending.hidden = step !== "sending";
+    rBtn.back.hidden = step !== "error";
+    rBtn.close.hidden = step !== "success" && step !== "error";
+    rCheck();
+  }
+  let rOpening = false;
+  $(".report").addEventListener("click", async () => {
+    if (rOpening) return;
+    rOpening = true;
+    const state = { requestId: uuid(), screenshot: "", screenshotPath: "", captureError: "" };
+    try {
+      const shot = await Promise.race([
+        chrome.runtime.sendMessage({ type: "capture-tab" }),
+        new Promise(resolve => setTimeout(() => resolve(null), 8000)),
+      ]);
+      if (shot && shot.ok && shot.dataUrl) state.screenshot = shot.dataUrl;
+      else state.captureError = CAPTURE_FAILED;
+    } catch {
+      state.captureError = CAPTURE_FAILED;
+    }
+    rState = state;
+    rIssue.value = "";
+    rText.value = "";
+    bodyEl.hidden = true;
+    actionsEl.hidden = true;
+    rBox.hidden = false;
+    rStep("compose");
+    rOpening = false;
+    rIssue.focus();
+  });
+  for (const el of [rIssue, rText]) el.addEventListener("input", rCheck);
+  for (const el of [rBtn.cancel, rBtn.close, $(".r-x")]) el.addEventListener("click", closeReport);
+  rBtn.back.addEventListener("click", () => rStep("compose"));
+  rBox.addEventListener("keydown", e => { if (e.key === "Escape") closeReport(); }); // as the site's window
+  rSend.addEventListener("click", async () => {
+    const issue = rIssue.value.trim(), detail = rText.value.trim();
+    if (!rState || !issue || !detail) return;
+    rStep("sending");
+    const kit = !!(parts && !f.parts.hidden);
+    const lineName = f.lineWrap.hidden ? (currentLine() || {}).name || "" : optText(f.line);
+    const report = {
+      requestId: rState.requestId, issue, detail,
+      screenshot: rState.screenshotPath ? "" : rState.screenshot, screenshotPath: rState.screenshotPath, captureError: rState.captureError,
+      userAgent: navigator.userAgent, viewport: { width: window.innerWidth, height: window.innerHeight },
+      message: msg.hidden ? "" : msg.textContent,
+      fields: kit ? { quantity: f.qty.value, line: lineName }
+        : { type: optText(f.type), model: f.model.value, color: f.color.value, description: f.description.value, price: f.price.value, quantity: f.qty.value, line: lineName },
+      parts: kit ? [...f.parts.querySelectorAll(".part")].map(b => ({ model: b.querySelector(".pmodel").value, type: optText(b.querySelector(".ptype")),
+        color: b.querySelector(".pcolor").value, description: b.querySelector(".pdesc").value, price: b.querySelector(".pprice").value })) : [],
+    };
+    let res = null;
+    try {
+      res = await chrome.runtime.sendMessage({ type: "report-issue", report });
+    } catch {}
+    // The uploaded screenshot is kept for Back and Send again, as on the site.
+    if (res && res.screenshotPath) rState.screenshotPath = res.screenshotPath;
+    if (res && res.captureError) rState.captureError = res.captureError;
+    if (res && res.ok) {
+      rOkTitle.textContent = `Case sent${res.caseNumber ? ` - #${res.caseNumber}` : ""}.`;
+      rNote.hidden = !!res.caseNumber;
+      rCapture.hidden = !rState.captureError;
+      rCapture.textContent = rState.captureError;
+      rStep("success");
+      return;
+    }
+    rErrMsg.textContent = "";
+    if (res && res.signIn) {
+      // QuickAdd only: the site is always signed in; here the rep signs in to the Product Selector in this browser.
+      rErrMsg.textContent = "Sign in to the Product Selector in this browser, then click Back and Send again. ";
+      const a = document.createElement("a");
+      a.href = "https://consumers-product-selector.replit.app/";
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.textContent = "Open the Product Selector";
+      rErrMsg.appendChild(a);
+    } else {
+      rErrMsg.textContent = (res && res.error) || "Failed to send";
+    }
+    rErrMsg.hidden = false;
+    rStep("error");
   });
   $(".cancel").addEventListener("click", closePanel);
   f.variant.addEventListener("change", () => show(Number(f.variant.value)));
