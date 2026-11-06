@@ -1,7 +1,6 @@
 import { Router, type IRouter } from "express";
 import { syncFromNetSuite } from "../lib/syncService";
-import { isNetSuiteConfigured, executeSuiteQL, netsuiteRequest, netsuiteCreate } from "../lib/netsuite";
-import { logger } from "../lib/logger";
+import { isNetSuiteConfigured, executeSuiteQL } from "../lib/netsuite";
 import { db } from "@workspace/db";
 import { categoriesTable } from "@workspace/db";
 import { TriggerNetSuiteSyncResponse, GetNetSuiteStatusResponse } from "@workspace/api-zod";
@@ -72,71 +71,6 @@ router.get("/netsuite/diag/:itemid", async (req, res) => {
     return res.json({ item: result.items, ppr: ppr.items });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
-  }
-});
-
-// "Innovation & Technology" is internal id 12 on custom record type 169 (referenced by custevent_oprtype).
-// Allow override via env var if it ever changes.
-function getInnovationTechDepartmentId(): string {
-  return process.env.NETSUITE_INNOVATION_TECH_DEPT_ID?.trim() || "12";
-}
-
-router.post("/cases", async (req, res) => {
-  const { subject, detail, employee } = req.body ?? {};
-
-  if (!subject || typeof subject !== "string" || !subject.trim()) {
-    return res.status(400).json({ error: "subject is required" });
-  }
-  if (!detail || typeof detail !== "string" || !detail.trim()) {
-    return res.status(400).json({ error: "detail is required" });
-  }
-
-  if (!isNetSuiteConfigured()) {
-    return res.status(503).json({ error: "NetSuite is not configured" });
-  }
-
-  try {
-    const departmentId = getInnovationTechDepartmentId();
-    const fullDetail = detail;
-
-    const payload: Record<string, unknown> = {
-      title: subject.trim().slice(0, 300),
-      // Standard "Message" field on supportCase — required by NetSuite.
-      incomingMessage: fullDetail,
-      // "Detail" on this account's supportCase form is the custom field custevent_xprdetail.
-      custevent_xprdetail: fullDetail,
-    };
-    // "Department" is the custom field custevent_oprtype (list/record reference).
-    if (departmentId) payload.custevent_oprtype = { id: departmentId };
-    // "Case Created By" is the company field on this form.
-    if (employee?.id) payload.company = { id: String(employee.id) };
-
-    if (!departmentId) {
-      return res.status(500).json({
-        error:
-          "Innovation & Technology department could not be found in NetSuite. Set NETSUITE_INNOVATION_TECH_DEPT_ID with the department's internal id.",
-      });
-    }
-
-    logger.info({ payload }, "Creating NetSuite support case with payload");
-    const newId = await netsuiteCreate("/supportCase", payload);
-    let caseNumber: string | null = null;
-    if (newId) {
-      try {
-        const created = await netsuiteRequest<Record<string, unknown>>(
-          `/supportCase/${newId}`,
-          "GET"
-        );
-        caseNumber = (created as any)?.caseNumber ?? null;
-      } catch (fetchErr: any) {
-        logger.warn({ err: fetchErr?.message, newId }, "Created case but could not fetch case number");
-      }
-    }
-    logger.info({ subject, departmentId, newId, caseNumber }, "NetSuite support case created");
-    return res.json({ ok: true, caseId: newId, caseNumber });
-  } catch (err: any) {
-    logger.error({ err: err?.message }, "Failed to create NetSuite support case");
-    return res.status(500).json({ error: err?.message || "Failed to create case" });
   }
 });
 

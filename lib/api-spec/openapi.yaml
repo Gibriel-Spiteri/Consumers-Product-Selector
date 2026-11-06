@@ -17,6 +17,70 @@ tags:
   - name: netsuite
     description: NetSuite sync operations
 paths:
+  /cases:
+    post:
+      operationId: submitIssueReport
+      summary: Create a NetSuite case with captured diagnostic context
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IssueReportInput"
+      responses:
+        "200":
+          description: NetSuite case created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssueReportResult"
+  /issues/screenshot-upload:
+    post:
+      operationId: requestIssueScreenshotUpload
+      summary: Request a private screenshot upload for a report
+      responses:
+        "200":
+          description: Signed upload location
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssueScreenshotUpload"
+  /admin/issues:
+    get:
+      operationId: getAdminIssues
+      summary: Reported issues and live NetSuite case statuses
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+      responses:
+        "200":
+          description: Issue report history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminIssueList"
+  /admin/issues/{id}/screenshot:
+    get:
+      operationId: getIssueScreenshot
+      summary: Admin-only access to a report screenshot
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Screenshot bytes
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
   /dev/sync/timing:
     get:
       operationId: getSyncTiming
@@ -178,6 +242,125 @@ paths:
                 $ref: "#/components/schemas/NetSuiteStatus"
 components:
   schemas:
+    BrowserIssueLog:
+      type: object
+      required: [timestamp, level, message]
+      properties:
+        timestamp:
+          type: string
+          maxLength: 40
+        level:
+          type: string
+          enum: [warn, error]
+        message:
+          type: string
+          maxLength: 2000
+    IssueReportInput:
+      type: object
+      required: [requestId, subject, detail, pageUrl, browserInfo, browserLogs]
+      properties:
+        requestId:
+          type: string
+          format: uuid
+        subject:
+          type: string
+          minLength: 1
+          maxLength: 300
+        detail:
+          type: string
+          minLength: 1
+          maxLength: 10000
+        pageUrl:
+          type: string
+          maxLength: 2000
+        browserInfo:
+          type: string
+          maxLength: 500
+        browserLogs:
+          type: array
+          maxItems: 40
+          items:
+            $ref: "#/components/schemas/BrowserIssueLog"
+        screenshotPath:
+          type: ["string", "null"]
+          maxLength: 300
+        captureError:
+          type: ["string", "null"]
+          maxLength: 300
+    IssueReportResult:
+      type: object
+      required: [ok, reportId, caseId, caseNumber]
+      properties:
+        ok:
+          type: boolean
+        reportId:
+          type: string
+        caseId:
+          type: string
+        caseNumber:
+          type: ["string", "null"]
+    IssueScreenshotUpload:
+      type: object
+      required: [uploadUrl, objectPath]
+      properties:
+        uploadUrl:
+          type: string
+        objectPath:
+          type: string
+    AdminIssue:
+      type: object
+      required: [id, subject, detail, pageUrl, employeeName, createdAt, browserInfo, browserLogs, screenshotUrl, captureError, caseId, caseNumber, caseStatus, statusCheckedAt, submissionState, submissionError]
+      properties:
+        id:
+          type: string
+        subject:
+          type: string
+        detail:
+          type: string
+        pageUrl:
+          type: string
+        employeeName:
+          type: string
+        createdAt:
+          type: string
+        browserInfo:
+          type: string
+        browserLogs:
+          type: array
+          items:
+            $ref: "#/components/schemas/BrowserIssueLog"
+        screenshotUrl:
+          type: ["string", "null"]
+        captureError:
+          type: ["string", "null"]
+        caseId:
+          type: ["string", "null"]
+        caseNumber:
+          type: ["string", "null"]
+        caseStatus:
+          type: ["string", "null"]
+        statusCheckedAt:
+          type: ["string", "null"]
+        submissionState:
+          type: string
+        submissionError:
+          type: ["string", "null"]
+    AdminIssueList:
+      type: object
+      required: [items, total, page, pageSize, statusSyncError]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminIssue"
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        statusSyncError:
+          type: ["string", "null"]
     SyncTiming:
       type: object
       required: [nextSyncAt, enabled, syncing]

@@ -28,6 +28,8 @@ app.use(
   }),
 );
 app.use(cors());
+// Diagnostics are bounded by their schema; allow room for multibyte browser-error text.
+app.use("/api/cases", express.json({ limit: "512kb" }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

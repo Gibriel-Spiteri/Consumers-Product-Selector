@@ -11,6 +11,7 @@ import analyticsRouter from "./analytics";
 import storageRouter from "./storage";
 import productImagesRouter from "./productImages";
 import quoteHelperRouter from "./quoteHelper";
+import issuesRouter from "./issues";
 
 const router: IRouter = Router();
 
@@ -18,6 +19,7 @@ router.use(healthRouter);
 router.use(authRouter);
 router.use(categoriesRouter);
 router.use(netsuiteRouter);
+router.use(issuesRouter);
 router.use(estimatesRouter);
 router.use(specialOrdersRouter);
 router.use(adminRouter);

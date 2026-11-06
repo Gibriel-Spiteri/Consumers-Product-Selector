@@ -8,6 +8,128 @@
 import * as zod from "zod";
 
 /**
+ * @summary Create a NetSuite case with captured diagnostic context
+ */
+export const submitIssueReportBodySubjectMax = 300;
+
+export const submitIssueReportBodyDetailMax = 10000;
+
+export const submitIssueReportBodyPageUrlMax = 2000;
+
+export const submitIssueReportBodyBrowserInfoMax = 500;
+
+export const submitIssueReportBodyBrowserLogsItemTimestampMax = 40;
+
+export const submitIssueReportBodyBrowserLogsItemMessageMax = 2000;
+
+export const submitIssueReportBodyBrowserLogsMax = 40;
+
+export const submitIssueReportBodyScreenshotPathMax = 300;
+
+export const submitIssueReportBodyCaptureErrorMax = 300;
+
+export const SubmitIssueReportBody = zod.object({
+  requestId: zod.string().uuid(),
+  subject: zod.string().min(1).max(submitIssueReportBodySubjectMax),
+  detail: zod.string().min(1).max(submitIssueReportBodyDetailMax),
+  pageUrl: zod.string().max(submitIssueReportBodyPageUrlMax),
+  browserInfo: zod.string().max(submitIssueReportBodyBrowserInfoMax),
+  browserLogs: zod
+    .array(
+      zod.object({
+        timestamp: zod
+          .string()
+          .max(submitIssueReportBodyBrowserLogsItemTimestampMax),
+        level: zod.enum(["warn", "error"]),
+        message: zod
+          .string()
+          .max(submitIssueReportBodyBrowserLogsItemMessageMax),
+      }),
+    )
+    .max(submitIssueReportBodyBrowserLogsMax),
+  screenshotPath: zod
+    .string()
+    .max(submitIssueReportBodyScreenshotPathMax)
+    .nullish(),
+  captureError: zod
+    .string()
+    .max(submitIssueReportBodyCaptureErrorMax)
+    .nullish(),
+});
+
+export const SubmitIssueReportResponse = zod.object({
+  ok: zod.boolean(),
+  reportId: zod.string(),
+  caseId: zod.string(),
+  caseNumber: zod.string().nullable(),
+});
+
+/**
+ * @summary Request a private screenshot upload for a report
+ */
+export const RequestIssueScreenshotUploadResponse = zod.object({
+  uploadUrl: zod.string(),
+  objectPath: zod.string(),
+});
+
+/**
+ * @summary Reported issues and live NetSuite case statuses
+ */
+export const getAdminIssuesQueryPageDefault = 1;
+
+export const GetAdminIssuesQueryParams = zod.object({
+  page: zod.coerce.number().min(1).default(getAdminIssuesQueryPageDefault),
+});
+
+export const getAdminIssuesResponseItemsItemBrowserLogsItemTimestampMax = 40;
+
+export const getAdminIssuesResponseItemsItemBrowserLogsItemMessageMax = 2000;
+
+export const GetAdminIssuesResponse = zod.object({
+  items: zod.array(
+    zod.object({
+      id: zod.string(),
+      subject: zod.string(),
+      detail: zod.string(),
+      pageUrl: zod.string(),
+      employeeName: zod.string(),
+      createdAt: zod.string(),
+      browserInfo: zod.string(),
+      browserLogs: zod.array(
+        zod.object({
+          timestamp: zod
+            .string()
+            .max(getAdminIssuesResponseItemsItemBrowserLogsItemTimestampMax),
+          level: zod.enum(["warn", "error"]),
+          message: zod
+            .string()
+            .max(getAdminIssuesResponseItemsItemBrowserLogsItemMessageMax),
+        }),
+      ),
+      screenshotUrl: zod.string().nullable(),
+      captureError: zod.string().nullable(),
+      caseId: zod.string().nullable(),
+      caseNumber: zod.string().nullable(),
+      caseStatus: zod.string().nullable(),
+      statusCheckedAt: zod.string().nullable(),
+      submissionState: zod.string(),
+      submissionError: zod.string().nullable(),
+    }),
+  ),
+  total: zod.number(),
+  page: zod.number(),
+  pageSize: zod.number(),
+  statusSyncError: zod.string().nullable(),
+});
+
+/**
+ * @summary Admin-only access to a report screenshot
+ */
+export const GetIssueScreenshotParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+/**
  * @summary Actual next scheduled NetSuite sync time
  */
 export const GetSyncTimingResponse = zod.object({

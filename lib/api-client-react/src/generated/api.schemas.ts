@@ -5,6 +5,100 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type BrowserIssueLogLevel =
+  (typeof BrowserIssueLogLevel)[keyof typeof BrowserIssueLogLevel];
+
+export const BrowserIssueLogLevel = {
+  warn: "warn",
+  error: "error",
+} as const;
+
+export interface BrowserIssueLog {
+  /** @maxLength 40 */
+  timestamp: string;
+  level: BrowserIssueLogLevel;
+  /** @maxLength 2000 */
+  message: string;
+}
+
+export interface IssueReportInput {
+  requestId: string;
+  /**
+   * @minLength 1
+   * @maxLength 300
+   */
+  subject: string;
+  /**
+   * @minLength 1
+   * @maxLength 10000
+   */
+  detail: string;
+  /** @maxLength 2000 */
+  pageUrl: string;
+  /** @maxLength 500 */
+  browserInfo: string;
+  /** @maxItems 40 */
+  browserLogs: BrowserIssueLog[];
+  /**
+   * @maxLength 300
+   * @nullable
+   */
+  screenshotPath?: string | null;
+  /**
+   * @maxLength 300
+   * @nullable
+   */
+  captureError?: string | null;
+}
+
+export interface IssueReportResult {
+  ok: boolean;
+  reportId: string;
+  caseId: string;
+  /** @nullable */
+  caseNumber: string | null;
+}
+
+export interface IssueScreenshotUpload {
+  uploadUrl: string;
+  objectPath: string;
+}
+
+export interface AdminIssue {
+  id: string;
+  subject: string;
+  detail: string;
+  pageUrl: string;
+  employeeName: string;
+  createdAt: string;
+  browserInfo: string;
+  browserLogs: BrowserIssueLog[];
+  /** @nullable */
+  screenshotUrl: string | null;
+  /** @nullable */
+  captureError: string | null;
+  /** @nullable */
+  caseId: string | null;
+  /** @nullable */
+  caseNumber: string | null;
+  /** @nullable */
+  caseStatus: string | null;
+  /** @nullable */
+  statusCheckedAt: string | null;
+  submissionState: string;
+  /** @nullable */
+  submissionError: string | null;
+}
+
+export interface AdminIssueList {
+  items: AdminIssue[];
+  total: number;
+  page: number;
+  pageSize: number;
+  /** @nullable */
+  statusSyncError: string | null;
+}
+
 export interface SyncTiming {
   /** @nullable */
   nextSyncAt: string | null;
@@ -166,6 +260,13 @@ export interface NetSuiteStatus {
   accountId: string | null;
   lastSyncAt: string | null;
 }
+
+export type GetAdminIssuesParams = {
+  /**
+   * @minimum 1
+   */
+  page?: number;
+};
 
 export type SearchProductsParams = {
   /**

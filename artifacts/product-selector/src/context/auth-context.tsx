@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
+import { clearIssueDiagnostics } from "@/lib/issue-diagnostics";
 
 interface Employee {
   id: string;
@@ -136,6 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: false, error: data.error || "Login failed" };
       }
 
+      clearIssueDiagnostics();
       setEmployee(data.employee);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data.employee));
       writeToken(data.token);
@@ -147,6 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [setViewAsNonAdmin]);
 
   const logout = useCallback(() => {
+    clearIssueDiagnostics();
     setEmployee(null);
     localStorage.removeItem(STORAGE_KEY);
     writeToken(null);

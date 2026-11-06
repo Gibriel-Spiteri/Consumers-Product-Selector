@@ -4,6 +4,7 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { RefreshCw, Upload, ImageIcon, Shield, ArrowLeft, Clock, PackageX, ChevronRight } from "lucide-react";
 import { Link } from "wouter";
 import AdminCollapsibleSection from "@/components/admin-collapsible-section";
+import AdminIssuesSection from "@/components/admin-issues-section";
 import { getGetSyncTimingQueryKey, useGetSyncTiming } from "@workspace/api-client-react";
 
 type ScheduleInterval = "off" | "1h" | "2h" | "4h" | "6h" | "12h" | "24h";
@@ -761,6 +762,7 @@ export default function AdminPage() {
         <SyncSection employeeName={`${employee.firstName} ${employee.lastName}`} />
         <LogoSection employeeId={employee.id} />
         <HeroImageSection employeeId={employee.id} />
+        <AdminIssuesSection />
 
       </div>
     </div>

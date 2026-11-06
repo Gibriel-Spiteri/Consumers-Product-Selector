@@ -17,10 +17,15 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  AdminIssueList,
   CategoryTreeResponse,
   EstimateItemsInput,
   EstimateItemsResult,
+  GetAdminIssuesParams,
   HealthStatus,
+  IssueReportInput,
+  IssueReportResult,
+  IssueScreenshotUpload,
   NetSuiteStatus,
   ProductListResponse,
   SearchProductsParams,
@@ -38,6 +43,357 @@ type AwaitedInput<T> = PromiseLike<T> | T;
 type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
+/**
+ * @summary Create a NetSuite case with captured diagnostic context
+ */
+export const getSubmitIssueReportUrl = () => {
+  return `/api/cases`;
+};
+
+export const submitIssueReport = async (
+  issueReportInput: IssueReportInput,
+  options?: RequestInit,
+): Promise<IssueReportResult> => {
+  return customFetch<IssueReportResult>(getSubmitIssueReportUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(issueReportInput),
+  });
+};
+
+export const getSubmitIssueReportMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof submitIssueReport>>,
+    TError,
+    { data: BodyType<IssueReportInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof submitIssueReport>>,
+  TError,
+  { data: BodyType<IssueReportInput> },
+  TContext
+> => {
+  const mutationKey = ["submitIssueReport"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof submitIssueReport>>,
+    { data: BodyType<IssueReportInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return submitIssueReport(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SubmitIssueReportMutationResult = NonNullable<
+  Awaited<ReturnType<typeof submitIssueReport>>
+>;
+export type SubmitIssueReportMutationBody = BodyType<IssueReportInput>;
+export type SubmitIssueReportMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a NetSuite case with captured diagnostic context
+ */
+export const useSubmitIssueReport = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof submitIssueReport>>,
+    TError,
+    { data: BodyType<IssueReportInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof submitIssueReport>>,
+  TError,
+  { data: BodyType<IssueReportInput> },
+  TContext
+> => {
+  return useMutation(getSubmitIssueReportMutationOptions(options));
+};
+
+/**
+ * @summary Request a private screenshot upload for a report
+ */
+export const getRequestIssueScreenshotUploadUrl = () => {
+  return `/api/issues/screenshot-upload`;
+};
+
+export const requestIssueScreenshotUpload = async (
+  options?: RequestInit,
+): Promise<IssueScreenshotUpload> => {
+  return customFetch<IssueScreenshotUpload>(
+    getRequestIssueScreenshotUploadUrl(),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
+
+export const getRequestIssueScreenshotUploadMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof requestIssueScreenshotUpload>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof requestIssueScreenshotUpload>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["requestIssueScreenshotUpload"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof requestIssueScreenshotUpload>>,
+    void
+  > = () => {
+    return requestIssueScreenshotUpload(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RequestIssueScreenshotUploadMutationResult = NonNullable<
+  Awaited<ReturnType<typeof requestIssueScreenshotUpload>>
+>;
+
+export type RequestIssueScreenshotUploadMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Request a private screenshot upload for a report
+ */
+export const useRequestIssueScreenshotUpload = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof requestIssueScreenshotUpload>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof requestIssueScreenshotUpload>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getRequestIssueScreenshotUploadMutationOptions(options));
+};
+
+/**
+ * @summary Reported issues and live NetSuite case statuses
+ */
+export const getGetAdminIssuesUrl = (params?: GetAdminIssuesParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/issues?${stringifiedParams}`
+    : `/api/admin/issues`;
+};
+
+export const getAdminIssues = async (
+  params?: GetAdminIssuesParams,
+  options?: RequestInit,
+): Promise<AdminIssueList> => {
+  return customFetch<AdminIssueList>(getGetAdminIssuesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetAdminIssuesQueryKey = (params?: GetAdminIssuesParams) => {
+  return [`/api/admin/issues`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetAdminIssuesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getAdminIssues>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetAdminIssuesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getAdminIssues>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetAdminIssuesQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminIssues>>> = ({
+    signal,
+  }) => getAdminIssues(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminIssues>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetAdminIssuesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getAdminIssues>>
+>;
+export type GetAdminIssuesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Reported issues and live NetSuite case statuses
+ */
+
+export function useGetAdminIssues<
+  TData = Awaited<ReturnType<typeof getAdminIssues>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetAdminIssuesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getAdminIssues>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetAdminIssuesQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Admin-only access to a report screenshot
+ */
+export const getGetIssueScreenshotUrl = (id: string) => {
+  return `/api/admin/issues/${id}/screenshot`;
+};
+
+export const getIssueScreenshot = async (
+  id: string,
+  options?: RequestInit,
+): Promise<Blob> => {
+  return customFetch<Blob>(getGetIssueScreenshotUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetIssueScreenshotQueryKey = (id: string) => {
+  return [`/api/admin/issues/${id}/screenshot`] as const;
+};
+
+export const getGetIssueScreenshotQueryOptions = <
+  TData = Awaited<ReturnType<typeof getIssueScreenshot>>,
+  TError = ErrorType<unknown>,
+>(
+  id: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getIssueScreenshot>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetIssueScreenshotQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getIssueScreenshot>>
+  > = ({ signal }) => getIssueScreenshot(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getIssueScreenshot>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetIssueScreenshotQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getIssueScreenshot>>
+>;
+export type GetIssueScreenshotQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Admin-only access to a report screenshot
+ */
+
+export function useGetIssueScreenshot<
+  TData = Awaited<ReturnType<typeof getIssueScreenshot>>,
+  TError = ErrorType<unknown>,
+>(
+  id: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getIssueScreenshot>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetIssueScreenshotQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Actual next scheduled NetSuite sync time

@@ -1,6 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X, Loader2, AlertCircle, CheckCircle2, Send } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
+import { useQueryClient } from "@tanstack/react-query";
+import { getGetAdminIssuesQueryKey, requestIssueScreenshotUpload, submitIssueReport, type BrowserIssueLog } from "@workspace/api-client-react";
+import { browserIssueLogs, captureIssueScreenshot, reportPageUrl } from "@/lib/issue-diagnostics";
 import { cn } from "@/lib/utils";
 
 type Step = "compose" | "sending" | "success" | "error";
@@ -13,16 +16,43 @@ export function ReportIssueModal({ open, onClose, initialDetail = "" }: { open: 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [currentUrl, setCurrentUrl] = useState("");
   const [caseNumber, setCaseNumber] = useState<string | null>(null);
+  const [captureState, setCaptureState] = useState<"capturing" | "ready" | "failed">("capturing");
+  const [captureError, setCaptureError] = useState<string | null>(null);
+  const [screenshot, setScreenshot] = useState<Blob | null>(null);
+  const [logs, setLogs] = useState<BrowserIssueLog[]>([]);
+  const requestId = useRef("");
+  const uploadedPath = useRef<string | null>(null);
+  const qc = useQueryClient();
 
   useEffect(() => {
+    let cancelled = false;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
     if (open) {
       setStep("compose");
       setIssue("");
       setDetail(initialDetail);
       setErrorMsg(null);
       setCaseNumber(null);
-      setCurrentUrl(typeof window !== "undefined" ? window.location.href : "");
+      setCurrentUrl(reportPageUrl());
+      setLogs(browserIssueLogs());
+      requestId.current = crypto.randomUUID();
+      uploadedPath.current = null;
+      setCaptureState("capturing");
+      setCaptureError(null);
+      setScreenshot(null);
+      void Promise.race([
+        captureIssueScreenshot(),
+        new Promise<never>((_, reject) => { timeout = setTimeout(() => reject(new Error("Capture timed out")), 8000); }),
+      ]).then(blob => {
+        if (!cancelled) { setScreenshot(blob); setCaptureState("ready"); }
+      }).catch(() => {
+        if (!cancelled) {
+          setCaptureState("failed");
+          setCaptureError("The browser could not capture this page. URL and browser logs are still included.");
+        }
+      }).finally(() => { if (timeout) clearTimeout(timeout); });
     }
+    return () => { cancelled = true; if (timeout) clearTimeout(timeout); };
   }, [open]);
 
   useEffect(() => {
@@ -37,7 +67,6 @@ export function ReportIssueModal({ open, onClose, initialDetail = "" }: { open: 
 
   const trimmedIssue = issue.trim();
   const trimmedDetail = detail.trim();
-  const finalDetail = `${trimmedDetail}\n\nURL: ${currentUrl}`;
   const toTitleCase = (s: string) =>
     s
       .toLowerCase()
@@ -53,37 +82,46 @@ export function ReportIssueModal({ open, onClose, initialDetail = "" }: { open: 
     setStep("sending");
     setErrorMsg(null);
     try {
-      const res = await fetch("/api/cases", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          subject: trimmedIssue,
-          detail: finalDetail,
-          employee: employee
-            ? {
-                firstName: employee.firstName,
-                lastName: employee.lastName,
-                email: employee.email,
-                id: employee.id,
-              }
-            : null,
-        }),
-      });
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || `Request failed (${res.status})`);
+      let diagnosticError = captureError;
+      if (!uploadedPath.current) {
+        try {
+          const upload = await requestIssueScreenshotUpload({ signal: AbortSignal.timeout(10000) });
+          if (screenshot) {
+            const response = await fetch(upload.uploadUrl, {
+              method: "PUT", headers: { "Content-Type": "image/jpeg" }, body: screenshot,
+              signal: AbortSignal.timeout(15000),
+            });
+            if (!response.ok) throw new Error("Screenshot upload failed");
+            uploadedPath.current = upload.objectPath;
+          }
+        } catch (err) {
+          const status = (err as { status?: number }).status;
+          // Do not submit to the legacy case endpoint before the report-history API is active.
+          if (status === 404) throw new Error("The issue reporting update is not active yet. Please try after it is activated.");
+          if (status === 401 || status === 403) throw err;
+          diagnosticError = "Screenshot could not be uploaded. The issue, URL and browser logs were saved without an image.";
+          setCaptureError(diagnosticError);
+        }
       }
-      const data = await res.json().catch(() => null);
-      setCaseNumber(data?.caseNumber ?? null);
+      const data = await submitIssueReport({
+        requestId: requestId.current, subject: trimmedIssue, detail: trimmedDetail,
+        pageUrl: currentUrl,
+        browserInfo: `${navigator.userAgent} | viewport ${window.innerWidth}×${window.innerHeight}`.slice(0, 500),
+        browserLogs: logs, screenshotPath: uploadedPath.current, captureError: diagnosticError,
+      }, { signal: AbortSignal.timeout(60000) });
+      setCaseNumber(data.caseNumber);
+      void qc.invalidateQueries({ queryKey: getGetAdminIssuesQueryKey() });
       setStep("success");
-    } catch (err: any) {
-      setErrorMsg(err?.message || "Failed to send");
+    } catch (err: unknown) {
+      const apiError = err as { data?: { error?: string }; message?: string };
+      setErrorMsg(apiError.data?.error || apiError.message || "Failed to send");
       setStep("error");
     }
   };
 
   return (
     <div
+      data-report-overlay
       className="fixed inset-0 z-[10001] flex items-center justify-center px-4"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
@@ -130,9 +168,14 @@ export function ReportIssueModal({ open, onClose, initialDetail = "" }: { open: 
                   value={detail}
                   onChange={(e) => setDetail(e.target.value)}
                   rows={5}
+                  maxLength={10000}
                   placeholder="Describe what happened, what you expected, and any steps to reproduce."
                   className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-300 focus:border-amber-300 resize-y"
                 />
+              </div>
+              <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-500" role="status">
+                <p>{captureState === "capturing" ? "Capturing the reporting page…" : captureState === "ready" ? "Page screenshot captured. Entered form values are hidden." : captureError}</p>
+                <p className="mt-1">Includes the page URL, browser details and {logs.length} recent warnings/errors. Diagnostic images and logs are visible to administrators.</p>
               </div>
             </>
           )}
@@ -154,6 +197,8 @@ export function ReportIssueModal({ open, onClose, initialDetail = "" }: { open: 
                 <div className="text-emerald-600/80 text-[12px] mt-0.5">
                   An Innovation &amp; Technology team member will follow up.
                 </div>
+                {!caseNumber && <p className="text-[12px] mt-1">The case number will appear in Admin once NetSuite provides it.</p>}
+                {captureError && <p className="text-amber-700 text-[12px] mt-1">{captureError}</p>}
               </div>
             </div>
           )}
@@ -197,10 +242,10 @@ export function ReportIssueModal({ open, onClose, initialDetail = "" }: { open: 
               <button
                 type="button"
                 onClick={handleSend}
-                disabled={!trimmedIssue || !trimmedDetail}
+                disabled={!trimmedIssue || !trimmedDetail || captureState === "capturing"}
                 className={cn(
                   "inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-                  !trimmedIssue || !trimmedDetail
+                  !trimmedIssue || !trimmedDetail || captureState === "capturing"
                     ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                     : "bg-amber-500 text-white hover:bg-amber-600",
                 )}
@@ -222,7 +267,7 @@ export function ReportIssueModal({ open, onClose, initialDetail = "" }: { open: 
               {step === "error" && (
                 <button
                   type="button"
-                  onClick={() => setStep("review")}
+                  onClick={() => setStep("compose")}
                   className="px-4 py-2 rounded-lg text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
                 >
                   Back

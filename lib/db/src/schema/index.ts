@@ -7,3 +7,5 @@ export * from "./analytics";
 export * from "./product-user-images";
 export * from "./employees";
 export * from "./product-images";
+export * from "./issue-reports";
+export * from "./issue-screenshot-uploads";
