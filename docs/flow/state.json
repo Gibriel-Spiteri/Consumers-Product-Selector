@@ -5,7 +5,7 @@
     "eyebrow": "Consumers Kitchen & Bath · Product Selector guide",
     "title": "From a product on a vendor's website to a priced special-order line on the estimate",
     "lede": "Where each step happens: on the vendor's own website with the customer, in the Consumers QuickAdd browser extension (Edge or Chrome), in the Product Selector on the sales PC, and in NetSuite. Click any numbered box to read its exact buttons.",
-    "meta": "Mapped from the code on 11/5/2026: Product Selector Special Order page, Quote List and the Consumers QuickAdd extension 1.5.3 (1.5.4 on 11/6: newest copy wins; 1.5.5: kits split into parts, Flusso finish squares; 1.5.6: kits on every vendor after sweep 2; 1.5.7: list price, Report issue; 1.5.8: report as the signed-in rep)."
+    "meta": "Mapped from the code on 11/5/2026: Product Selector Special Order page, Quote List and the Consumers QuickAdd extension 1.5.3 (1.5.4 on 11/6: newest copy wins; 1.5.5: kits split into parts, Flusso finish squares; 1.5.6: kits on every vendor after sweep 2; 1.5.7: list price, Report issue; 1.5.8: report as the signed-in rep); pictures on the printouts 11/6 (Product Selector PR #28)."
   },
   "lanes": {
     "VS": {
@@ -108,6 +108,12 @@
           "r1": 15,
           "num": "5",
           "name": "Push to the estimate"
+        },
+        {
+          "r0": 16,
+          "r1": 17,
+          "num": "6",
+          "name": "Pictures on the printouts"
         }
       ],
       "nodes": [
@@ -286,10 +292,30 @@
           "num": 18,
           "row": 15,
           "col": "NS",
-          "kind": "end",
+          "kind": "auto",
           "lane": "NS",
           "label": "Special-order lines on the estimate, priced as in NetSuite",
           "detail": "Each line gets list price x the product line's multipliers for the estimate's customer (Retail or CRD), with its Type, Model, Coll/Desc and Color."
+        },
+        {
+          "id": "a_picture",
+          "num": 19,
+          "row": 16,
+          "col": "NS",
+          "kind": "auto",
+          "lane": "NS",
+          "label": "Each pick's vendor picture saved in NetSuite with its line",
+          "detail": "While the lines go on, the Product Selector saves a small copy of the picture shown on the vendor site and links it to its line (in Documents, Special Order Images). A room or lifestyle shot has the room taken out and is cropped to the product; a picture already on white is just cropped. The picture goes with the line when the estimate becomes a sales order. If a picture could not be saved, the push message says so and that line prints without one."
+        },
+        {
+          "id": "e_print",
+          "num": 20,
+          "row": 17,
+          "col": "NS",
+          "kind": "end",
+          "lane": "NS",
+          "label": "Print Estimate: picked items print with their picture",
+          "detail": "Print Estimate shows the picture at the left of the item's Special Order card, beside Product Line, Model, Color and Warranty. So do Print on the sales order made from it and the Revised Sales Order printout. Items without a picture print as before."
         }
       ],
       "edges": [
@@ -439,6 +465,20 @@
             "enter": "right",
             "x": "PS.r+16"
           }
+        },
+        {
+          "from": "e_done",
+          "to": "a_picture",
+          "mode": "down",
+          "label": "",
+          "opt": {}
+        },
+        {
+          "from": "a_picture",
+          "to": "e_print",
+          "mode": "down",
+          "label": "",
+          "opt": {}
         }
       ]
     }
@@ -464,6 +504,10 @@
     {
       "title": "New vendor sites need a QuickAdd release for the built-in list.",
       "text": "QuickAdd goes to every PC by Group Policy and updates itself from the Product Selector. A product line made special-order in NetSuite works as soon as the Product Selector is open in that browser; the list built into QuickAdd (used before that) is refreshed with each release."
+    },
+    {
+      "title": "Only vendor-site picks carry a picture.",
+      "text": "A special order typed into the Quote List form, or entered on the estimate in NetSuite, prints without one. Purchase orders to the vendor do not show pictures. In a busy room shot the cutout can keep a second object next to the product (a toilet beside a vanity is dropped, a mirror right above it may stay)."
     }
   ],
   "tips": [
@@ -472,5 +516,5 @@
     "When a vendor's website changes, update the product line's website on its PRD page in NetSuite; QuickAdd follows the next time the Product Selector is open.",
     "QuickAdd takes the list price where the vendor page shows one next to a sale price (since 1.5.7). Still check the List Price before Add to List."
   ],
-  "footer": "Vendor site special orders · Mapped from the code (Product Selector Special Order page and Quote List, Consumers QuickAdd extension 1.5.3) on 11/5/2026, extension 1.5.8 on 11/6."
+  "footer": "Vendor site special orders · Mapped from the code (Product Selector Special Order page and Quote List, Consumers QuickAdd extension 1.5.3) on 11/5/2026, extension 1.5.8 on 11/6, pictures on the printouts 11/6."
 }
