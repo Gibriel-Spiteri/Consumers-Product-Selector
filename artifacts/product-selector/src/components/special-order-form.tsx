@@ -200,6 +200,21 @@ export default function SpecialOrderForm({ initial, prefill, onSubmit, onCancel,
         )}
       </div>
       {!categoriesAboveForm && categoryFilters}
+      {/* 2026-11-06 (Gib: "The product lines aren't showing up for me"): the Quote List's form shows the chosen
+          category's product lines too; a card picks its line here, then the Type is next. */}
+      {!categoriesAboveForm && selectedCategory && (
+        <div className="px-6 pt-5 border-b border-gray-100">
+          <ProductLineLogos
+            lines={visibleLines}
+            selectedItemId={selectedItemId}
+            onPick={l => {
+              setSelectedItemId(l.netsuiteItemId);
+              setTypeId("");
+              requestAnimationFrame(() => document.getElementById("so-type")?.focus());
+            }}
+          />
+        </div>
+      )}
       <div className="px-6 py-5 grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label htmlFor="so-line" className={labelCls}>Product Line</label>

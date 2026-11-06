@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { SpecialOrderProductLine } from "@workspace/api-client-react";
-import { ExternalLink, ImageOff } from "lucide-react";
+import { Check, ExternalLink, ImageOff } from "lucide-react";
 
 function ProductLineLogo({ line }: { line: SpecialOrderProductLine }) {
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
@@ -51,13 +51,69 @@ function ProductLineLogo({ line }: { line: SpecialOrderProductLine }) {
   );
 }
 
-export default function ProductLineLogos({ lines }: { lines: SpecialOrderProductLine[] }) {
+// 2026-11-06 (Gib: "The product lines aren't showing up for me" on the Quote List's Add Special Order form): inside the
+// form a card picks its product line, and its vendor site is a separate link.
+function PickableProductLine({ line, selected, onPick }: { line: SpecialOrderProductLine; selected: boolean; onPick: () => void }) {
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const showImage = !!line.logoUrl && failedUrl !== line.logoUrl;
+  return (
+    <div className={`h-full rounded-xl border bg-white p-3 flex flex-col items-center gap-2 transition-shadow ${selected ? "border-[#7B4DA8] ring-2 ring-[#7B4DA8]/30" : "border-gray-200 hover:shadow-md hover:border-gray-300"}`}>
+      <button
+        type="button"
+        onClick={onPick}
+        aria-pressed={selected}
+        aria-label={`Use ${line.name}`}
+        className="w-full flex flex-col items-center gap-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7B4DA8] focus-visible:ring-offset-2"
+        data-testid={`button-pick-line-${line.id}`}
+      >
+        <span className="h-16 w-full flex items-center justify-center">
+          {showImage ? (
+            <img src={line.logoUrl!} alt="" loading="lazy" className="max-h-full max-w-full object-contain" onError={() => setFailedUrl(line.logoUrl!)} />
+          ) : (
+            <span className="flex flex-col items-center gap-1 text-gray-400 text-[11px]">
+              <ImageOff size={22} />
+              <span>{line.logoUrl ? "Logo unavailable" : "No logo"}</span>
+            </span>
+          )}
+        </span>
+        <span className="flex items-center gap-1 text-center text-[12px] font-medium text-gray-700">
+          {selected && <Check size={13} className="text-[#7B4DA8] shrink-0" aria-hidden="true" />}
+          {line.name}
+        </span>
+      </button>
+      {line.websiteUrl && (
+        <a
+          href={line.websiteUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1 text-[11px] font-semibold text-[#7B4DA8] hover:underline"
+          aria-label={`Open the ${line.name} website in a new tab`}
+          data-testid={`link-vendor-site-${line.id}`}
+        >
+          Shop vendor site <ExternalLink size={11} aria-hidden="true" />
+        </a>
+      )}
+    </div>
+  );
+}
+
+// export default function ProductLineLogos({ lines }: { lines: SpecialOrderProductLine[] }) {
+// selectedItemId / onPick (2026-11-06): the Quote List's form passes them, so a card picks the line there.
+export default function ProductLineLogos({ lines, selectedItemId, onPick }: {
+  lines: SpecialOrderProductLine[];
+  selectedItemId?: string;
+  onPick?: (line: SpecialOrderProductLine) => void;
+}) {
   const productLines = Array.from(new Map(lines.map(line => [line.id, line])).values());
   return (
     <section aria-label="Product lines in selected category" className="mb-6">
       <h2 className="text-[15px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Product Lines</h2>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-        {productLines.map(line => <ProductLineLogo key={line.id} line={line} />)}
+        {/* {productLines.map(line => <ProductLineLogo key={line.id} line={line} />)} */}
+        {productLines.map(line => (onPick
+          ? <PickableProductLine key={line.id} line={line} onPick={() => onPick(line)}
+              selected={!!selectedItemId && lines.some(l => l.id === line.id && l.netsuiteItemId === selectedItemId)} />
+          : <ProductLineLogo key={line.id} line={line} />))}
       </div>
     </section>
   );
