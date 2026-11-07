@@ -95,6 +95,14 @@ test("no Type is guessed on a tie, for order-form Types or MISCELLANEOUS", () =>
   assert.equal(guess("Benton Bourbon", "https://www.avancecabinetry.com/cabinetry/benton/benton-bourbon-kitchen", KOHLER), null);
 });
 
+test("11/7 (case 143567): a repair part that no Type fits is MISCELLANEOUS; one that fits keeps its Type", () => {
+  assert.equal(guess("Flange - Shower", "https://www.deltafaucet.com/parts/product/RP52144.html", DELTA), "MISCELLANEOUS");
+  assert.equal(suggestType({ name: "Flange - Shower", pageUrl: "https://www.deltafaucet.com/x/RP52144.html", category: "Parts / Repair Parts" }, DELTA)?.name, "MISCELLANEOUS");
+  assert.equal(guess("Diverter", "https://www.deltafaucet.com/parts/product/RP12345.html", DELTA), "DIVERTER");
+  assert.equal(guess("Flange - Shower", "https://www.deltafaucet.com/bathroom/product/x.html", DELTA), null);
+  assert.equal(guess("Flange - Shower", "https://www.kohler.com/parts/x", KOHLER), null); // no MISCELLANEOUS Type: none
+});
+
 test("a pick becomes a quote-list line, with what the vendor page left out marked as missing", () => {
   const delta = line("88", "DELTA", "https://www.deltafaucet.com/");
   const input = quoteInputFromPick({ ...pick, vendorDomain: "deltafaucet.com", pageUrl: "https://www.deltafaucet.com/kitchen/product/9190TL-DST.html",

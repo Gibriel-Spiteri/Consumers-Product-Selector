@@ -420,6 +420,12 @@
   const PART_AFTER = new Set(["seat", "lid", "lever", "tank", "grid", "strainer", "kit", "cover", "bracket", "cartridge",
     "basket", "flange", "rack", "mat", "caddy", "handle", "part"]);
 
+  // 1.5.13: a repair or replacement part page: the breadcrumbs say so ("Parts > Repair Parts") or the address is under
+  // /parts/ (Delta's /parts/product/RP52144.html).
+  const isRepairPart = (pick, path) => /\b(repair|replacement|spare|service)\s+parts?\b/i.test(String(pick.category || ""))
+    || /(^|\/)(repair-|replacement-)?parts?(\/|$)/i.test(String(path || ""));
+  const miscType = typeList => (typeList || []).find(t => !t.requiresAttachment && /^misc/i.test(String(t.name).trim())) || null;
+
   // The product line's special-order Type that fits: words of the Type found in the product name count 2, in the
   // breadcrumbs or address 1. It needs at least 2 (one word in the name, or two elsewhere): a lone breadcrumb word
   // is too weak (John Boos "Boos Blocks > Carts" is not BUTCHER BLOCK). No guess on a tie, for order-form Types or
@@ -488,7 +494,12 @@
     })
       .filter(s => s.score >= MIN_TYPE_SCORE)
       .sort((a, b) => b.score - a.score || a.missing - b.missing || b.pos - a.pos);
-    if (!scored.length) return null;
+    // if (!scored.length) return null;
+    // 1.5.13 (case 143567, Sharon Lee 11/7, "Asks for type": Delta repair part RP52144 "Flange - Shower" under "Parts >
+    // Repair Parts"; Gordon: "For the RP5214 you are selling the correct type is MISCELLANEOUS"): a repair or
+    // replacement part that no specific Type fits is MISCELLANEOUS, when the line has it. A part that does fit one (a
+    // diverter, a trip lever) keeps that Type.
+    if (!scored.length) return isRepairPart(pick, path) ? miscType(typeList) : null;
     const [a, b] = scored;
     if (b && a.score === b.score && a.missing === b.missing && a.pos === b.pos) return null;
     return a.t;
