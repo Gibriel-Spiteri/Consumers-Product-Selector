@@ -193,7 +193,14 @@ export function suggestType(pick: Pick<VendorPick, "name" | "pageUrl"> & { categ
     // 11/4: John Boos' wine cart under "Boos Blocks > Carts" was guessed BUTCHER BLOCK).
     .filter(s => s.score >= 2)
     .sort((a, b) => b.score - a.score);
-  if (scored.length === 0 || (scored.length > 1 && scored[1].score === scored[0].score)) return null;
+  // if (scored.length === 0 || (scored.length > 1 && scored[1].score === scored[0].score)) return null;
+  // 11/7 (case 143567, Sharon Lee, as SmartAdd 1.5.13): a repair or replacement part that no specific Type fits is
+  // MISCELLANEOUS, when the line has it (Delta RP52144 "Flange - Shower" under "Parts > Repair Parts").
+  if (scored.length === 0) {
+    const repairPart = /\b(repair|replacement|spare|service)\s+parts?\b/i.test(pick.category ?? "") || /(^|\/)(repair-|replacement-)?parts?(\/|$)/i.test(path);
+    return repairPart ? types.find(t => !t.requiresAttachment && /^misc/i.test(t.name.trim())) ?? null : null;
+  }
+  if (scored.length > 1 && scored[1].score === scored[0].score) return null;
   return scored[0].t;
 }
 

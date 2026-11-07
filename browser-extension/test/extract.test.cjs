@@ -393,6 +393,18 @@ test("1.5.9: Report an Issue sends what the site's window sends (Issue, Detail),
   assert.equal(X.issueReport({ issue: "i".repeat(400), detail: "d" }).subject.length, 300);
 });
 
+test("1.5.13 (case 143567, Sharon Lee): a repair part that no Type fits is MISCELLANEOUS; one that fits keeps its Type", () => {
+  const sites = require("./vendor-sites.json").sites;
+  const T = d => sites.find(s => s.websiteUrl.includes(d)).types;
+  const g = (d, name, url, cat) => { const t = X.suggestType({ name, pageUrl: url, category: cat || "" }, T(d), { orderForms: true }); return t ? t.name : null; };
+  // Delta RP52144 "Flange - Shower" under "Parts > Repair Parts" (Gordon: "the correct type is MISCELLANEOUS").
+  assert.equal(g("delta", "Flange - Shower", "https://www.deltafaucet.com/parts/product/RP52144.html", "Parts / Repair Parts"), "MISCELLANEOUS");
+  assert.equal(g("delta", "Flange - Shower", "https://www.deltafaucet.com/parts/product/RP52144.html", ""), "MISCELLANEOUS"); // the address alone
+  // A repair part that is a Type keeps it.
+  assert.equal(g("delta", "Diverter", "https://www.deltafaucet.com/parts/product/RP12345.html", "Parts / Repair Parts"), "DIVERTER");
+  // Not a parts page: still no guess (MISCELLANEOUS is never suggested for a product).
+  assert.equal(g("delta", "Flange - Shower", "https://www.deltafaucet.com/bathroom/product/x.html", "Bathroom"), null);
+});
 test("vendor domains: subdomains count as the main domain", () => {
   assert.equal(X.registrableDomain("www.us.kohler.com"), "kohler.com");
   assert.equal(X.registrableDomain("craftandmain.com"), "craftandmain.com");

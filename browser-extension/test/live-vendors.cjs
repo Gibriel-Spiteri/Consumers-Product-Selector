@@ -167,6 +167,10 @@ const VENDORS = [
   // Delta Outlet: the struck-through list price.
   { key: "delta3", url: "https://www.deltafaucet.com/kitchen/product/9159-CZ-DST-R.html",
     expect: { model: "9159-CZ-DST-R", color: "Champagne Bronze", price: v => Number(v) > 900 } }, // list $1028, sale $484.06 on 11/5
+  // 1.5.13 (cases 143566 / 143567, Sharon Lee 11/7): a repair part shows "List Price: $25.95" and "Online Price: $20.76";
+  // the list price, and MISCELLANEOUS for the Type ("Parts > Repair Parts").
+  { key: "delta-part", url: "https://www.deltafaucet.com/parts/product/RP52144.html",
+    expect: { model: "RP52144", color: "Chrome", type: "MISCELLANEOUS", price: v => Number(v) === 25.95 } }, // online $20.76 on 11/7
   // Top Knobs: nothing until a size and finish are picked, then the item, its price and finish.
   { key: "topknobs2", url: "https://www.topknobs.com/collections/riverside-pull.html",
     prepare: async page => page.evaluate(() => {

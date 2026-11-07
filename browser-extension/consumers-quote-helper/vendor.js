@@ -1022,6 +1022,12 @@
       // 1.5.3 (sweep 11/5): an Outlet / Recertified page shows its sale price in [itemprop=price] and the list price
       // struck through (.old-price "$1028.00"): the list price is the one for the quote.
       price: () => {
+        // 1.5.13 (case 143566, Sharon Lee 11/7, "List price wrong" / "Using online price"): a parts page (RP52144) shows
+        // "List Price: $25.95" (.price__original.list .list-price) and "Online Price: $20.76", and its product data
+        // holds only the online price. The list price is the one for the quote.
+        const list = [...document.querySelectorAll(".pdp-prod-price-block .price__original .price--value, .pdp-prod-price-block .price--value.list-price")]
+          .find(e => e.getClientRects().length && amountOf(e.textContent));
+        if (list) return amountOf(list.textContent);
         const old = [...document.querySelectorAll(".pdp-prod-price-block .old-price")].find(e => e.getClientRects().length);
         if (old && amountOf(old.textContent)) return amountOf(old.textContent);
         const el = [...document.querySelectorAll('[itemprop="price"]')].find(e => e.getClientRects().length);
