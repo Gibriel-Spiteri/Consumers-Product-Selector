@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Consumers SmartAdd",
-  "version": "1.5.13",
+  "version": "1.5.14",
   "update_url": "https://consumers-product-selector.replit.app/api/quickadd/update.xml",
   "description": "Add products from vendor websites to the Consumers Product Selector quote list.",
   "minimum_chrome_version": "111",

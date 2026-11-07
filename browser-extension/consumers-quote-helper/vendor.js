@@ -231,6 +231,7 @@
   let followsPage = false; // the page shows which variant is chosen, so no Option list
   let parts = null; // 1.5.5: the page's item is a kit (Fleurco door + base + drain + Mix & Match Kit): one line per part
   let siteNote = ""; // 1.5.6: a note from the site's rule (a part sold separately that is not on this page)
+  let siteLineHint = ""; // 1.5.14: the product line a site rule looked up on another page (Strategic Brands)
   const MANUAL_HINT = f.manualHint.textContent;
   let category = ""; // the vendor's breadcrumbs, for the Type guess
   let siteLines = []; // this vendor's product lines and their special-order Types, from the Product Selector
@@ -496,6 +497,41 @@
     return pageDocs.get(url);
   };
   const docText = (doc, sel) => clean((doc && doc.querySelector(sel) || {}).textContent);
+
+  // 1.5.14 (case 143570, Sharon Lee 11/7, "does not fill in line"): Strategic Brands sells Laurey and MNG on one site,
+  // and a product page like 73120 (Cosmopolitan pull) names neither brand and has no Google Shopping link. Each brand's
+  // collections page (/page/laurey-collections, /page/mng-collections) links its collections ("[product_collection]
+  // [Cosmo]"), so the product's collection says the brand. Both pages are read at most once a day per browser; a
+  // collection both brands list gives no hint.
+  const SBI_BRANDS_KEY = "consumers-smartadd-sbi-brands";
+  const fullyDecoded = s => { for (let i = 0; i < 3; i++) { try { const d = decodeURIComponent(s); if (d === s) break; s = d; } catch { break; } } return s; };
+  async function sbiBrands() {
+    try {
+      const c = JSON.parse(localStorage.getItem(SBI_BRANDS_KEY) || "null");
+      if (c && c.map && Date.now() - c.at < 86400000) return c.map;
+    } catch {}
+    const map = {};
+    const add = (key, brand) => {
+      const k = String(key || "").replace(/\+/g, " ").replace(/-/g, " ").trim().toLowerCase();
+      if (k) map[k] = k in map && map[k] !== brand ? "" : brand;
+    };
+    // The site menu on every page links each brand's collections: "/category/laurey-cosmo/", "/category/mng-hammer/".
+    for (const m of document.documentElement.innerHTML.matchAll(/category\\?\/(laurey|mng)-([a-z0-9-]+)\\?\//gi)) {
+      add(m[2], m[1].toLowerCase() === "mng" ? "MNG" : "Laurey");
+    }
+    for (const [brand, page] of [["Laurey", "/page/laurey-collections"], ["MNG", "/page/mng-collections"]]) {
+      const doc = await fetchDoc(location.origin + page);
+      for (const a of doc ? doc.querySelectorAll('a[href*="product_collection"]') : []) {
+        const m = /product_collection\]\[([^\]]+)\]/.exec(fullyDecoded(a.getAttribute("href") || ""));
+        if (m) add(m[1], brand);
+      }
+    }
+    if (Object.keys(map).length) {
+      try { localStorage.setItem(SBI_BRANDS_KEY, JSON.stringify({ at: Date.now(), map })); } catch {}
+    }
+    return map;
+  }
+  const sbiBrandOf = async collection => (collection ? (await sbiBrands())[collection.trim().toLowerCase()] || "" : "");
 
   // TOTO (sweep 2): the add-ons checked under a toilet (14″ rough-in, trip lever, push button: "[+$122.00]") are their
   // own SKUs (TSU10W.14R, THU485#PN, THU842#PN-A) in the page's "var product_extras", keyed by the radio's name and value;
@@ -1399,6 +1435,8 @@
         const m = a && /product_collection\]\[([^\]]+)\]/.exec(decodeURIComponent(a.getAttribute("href") || ""));
         return m ? m[1].replace(/\+/g, " ") : "";
       },
+      // 1.5.14 (case 143570): no Google Shopping link: the brand whose collections page lists this collection.
+      lineHintAsync: () => sbiBrandOf(SITE_RULES["strategicbrandsincorporated.com"].collection()),
       name: () => textOf("h1").replace(/""/g, '"'),
     },
   };
@@ -1609,6 +1647,13 @@
         siteNote = X.text(await siteRule.note());
       } catch {}
     }
+    // 1.5.14: a product line the rule looks up on another page (Strategic Brands' brand collections pages).
+    siteLineHint = "";
+    if (!manual && siteRule && siteRule.lineHintAsync) {
+      try {
+        siteLineHint = X.text(await siteRule.lineHintAsync());
+      } catch {}
+    }
     // The page says which color or finish is chosen (Kohler's shown SKU, the model in the address): the panel follows
     // it and needs no Option list. Jim (11/5): it should work the same on every site.
     const url = location.href.toUpperCase();
@@ -1692,6 +1737,7 @@
       // 1.5.6 (sweep 2): and the brand a site rule finds (Strategic Brands' "Packs" pages have no brand in the crumbs).
       let hint = "";
       try { hint = siteRule && siteRule.lineHint ? X.text(siteRule.lineHint()) : ""; } catch {}
+      if (!hint) hint = siteLineHint; // 1.5.14: the brand looked up on another page (Strategic Brands' collections)
       const crumbs = new Set([...X.words(category), ...X.words(hint)]);
       const named = siteLines.filter(l => crumbs.has(X.words(l.name)[0]));
       if (named.length === 1) f.line.value = named[0].id;
