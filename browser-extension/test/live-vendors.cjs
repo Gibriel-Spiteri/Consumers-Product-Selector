@@ -327,6 +327,10 @@ const VENDORS = [
     afterChange: { model: "", manual: true } }, // Grid glass is made in Matte Black only
   { key: "sb-line", url: "https://strategicbrandsincorporated.com/86514/128mm-kensington-pull-polished-nickel", settle: 6000,
     expect: { line: /laurey/i, color: "Polished Nickel" } },
+  // 1.5.14 (case 143570, Sharon Lee 11/7, "does not fill in line"): no brand on the page and no Google Shopping link; the
+  // Cosmopolitan ("Cosmo") collection is Laurey's on the site menu and Laurey's collections page.
+  { key: "sb-cosmo", url: "https://strategicbrandsincorporated.com/73120/128mm-pull-cosmopolitan-matte-black", settle: 6000,
+    expect: { model: "73120", line: /laurey/i, type: "PULL", color: "Matte Black" } },
   { key: "sb-orb", url: "https://strategicbrandsincorporated.com/59907/10-pc-item-54666-1-3-8-hollow-steel-knob-orb-value-pack", settle: 6000,
     expect: { color: "Oil Rubbed Bronze" } },
   { key: "franke-code", url: "https://www.franke.com/us/en/home-solutions/products/kitchen-faucets/product-detail-page.html/115.0740.013.html", settle: 6000,
