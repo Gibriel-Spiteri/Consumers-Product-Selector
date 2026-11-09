@@ -34,7 +34,9 @@ let tokenRefreshPromise: Promise<string> | null = null;
 // (shared with every other integration) is full. The request is blocked, not
 // run, so it is safe to retry, writes included. Without this, one busy moment
 // (e.g. the sync that starts after every deploy) failed dropdowns and pushes.
-const RETRY_429_DELAYS_MS = [1000, 2000, 4000, 8000];
+// 2026-11-09 (Gib OK'd): about 30 s of retries in all, not 15 s, before staff see "NetSuite is busy" (ES241850's
+// first push gave up). Was: const RETRY_429_DELAYS_MS = [1000, 2000, 4000, 8000];
+const RETRY_429_DELAYS_MS = [1000, 2000, 4000, 8000, 15000];
 
 export async function fetchNetSuite(url: string, init: RequestInit): Promise<Response> {
   for (let attempt = 0; ; attempt++) {

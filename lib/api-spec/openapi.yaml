@@ -167,6 +167,27 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/EstimateItemsResult"
+  /estimates/{estimateId}/refresh-discounts:
+    post:
+      operationId: refreshEstimateDiscounts
+      summary: After a push, NetSuite's discount engine reprices the estimate's discounts and refreshes its deposit
+      description: >
+        Opens NetSuite's Apply / Recalculate Discounts engine (customscript_recalcpras) with resave=T and follows its
+        passes. Can take a minute. The Quote List calls it right after add-items succeeds.
+      parameters:
+        - name: estimateId
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: The engine finished
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EstimateDiscountRefreshResult"
   /healthz:
     get:
       operationId: healthCheck
@@ -563,6 +584,22 @@ components:
           description: Special-order lines as priced on the estimate (list price x product line multipliers, as NetSuite does)
           items:
             $ref: "#/components/schemas/SpecialOrderLineResult"
+    EstimateDiscountRefreshResult:
+      type: object
+      required: [status, warning, passes, seconds]
+      properties:
+        status:
+          type: string
+          enum: [repriced, saved, notsaved, unknown]
+          description: repriced = discounts taken off and put back; saved = no discount to reprice, estimate saved once; notsaved = that save failed
+        warning:
+          type: string
+          nullable: true
+          description: The engine's own note for staff (a discount that did not go back on, a refusal)
+        passes:
+          type: integer
+        seconds:
+          type: integer
     SpecialOrderLineResult:
       type: object
       required: [netsuiteId, model, quantity, listPrice, rate, amount]

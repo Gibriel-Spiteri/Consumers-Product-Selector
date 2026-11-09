@@ -6,6 +6,7 @@ import {
   positiveId, specialOrderLine, specialOrderSpecs, SpecialOrderValidationError,
 } from "../lib/specialOrders";
 import { requireEmployee } from "../lib/session";
+import { refreshEstimateDiscounts, type DiscountRefreshResult } from "../lib/estimateRefresh";
 
 const router: IRouter = Router();
 // Estimates are NetSuite customer data and writes: signed-in staff only.
@@ -290,6 +291,41 @@ router.post("/estimates/:estimateId/add-items", async (req, res) => {
     return res.status(500).json({
       // 2026-11-03: say why, instead of only "Failed to add items to estimate".
       error: `Failed to add items to estimate: ${netsuiteReason(err)}`,
+      detail: err?.message ?? "Unknown error",
+    });
+  }
+});
+
+// One refresh per estimate at a time on this server: a second engine run on the same estimate would race the first.
+const refreshesRunning = new Map<number, Promise<DiscountRefreshResult>>();
+
+/*
+ * 2026-11-09 (Gib: "Pushing from the CPS should recalc PRAs on the Estimate"). The Quote List calls this right after
+ * a push succeeds: NetSuite's discount engine reprices the estimate's discounts so they cover the new lines, and
+ * the estimate's own script refreshes the deposit fields (see lib/estimateRefresh.ts). Separate from add-items on
+ * purpose: the lines are already added when this runs, so a slow or failed refresh can never lead to a second push.
+ */
+router.post("/estimates/:estimateId/refresh-discounts", async (req, res) => {
+  const estimateId = Number(req.params.estimateId);
+  if (!Number.isSafeInteger(estimateId) || estimateId <= 0) {
+    return res.status(400).json({ error: "Invalid estimate ID" });
+  }
+  if (!isNetSuiteConfigured()) {
+    return res.status(503).json({ error: "NetSuite not configured" });
+  }
+  let running = refreshesRunning.get(estimateId);
+  if (!running) {
+    running = refreshEstimateDiscounts(estimateId).finally(() => refreshesRunning.delete(estimateId));
+    refreshesRunning.set(estimateId, running);
+  }
+  try {
+    const result = await running;
+    logger.info({ estimateId, ...result }, "Refreshed estimate discounts after a push");
+    return res.json(result);
+  } catch (err: any) {
+    logger.error({ err, estimateId }, "Could not refresh estimate discounts");
+    return res.status(502).json({
+      error: "NetSuite could not recalculate the discounts on this estimate.",
       detail: err?.message ?? "Unknown error",
     });
   }
