@@ -24,6 +24,7 @@ import type {
   EstimateItemsResult,
   GetAdminIssuesParams,
   GetAnalyticsDrilldownParams,
+  GetVendorConversionsParams,
   HealthStatus,
   IssueReportInput,
   IssueReportResult,
@@ -35,6 +36,7 @@ import type {
   SpecialOrderType,
   SyncResponse,
   SyncTiming,
+  VendorConversions,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -45,6 +47,109 @@ type AwaitedInput<T> = PromiseLike<T> | T;
 type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
+/**
+ * @summary Explicitly linked vendor visit conversions within the reporting window
+ */
+export const getGetVendorConversionsUrl = (
+  params?: GetVendorConversionsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/analytics/conversions?${stringifiedParams}`
+    : `/api/admin/analytics/conversions`;
+};
+
+export const getVendorConversions = async (
+  params?: GetVendorConversionsParams,
+  options?: RequestInit,
+): Promise<VendorConversions> => {
+  return customFetch<VendorConversions>(getGetVendorConversionsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetVendorConversionsQueryKey = (
+  params?: GetVendorConversionsParams,
+) => {
+  return [
+    `/api/admin/analytics/conversions`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getGetVendorConversionsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getVendorConversions>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetVendorConversionsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getVendorConversions>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetVendorConversionsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getVendorConversions>>
+  > = ({ signal }) =>
+    getVendorConversions(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getVendorConversions>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetVendorConversionsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getVendorConversions>>
+>;
+export type GetVendorConversionsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Explicitly linked vendor visit conversions within the reporting window
+ */
+
+export function useGetVendorConversions<
+  TData = Awaited<ReturnType<typeof getVendorConversions>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetVendorConversionsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getVendorConversions>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetVendorConversionsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Who performed an action, with site breakdown and paginated history

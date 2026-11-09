@@ -4,7 +4,6 @@ type EventType =
   | "product_modal_open"
   | "search"
   | "add_to_list"
-  | "push_to_estimate"
   | "vendor_site_visit"
   | "quickadd_capture";
 
@@ -37,7 +36,9 @@ function generateId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-function getSessionId(): string {
+let fallbackSessionId: string | null = null;
+
+export function getAnalyticsSessionId(): string {
   try {
     const existing = sessionStorage.getItem(SESSION_KEY);
     if (existing) return existing;
@@ -45,7 +46,8 @@ function getSessionId(): string {
     sessionStorage.setItem(SESSION_KEY, next);
     return next;
   } catch {
-    return generateId();
+    // Storage may be unavailable. Keep one in-memory session, not one per flush/push.
+    return fallbackSessionId ??= generateId();
   }
 }
 
@@ -69,7 +71,7 @@ async function flush(useBeacon: boolean) {
   const events = queue;
   queue = [];
   const payload = JSON.stringify({
-    sessionId: getSessionId(),
+    sessionId: getAnalyticsSessionId(),
     events,
   });
   const url = `${getApiBase()}/analytics/event`;
@@ -143,22 +145,26 @@ export function setAnalyticsIdentity(id: string | null) {
 
 export function trackVendorSiteVisit(line: { id: string; name: string; websiteUrl?: string | null }) {
   if (!line.websiteUrl) return;
+  const visitId = generateId();
   enqueue({
     eventType: "vendor_site_visit", path: currentPath(),
-    metadata: { pageUrl: line.websiteUrl, productLineId: line.id, productLineName: line.name, source: "cps_link" },
+    metadata: { visitId, pageUrl: line.websiteUrl, productLineId: line.id, productLineName: line.name, source: "cps_link" },
   });
+  return visitId;
 }
 
 export function trackSpecialOrderAdd(input: {
   sku?: string | null; quantity: number;
   details: { productLineId: string; productLineName: string; description?: string; model?: string };
-  vendorPick?: { vendorDomain: string; pageUrl: string };
+  vendorPick?: { id: string; visitId?: string; vendorDomain: string; pageUrl: string };
 }) {
   enqueue({ eventType: "add_to_list", path: currentPath(), metadata: {
     quantity: input.quantity, productName: `${input.details.productLineName} Special Order`,
     sku: input.sku, productLineId: input.details.productLineId,
     model: input.details.model, source: input.vendorPick ? "quickadd" : "manual_special_order",
     vendorDomain: input.vendorPick?.vendorDomain,
+    productLineName: input.details.productLineName,
+    pickId: input.vendorPick?.id, visitId: input.vendorPick?.visitId,
   } });
 }
 
@@ -200,26 +206,6 @@ export function trackAddToList(
   });
 }
 
-export function trackPushToEstimate(payload: {
-  estimateId: number | string;
-  tranId: string;
-  itemCount: number;
-  lineCount: number;
-  totalValue: number;
-}) {
-  enqueue({
-    eventType: "push_to_estimate",
-    path: currentPath(),
-    metadata: {
-      estimateId: payload.estimateId,
-      tranId: payload.tranId,
-      itemCount: payload.itemCount,
-      lineCount: payload.lineCount,
-      totalValue: payload.totalValue,
-    },
-  });
-}
-
 export function trackSearch(query: string, resultsCount?: number) {
   enqueue({
     eventType: "search",
@@ -232,6 +218,7 @@ export function _resetForTests() {
   queue = [];
   lastTrackedPath = null;
   employeeId = null;
+  fallbackSessionId = null;
   if (flushTimer) clearTimeout(flushTimer);
   if (intervalTimer) clearInterval(intervalTimer);
   flushTimer = null;

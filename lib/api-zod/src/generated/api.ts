@@ -8,6 +8,33 @@
 import * as zod from "zod";
 
 /**
+ * @summary Explicitly linked vendor visit conversions within the reporting window
+ */
+export const GetVendorConversionsQueryParams = zod.object({
+  range: zod.enum(["today", "yesterday", "7d", "30d", "90d"]).optional(),
+  includeAdmins: zod.enum(["0", "1"]).optional(),
+});
+
+export const GetVendorConversionsResponse = zod.object({
+  rows: zod.array(
+    zod.object({
+      vendorDomain: zod.string(),
+      employeeId: zod.string(),
+      employeeName: zod.string(),
+      opens: zod.number(),
+      captures: zod.number(),
+      adds: zod.number(),
+      pushes: zod.number(),
+      visits: zod.number(),
+      capturedVisits: zod.number(),
+      addedVisits: zod.number(),
+      pushedVisits: zod.number(),
+      unlinkedActions: zod.number(),
+    }),
+  ),
+});
+
+/**
  * @summary Who performed an action, with site breakdown and paginated history
  */
 
@@ -272,6 +299,8 @@ export const AddEstimateItemsParams = zod.object({
   estimateId: zod.coerce.number().min(1),
 });
 
+export const addEstimateItemsBodyAnalyticsSessionIdMax = 64;
+
 export const addEstimateItemsBodyItemsItemNetsuiteIdRegExp = new RegExp(
   "^[1-9][0-9]\*$",
 );
@@ -295,9 +324,23 @@ export const addEstimateItemsBodyItemsItemSpecialOrderColorMax = 300;
 export const addEstimateItemsBodyItemsItemSpecialOrderListPriceMin = 0;
 export const addEstimateItemsBodyItemsItemSpecialOrderListPriceMax = 99999999;
 
+export const addEstimateItemsBodyItemsItemAnalyticsUnitPriceMin = 0;
+
+export const addEstimateItemsBodyItemsItemAnalyticsVendorPickPickIdMax = 64;
+
+export const addEstimateItemsBodyItemsItemAnalyticsVendorPickVisitIdMax = 64;
+
+export const addEstimateItemsBodyItemsItemAnalyticsVendorPickVendorDomainMax = 253;
+
 export const addEstimateItemsBodyItemsMax = 500;
 
 export const AddEstimateItemsBody = zod.object({
+  analyticsSessionId: zod
+    .string()
+    .min(1)
+    .max(addEstimateItemsBodyAnalyticsSessionIdMax)
+    .optional()
+    .describe("Existing per-tab analytics session; optional for older clients"),
   items: zod
     .array(
       zod.object({
@@ -344,6 +387,34 @@ export const AddEstimateItemsBody = zod.object({
               .max(addEstimateItemsBodyItemsItemSpecialOrderListPriceMax),
           })
           .optional(),
+        analyticsUnitPrice: zod
+          .number()
+          .min(addEstimateItemsBodyItemsItemAnalyticsUnitPriceMin)
+          .optional()
+          .describe(
+            "Displayed quote price for analytics only; never used to price NetSuite lines",
+          ),
+        analyticsVendorPick: zod
+          .object({
+            pickId: zod
+              .string()
+              .max(addEstimateItemsBodyItemsItemAnalyticsVendorPickPickIdMax)
+              .optional(),
+            visitId: zod
+              .string()
+              .max(addEstimateItemsBodyItemsItemAnalyticsVendorPickVisitIdMax)
+              .optional(),
+            vendorDomain: zod
+              .string()
+              .max(
+                addEstimateItemsBodyItemsItemAnalyticsVendorPickVendorDomainMax,
+              )
+              .optional(),
+          })
+          .optional()
+          .describe(
+            "Explicit vendor provenance for analytics only; never used to price or write NetSuite lines",
+          ),
       }),
     )
     .min(1)
@@ -355,6 +426,18 @@ export const AddEstimateItemsResponse = zod.object({
   estimateId: zod.number(),
   tranId: zod.string(),
   itemsAdded: zod.number(),
+  actionId: zod
+    .string()
+    .optional()
+    .describe(
+      "Server-generated identifier for this successful push, stable across analytics persistence retries",
+    ),
+  analyticsRecorded: zod
+    .boolean()
+    .optional()
+    .describe(
+      "Whether server-side analytics persistence succeeded; false must never cause a repeat NetSuite push",
+    ),
   skippedNetsuiteIds: zod.array(zod.string()),
   specialOrderLines: zod
     .array(

@@ -128,6 +128,7 @@ export default function SpecialOrderForm({ initial, prefill, onSubmit, onCancel,
         listPrice: Math.round(p * 100) / 100,
       },
       priceBasis,
+      ...(prefill?.vendorPick ? { vendorPick: { ...prefill.vendorPick, priceMissing: false } } : {}),
     };
   };
 

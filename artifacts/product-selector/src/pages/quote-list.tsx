@@ -9,7 +9,7 @@ import SpecialOrderForm from "@/components/special-order-form";
 import { useQuoteList, type PriceBasis, type QuoteItem } from "@/context/quote-list-context";
 import { authHeaders } from "@/context/auth-context";
 import { cn, fmtPrice } from "@/lib/utils";
-import { trackPushToEstimate } from "@/lib/analytics";
+import { getAnalyticsSessionId } from "@/lib/analytics";
 import { missingDetails } from "@/lib/vendor-picks";
 import { discountNoteFor, discountRefreshFailed, discountRefreshRunning, type DiscountNote } from "@/lib/discount-refresh";
 
@@ -541,12 +541,20 @@ export default function QuoteListPage() {
     const payloadItems: EstimateLineInput[] = snapshot.map(i => ({
       netsuiteId: i.netsuiteId,
       quantity: i.quantity,
+      ...(i.price != null ? { analyticsUnitPrice: i.price } : {}),
+      ...(i.specialOrder && i.vendorPick ? { analyticsVendorPick: {
+        pickId: i.vendorPick.id, visitId: i.vendorPick.visitId,
+        vendorDomain: i.vendorPick.vendorDomain,
+      } } : {}),
       ...(i.specialOrder ? { specialOrder: { ...i.specialOrder } } : {}),
     }));
 
     let data;
     try {
-      data = await addEstimateItems.mutateAsync({ estimateId, data: { items: payloadItems } });
+      data = await addEstimateItems.mutateAsync({
+        estimateId,
+        data: { items: payloadItems, analyticsSessionId: getAnalyticsSessionId() },
+      });
     } catch (err: any) {
       const body = err?.data ?? {};
       const invalidIds: string[] = Array.isArray(body?.invalidNetsuiteIds) ? body.invalidNetsuiteIds : [];
@@ -567,13 +575,8 @@ export default function QuoteListPage() {
     if (pricedSpecials.length > 0) {
       msg += `. Special orders priced at ${pricedSpecials.map(l => `${l.model} $${fmtPrice(l.rate)}${l.quantity > 1 ? ` x ${l.quantity}` : ""}`).join(", ")}`;
     }
-    trackPushToEstimate({
-      estimateId,
-      tranId,
-      itemCount: pushed.reduce((sum, i) => sum + i.quantity, 0),
-      lineCount: pushed.length,
-      totalValue: pushed.reduce((sum, i) => sum + (i.price ?? 0) * i.quantity, 0),
-    });
+    // The push is recorded server-side now (add-items, recordEstimatePush), so the browser analytics call for a
+    // successful push that stood here is gone (Replit Agent, "Record successful estimate pushes server-side ...").
     // Was: setPushResult({ success: true, message: msg }); removeExactItems(pushed);
     // The lines are on the estimate now, so they leave the list BEFORE NetSuite recalculates: a slow or failed
     // recalculation must never lead to pushing them again. The Push button stays busy until it ends (this

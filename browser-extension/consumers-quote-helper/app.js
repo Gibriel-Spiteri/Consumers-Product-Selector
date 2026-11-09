@@ -55,6 +55,15 @@
     }
     if (data.type === "pick-done" && typeof data.id === "string") ask({ type: "pick-done", id: data.id }).then(sendPicks);
     if (data.type === "vendor-sites" && Array.isArray(data.sites)) ask({ type: "vendor-sites", sites: data.sites.slice(0, 1000) });
+    if (data.type === "open-vendor") {
+      // Refresh identity before opening; never attach a previous employee's visit.
+      let token = "";
+      try { token = localStorage.getItem("ps_session") || ""; } catch {}
+      ask({ type: "open-vendor", visitId: data.visitId, websiteUrl: data.websiteUrl,
+        productLineId: data.productLineId, token }).then(res => {
+        toPage("vendor-open-result", { visitId: data.visitId, ok: res?.ok === true });
+      });
+    }
   });
 
   chrome.runtime.onMessage.addListener(message => {

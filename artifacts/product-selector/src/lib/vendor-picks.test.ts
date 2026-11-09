@@ -39,6 +39,16 @@ test("only well-formed picks from the extension are accepted", () => {
   assert.ok(fixed.name.startsWith("A B"));
 });
 
+test("explicit visit provenance survives parsing, auto-add and manual product-line selection", () => {
+  const [parsed] = parsePicksMessage(msg([{ ...pick, visitId: "visit-12345678" }]))!;
+  assert.equal(parsed.visitId, "visit-12345678");
+  assert.equal(quoteInputFromPick(parsed, lines[1], []).vendorPick?.visitId, "visit-12345678");
+  assert.equal(prefillFromPick(parsed, lines).vendorPick?.id, pick.id);
+  assert.equal(prefillFromPick(parsed, lines).vendorPick?.visitId, "visit-12345678");
+  const [invalid] = parsePicksMessage(msg([{ ...pick, visitId: "<bad>" }]))!;
+  assert.equal(invalid.visitId, undefined);
+});
+
 test("a pick is matched to product lines by the vendor's main domain", () => {
   assert.equal(registrableDomain("www.us.kohler.com"), "kohler.com");
   assert.deepEqual(productLinesForPick(pick, lines).map(l => l.name), ["KOHLER"]);

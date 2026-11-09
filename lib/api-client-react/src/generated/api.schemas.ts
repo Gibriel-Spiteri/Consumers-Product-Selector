@@ -35,6 +35,25 @@ export interface AnalyticsAction {
   metadata: AnalyticsActionMetadata;
 }
 
+export interface VendorConversionRow {
+  vendorDomain: string;
+  employeeId: string;
+  employeeName: string;
+  opens: number;
+  captures: number;
+  adds: number;
+  pushes: number;
+  visits: number;
+  capturedVisits: number;
+  addedVisits: number;
+  pushedVisits: number;
+  unlinkedActions: number;
+}
+
+export interface VendorConversions {
+  rows: VendorConversionRow[];
+}
+
 export interface AnalyticsDrilldown {
   total: number;
   page: number;
@@ -213,6 +232,18 @@ export interface SpecialOrderDetails {
   listPrice: number;
 }
 
+/**
+ * Explicit vendor provenance for analytics only; never used to price or write NetSuite lines
+ */
+export interface EstimateVendorAttribution {
+  /** @maxLength 64 */
+  pickId?: string;
+  /** @maxLength 64 */
+  visitId?: string;
+  /** @maxLength 253 */
+  vendorDomain?: string;
+}
+
 export interface EstimateLineInput {
   /** @pattern ^[1-9][0-9]*$ */
   netsuiteId: string;
@@ -222,9 +253,21 @@ export interface EstimateLineInput {
    */
   quantity: number;
   specialOrder?: SpecialOrderDetails;
+  /**
+   * Displayed quote price for analytics only; never used to price NetSuite lines
+   * @minimum 0
+   */
+  analyticsUnitPrice?: number;
+  analyticsVendorPick?: EstimateVendorAttribution;
 }
 
 export interface EstimateItemsInput {
+  /**
+   * Existing per-tab analytics session; optional for older clients
+   * @minLength 1
+   * @maxLength 64
+   */
+  analyticsSessionId?: string;
   /**
    * @minItems 1
    * @maxItems 500
@@ -246,6 +289,10 @@ export interface EstimateItemsResult {
   estimateId: number;
   tranId: string;
   itemsAdded: number;
+  /** Server-generated identifier for this successful push, stable across analytics persistence retries */
+  actionId?: string;
+  /** Whether server-side analytics persistence succeeded; false must never cause a repeat NetSuite push */
+  analyticsRecorded?: boolean;
   skippedNetsuiteIds: string[];
   /** Special-order lines as priced on the estimate (list price x product line multipliers, as NetSuite does) */
   specialOrderLines?: SpecialOrderLineResult[];
@@ -299,6 +346,30 @@ export interface NetSuiteStatus {
   accountId: string | null;
   lastSyncAt: string | null;
 }
+
+export type GetVendorConversionsParams = {
+  range?: GetVendorConversionsRange;
+  includeAdmins?: GetVendorConversionsIncludeAdmins;
+};
+
+export type GetVendorConversionsRange =
+  (typeof GetVendorConversionsRange)[keyof typeof GetVendorConversionsRange];
+
+export const GetVendorConversionsRange = {
+  today: "today",
+  yesterday: "yesterday",
+  "7d": "7d",
+  "30d": "30d",
+  "90d": "90d",
+} as const;
+
+export type GetVendorConversionsIncludeAdmins =
+  (typeof GetVendorConversionsIncludeAdmins)[keyof typeof GetVendorConversionsIncludeAdmins];
+
+export const GetVendorConversionsIncludeAdmins = {
+  NUMBER_0: "0",
+  NUMBER_1: "1",
+} as const;
 
 export type GetAnalyticsDrilldownParams = {
   range?: GetAnalyticsDrilldownRange;

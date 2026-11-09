@@ -1,9 +1,10 @@
 import { useState } from "react";
 import type { SpecialOrderProductLine } from "@workspace/api-client-react";
 import { Check, ExternalLink, ImageOff } from "lucide-react";
-import { trackVendorSiteVisit } from "@/lib/analytics";
+import { useVendorVisitLink } from "@/hooks/use-vendor-visit-link";
 
 function ProductLineLogo({ line }: { line: SpecialOrderProductLine }) {
+  const openVendor = useVendorVisitLink(line);
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   const showImage = !!line.logoUrl && failedUrl !== line.logoUrl;
 
@@ -41,8 +42,8 @@ function ProductLineLogo({ line }: { line: SpecialOrderProductLine }) {
   return (
     <a
       href={line.websiteUrl}
-      onClick={() => trackVendorSiteVisit(line)}
-      onAuxClick={event => { if (event.button === 1) trackVendorSiteVisit(line); }}
+      onClick={openVendor}
+      onAuxClick={openVendor}
       target="_blank"
       rel="noopener noreferrer"
       className="group block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7B4DA8] focus-visible:ring-offset-2"
@@ -57,6 +58,7 @@ function ProductLineLogo({ line }: { line: SpecialOrderProductLine }) {
 // 2026-11-06 (Gib: "The product lines aren't showing up for me" on the Quote List's Add Special Order form): inside the
 // form a card picks its product line, and its vendor site is a separate link.
 function PickableProductLine({ line, selected, onPick }: { line: SpecialOrderProductLine; selected: boolean; onPick: () => void }) {
+  const openVendor = useVendorVisitLink(line);
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   const showImage = !!line.logoUrl && failedUrl !== line.logoUrl;
   return (
@@ -87,8 +89,8 @@ function PickableProductLine({ line, selected, onPick }: { line: SpecialOrderPro
       {line.websiteUrl && (
         <a
           href={line.websiteUrl}
-          onClick={() => trackVendorSiteVisit(line)}
-          onAuxClick={event => { if (event.button === 1) trackVendorSiteVisit(line); }}
+          onClick={openVendor}
+          onAuxClick={openVendor}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-1 text-[11px] font-semibold text-[#7B4DA8] hover:underline"
