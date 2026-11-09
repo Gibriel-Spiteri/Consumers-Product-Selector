@@ -11,6 +11,44 @@ import { authHeaders } from "@/context/auth-context";
 import { cn, fmtPrice } from "@/lib/utils";
 import { trackPushToEstimate } from "@/lib/analytics";
 import { missingDetails } from "@/lib/vendor-picks";
+import { discountNoteFor, discountRefreshFailed, discountRefreshRunning, type DiscountNote } from "@/lib/discount-refresh";
+
+// After a push, NetSuite recalculates the estimate's discounts and deposit (2026-11-09, Gib: "Pushing from the CPS
+// should recalc PRAs on the Estimate"). The note under the push message says how that went.
+interface PushResult {
+  success: boolean;
+  message: string;
+  discounts?: DiscountNote;
+}
+
+async function refreshEstimateDiscounts(estimateId: number, tranId: string): Promise<DiscountNote> {
+  try {
+    const res = await fetch(`/api/estimates/${estimateId}/refresh-discounts`, { method: "POST", headers: authHeaders() });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) return discountNoteFor(data, tranId);
+    return discountRefreshFailed(tranId, typeof data?.error === "string" ? data.error : "NetSuite could not recalculate the discounts.");
+  } catch {
+    return discountRefreshFailed(tranId, null);
+  }
+}
+
+function DiscountNoteLine({ note }: { note: DiscountNote }) {
+  return (
+    <span
+      className={cn(
+        "mt-1.5 flex items-start gap-1.5 text-[13px] font-normal",
+        note.state === "warn" ? "text-amber-800" : note.state === "running" ? "text-gray-600" : "text-emerald-700",
+      )}
+      role="status"
+      data-testid="text-discount-refresh"
+    >
+      {note.state === "running" ? <Loader2 size={13} className="animate-spin mt-0.5 shrink-0" />
+        : note.state === "warn" ? <AlertCircle size={13} className="mt-0.5 shrink-0" />
+        : <Check size={13} className="mt-0.5 shrink-0" />}
+      <span>{note.text}</span>
+    </span>
+  );
+}
 
 interface Estimate {
   id: number;
@@ -443,7 +481,8 @@ function EstimateSearch({ onPush, pushResult, setPushResult, warnFor }: {
 
 export default function QuoteListPage() {
   const { items, removeItem, updateQuantity, clearList, totalItems, grandTotal, addSpecialOrder, updateSpecialOrder, removeExactItems } = useQuoteList();
-  const [pushResult, setPushResult] = useState<{ success: boolean; message: string } | null>(null);
+  // Was: useState<{ success: boolean; message: string } | null>(null) (PushResult adds the discount note).
+  const [pushResult, setPushResult] = useState<PushResult | null>(null);
   const [formMode, setFormMode] = useState<{ kind: "add" } | { kind: "edit"; item: QuoteItem } | null>(null);
   const addEstimateItems = useAddEstimateItems();
 
@@ -535,8 +574,15 @@ export default function QuoteListPage() {
       lineCount: pushed.length,
       totalValue: pushed.reduce((sum, i) => sum + (i.price ?? 0) * i.quantity, 0),
     });
-    setPushResult({ success: true, message: msg });
+    // Was: setPushResult({ success: true, message: msg }); removeExactItems(pushed);
+    // The lines are on the estimate now, so they leave the list BEFORE NetSuite recalculates: a slow or failed
+    // recalculation must never lead to pushing them again. The Push button stays busy until it ends (this
+    // function is still running), so a second push cannot race NetSuite's saves.
+    const estimateTranId = data?.tranId || tranId;
+    setPushResult({ success: true, message: msg, discounts: discountRefreshRunning(estimateTranId) });
     removeExactItems(pushed);
+    const discounts = await refreshEstimateDiscounts(estimateId, estimateTranId);
+    setPushResult({ success: true, message: msg, discounts });
   };
 
   const formPanel = formMode && (
@@ -601,7 +647,11 @@ export default function QuoteListPage() {
               pushResult.success ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-red-50 text-red-700 border border-red-200"
             )}>
               {pushResult.success ? <Check size={16} /> : <AlertCircle size={16} />}
-              <span>{pushResult.message}</span>
+              {/* Was: <span>{pushResult.message}</span> */}
+              <span className="min-w-0">
+                <span className="block">{pushResult.message}</span>
+                {pushResult.discounts && <DiscountNoteLine note={pushResult.discounts} />}
+              </span>
               <button onClick={() => setPushResult(null)} className="ml-auto p-1 hover:opacity-70 transition-opacity">
                 <X size={14} />
               </button>
@@ -637,7 +687,11 @@ export default function QuoteListPage() {
           {pushResult?.success && (
             <div className="flex items-center gap-2 px-5 py-4 rounded-2xl text-sm font-medium bg-emerald-50 text-emerald-700 border border-emerald-200" role="status">
               <Check size={16} className="shrink-0" />
-              <span>{pushResult.message}</span>
+              {/* Was: <span>{pushResult.message}</span> */}
+              <span className="min-w-0">
+                <span className="block">{pushResult.message}</span>
+                {pushResult.discounts && <DiscountNoteLine note={pushResult.discounts} />}
+              </span>
               <button onClick={() => setPushResult(null)} aria-label="Dismiss message" className="ml-auto p-1 hover:opacity-70 transition-opacity">
                 <X size={14} />
               </button>
@@ -830,7 +884,11 @@ export default function QuoteListPage() {
               pushResult.success ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-red-50 text-red-700 border-red-200",
             )}>
               {pushResult.success ? <Check size={16} /> : <AlertCircle size={16} />}
-              <span>{pushResult.message}</span>
+              {/* Was: <span>{pushResult.message}</span> */}
+              <span className="min-w-0">
+                <span className="block">{pushResult.message}</span>
+                {pushResult.discounts && <DiscountNoteLine note={pushResult.discounts} />}
+              </span>
               <button onClick={() => setPushResult(null)} className="ml-auto p-1 hover:opacity-70 transition-opacity">
                 <X size={14} />
               </button>
