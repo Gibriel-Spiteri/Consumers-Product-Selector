@@ -5,6 +5,7 @@ import vm from "node:vm";
 import ts from "typescript";
 import { PgDialect } from "drizzle-orm/pg-core";
 import { analyticsWhere, etMidnight, rangeToWindow } from "./analytics-filters";
+import { trackingId, vendorDomain } from "./vendor-conversions";
 
 test("Eastern midnight handles daylight saving, including 23/25-hour days", () => {
   assert.equal(etMidnight("2026-06-10").toISOString(), "2026-06-10T04:00:00.000Z");
@@ -41,6 +42,8 @@ function ingestHarness() {
     "../lib/session": { bearerToken: (req: any) => req.headers.authorization,
       verifySession: (token: string) => token === "valid-test-session" ? "42" : null },
     "../lib/analytics-filters": {}, "./analytics-drilldown": { registerAnalyticsDrilldown() {} },
+    "./analytics-conversions": { registerAnalyticsConversions() {} },
+    "../lib/vendor-conversions": { trackingId, vendorDomain },
   };
   const source = readFileSync(new URL("../routes/analytics.ts", import.meta.url), "utf8");
   vm.runInNewContext(ts.transpileModule(source, {
@@ -81,4 +84,18 @@ test("admin-page events and unknown event types are never ingested", async () =>
   const h = ingestHarness();
   await h.send([{ eventType: "page_view", path: "/admin" }, { eventType: "unapproved" }]);
   assert.equal(h.inserted.length, 0);
+});
+
+test("vendor provenance survives ingestion without arbitrary metadata", async () => {
+  const h = ingestHarness();
+  await h.send([{ eventType: "quickadd_capture", metadata: {
+    pageUrl: "https://shop.us.vendor.test/p?private=hidden", visitId: "visit-12345678",
+    pickIds: ["pick-12345678", "<bad>"], picks: [{ pickId: "pick-12345678", productLineId: "88", secret: "drop" }],
+  } }], { authorization: "valid-test-session" });
+  const m = h.inserted[0].metadata;
+  assert.equal(m.vendorDomain, "vendor.test");
+  assert.equal(m.visitId, "visit-12345678");
+  assert.deepEqual(JSON.parse(JSON.stringify(m.pickIds)), ["pick-12345678"]);
+  assert.deepEqual(JSON.parse(JSON.stringify(m.picks)), [{ pickId: "pick-12345678", productLineId: "88" }]);
+  assert.ok(!JSON.stringify(m).includes("hidden"));
 });

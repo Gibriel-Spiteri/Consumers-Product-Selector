@@ -35,6 +35,25 @@ export interface AnalyticsAction {
   metadata: AnalyticsActionMetadata;
 }
 
+export interface VendorConversionRow {
+  vendorDomain: string;
+  employeeId: string;
+  employeeName: string;
+  opens: number;
+  captures: number;
+  adds: number;
+  pushes: number;
+  visits: number;
+  capturedVisits: number;
+  addedVisits: number;
+  pushedVisits: number;
+  unlinkedActions: number;
+}
+
+export interface VendorConversions {
+  rows: VendorConversionRow[];
+}
+
 export interface AnalyticsDrilldown {
   total: number;
   page: number;
@@ -299,6 +318,30 @@ export interface NetSuiteStatus {
   accountId: string | null;
   lastSyncAt: string | null;
 }
+
+export type GetVendorConversionsParams = {
+  range?: GetVendorConversionsRange;
+  includeAdmins?: GetVendorConversionsIncludeAdmins;
+};
+
+export type GetVendorConversionsRange =
+  (typeof GetVendorConversionsRange)[keyof typeof GetVendorConversionsRange];
+
+export const GetVendorConversionsRange = {
+  today: "today",
+  yesterday: "yesterday",
+  "7d": "7d",
+  "30d": "30d",
+  "90d": "90d",
+} as const;
+
+export type GetVendorConversionsIncludeAdmins =
+  (typeof GetVendorConversionsIncludeAdmins)[keyof typeof GetVendorConversionsIncludeAdmins];
+
+export const GetVendorConversionsIncludeAdmins = {
+  NUMBER_0: "0",
+  NUMBER_1: "1",
+} as const;
 
 export type GetAnalyticsDrilldownParams = {
   range?: GetAnalyticsDrilldownRange;

@@ -143,22 +143,26 @@ export function setAnalyticsIdentity(id: string | null) {
 
 export function trackVendorSiteVisit(line: { id: string; name: string; websiteUrl?: string | null }) {
   if (!line.websiteUrl) return;
+  const visitId = generateId();
   enqueue({
     eventType: "vendor_site_visit", path: currentPath(),
-    metadata: { pageUrl: line.websiteUrl, productLineId: line.id, productLineName: line.name, source: "cps_link" },
+    metadata: { visitId, pageUrl: line.websiteUrl, productLineId: line.id, productLineName: line.name, source: "cps_link" },
   });
+  return visitId;
 }
 
 export function trackSpecialOrderAdd(input: {
   sku?: string | null; quantity: number;
   details: { productLineId: string; productLineName: string; description?: string; model?: string };
-  vendorPick?: { vendorDomain: string; pageUrl: string };
+  vendorPick?: { id: string; visitId?: string; vendorDomain: string; pageUrl: string };
 }) {
   enqueue({ eventType: "add_to_list", path: currentPath(), metadata: {
     quantity: input.quantity, productName: `${input.details.productLineName} Special Order`,
     sku: input.sku, productLineId: input.details.productLineId,
     model: input.details.model, source: input.vendorPick ? "quickadd" : "manual_special_order",
     vendorDomain: input.vendorPick?.vendorDomain,
+    productLineName: input.details.productLineName,
+    pickId: input.vendorPick?.id, visitId: input.vendorPick?.visitId,
   } });
 }
 
@@ -206,6 +210,10 @@ export function trackPushToEstimate(payload: {
   itemCount: number;
   lineCount: number;
   totalValue: number;
+  specialOrderLines?: Array<{
+    productLineId: string; productLineName: string; quantity: number;
+    vendorDomain?: string; pickId?: string; visitId?: string;
+  }>;
 }) {
   enqueue({
     eventType: "push_to_estimate",
@@ -216,6 +224,7 @@ export function trackPushToEstimate(payload: {
       itemCount: payload.itemCount,
       lineCount: payload.lineCount,
       totalValue: payload.totalValue,
+      specialOrderLines: payload.specialOrderLines,
     },
   });
 }

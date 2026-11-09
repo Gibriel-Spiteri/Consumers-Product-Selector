@@ -534,6 +534,11 @@ export default function QuoteListPage() {
       itemCount: pushed.reduce((sum, i) => sum + i.quantity, 0),
       lineCount: pushed.length,
       totalValue: pushed.reduce((sum, i) => sum + (i.price ?? 0) * i.quantity, 0),
+      specialOrderLines: pushed.filter(i => i.specialOrder).map(i => ({
+        productLineId: i.specialOrder!.productLineId,
+        productLineName: i.specialOrder!.productLineName, quantity: i.quantity,
+        vendorDomain: i.vendorPick?.vendorDomain, pickId: i.vendorPick?.id, visitId: i.vendorPick?.visitId,
+      })),
     });
     setPushResult({ success: true, message: msg });
     removeExactItems(pushed);

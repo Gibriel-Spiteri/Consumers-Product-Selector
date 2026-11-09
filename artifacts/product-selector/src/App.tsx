@@ -15,6 +15,7 @@ import ExpressBathPage from "@/pages/express-bath";
 import QuoteListPage from "@/pages/quote-list";
 import SpecialOrderPage from "@/pages/special-order";
 import QuoteHelperPage from "@/pages/quote-helper";
+import VendorOpenPage from "@/pages/vendor-open";
 import AdminPage from "@/pages/admin";
 import AnalyticsPage from "@/pages/analytics";
 import LoginPage from "@/pages/login";
@@ -70,6 +71,9 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+          <Switch>
+          <Route path="/vendor-open" component={VendorOpenPage} />
+          <Route>
           <AnalyticsTracker />
           <AuthGate>
             <QuoteListProvider>
@@ -97,6 +101,8 @@ function App() {
               </VendorPicksProvider>
             </QuoteListProvider>
           </AuthGate>
+          </Route>
+          </Switch>
         </WouterRouter>
       </AuthProvider>
     </QueryClientProvider>

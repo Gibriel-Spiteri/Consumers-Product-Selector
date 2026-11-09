@@ -6,3 +6,4 @@
 - [Issue reporting](issue-reporting-requirements.md) — Admin reports need NetSuite case numbers/statuses and the reporter’s page screenshot, URL, and browser logs.
 - [Analytics scope](analytics-scope.md) — totals and drill-downs must share date/admin filters; attribute vendor openings and QuickAdd actions to signed-in users.
 - [Publishing crash diagnosis](publishing-diagnostics.md) — generic unhandled-event headers do not prove a database cause; preserve fatal exits while capturing structured details.
+- [Vendor conversions](vendor-conversion-attribution.md) — explicit visit/pick links only; all stages share the reporting window; never infer historical or cross-user conversions.

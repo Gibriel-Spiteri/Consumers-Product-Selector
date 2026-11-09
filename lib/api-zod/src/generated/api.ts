@@ -8,6 +8,33 @@
 import * as zod from "zod";
 
 /**
+ * @summary Explicitly linked vendor visit conversions within the reporting window
+ */
+export const GetVendorConversionsQueryParams = zod.object({
+  range: zod.enum(["today", "yesterday", "7d", "30d", "90d"]).optional(),
+  includeAdmins: zod.enum(["0", "1"]).optional(),
+});
+
+export const GetVendorConversionsResponse = zod.object({
+  rows: zod.array(
+    zod.object({
+      vendorDomain: zod.string(),
+      employeeId: zod.string(),
+      employeeName: zod.string(),
+      opens: zod.number(),
+      captures: zod.number(),
+      adds: zod.number(),
+      pushes: zod.number(),
+      visits: zod.number(),
+      capturedVisits: zod.number(),
+      addedVisits: zod.number(),
+      pushedVisits: zod.number(),
+      unlinkedActions: zod.number(),
+    }),
+  ),
+});
+
+/**
  * @summary Who performed an action, with site breakdown and paginated history
  */
 

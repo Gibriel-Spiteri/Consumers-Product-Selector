@@ -17,6 +17,20 @@ tags:
   - name: netsuite
     description: NetSuite sync operations
 paths:
+  /admin/analytics/conversions:
+    get:
+      operationId: getVendorConversions
+      summary: Explicitly linked vendor visit conversions within the reporting window
+      parameters:
+        - {name: range, in: query, schema: {type: string, enum: [today, yesterday, 7d, 30d, 90d]}}
+        - {name: includeAdmins, in: query, schema: {type: string, enum: ["0", "1"]}}
+      responses:
+        "200":
+          description: Per-vendor and employee conversion rows
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VendorConversions"
   /admin/analytics/drilldown:
     get:
       operationId: getAnalyticsDrilldown
@@ -286,6 +300,30 @@ components:
         metadata:
           type: ["object", "null"]
           additionalProperties: true
+    VendorConversions:
+      type: object
+      required: [rows]
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/VendorConversionRow"
+    VendorConversionRow:
+      type: object
+      required: [vendorDomain, employeeId, employeeName, opens, captures, adds, pushes, visits, capturedVisits, addedVisits, pushedVisits, unlinkedActions]
+      properties:
+        vendorDomain: {type: string}
+        employeeId: {type: string}
+        employeeName: {type: string}
+        opens: {type: integer}
+        captures: {type: integer}
+        adds: {type: integer}
+        pushes: {type: integer}
+        visits: {type: integer}
+        capturedVisits: {type: integer}
+        addedVisits: {type: integer}
+        pushedVisits: {type: integer}
+        unlinkedActions: {type: integer}
     AnalyticsDrilldown:
       type: object
       required: [total, page, pageSize, actors, sites, events]

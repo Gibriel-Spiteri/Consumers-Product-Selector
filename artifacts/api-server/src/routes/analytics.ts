@@ -12,6 +12,8 @@ import { netsuiteRequest, isNetSuiteConfigured } from "../lib/netsuite";
 import { bearerToken, requireEmployee, verifySession } from "../lib/session";
 import { analyticsWhere, rangeToWindow as sharedRangeToWindow } from "../lib/analytics-filters";
 import { registerAnalyticsDrilldown } from "./analytics-drilldown";
+import { registerAnalyticsConversions } from "./analytics-conversions";
+import { trackingId, vendorDomain } from "../lib/vendor-conversions";
 import {
   getAdminEmployeeIds,
   getEmployeeNames,
@@ -127,7 +129,7 @@ router.post("/analytics/event", async (req, res) => {
           if (url.protocol !== "https:" && url.protocol !== "http:") continue;
           // Never store query strings, fragments, credentials or arbitrary extension metadata.
           metadata = {
-            vendorDomain: url.hostname.toLowerCase().replace(/^www\./, ""),
+            vendorDomain: vendorDomain(url.hostname),
             pageUrl: `${url.origin}${url.pathname}`.slice(0, 2048),
             source: details?.source === "quickadd" ? "quickadd" : "cps_link",
             productLineId: trimStr(details?.productLineId, 64),
@@ -135,6 +137,12 @@ router.post("/analytics/event", async (req, res) => {
             productName: trimStr(details?.productName, 300),
             extensionVersion: trimStr(details?.extensionVersion, 40),
             itemCount: Math.min(20, Math.max(1, toIntOrNull(details?.itemCount) ?? 1)),
+            visitId: trackingId(details?.visitId),
+            pickIds: Array.isArray(details?.pickIds) ? details.pickIds.slice(0, 20).map(trackingId).filter(Boolean) : [],
+            picks: Array.isArray(details?.picks) ? details.picks.slice(0, 20).map(raw => {
+              const p = raw && typeof raw === "object" ? raw as Record<string, unknown> : {};
+              return { pickId: trackingId(p.pickId), productLineId: trimStr(p.productLineId, 64) };
+            }) : [],
           };
         } catch { continue; }
       }
@@ -193,6 +201,7 @@ async function fetchEmployeeNames(
 }
 
 registerAnalyticsDrilldown(router, requireAdmin);
+registerAnalyticsConversions(router, requireAdmin);
 
 router.get("/admin/analytics/summary", requireAdmin, async (req, res) => {
   try {
