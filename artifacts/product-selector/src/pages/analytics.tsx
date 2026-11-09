@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useAuth, authHeaders } from "@/context/auth-context";
 import { ActionDrilldownModal, type DrilldownEventType } from "@/components/analytics/action-drilldown-modal";
+import { VendorConversions } from "@/components/analytics/vendor-conversions";
 import { useQuery } from "@tanstack/react-query";
 import { RefreshCw, Shield, ArrowLeft, BarChart3, X, ChevronUp, ChevronDown, ChevronsUpDown, Info } from "lucide-react";
 import { Link } from "wouter";
@@ -826,6 +827,7 @@ function AnalyticsSection({ employeeId }: { employeeId: string }) {
         <div className="py-8 text-center text-sm text-red-600">Failed to load analytics.</div>
       ) : (
         <div className="mt-4 space-y-6">
+          <VendorConversions range={range} includeAdmins={includeAdmins} />
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             <div className="bg-gray-50 rounded-lg px-4 py-3">
               <div className="text-xs uppercase tracking-wide text-gray-400 font-semibold">Events</div>

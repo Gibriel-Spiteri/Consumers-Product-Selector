@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { EstimateVendorAttribution } from "./estimateVendorAttribution";
 import type { SpecialOrderDetails } from "./specialOrderDetails";
 
 export interface EstimateLineInput {
@@ -16,4 +17,10 @@ export interface EstimateLineInput {
    */
   quantity: number;
   specialOrder?: SpecialOrderDetails;
+  /**
+   * Displayed quote price for analytics only; never used to price NetSuite lines
+   * @minimum 0
+   */
+  analyticsUnitPrice?: number;
+  analyticsVendorPick?: EstimateVendorAttribution;
 }

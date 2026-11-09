@@ -12,6 +12,7 @@ export const FROM_EXTENSION = "consumers-quote-helper";
 
 export interface VendorPick {
   id: string;
+  visitId?: string;
   pickedAt: string;
   pageUrl: string;
   vendorDomain: string;
@@ -64,6 +65,7 @@ export function parsePick(raw: unknown): VendorPick | null {
     quantity: qty,
   };
   const extra: Partial<VendorPick> = {
+    visitId: typeof p.visitId === "string" && /^[A-Za-z0-9-]{8,64}$/.test(p.visitId) ? p.visitId : "",
     productLineId: nsId(p.productLineId), typeId: nsId(p.typeId), typeName: str(p.typeName),
     collection: str(p.collection), description: str(p.description), category: str(p.category),
   };
@@ -120,6 +122,7 @@ export function vendorSites(lines: SpecialOrderProductLine[]) {
 }
 
 export interface SpecialOrderPrefill {
+  vendorPick?: VendorPickSource;
   netsuiteItemId?: string;
   candidateNames: string[];
   model: string;
@@ -133,6 +136,7 @@ export interface SpecialOrderPrefill {
 export function prefillFromPick(pick: VendorPick, lines: SpecialOrderProductLine[]): SpecialOrderPrefill {
   const candidates = productLinesForPick(pick, lines);
   return {
+    vendorPick: sourceFromPick(pick),
     // netsuiteItemId: candidates.length === 1 ? candidates[0].netsuiteItemId : undefined,
     netsuiteItemId: productLineForPick(pick, lines)?.netsuiteItemId,
     candidateNames: candidates.map(c => c.name),
@@ -207,10 +211,19 @@ export function suggestType(pick: Pick<VendorPick, "name" | "pageUrl"> & { categ
 // What a pick added to the quote list remembers about where it came from.
 export interface VendorPickSource {
   id: string;
+  visitId?: string;
   pageUrl: string;
   vendorDomain: string;
   imageUrl: string;
   priceMissing: boolean; // the vendor page showed no price; the rep enters the list price
+}
+
+function sourceFromPick(pick: VendorPick): VendorPickSource {
+  return {
+    id: pick.id, ...(pick.visitId ? { visitId: pick.visitId } : {}),
+    pageUrl: pick.pageUrl, vendorDomain: pick.vendorDomain,
+    imageUrl: pick.imageUrl, priceMissing: pick.price == null,
+  };
 }
 
 // The quote-list line for a pick on a product line. Whatever the vendor page did not give (Type, Model, Color, list
@@ -254,13 +267,7 @@ export function quoteInputFromPick(pick: VendorPick, line: SpecialOrderProductLi
       listPrice: pick.price ?? 0,
     },
     priceBasis: "retail",
-    vendorPick: {
-      id: pick.id,
-      pageUrl: pick.pageUrl,
-      vendorDomain: pick.vendorDomain,
-      imageUrl: pick.imageUrl,
-      priceMissing: pick.price == null,
-    },
+    vendorPick: sourceFromPick(pick),
   };
 }
 

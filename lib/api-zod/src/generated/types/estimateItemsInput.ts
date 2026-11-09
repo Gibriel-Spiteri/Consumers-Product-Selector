@@ -9,6 +9,12 @@ import type { EstimateLineInput } from "./estimateLineInput";
 
 export interface EstimateItemsInput {
   /**
+   * Existing per-tab analytics session; optional for older clients
+   * @minLength 1
+   * @maxLength 64
+   */
+  analyticsSessionId?: string;
+  /**
    * @minItems 1
    * @maxItems 500
    */

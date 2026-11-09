@@ -25,7 +25,9 @@ export function registerAnalyticsDrilldown(router: IRouter, requireAdmin: Reques
         db.select({
           employeeId: analyticsEventsTable.employeeId,
           count: sql<number>`count(*)::int`,
-          lastSeen: sql<Date>`max(${analyticsEventsTable.createdAt})`,
+          // SQL type annotations do not decode driver values. Reuse the column's
+          // timestamp decoder so aggregates have the same UTC semantics as rows.
+          lastSeen: sql<Date>`max(${analyticsEventsTable.createdAt})`.mapWith(analyticsEventsTable.createdAt),
         }).from(analyticsEventsTable).where(actorWhere).groupBy(analyticsEventsTable.employeeId).orderBy(desc(sql`count(*)`)),
         db.select({ domain, count: sql<number>`count(*)::int` }).from(analyticsEventsTable)
           .where(and(typeWhere, sql`${domain} is not null`)).groupBy(domain).orderBy(desc(sql`count(*)`)),

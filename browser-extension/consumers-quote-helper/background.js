@@ -61,6 +61,23 @@ async function state() {
 }
 
 const nsId = v => (typeof v === "string" && /^[1-9]\d{0,17}$/.test(v) ? v : "");
+const trackingId = v => typeof v === "string" && /^[A-Za-z0-9-]{8,64}$/.test(v) ? v : "";
+
+async function visitForSender(sender) {
+  const { appSession, vendorVisits = {} } = await chrome.storage.session.get(["appSession", "vendorVisits"]);
+  const visit = vendorVisits[sender.tab?.id];
+  let domain = "";
+  try { domain = registrableDomain(new URL(sender.url || sender.tab?.url).hostname); } catch {}
+  // No most-recent-domain, timestamp, opener or cross-tab guesses.
+  return visit && appSession?.token === visit.token && domain === visit.domain
+    ? visit.visitId : undefined;
+}
+
+chrome.tabs.onRemoved.addListener(async tabId => {
+  const { vendorVisits = {} } = await chrome.storage.session.get("vendorVisits");
+  delete vendorVisits[tabId];
+  await chrome.storage.session.set({ vendorVisits });
+});
 
 // Each vendor domain's product lines and their special-order Types, from the Product Selector (since 1.3.0), so the
 // panel can offer the Type. Only ids and plain, length-limited names are kept.
@@ -190,6 +207,25 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
     const { vendorDomains, picks, siteLines } = await state();
     switch (message && message.type) {
+      case "open-vendor": {
+        if (!fromApp(sender) || !trackingId(message.visitId) || !Number.isInteger(sender.tab?.id)) return sendResponse({ ok: false });
+        const relay = new URL(sender.url || sender.tab.url);
+        if (!relay.pathname.endsWith("/vendor-open")) return sendResponse({ ok: false });
+        let url;
+        try { url = new URL(message.websiteUrl); } catch { return sendResponse({ ok: false }); }
+        const domain = registrableDomain(url.hostname);
+        if (!/^https?:$/.test(url.protocol) || url.username || url.password || !vendorDomains.includes(domain)
+          || !siteLines[domain]?.some(line => line.id === nsId(message.productLineId))) return sendResponse({ ok: false });
+        const { appSession } = await chrome.storage.session.get("appSession");
+        if (!message.token || appSession?.token !== message.token) return sendResponse({ ok: false });
+        // The native link already created this exact relay tab. Navigate it,
+        // not a guessed recent tab or a second popup.
+        const tab = await chrome.tabs.update(sender.tab.id, { url: url.href });
+        const { vendorVisits = {} } = await chrome.storage.session.get("vendorVisits");
+        vendorVisits[tab.id] = { visitId: message.visitId, domain, token: appSession.token };
+        await chrome.storage.session.set({ vendorVisits });
+        return sendResponse({ ok: true });
+      }
       case "vendor-sites": {
         // The Product Selector's current product lines; their websites decide where vendor.js runs.
         if (!fromApp(sender) || !Array.isArray(message.sites)) return sendResponse({ ok: false });
@@ -221,6 +257,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const host = (() => { try { return new URL(sender.url || sender.tab.url).hostname; } catch { return ""; } })();
         if (!vendorDomains.includes(registrableDomain(host)) || !message.pick) return sendResponse({ ok: false });
         const pick = cleanPick(message.pick, sender);
+        const visitId = await visitForSender(sender);
+        if (visitId) pick.visitId = visitId;
         if (!pick.name && !pick.model) return sendResponse({ ok: false });
         const next = [...picks, pick].slice(-MAX_PICKS);
         await chrome.storage.local.set({ picks: next });
@@ -228,6 +266,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ ok: true, count: next.length });
         await trackVendorAction("quickadd_capture", sender, {
           productName: pick.name, productLineId: pick.productLineId, itemCount: 1,
+          visitId, pickIds: [pick.id],
+          picks: [{ pickId: pick.id, productLineId: pick.productLineId }],
         });
         return;
       }
@@ -237,6 +277,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const host = (() => { try { return new URL(sender.url || sender.tab.url).hostname; } catch { return ""; } })();
         if (!vendorDomains.includes(registrableDomain(host)) || !Array.isArray(message.picks)) return sendResponse({ ok: false });
         const kit = message.picks.slice(0, 20).map(raw => cleanPick(raw || {}, sender));
+        const visitId = await visitForSender(sender);
+        if (visitId) kit.forEach(pick => { pick.visitId = visitId; });
         if (!kit.length || kit.some(p => !p.name && !p.model)) return sendResponse({ ok: false });
         const next = [...picks, ...kit].slice(-MAX_PICKS);
         await chrome.storage.local.set({ picks: next });
@@ -244,6 +286,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ ok: true, count: next.length, added: kit.length });
         await trackVendorAction("quickadd_capture", sender, {
           productName: kit[0].name, productLineId: kit[0].productLineId, itemCount: kit.length,
+          visitId, pickIds: kit.map(pick => pick.id),
+          picks: kit.map(pick => ({ pickId: pick.id, productLineId: pick.productLineId })),
         });
         return;
       }
@@ -256,7 +300,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (!fromApp(sender)) return sendResponse({ ok: false });
         const token = typeof message.token === "string" && message.token.length < 4000 ? message.token : "";
         const origin = (() => { try { return new URL(sender.url || sender.tab?.url).origin; } catch { return ""; } })();
-        await chrome.storage.session.set({ appSession: token ? { token, name: text(message.name).slice(0, 100), origin, at: Date.now() } : null });
+        const { appSession: previous } = await chrome.storage.session.get("appSession");
+        await chrome.storage.session.set({
+          ...(previous?.token !== token ? { vendorVisits: {} } : {}),
+          appSession: token ? { token, name: text(message.name).slice(0, 100), origin, at: Date.now() } : null,
+        });
         return sendResponse({ ok: true });
       }
       // 1.5.11 (Gib 11/6): Richelieu's price, read by the Product Selector with Consumers' Richelieu account (the

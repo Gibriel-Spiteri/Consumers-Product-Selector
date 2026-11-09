@@ -5,7 +5,9 @@ import {
   EstimateItemsSchema, fillSpecialOrderOptions, getSpecialOrderPricing, getSpecialOrderProductLines, getSpecialOrderTypes,
   positiveId, specialOrderLine, specialOrderSpecs, SpecialOrderValidationError,
 } from "../lib/specialOrders";
-import { requireEmployee } from "../lib/session";
+import { bearerToken, requireEmployee } from "../lib/session";
+import { estimateActionId, estimateSessionId, recordEstimatePush } from "../lib/estimate-analytics";
+import { trackingId, vendorDomain } from "../lib/vendor-conversions";
 import { refreshEstimateDiscounts, type DiscountRefreshResult } from "../lib/estimateRefresh";
 
 const router: IRouter = Router();
@@ -264,8 +266,39 @@ router.post("/estimates/:estimateId/add-items", async (req, res) => {
       "Added items to estimate"
     );
 
+    const actionId = estimateActionId();
+    const analyticsRecorded = await recordEstimatePush(actionId, {
+      employeeId: res.locals.employeeId,
+      sessionId: estimateSessionId(parsed.data.analyticsSessionId, bearerToken(req)!),
+      path: "/list",
+      userAgent: req.get("user-agent")?.slice(0, 512) ?? null,
+      metadata: {
+        estimateId,
+        tranId: existing.tranId,
+        itemCount: goodItems.reduce((sum, item) => sum + item.quantity, 0),
+        lineCount: goodItems.length,
+        // Keep explicit provenance when moving the success event off the browser.
+        // Derive product-line membership from the validated special-order details;
+        // never infer missing visit/pick links from names, sessions or recency.
+        specialOrderLines: goodItems.filter(item => item.specialOrder).map(item => ({
+          productLineId: item.specialOrder!.productLineId,
+          productLineName: item.specialOrder!.productLineName,
+          quantity: item.quantity,
+          vendorDomain: vendorDomain(item.analyticsVendorPick?.vendorDomain),
+          pickId: trackingId(item.analyticsVendorPick?.pickId),
+          visitId: trackingId(item.analyticsVendorPick?.visitId),
+        })),
+        // Informational displayed quote value, not the NetSuite selling price.
+        // Missing prices on legacy clients are unknown, not a zero-dollar push.
+        totalValue: goodItems.every(item => item.analyticsUnitPrice != null)
+          ? goodItems.reduce((sum, item) => sum + item.analyticsUnitPrice! * item.quantity, 0) : null,
+      },
+    });
+
     return res.json({
       success: true,
+      actionId,
+      analyticsRecorded,
       estimateId,
       tranId: existing.tranId,
       itemsAdded: goodItems.length,

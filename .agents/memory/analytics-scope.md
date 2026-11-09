@@ -14,3 +14,9 @@ Added-to-list and estimate-send totals need a drill-down to the people performin
 **Why:** The user requested per-user action drill-downs and special-order site/extension usage.
 
 **How to apply:** Keep actor and vendor breakdowns on the same reporting filters. Distinguish a vendor link opening, a QuickAdd capture action, and a later add or estimate push; do not present one as the other.
+
+Estimate-send telemetry must not turn a completed NetSuite push into a retryable failure.
+
+**Why:** NetSuite appends estimate lines, and its write is not atomic with local analytics storage. Asking staff to repeat a successful push because telemetry failed can duplicate real estimate lines.
+
+**How to apply:** Retry analytics persistence independently with the same action identifier, never retry the NetSuite write to repair analytics, and keep the browser's per-tab session rather than inventing one session per push.
