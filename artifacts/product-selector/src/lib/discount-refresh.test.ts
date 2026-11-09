@@ -27,3 +27,20 @@ test("a failed refresh says what to do in NetSuite", () => {
     assert.ok(!t.includes(String.fromCharCode(0x2014)), "no em dashes");
   }
 });
+
+// ---- Sales Order Revisions (2026-11-09) ----
+import { sorRefreshFailed, sorRefreshNote, sorRefreshRunning } from "./discount-refresh";
+
+test("SOR refresh notes: totals with the change, the printed warning kept, failures say what to do", () => {
+  assert.equal(sorRefreshRunning("SOR513").state, "running");
+  const done = sorRefreshNote({ ok: true, newTotal: 2673.42, deltaTotal: 1551.76 }, "SOR513", null);
+  assert.deepEqual(done, { state: "done", text: "SOR513 recalculated in NetSuite, discounts included. Proposed total $2,673.42 (+$1,551.76 vs the order)." });
+  const down = sorRefreshNote({ ok: true, newTotal: 900, deltaTotal: -100.5 }, "SOR1", null);
+  assert.match(down.text, /\(-\$100\.50 vs the order\)/);
+  const printed = sorRefreshNote({ ok: true, newTotal: 10, deltaTotal: 1 }, "SOR1", "SOR1 was printed on 11/9/2026. Reprint it and have it signed again before Update Sales Order.");
+  assert.equal(printed.state, "warn");
+  assert.match(printed.text, /recalculated .* Reprint it/);
+  assert.match(sorRefreshNote({ ok: false, error: "not draft" }, "SOR1", null).text, /did not recalculate SOR1 \(not draft\)\. Open it in NetSuite and press Next/);
+  assert.match(sorRefreshFailed("SOR1", null, null).text, /may still finish/);
+  for (const t of [done.text, printed.text, sorRefreshFailed("SOR1", "x.", "w").text]) assert.ok(!t.includes(String.fromCharCode(0x2014)));
+});
