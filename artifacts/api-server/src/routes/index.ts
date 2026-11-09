@@ -3,6 +3,7 @@ import healthRouter from "./health";
 import categoriesRouter from "./categories";
 import netsuiteRouter from "./netsuite";
 import estimatesRouter from "./estimates";
+import sorsRouter from "./sors";
 import specialOrdersRouter from "./specialOrders";
 import authRouter from "./auth";
 import adminRouter from "./admin";
@@ -22,6 +23,7 @@ router.use(categoriesRouter);
 router.use(netsuiteRouter);
 router.use(issuesRouter);
 router.use(estimatesRouter);
+router.use(sorsRouter); // 2026-11-09: push Quote List items onto a Sales Order Revision
 router.use(specialOrdersRouter);
 router.use(adminRouter);
 router.use(imageProxyRouter);

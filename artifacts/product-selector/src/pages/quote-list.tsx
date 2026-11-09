@@ -11,7 +11,10 @@ import { authHeaders } from "@/context/auth-context";
 import { cn, fmtPrice } from "@/lib/utils";
 import { getAnalyticsSessionId } from "@/lib/analytics";
 import { missingDetails } from "@/lib/vendor-picks";
-import { discountNoteFor, discountRefreshFailed, discountRefreshRunning, type DiscountNote } from "@/lib/discount-refresh";
+import {
+  discountNoteFor, discountRefreshFailed, discountRefreshRunning, sorRefreshFailed, sorRefreshNote, sorRefreshRunning, type DiscountNote,
+} from "@/lib/discount-refresh";
+import SorPushPanel, { type SorResult } from "@/components/sor-push-panel";
 
 // After a push, NetSuite recalculates the estimate's discounts and deposit (2026-11-09, Gib: "Pushing from the CPS
 // should recalc PRAs on the Estimate"). The note under the push message says how that went.
@@ -483,6 +486,8 @@ export default function QuoteListPage() {
   const { items, removeItem, updateQuantity, clearList, totalItems, grandTotal, addSpecialOrder, updateSpecialOrder, removeExactItems } = useQuoteList();
   // Was: useState<{ success: boolean; message: string } | null>(null) (PushResult adds the discount note).
   const [pushResult, setPushResult] = useState<PushResult | null>(null);
+  // 2026-11-09: where the Quote List pushes (estimate, or a Sales Order Revision).
+  const [pushTarget, setPushTarget] = useState<"estimate" | "sor">("estimate");
   const [formMode, setFormMode] = useState<{ kind: "add" } | { kind: "edit"; item: QuoteItem } | null>(null);
   const addEstimateItems = useAddEstimateItems();
 
@@ -586,6 +591,69 @@ export default function QuoteListPage() {
     removeExactItems(pushed);
     const discounts = await refreshEstimateDiscounts(estimateId, estimateTranId);
     setPushResult({ success: true, message: msg, discounts });
+  };
+
+  // 2026-11-09 (Gib: "We'd like for the CPS to also be able to add items to SORs"): the same items onto a Draft Sales
+  // Order Revision. Same guards as the estimate push: lines leave the list before NetSuite recalculates the revision,
+  // and the Push button stays busy until it is done. Never throws: a failure becomes the red message.
+  const handlePushToSor = async (sor: SorResult) => {
+    try {
+      if (unfinished.length > 0) {
+        throw new Error(`${unfinishedText} before pushing: click the amber "Needs ..." on each one and fill in what is missing.`);
+      }
+      const snapshot = items.filter(i => i.netsuiteId);
+      if (snapshot.length === 0) throw new Error("No items with valid NetSuite IDs to push");
+      const payloadItems: EstimateLineInput[] = snapshot.map(i => ({
+        netsuiteId: i.netsuiteId,
+        quantity: i.quantity,
+        ...(i.specialOrder ? { specialOrder: { ...i.specialOrder } } : {}),
+      }));
+      let res: Response;
+      try {
+        res = await fetch(`/api/sors/${encodeURIComponent(sor.id)}/add-items`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders() },
+          body: JSON.stringify({ items: payloadItems }),
+        });
+      } catch {
+        throw new Error(`Could not reach the server. Check ${sor.number} in NetSuite before pushing again.`);
+      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const invalidIds: string[] = Array.isArray(data?.invalidNetsuiteIds) ? data.invalidNetsuiteIds : [];
+        if (invalidIds.length > 0) {
+          throw new Error(`These items no longer exist in NetSuite and need to be removed from the list: ${invalidIds.map(id => describe(snapshot, id)).join(", ")}`);
+        }
+        throw new Error((typeof data?.error === "string" && data.error) || `Failed to add items to ${sor.number}`);
+      }
+      const skipped = (Array.isArray(data?.skippedNetsuiteIds) ? data.skippedNetsuiteIds : []).map(String);
+      const pushed = snapshot.filter(i => !skipped.includes(String(i.netsuiteId)));
+      const added = typeof data?.itemsAdded === "number" ? data.itemsAdded : pushed.length;
+      let msg = `Successfully added ${added} item${added === 1 ? "" : "s"} to ${sor.number} (${sor.soTranId})`;
+      if (skipped.length > 0) {
+        msg += ` - skipped (no longer in NetSuite, kept in your list):${skipped.map((id: string) => describe(snapshot, id)).join(", ")}`;
+      }
+      const pricedSpecials: Array<{ model: string; rate: number; quantity: number }> = Array.isArray(data?.specialOrderLines) ? data.specialOrderLines : [];
+      if (pricedSpecials.length > 0) {
+        msg += `. Special orders priced at ${pricedSpecials.map(l => `${l.model} $${fmtPrice(l.rate)}${l.quantity > 1 ? ` x ${l.quantity}` : ""}`).join(", ")}`;
+      }
+      const warning = typeof data?.warning === "string" ? data.warning : null;
+      setPushResult({ success: true, message: msg, discounts: sorRefreshRunning(sor.number) });
+      removeExactItems(pushed);
+      let note;
+      try {
+        const r = await fetch(`/api/sors/${encodeURIComponent(sor.id)}/refresh`, { method: "POST", headers: authHeaders() });
+        const body = await r.json().catch(() => ({}));
+        note = r.ok
+          ? sorRefreshNote(body, sor.number, warning)
+          : sorRefreshFailed(sor.number, typeof body?.error === "string" ? body.error : "NetSuite could not recalculate the revision.", warning);
+      } catch {
+        note = sorRefreshFailed(sor.number, null, warning);
+      }
+      setPushResult({ success: true, message: msg, discounts: note });
+    } catch (err: any) {
+      setPushResult({ success: false, message: err?.message ?? `Failed to add items to ${sor.number}` });
+    }
   };
 
   const formPanel = formMode && (
@@ -905,7 +973,45 @@ export default function QuoteListPage() {
             </div>
           )}
 
-          <EstimateSearch onPush={handlePushToEstimate} pushResult={pushResult} setPushResult={setPushResult} warnFor={basisWarning} />
+          {/* 2026-11-09: push to an estimate or to a Sales Order Revision. Was: the EstimateSearch line alone. */}
+          <div className="flex items-center gap-2" role="tablist" aria-label="Push to" data-testid="toggle-push-target">
+            <span className="text-[12px] text-gray-500 mr-1">Push to:</span>
+            {([["estimate", "Estimate"], ["sor", "Sales Order Revision (SOR)"]] as const).map(([key, label]) => (
+              <button
+                key={key}
+                role="tab"
+                aria-selected={pushTarget === key}
+                onClick={() => { setPushTarget(key); setPushResult(null); }}
+                className={cn(
+                  "px-3.5 py-1.5 text-[13px] font-medium rounded-xl border transition-colors",
+                  pushTarget === key ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50",
+                )}
+                data-testid={`button-push-target-${key}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {pushTarget === "estimate" ? (
+            <EstimateSearch onPush={handlePushToEstimate} pushResult={pushResult} setPushResult={setPushResult} warnFor={basisWarning} />
+          ) : (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+              <div className="px-6 py-5 border-b border-gray-100">
+                <h3 className="font-semibold text-gray-900 text-[15px] mb-1">Push to a Sales Order Revision</h3>
+                <p className="text-[13px] text-gray-400">
+                  Find a Draft revision by its SOR number or its Sales Order number. NetSuite recalculates the revision after the push; reprint it before Update Sales Order.
+                </p>
+              </div>
+              <SorPushPanel
+                onPush={handlePushToSor}
+                setPushResult={setPushResult}
+                warnFor={sor => basisWarning({
+                  id: 0, tranId: sor.tranId, customerName: "", status: "", date: "", total: null,
+                  customerCategory: sor.customerCategory, customerCategoryId: sor.customerCategoryId,
+                })}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>
