@@ -26,8 +26,11 @@ const NOT_DRAFT_WORDS: Record<string, string> = {
 
 /*
  * Consumers Confirm signing (customrecord_sign_request.custrecord_sign_req_srr). A link that is out (Sent / Opened)
- * or signed would no longer match the revision after new lines, so the push is refused while one is open. One switch:
- * Gib's decision 11/9 is pending; this is the recommended default.
+ * or signed would no longer match the revision after new lines, so the push is refused while one is open. One switch.
+ * Was: "Gib's decision 11/9 is pending; this is the recommended default."
+ * Decided 11/9 (Gib, on a printed Draft: "Allow, with warning"): Draft not printed = allowed; Draft printed = allowed
+ * with the reprint-and-sign-again warning; Consumers Confirm link open = refused; signed = refused; Submitted / Check
+ * PO / Approved / Applied / Voided = refused with the status named. This is the rule table below, unchanged.
  */
 export const BLOCK_WHILE_OUT_FOR_SIGNATURE = true;
 const OPEN_SIGNING = ["sent", "opened"];
