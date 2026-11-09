@@ -35,7 +35,6 @@ const ALLOWED_EVENT_TYPES = new Set([
   "product_modal_open",
   "search",
   "add_to_list",
-  "push_to_estimate",
   "vendor_site_visit",
   "quickadd_capture",
 ]);

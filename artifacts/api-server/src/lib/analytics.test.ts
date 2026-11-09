@@ -86,6 +86,16 @@ test("admin-page events and unknown event types are never ingested", async () =>
   assert.equal(h.inserted.length, 0);
 });
 
+test("browser push events are ignored, including old queued events, to prevent double counts", async () => {
+  const h = ingestHarness();
+  await h.send([
+    { eventType: "push_to_estimate", path: "/list", metadata: { estimateId: 123 } },
+    { eventType: "add_to_list", path: "/list" },
+  ], { authorization: "valid-test-session" });
+  assert.equal(h.inserted.length, 1);
+  assert.equal(h.inserted[0].eventType, "add_to_list");
+});
+
 test("vendor provenance survives ingestion without arbitrary metadata", async () => {
   const h = ingestHarness();
   await h.send([{ eventType: "quickadd_capture", metadata: {

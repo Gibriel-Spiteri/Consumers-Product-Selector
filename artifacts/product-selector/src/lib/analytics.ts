@@ -4,7 +4,6 @@ type EventType =
   | "product_modal_open"
   | "search"
   | "add_to_list"
-  | "push_to_estimate"
   | "vendor_site_visit"
   | "quickadd_capture";
 
@@ -37,7 +36,9 @@ function generateId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-function getSessionId(): string {
+let fallbackSessionId: string | null = null;
+
+export function getAnalyticsSessionId(): string {
   try {
     const existing = sessionStorage.getItem(SESSION_KEY);
     if (existing) return existing;
@@ -45,7 +46,8 @@ function getSessionId(): string {
     sessionStorage.setItem(SESSION_KEY, next);
     return next;
   } catch {
-    return generateId();
+    // Storage may be unavailable. Keep one in-memory session, not one per flush/push.
+    return fallbackSessionId ??= generateId();
   }
 }
 
@@ -69,7 +71,7 @@ async function flush(useBeacon: boolean) {
   const events = queue;
   queue = [];
   const payload = JSON.stringify({
-    sessionId: getSessionId(),
+    sessionId: getAnalyticsSessionId(),
     events,
   });
   const url = `${getApiBase()}/analytics/event`;
@@ -204,31 +206,6 @@ export function trackAddToList(
   });
 }
 
-export function trackPushToEstimate(payload: {
-  estimateId: number | string;
-  tranId: string;
-  itemCount: number;
-  lineCount: number;
-  totalValue: number;
-  specialOrderLines?: Array<{
-    productLineId: string; productLineName: string; quantity: number;
-    vendorDomain?: string; pickId?: string; visitId?: string;
-  }>;
-}) {
-  enqueue({
-    eventType: "push_to_estimate",
-    path: currentPath(),
-    metadata: {
-      estimateId: payload.estimateId,
-      tranId: payload.tranId,
-      itemCount: payload.itemCount,
-      lineCount: payload.lineCount,
-      totalValue: payload.totalValue,
-      specialOrderLines: payload.specialOrderLines,
-    },
-  });
-}
-
 export function trackSearch(query: string, resultsCount?: number) {
   enqueue({
     eventType: "search",
@@ -241,6 +218,7 @@ export function _resetForTests() {
   queue = [];
   lastTrackedPath = null;
   employeeId = null;
+  fallbackSessionId = null;
   if (flushTimer) clearTimeout(flushTimer);
   if (intervalTimer) clearInterval(intervalTimer);
   flushTimer = null;

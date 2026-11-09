@@ -20,6 +20,7 @@ export * from "./categoryTreeResponse";
 export * from "./estimateItemsInput";
 export * from "./estimateItemsResult";
 export * from "./estimateLineInput";
+export * from "./estimateVendorAttribution";
 export * from "./getAdminIssuesParams";
 export * from "./getAnalyticsDrilldownEventType";
 export * from "./getAnalyticsDrilldownIncludeAdmins";

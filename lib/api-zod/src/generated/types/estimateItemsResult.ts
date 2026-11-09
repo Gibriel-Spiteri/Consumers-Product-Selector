@@ -12,6 +12,10 @@ export interface EstimateItemsResult {
   estimateId: number;
   tranId: string;
   itemsAdded: number;
+  /** Server-generated identifier for this successful push, stable across analytics persistence retries */
+  actionId?: string;
+  /** Whether server-side analytics persistence succeeded; false must never cause a repeat NetSuite push */
+  analyticsRecorded?: boolean;
   skippedNetsuiteIds: string[];
   /** Special-order lines as priced on the estimate (list price x product line multipliers, as NetSuite does) */
   specialOrderLines?: SpecialOrderLineResult[];

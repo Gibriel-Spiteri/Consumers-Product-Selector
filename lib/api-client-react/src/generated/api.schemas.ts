@@ -232,6 +232,18 @@ export interface SpecialOrderDetails {
   listPrice: number;
 }
 
+/**
+ * Explicit vendor provenance for analytics only; never used to price or write NetSuite lines
+ */
+export interface EstimateVendorAttribution {
+  /** @maxLength 64 */
+  pickId?: string;
+  /** @maxLength 64 */
+  visitId?: string;
+  /** @maxLength 253 */
+  vendorDomain?: string;
+}
+
 export interface EstimateLineInput {
   /** @pattern ^[1-9][0-9]*$ */
   netsuiteId: string;
@@ -241,9 +253,21 @@ export interface EstimateLineInput {
    */
   quantity: number;
   specialOrder?: SpecialOrderDetails;
+  /**
+   * Displayed quote price for analytics only; never used to price NetSuite lines
+   * @minimum 0
+   */
+  analyticsUnitPrice?: number;
+  analyticsVendorPick?: EstimateVendorAttribution;
 }
 
 export interface EstimateItemsInput {
+  /**
+   * Existing per-tab analytics session; optional for older clients
+   * @minLength 1
+   * @maxLength 64
+   */
+  analyticsSessionId?: string;
   /**
    * @minItems 1
    * @maxItems 500
@@ -265,6 +289,10 @@ export interface EstimateItemsResult {
   estimateId: number;
   tranId: string;
   itemsAdded: number;
+  /** Server-generated identifier for this successful push, stable across analytics persistence retries */
+  actionId?: string;
+  /** Whether server-side analytics persistence succeeded; false must never cause a repeat NetSuite push */
+  analyticsRecorded?: boolean;
   skippedNetsuiteIds: string[];
   /** Special-order lines as priced on the estimate (list price x product line multipliers, as NetSuite does) */
   specialOrderLines?: SpecialOrderLineResult[];
