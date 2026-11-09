@@ -1,3 +1,4 @@
+import "./lib/startup-error-monitor";
 import app from "./app";
 import { logger } from "./lib/logger";
 import { startScheduledSync, stopScheduledSync, loadPersistedSchedule } from "./lib/scheduler";
