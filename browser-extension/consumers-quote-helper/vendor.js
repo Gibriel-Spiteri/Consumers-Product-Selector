@@ -156,7 +156,8 @@
         <div class="hint order-form-hint" hidden>This Type is ordered on the vendor's order form: your sales rep attaches it to your quote.</div>
         <!-- 1.5.7 (Gib 11/6, "Change to: Confirm all Information Above"). Was:
         <div class="hint">Your Consumers sales rep confirms the list price and finishes this on your quote.</div> -->
-        <div class="hint confirm-note">Confirm all Information Above</div>
+        <!-- 1.6.1 (Gib 11/9: "remove, this is redundant to the subtext above", the header's "Confirm all fields are
+        correct before adding"). Was: <div class="hint confirm-note">Confirm all Information Above</div> -->
         <div class="msg" hidden></div>
       </div>
         <!-- 1.5.7 (Gib 11/6, "add a report issue button to the extension"): sent to the Product Selector's Report Issue. -->

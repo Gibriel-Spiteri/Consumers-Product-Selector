@@ -423,9 +423,14 @@ async function readPanel(page) {
         record("seed", typeShown && type === "KITCHEN FAUCET", `before the Product Selector is opened: Type ${typeShown ? type || "(none chosen)" : "hidden"}`);
         record("wording", wording, `button "${fabText}", header "${head}" / "${sub}"`);
         // 1.5.7 (Gib 11/6): the footer note and the list price label.
-        const note = (await p.locator(".confirm-note").innerText()).trim();
+        // 1.6.1 (Gib 11/9): the footer note is gone (the header already says to confirm). Was:
+        // const note = (await p.locator(".confirm-note").innerText()).trim();
+        // record("wording", note === "Confirm all Information Above" && priceLabel === "List price", ...)
+        const notes = await p.locator(".confirm-note").count();
+        const footerText = (await p.locator(".body").innerText().catch(() => "")) || "";
         const priceLabel = (await p.locator(".price-wrap").evaluate(l => l.firstChild.textContent)).trim(); // the label text (shown in capitals by CSS)
-        record("wording", note === "Confirm all Information Above" && priceLabel === "List price", `footer "${note}", price label "${priceLabel}"`);
+        record("wording", notes === 0 && !/Confirm all Information Above/i.test(footerText) && priceLabel === "List price",
+          `footer note ${notes === 0 ? "gone" : "still shown"}, price label "${priceLabel}"`);
         // 1.5.7: Report issue opens its form and refuses an empty report. Never sent from here (it opens a NetSuite case).
         // await p.locator(".report").click();
         // const formShown = await p.locator(".report-box").isVisible();
