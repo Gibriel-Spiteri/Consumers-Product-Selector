@@ -3,9 +3,9 @@
   "header": {
     "pageTitle": "Vendor Site Special Orders",
     "eyebrow": "Consumers Kitchen & Bath · Product Selector guide",
-    "title": "From a product on a vendor's website to a priced special-order line on the estimate",
-    "lede": "Where each step happens: on the vendor's own website with the customer, in the Consumers SmartAdd browser extension (Edge or Chrome), in the Product Selector on the sales PC, and in NetSuite. Click any numbered box to read its exact buttons.",
-    "meta": "Mapped from the code on 11/5/2026: Product Selector Special Order page, Quote List and the Consumers SmartAdd extension 1.5.3 (1.5.4 on 11/6: newest copy wins; 1.5.5: kits split into parts, Flusso finish squares; 1.5.6: kits on every vendor after sweep 2; 1.5.7: list price, Report issue; 1.5.8: report as the signed-in rep; 1.5.9: the Report an Issue form matches the site's, with a screenshot; 1.5.10: renamed Consumers SmartAdd, was Consumers QuickAdd; 1.5.11: Richelieu's list price from the server)."
+    "title": "From a vendor's website, or a Quote List with no estimate yet, to priced lines on a NetSuite estimate",
+    "lede": "Where each step happens: on the vendor's own website with the customer, in the Consumers SmartAdd browser extension (Edge or Chrome), in the Product Selector on the sales PC, and in NetSuite. Part 2 starts a new estimate from the Quote List through NetSuite's Customer Search. Click any numbered box to read its exact buttons.",
+    "meta": "Mapped from the code on 11/5/2026: Product Selector Special Order page, Quote List and the Consumers SmartAdd extension 1.5.3 (1.5.4 on 11/6: newest copy wins; 1.5.5: kits split into parts, Flusso finish squares; 1.5.6: kits on every vendor after sweep 2; 1.5.7: list price, Report issue; 1.5.8: report as the signed-in rep; 1.5.9: the Report an Issue form matches the site's, with a screenshot; 1.5.10: renamed Consumers SmartAdd, was Consumers QuickAdd; 1.5.11: Richelieu's list price from the server). Part 2 mapped from the code on 11/11/2026: Quote List New Estimate and the Customer Search pop-up (Employee Appointments Suitelet). SmartAdd 1.6.1 dropped the \"Confirm all Information Above\" line."
   },
   "lanes": {
     "VS": {
@@ -26,6 +26,11 @@
     "NS": {
       "name": "NetSuite",
       "who": "the Estimate"
+    },
+    "CS": {
+      "name": "Customer Search",
+      "who": "NetSuite pop-up window",
+      "tone": "ok"
     }
   },
   "parts": [
@@ -199,7 +204,7 @@
           "kind": "action",
           "lane": "VS",
           "label": "Check Type, model, finish, Coll/Desc, quantity; click Add to quote",
-          "detail": "Choose the Option (color or finish) if the page does not say; picking another finish on the page greys the panel out with an Updating... spinner until it shows the new finish. Check the Type (the best fit is preselected), Model, Color / finish, Collection / Description (one field, as NetSuite's Coll/Desc), Price on this site and Quantity, then click Add to quote. Some sites show no price (Elkay, Franke, Strategic Brands); the rep enters the list price. On Richelieu the list price fills in from the Product Selector. A Fleurco kit shows one block per part and Add 4 items to quote puts each part on the Quote List as its own line. The price field is labeled List price and the line under it reads \"Confirm all Information Above\". Report issue, at the left of the buttons, opens the same Report an Issue form as the Product Selector (Issue and Detail) and sends it to IT as a NetSuite case with a screenshot of the page, as the rep signed in to the Product Selector in this browser (it also shows in Admin, Issues & Bugs), and emails Jim, Gib, Phil and Gordon. Without a sign-in the panel says to open the Product Selector and sign in."
+          "detail": "Choose the Option (color or finish) if the page does not say; picking another finish on the page greys the panel out with an Updating... spinner until it shows the new finish. Check the Type (the best fit is preselected), Model, Color / finish, Collection / Description (one field, as NetSuite's Coll/Desc), Price on this site and Quantity, then click Add to quote. Some sites show no price (Elkay, Franke, Strategic Brands); the rep enters the list price. On Richelieu the list price fills in from the Product Selector. A Fleurco kit shows one block per part and Add 4 items to quote puts each part on the Quote List as its own line. The price field is labeled List price. Report issue, at the left of the buttons, opens the same Report an Issue form as the Product Selector (Issue and Detail) and sends it to IT as a NetSuite case with a screenshot of the page, as the rep signed in to the Product Selector in this browser (it also shows in Admin, Issues & Bugs), and emails Jim, Gib, Phil and Gordon. Without a sign-in the panel says to open the Product Selector and sign in."
         },
         {
           "id": "a_wait",
@@ -213,7 +218,7 @@
         },
         {
           "id": "a_listed",
-          "num": 11,
+          "num": 12,
           "row": 9,
           "col": "PS",
           "kind": "auto",
@@ -253,7 +258,7 @@
         },
         {
           "id": "a_cleared",
-          "num": 12,
+          "num": 11,
           "row": 9,
           "col": "EX",
           "kind": "auto",
@@ -441,6 +446,360 @@
           }
         }
       ]
+    },
+    {
+      "id": "p2",
+      "title": "Start a new estimate from the Quote List",
+      "intro": "No estimate yet? The Quote List opens NetSuite's Customer Search in a pop-up. The rep picks the customer, or adds one after a search by phone or email finds nobody, and NetSuite creates the estimate with the Quote List on it. No placeholder estimate needed.",
+      "caption": "Read top to bottom. The right-hand Customer Search column is only for a new customer or a PRO (CRD) customer.",
+      "cols": [
+        [
+          "PS",
+          180
+        ],
+        [
+          "NS",
+          180
+        ],
+        [
+          "CSf",
+          180
+        ],
+        [
+          "CSn",
+          180
+        ]
+      ],
+      "lanes": [
+        [
+          "PS",
+          [
+            "PS"
+          ]
+        ],
+        [
+          "NS",
+          [
+            "NS"
+          ]
+        ],
+        [
+          "CS",
+          [
+            "CSf",
+            "CSn"
+          ]
+        ]
+      ],
+      "stages": [
+        {
+          "r0": 1,
+          "r1": 2,
+          "num": "6",
+          "name": "Open Customer Search"
+        },
+        {
+          "r0": 3,
+          "r1": 6,
+          "num": "7",
+          "name": "Find or add the customer"
+        },
+        {
+          "r0": 7,
+          "r1": 9,
+          "num": "8",
+          "name": "Create the estimate"
+        },
+        {
+          "r0": 10,
+          "r1": 11,
+          "num": "9",
+          "name": "Back on the Quote List"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "q_open",
+          "num": 19,
+          "row": 1,
+          "col": "PS",
+          "kind": "start",
+          "lane": "PS",
+          "label": "Quote List: Push to New Estimate, click Customer Search",
+          "detail": "Under Push to, click New Estimate, then Customer Search. Finish any amber Needs ... first. Be signed in to NetSuite in the same browser; if the browser blocks the pop-up, allow pop-ups for the Product Selector and click again."
+        },
+        {
+          "id": "c_opens",
+          "num": 20,
+          "row": 2,
+          "col": "CSf",
+          "kind": "auto",
+          "lane": "CS",
+          "label": "Customer Search opens with your Quote List",
+          "detail": "The pop-up is NetSuite's customer search (the Sales Appointments one), titled Customer Search: new estimate from your Quote List. NetSuite reads the items from the Product Selector; only the rep who started it can use it, for 30 minutes. Non Customer Appt is hidden."
+        },
+        {
+          "id": "c_search",
+          "num": 21,
+          "row": 3,
+          "col": "CSf",
+          "kind": "action",
+          "lane": "CS",
+          "label": "Search by name, phone, email, customer number, zip or address",
+          "detail": "Type in any of the search boxes; results show as you type."
+        },
+        {
+          "id": "c_found",
+          "num": 22,
+          "row": 4,
+          "col": "CSf",
+          "kind": "decision",
+          "lane": "CS",
+          "label": "Customer in the results?",
+          "detail": "If they are, pick them. Never add someone who is already a customer."
+        },
+        {
+          "id": "c_phone",
+          "num": 23,
+          "row": 4,
+          "col": "CSn",
+          "kind": "action",
+          "lane": "CS",
+          "label": "Search by their full phone number or email",
+          "detail": "+ Add New Customer shows only when a search by the full 10-digit phone number or a valid email finds nobody, and nobody else has that phone or email. A search by name alone says: No customer found. To add a new customer, search by their full 10-digit phone number or their email address first."
+        },
+        {
+          "id": "c_pick",
+          "num": 24,
+          "row": 5,
+          "col": "CSf",
+          "kind": "action",
+          "lane": "CS",
+          "label": "Click the customer's row",
+          "detail": "Click anywhere on the row (the name link opens the customer record instead)."
+        },
+        {
+          "id": "c_new",
+          "num": 25,
+          "row": 5,
+          "col": "CSn",
+          "kind": "action",
+          "lane": "CS",
+          "label": "+ Add New Customer: fill in the form, Create Customer",
+          "detail": "The form opens with the phone number or email from the search filled in and locked. Fill in the name, address and lead source as for an appointment."
+        },
+        {
+          "id": "c_dup",
+          "num": 27,
+          "row": 6,
+          "col": "CSn",
+          "kind": "auto",
+          "lane": "CS",
+          "label": "NetSuite checks for duplicates again and saves the Lead",
+          "detail": "If the phone or email now belongs to someone, NetSuite refuses and names them: close the form, search for them and pick them. Otherwise the new customer is saved as a Lead and picked."
+        },
+        {
+          "id": "c_panel",
+          "num": 26,
+          "row": 6,
+          "col": "CSf",
+          "kind": "auto",
+          "lane": "CS",
+          "label": "Create an estimate for ...: your items listed",
+          "detail": "The panel shows the customer and the Quote List items. Customers on Global Hold, Contact Hold or Discontinued, and inactive ones, are refused here with the reason; Choose a different customer goes back."
+        },
+        {
+          "id": "c_pro",
+          "num": 28,
+          "row": 7,
+          "col": "CSf",
+          "kind": "decision",
+          "lane": "CS",
+          "label": "PRO (CRD) customer?",
+          "detail": "PRO customers need the CRD User and Password, as on the estimate form."
+        },
+        {
+          "id": "c_crd",
+          "num": 29,
+          "row": 7,
+          "col": "CSn",
+          "kind": "action",
+          "lane": "CS",
+          "label": "Pick the CRD User, type the Password",
+          "detail": "CRD User lists the customer's approved CRD contacts. The password must match that CRD user's password on file (INCORRECT Password clears it). COURTESY makes it a CRD - Courtesy Service estimate; CLIENT works as on the estimate form. The password is never logged."
+        },
+        {
+          "id": "c_create",
+          "num": 30,
+          "row": 8,
+          "col": "CSf",
+          "kind": "action",
+          "lane": "CS",
+          "label": "Click Create Estimate",
+          "detail": "Pressing it twice, or again after a lost connection, never makes a second estimate."
+        },
+        {
+          "id": "e_new",
+          "num": 31,
+          "row": 9,
+          "col": "NS",
+          "kind": "auto",
+          "lane": "NS",
+          "label": "NetSuite creates the estimate, priced for this customer",
+          "detail": "Form .Estimate with the usual defaults (your department and location, you as sales rep, close date in 30 days, the customer's category and email, ship method). Catalog items take NetSuite's price for the customer; special orders get the Retail or CRD price, as a push does. No opportunity is linked."
+        },
+        {
+          "id": "c_done",
+          "num": 32,
+          "row": 9,
+          "col": "CSf",
+          "kind": "auto",
+          "lane": "CS",
+          "label": "Pop-up says ES###### created",
+          "detail": "Open ES###### opens the estimate in a new tab; Close window closes the pop-up."
+        },
+        {
+          "id": "q_list",
+          "num": 33,
+          "row": 10,
+          "col": "PS",
+          "kind": "auto",
+          "lane": "PS",
+          "label": "Quote List: Created estimate ES...; items leave the list",
+          "detail": "The Product Selector checks NetSuite for the estimate before anything leaves the list. If the pop-up was closed before it could tell the Quote List, closing it or Check NetSuite does the same check; Start over if NetSuite has none."
+        },
+        {
+          "id": "q_end",
+          "num": 34,
+          "row": 11,
+          "col": "PS",
+          "kind": "end",
+          "lane": "PS",
+          "label": "Discounts and deposit recalculated, as after a push",
+          "detail": "The note under the message says when NetSuite has repriced the estimate's discounts and deposit."
+        }
+      ],
+      "edges": [
+        {
+          "from": "q_open",
+          "to": "c_opens",
+          "mode": "down",
+          "label": "",
+          "opt": {}
+        },
+        {
+          "from": "c_opens",
+          "to": "c_search",
+          "mode": "down",
+          "label": "",
+          "opt": {}
+        },
+        {
+          "from": "c_search",
+          "to": "c_found",
+          "mode": "down",
+          "label": "",
+          "opt": {}
+        },
+        {
+          "from": "c_found",
+          "to": "c_pick",
+          "mode": "down",
+          "label": "Yes",
+          "opt": {}
+        },
+        {
+          "from": "c_found",
+          "to": "c_phone",
+          "mode": "side",
+          "label": "No",
+          "opt": {}
+        },
+        {
+          "from": "c_phone",
+          "to": "c_new",
+          "mode": "down",
+          "label": "",
+          "opt": {}
+        },
+        {
+          "from": "c_new",
+          "to": "c_dup",
+          "mode": "down",
+          "label": "",
+          "opt": {}
+        },
+        {
+          "from": "c_dup",
+          "to": "c_panel",
+          "mode": "side",
+          "label": "",
+          "opt": {}
+        },
+        {
+          "from": "c_pick",
+          "to": "c_panel",
+          "mode": "down",
+          "label": "",
+          "opt": {}
+        },
+        {
+          "from": "c_panel",
+          "to": "c_pro",
+          "mode": "down",
+          "label": "",
+          "opt": {}
+        },
+        {
+          "from": "c_pro",
+          "to": "c_crd",
+          "mode": "side",
+          "label": "Yes",
+          "opt": {}
+        },
+        {
+          "from": "c_pro",
+          "to": "c_create",
+          "mode": "down",
+          "label": "No",
+          "opt": {}
+        },
+        {
+          "from": "c_crd",
+          "to": "c_create",
+          "mode": "down",
+          "label": "",
+          "opt": {}
+        },
+        {
+          "from": "c_create",
+          "to": "e_new",
+          "mode": "down",
+          "label": "",
+          "opt": {}
+        },
+        {
+          "from": "e_new",
+          "to": "c_done",
+          "mode": "side",
+          "label": "",
+          "opt": {}
+        },
+        {
+          "from": "c_done",
+          "to": "q_list",
+          "mode": "down",
+          "label": "",
+          "opt": {}
+        },
+        {
+          "from": "q_list",
+          "to": "q_end",
+          "mode": "down",
+          "label": "",
+          "opt": {}
+        }
+      ]
     }
   ],
   "gapsIntro": "What this process needs that the app or SmartAdd does not do yet.",
@@ -464,13 +823,19 @@
     {
       "title": "New vendor sites need a SmartAdd release for the built-in list.",
       "text": "SmartAdd goes to every PC by Group Policy and updates itself from the Product Selector. A product line made special-order in NetSuite works as soon as the Product Selector is open in that browser; the list built into SmartAdd (used before that) is refreshed with each release."
+    },
+    {
+      "title": "A new estimate is not linked to an opportunity or appointment.",
+      "text": "The Customer Search pop-up creates the estimate on its own (Gib's choice, 11/11/2026). Link an opportunity on the estimate in NetSuite if the sale needs one."
     }
   ],
   "tips": [
     "After installing SmartAdd, open the Product Selector once while signed in so it gets the current vendor sites. The SmartAdd page (your name, then SmartAdd) shows whether this browser has it and if it is up to date.",
     "SmartAdd's toolbar icon shows how many picks are waiting; its popup lists them and can clear them.",
     "When a vendor's website changes, update the product line's website on its PRD page in NetSuite; SmartAdd follows the next time the Product Selector is open.",
-    "SmartAdd takes the list price where the vendor page shows one next to a sale price (since 1.5.7). Still check the List Price before Add to List."
+    "SmartAdd takes the list price where the vendor page shows one next to a sale price (since 1.5.7). Still check the List Price before Add to List.",
+    "New Estimate needs NetSuite signed in, as the same rep, in the same browser as the Product Selector. Allow pop-ups for the Product Selector once.",
+    "Search new customers by their full phone number or email first: that is the only way + Add New Customer shows, so nobody is added twice."
   ],
-  "footer": "Vendor site special orders · Mapped from the code (Product Selector Special Order page and Quote List, Consumers SmartAdd extension 1.5.3) on 11/5/2026, extension 1.5.8 on 11/6."
+  "footer": "Vendor site special orders and new estimates · Mapped from the code (Product Selector Special Order page and Quote List, Consumers SmartAdd extension 1.5.3) on 11/5/2026, extension 1.5.8 on 11/6, New Estimate through Customer Search on 11/11."
 }
