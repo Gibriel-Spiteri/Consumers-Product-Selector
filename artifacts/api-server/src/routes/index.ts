@@ -3,6 +3,7 @@ import healthRouter from "./health";
 import categoriesRouter from "./categories";
 import netsuiteRouter from "./netsuite";
 import estimatesRouter from "./estimates";
+import estimateHandoffRouter from "./estimateHandoff"; // 2026-11-11: new estimate through NetSuite's Customer Search pop-up
 import sorsRouter from "./sors";
 import specialOrdersRouter from "./specialOrders";
 import authRouter from "./auth";
@@ -22,6 +23,8 @@ router.use(authRouter);
 router.use(categoriesRouter);
 router.use(netsuiteRouter);
 router.use(issuesRouter);
+// Before estimatesRouter, so /estimates/handoff is answered here (it checks the sign-in itself).
+router.use(estimateHandoffRouter);
 router.use(estimatesRouter);
 router.use(sorsRouter); // 2026-11-09: push Quote List items onto a Sales Order Revision
 router.use(specialOrdersRouter);

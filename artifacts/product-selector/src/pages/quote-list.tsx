@@ -15,6 +15,8 @@ import {
   discountNoteFor, discountRefreshFailed, discountRefreshRunning, sorRefreshFailed, sorRefreshNote, sorRefreshRunning, type DiscountNote,
 } from "@/lib/discount-refresh";
 import SorPushPanel, { type SorResult } from "@/components/sor-push-panel";
+import NewEstimatePanel, { type NewEstimateCreated } from "@/components/new-estimate-panel";
+import { createdMessage } from "@/lib/new-estimate";
 
 // After a push, NetSuite recalculates the estimate's discounts and deposit (2026-11-09, Gib: "Pushing from the CPS
 // should recalc PRAs on the Estimate"). The note under the push message says how that went.
@@ -486,8 +488,9 @@ export default function QuoteListPage() {
   const { items, removeItem, updateQuantity, clearList, totalItems, grandTotal, addSpecialOrder, updateSpecialOrder, removeExactItems } = useQuoteList();
   // Was: useState<{ success: boolean; message: string } | null>(null) (PushResult adds the discount note).
   const [pushResult, setPushResult] = useState<PushResult | null>(null);
-  // 2026-11-09: where the Quote List pushes (estimate, or a Sales Order Revision).
-  const [pushTarget, setPushTarget] = useState<"estimate" | "sor">("estimate");
+  // 2026-11-09: where the Quote List pushes (estimate, or a Sales Order Revision). 2026-11-11: or a new estimate,
+  // started from NetSuite's Customer Search pop-up. Was: useState<"estimate" | "sor">("estimate").
+  const [pushTarget, setPushTarget] = useState<"estimate" | "sor" | "new">("estimate");
   const [formMode, setFormMode] = useState<{ kind: "add" } | { kind: "edit"; item: QuoteItem } | null>(null);
   const addEstimateItems = useAddEstimateItems();
 
@@ -535,6 +538,18 @@ export default function QuoteListPage() {
   const unfinished = specialItems.filter(i => missingDetails(i).length > 0);
   const unfinishedText = `${unfinished.length} special order${unfinished.length === 1 ? "" : "s"} from vendor websites need${unfinished.length === 1 ? "s" : ""} details`;
 
+  // The lines a push to an estimate sends (also the new-estimate hand-off).
+  const estimateLines = (snapshot: QuoteItem[]): EstimateLineInput[] => snapshot.map(i => ({
+    netsuiteId: i.netsuiteId,
+    quantity: i.quantity,
+    ...(i.price != null ? { analyticsUnitPrice: i.price } : {}),
+    ...(i.specialOrder && i.vendorPick ? { analyticsVendorPick: {
+      pickId: i.vendorPick.id, visitId: i.vendorPick.visitId,
+      vendorDomain: i.vendorPick.vendorDomain,
+    } } : {}),
+    ...(i.specialOrder ? { specialOrder: { ...i.specialOrder } } : {}),
+  }));
+
   const handlePushToEstimate = async (estimateId: number, tranId: string) => {
     if (unfinished.length > 0) {
       throw new Error(`${unfinishedText} before pushing: click the amber "Needs ..." on each one and fill in what is missing.`);
@@ -543,16 +558,8 @@ export default function QuoteListPage() {
     if (snapshot.length === 0) {
       throw new Error("No items with valid NetSuite IDs to push");
     }
-    const payloadItems: EstimateLineInput[] = snapshot.map(i => ({
-      netsuiteId: i.netsuiteId,
-      quantity: i.quantity,
-      ...(i.price != null ? { analyticsUnitPrice: i.price } : {}),
-      ...(i.specialOrder && i.vendorPick ? { analyticsVendorPick: {
-        pickId: i.vendorPick.id, visitId: i.vendorPick.visitId,
-        vendorDomain: i.vendorPick.vendorDomain,
-      } } : {}),
-      ...(i.specialOrder ? { specialOrder: { ...i.specialOrder } } : {}),
-    }));
+    // Was: the snapshot.map(...) now in estimateLines (the new-estimate hand-off sends the same lines).
+    const payloadItems: EstimateLineInput[] = estimateLines(snapshot);
 
     let data;
     try {
@@ -654,6 +661,29 @@ export default function QuoteListPage() {
     } catch (err: any) {
       setPushResult({ success: false, message: err?.message ?? `Failed to add items to ${sor.number}` });
     }
+  };
+
+  // 2026-11-11 new estimate (components/new-estimate-panel.tsx): the same checks and lines as a push to an estimate.
+  const newEstimateItems = () => {
+    if (unfinished.length > 0) {
+      throw new Error(`${unfinishedText} before starting an estimate: click the amber "Needs ..." on each one and fill in what is missing.`);
+    }
+    const snapshot = items.filter(i => i.netsuiteId);
+    if (snapshot.length === 0) throw new Error("No items with valid NetSuite IDs to put on an estimate");
+    return { items: estimateLines(snapshot), snapshot };
+  };
+
+  // NetSuite created the estimate (the server confirmed it): as after a push, the items leave the list before the
+  // discounts are recalculated, so a slow or failed recalculation can never lead to sending them again.
+  const handleNewEstimateCreated = async (created: NewEstimateCreated, pushed: QuoteItem[], skipped: string[]) => {
+    let msg = createdMessage(created.tranId, created.customerName, pushed.length);
+    if (skipped.length > 0) {
+      msg += ` - skipped (no longer in NetSuite, kept in your list): ${skipped.map(id => describe(pushed, id)).join(", ")}`;
+    }
+    setPushResult({ success: true, message: msg, discounts: discountRefreshRunning(created.tranId) });
+    removeExactItems(pushed);
+    const discounts = await refreshEstimateDiscounts(created.estimateId, created.tranId);
+    setPushResult({ success: true, message: msg, discounts });
   };
 
   const formPanel = formMode && (
@@ -976,7 +1006,8 @@ export default function QuoteListPage() {
           {/* 2026-11-09: push to an estimate or to a Sales Order Revision. Was: the EstimateSearch line alone. */}
           <div className="flex items-center gap-2" role="tablist" aria-label="Push to" data-testid="toggle-push-target">
             <span className="text-[12px] text-gray-500 mr-1">Push to:</span>
-            {([["estimate", "Estimate"], ["sor", "Sales Order Revision (SOR)"]] as const).map(([key, label]) => (
+            {/* Was: [["estimate", "Estimate"], ["sor", "Sales Order Revision (SOR)"]] */}
+            {([["estimate", "Estimate"], ["sor", "Sales Order Revision (SOR)"], ["new", "New Estimate"]] as const).map(([key, label]) => (
               <button
                 key={key}
                 role="tab"
@@ -992,7 +1023,17 @@ export default function QuoteListPage() {
               </button>
             ))}
           </div>
-          {pushTarget === "estimate" ? (
+          {/* Always mounted, only hidden: an open Customer Search pop-up keeps its hand-off when the rep switches tabs. */}
+          <div hidden={pushTarget !== "new"}>
+            <NewEstimatePanel
+              buildItems={newEstimateItems}
+              onCreated={handleNewEstimateCreated}
+              setPushResult={setPushResult}
+              describe={describe}
+              onPending={() => setPushTarget("new")}
+            />
+          </div>
+          {pushTarget === "new" ? null : pushTarget === "estimate" ? (
             <EstimateSearch onPush={handlePushToEstimate} pushResult={pushResult} setPushResult={setPushResult} warnFor={basisWarning} />
           ) : (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
