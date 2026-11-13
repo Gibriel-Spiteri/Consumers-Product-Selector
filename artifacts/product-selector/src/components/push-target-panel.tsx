@@ -151,7 +151,8 @@ export default function PushTargetPanel({
       setSearching(false);
       return;
     }
-    const t = setTimeout(() => runSearch(searchable), 350);
+    // 600 ms (was 350): each search is several NetSuite queries, so typing a number fires fewer of them.
+    const t = setTimeout(() => runSearch(searchable), 600);
     return () => clearTimeout(t);
   }, [searchable, runSearch]);
 
@@ -215,7 +216,8 @@ export default function PushTargetPanel({
     selected.kind === "newsor" ? (busy ? "Starting the revision..." : `Start SOR with ${unitsText}`) :
     busy ? `Adding ${unitsText}...` : `Add ${unitsText} to ${selected.label}`;
   const basis = selected && selected.kind !== "newestimate"
-    ? warnFor({ tranId: selected.label, customerCategory: selected.category ?? undefined, customerCategoryId: selected.categoryId ?? undefined })
+    // The note names the customer ("SYSTEMTEST is a CRD customer"), not the record (was: selected.label, "SOR61 is a CRD customer").
+    ? warnFor({ tranId: selected.customer || selected.label, customerCategory: selected.category ?? undefined, customerCategoryId: selected.categoryId ?? undefined })
     : null;
   const sorWarning = selected?.kind === "sor" ? selected.sor.warning : null;
 
