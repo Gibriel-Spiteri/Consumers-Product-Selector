@@ -4,7 +4,8 @@ import type { EstimateLineInput } from "@workspace/api-client-react";
 import { authHeaders } from "@/context/auth-context";
 import type { QuoteItem } from "@/context/quote-list-context";
 import { cn } from "@/lib/utils";
-import { clearPendingSor, loadPendingSor, newAttemptId, orderDigits, savePendingSor, type PendingNewSor } from "@/lib/new-sor";
+import { orderDigits } from "@/lib/new-sor";
+import { useNewSor, type NewSorCreated } from "@/hooks/use-new-sor";
 import type { SorResult } from "@/components/sor-push-panel";
 
 /*
@@ -28,17 +29,8 @@ export interface OrderResult {
   offer: SorResult | null;
 }
 
-export interface NewSorCreated {
-  sorId: string;
-  sorNumber: string;
-  soId: string;
-  soTranId: string;
-  customerName: string;
-  itemsAdded: number;
-  skippedNetsuiteIds: string[];
-  workbenchUrl: string;
-  specialOrderLines: Array<{ model: string; rate: number; quantity: number }>;
-}
+// Was: NewSorCreated was declared here; it lives in hooks/use-new-sor.ts now.
+export type { NewSorCreated };
 
 const MIN_DIGITS = 3;
 // As the SOR push panel names them (NetSuite's list calls Draft "PENDING SUBMISSION").
@@ -47,7 +39,7 @@ const SOR_STATUS_LABEL: Record<string, string> = { "1": "Draft", "2": "Submitted
 export default function NewSorPanel({ buildItems, onCreated, onPushExisting, setPushResult, describe, warnFor, onPending }: {
   buildItems: () => { items: EstimateLineInput[]; snapshot: QuoteItem[] };
   onCreated: (created: NewSorCreated, pushed: QuoteItem[]) => Promise<void>;
-  onPushExisting: (sor: SorResult) => Promise<void>;
+  onPushExisting: (sor: SorResult) => Promise<unknown>; // was Promise<void> (2026-11-13)
   setPushResult: (r: { success: boolean; message: string; link?: { href: string; label: string } } | null) => void;
   describe: (snapshot: QuoteItem[], netsuiteId: string) => string;
   warnFor?: (order: { tranId: string; customerCategory?: string; customerCategoryId?: string }) => string | null;
@@ -60,9 +52,7 @@ export default function NewSorPanel({ buildItems, onCreated, onPushExisting, set
   const [searchedFor, setSearchedFor] = useState<string | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [selected, setSelected] = useState<OrderResult | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [pending, setPending] = useState<PendingNewSor<QuoteItem> | null>(null);
-  const [note, setNote] = useState<string | null>(null);
+  const [pushing, setPushing] = useState(false);
   const latest = useRef(0);
 
   const digits = orderDigits(query);
@@ -106,100 +96,24 @@ export default function NewSorPanel({ buildItems, onCreated, onPushExisting, set
     return () => clearTimeout(t);
   }, [digits, canSearch, runSearch]);
 
-  const finishCreated = useCallback(async (data: NewSorCreated, p: PendingNewSor<QuoteItem>) => {
-    clearPendingSor();
-    setPending(null);
-    setNote(null);
-    setSelected(null);
-    const skipped = (data.skippedNetsuiteIds ?? []).map(String);
-    await onCreated(data, p.snapshot.filter(i => !skipped.includes(String(i.netsuiteId))));
-  }, [onCreated]);
-
-  // Asks the server whether a Create whose answer was lost went through. Never guesses.
-  const checkPending = useCallback(async (p: PendingNewSor<QuoteItem>) => {
-    setBusy(true);
-    try {
-      const res = await fetch(`/api/sors/new/${encodeURIComponent(p.attemptId)}`, { headers: authHeaders() });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok && data?.success) { await finishCreated(data, p); return; }
-      if (data?.code === "NOT_FOUND") {
-        setNote(`No new revision from your last Create on ${p.soTranId} yet, so your list is unchanged. If you just pressed it, check again in a moment; otherwise Start over.`);
-        return;
-      }
-      setNote(typeof data?.error === "string" ? data.error : "Could not check. Try again.");
-    } catch {
-      setNote("Could not reach the server. Try again.");
-    } finally {
-      setBusy(false);
-    }
-  }, [finishCreated]);
-
-  useEffect(() => {
-    const p = loadPendingSor<QuoteItem>();
-    if (!p) return;
-    setPending(p);
-    onPending?.();
-    checkPending(p);
-  }, []); // once, on mount
-
-  const create = async () => {
-    if (!selected || busy || selected.blocked) return;
-    setPushResult(null);
-    setNote(null);
-    let built: { items: EstimateLineInput[]; snapshot: QuoteItem[] };
-    try {
-      built = buildItems();
-    } catch (err: any) {
-      setPushResult({ success: false, message: err?.message ?? "These items can't go on a revision yet." });
-      return;
-    }
-    const p: PendingNewSor<QuoteItem> = {
-      attemptId: newAttemptId(), soId: selected.id, soTranId: selected.tranId, snapshot: built.snapshot, startedAt: Date.now(),
-    };
-    savePendingSor(p);
-    setPending(p);
-    setBusy(true);
-    let res: Response;
-    try {
-      res = await fetch("/api/sors/new", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ soId: p.soId, attemptId: p.attemptId, items: built.items }),
-      });
-    } catch {
-      setBusy(false);
-      setNote(`Lost contact with the server while starting the revision on ${p.soTranId}. Press Check again: your list changes only if NetSuite has the revision.`);
-      return;
-    }
-    const data = await res.json().catch(() => ({}));
-    if (res.ok && data?.success) {
-      setBusy(false);
-      await finishCreated(data, p);
-      return;
-    }
-    // A definite answer: nothing more is coming for this press.
-    clearPendingSor();
-    setPending(null);
-    setBusy(false);
-    const invalidIds: string[] = Array.isArray(data?.invalidNetsuiteIds) ? data.invalidNetsuiteIds : [];
-    const message = invalidIds.length > 0
-      ? `These items no longer exist in NetSuite and need to be removed from the list: ${invalidIds.map(id => describe(built.snapshot, id)).join(", ")}`
-      : (typeof data?.error === "string" && data.error) || `No revision was started on ${p.soTranId}. Try again.`;
-    setPushResult({
-      success: false, message,
-      ...(typeof data?.workbenchUrl === "string" && data.sorNumber ? { link: { href: data.workbenchUrl, label: `Open ${data.sorNumber} in NetSuite` } } : {}),
-    });
-    if (data?.offer || res.status === 409) runSearch(orderDigits(p.soTranId) ?? digits ?? "");
-  };
+  // 2026-11-13: the create / check-again flow moved into hooks/use-new-sor.ts unchanged (the one search box uses it too).
+  const newSor = useNewSor({
+    buildItems, onCreated, setPushResult, describe, onPending,
+    onRefused: soTranId => runSearch(orderDigits(soTranId) ?? digits ?? ""),
+    onSuccess: () => setSelected(null),
+  });
+  const { pending, note, checkPending, startOver } = newSor;
+  const busy = newSor.busy || pushing;
+  const create = () => { if (selected && !selected.blocked) newSor.create(selected); };
 
   const pushExisting = async (sor: SorResult) => {
-    setBusy(true);
+    setPushing(true);
     setPushResult(null);
     try {
       await onPushExisting(sor);
       if (digits && canSearch) runSearch(digits);
     } finally {
-      setBusy(false);
+      setPushing(false);
     }
   };
 
@@ -220,7 +134,7 @@ export default function NewSorPanel({ buildItems, onCreated, onPushExisting, set
             data-testid="button-new-sor-check">
             {busy ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />} Check again
           </button>
-          <button onClick={() => { clearPendingSor(); setPending(null); setNote(null); }} disabled={busy}
+          <button onClick={startOver} disabled={busy}
             className="px-3 py-1.5 bg-white border border-amber-300 rounded-lg font-medium hover:bg-amber-100 disabled:opacity-50"
             data-testid="button-new-sor-start-over">
             Start over

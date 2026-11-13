@@ -1,0 +1,36 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { pushUiFrom, recentWhen, searchableQuery, splitCustomer, withRecent } from "./push-ui";
+
+test("the preview switch: ?pushui=new or classic sticks in this browser; otherwise classic", () => {
+  assert.deepEqual(pushUiFrom("?pushui=new", null), { ui: "new", store: "new" });
+  assert.deepEqual(pushUiFrom("?pushui=classic", "new"), { ui: "classic", store: "classic" });
+  assert.deepEqual(pushUiFrom("", "new"), { ui: "new", store: null });
+  assert.deepEqual(pushUiFrom("", null), { ui: "classic", store: null });
+  assert.deepEqual(pushUiFrom("?pushui=other", null), { ui: "classic", store: null });
+});
+
+test("the search box takes ES / SO / SOR numbers or a name", () => {
+  assert.equal(searchableQuery("ES241762"), "ES241762");
+  assert.equal(searchableQuery("so 714 728"), "SO714728");
+  assert.equal(searchableQuery("SOR61"), "SOR61");
+  assert.equal(searchableQuery("2417"), "2417");
+  assert.equal(searchableQuery("24"), null);
+  assert.equal(searchableQuery("ES24"), null);
+  assert.equal(searchableQuery("Alvarez"), "Alvarez");
+  assert.equal(searchableQuery("Linden Kitchen & Bath"), "Linden Kitchen & Bath");
+  assert.equal(searchableQuery("Al"), null);
+  assert.equal(searchableQuery("x'; drop"), null);
+});
+
+test("customer display and recent list", () => {
+  assert.deepEqual(splitCustomer("104453 Baloga"), { name: "Baloga", number: "104453" });
+  assert.deepEqual(splitCustomer("Walk-in"), { name: "Walk-in", number: null });
+  const list = withRecent([{ label: "ES1", customer: "a", at: 1 }, { label: "SOR61", customer: "b", at: 2 }], { label: "SOR61", customer: "b", at: 3 });
+  assert.deepEqual(list.map(r => r.label), ["SOR61", "ES1"]);
+  assert.equal(withRecent([1, 2, 3, 4, 5].map(i => ({ label: `L${i}`, customer: "", at: i })), { label: "N", customer: "", at: 9 }).length, 5);
+  const now = new Date(2026, 10, 13, 15).getTime();
+  assert.equal(recentWhen(new Date(2026, 10, 13, 9).getTime(), now), "Sent today");
+  assert.equal(recentWhen(new Date(2026, 10, 12, 23).getTime(), now), "Sent yesterday");
+  assert.equal(recentWhen(new Date(2026, 10, 9).getTime(), now), "Sent Nov 9");
+});

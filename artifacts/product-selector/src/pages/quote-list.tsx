@@ -18,6 +18,8 @@ import SorPushPanel, { type SorResult } from "@/components/sor-push-panel";
 import NewEstimatePanel, { type NewEstimateCreated } from "@/components/new-estimate-panel";
 import NewSorPanel, { type NewSorCreated } from "@/components/new-sor-panel";
 import { createdSorMessage } from "@/lib/new-sor";
+import PushTargetPanel from "@/components/push-target-panel";
+import { readPushUi, setPushUi, type PushUi } from "@/lib/push-ui";
 import { createdMessage } from "@/lib/new-estimate";
 
 // After a push, NetSuite recalculates the estimate's discounts and deposit (2026-11-09, Gib: "Pushing from the CPS
@@ -505,6 +507,8 @@ export default function QuoteListPage() {
   // started from NetSuite's Customer Search pop-up. 2026-11-12: or a new revision on a Sales Order ("newsor").
   // Was: useState<"estimate" | "sor" | "new">("estimate").
   const [pushTarget, setPushTarget] = useState<"estimate" | "sor" | "new" | "newsor">("estimate");
+  // 2026-11-13: the one search box (Push to redesign, variant B) behind a preview switch: ?pushui=new / ?pushui=classic.
+  const [pushUi, setPushUiState] = useState<PushUi>(() => readPushUi());
   const [formMode, setFormMode] = useState<{ kind: "add" } | { kind: "edit"; item: QuoteItem } | null>(null);
   const addEstimateItems = useAddEstimateItems();
 
@@ -617,7 +621,7 @@ export default function QuoteListPage() {
   // 2026-11-09 (Gib: "We'd like for the CPS to also be able to add items to SORs"): the same items onto a Draft Sales
   // Order Revision. Same guards as the estimate push: lines leave the list before NetSuite recalculates the revision,
   // and the Push button stays busy until it is done. Never throws: a failure becomes the red message.
-  const handlePushToSor = async (sor: SorResult) => {
+  const handlePushToSor = async (sor: SorResult): Promise<boolean> => {
     try {
       if (unfinished.length > 0) {
         throw new Error(`${unfinishedText} before pushing: click the amber "Needs ..." on each one and fill in what is missing.`);
@@ -672,8 +676,10 @@ export default function QuoteListPage() {
         note = sorRefreshFailed(sor.number, null, warning);
       }
       setPushResult({ success: true, message: msg, discounts: note });
+      return true;
     } catch (err: any) {
       setPushResult({ success: false, message: err?.message ?? `Failed to add items to ${sor.number}` });
+      return false;
     }
   };
 
@@ -1063,6 +1069,26 @@ export default function QuoteListPage() {
             </div>
           )}
 
+          {pushUi === "new" ? (
+            <PushTargetPanel
+              units={totalItems}
+              total={allSpecialsPriced ? grandTotal + specialTotal : null}
+              buildEstimateItems={newEstimateItems}
+              buildSorItems={newSorItems}
+              onPushToEstimate={handlePushToEstimate}
+              onPushToSor={handlePushToSor}
+              onEstimateCreated={handleNewEstimateCreated}
+              onSorCreated={handleNewSorCreated}
+              setPushResult={setPushResult}
+              describe={describe}
+              warnFor={t => basisWarning({
+                id: 0, tranId: t.tranId, customerName: "", status: "", date: "", total: null,
+                customerCategory: t.customerCategory, customerCategoryId: t.customerCategoryId,
+              })}
+              onClassic={() => { setPushUi("classic"); setPushUiState("classic"); }}
+            />
+          ) : (
+          <>
           {/* 2026-11-09: push to an estimate or to a Sales Order Revision. Was: the EstimateSearch line alone. */}
           <div className="flex items-center gap-2" role="tablist" aria-label="Push to" data-testid="toggle-push-target">
             <span className="text-[12px] text-gray-500 mr-1">Push to:</span>
@@ -1133,6 +1159,8 @@ export default function QuoteListPage() {
                 })}
               />
             </div>
+          )}
+          </>
           )}
         </div>
       )}
