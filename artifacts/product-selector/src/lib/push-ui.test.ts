@@ -10,15 +10,16 @@ test("Send to NetSuite is the default; a browser that chose classic keeps it unt
   assert.deepEqual(pushUiFrom("?pushui=classic", "new"), { ui: "classic", store: "classic" });
 });
 
-test("the search box takes ES / SO / SOR numbers or a name", () => {
+test("the search box takes ES / SO / SOR numbers, not names (2026-11-13)", () => {
   assert.equal(searchableQuery("ES241762"), "ES241762");
   assert.equal(searchableQuery("so 714 728"), "SO714728");
   assert.equal(searchableQuery("SOR61"), "SOR61");
   assert.equal(searchableQuery("2417"), "2417");
   assert.equal(searchableQuery("24"), null);
   assert.equal(searchableQuery("ES24"), null);
-  assert.equal(searchableQuery("Alvarez"), "Alvarez");
-  assert.equal(searchableQuery("Linden Kitchen & Bath"), "Linden Kitchen & Bath");
+  // Were "Alvarez" and "Linden Kitchen & Bath" while names were searched.
+  assert.equal(searchableQuery("Alvarez"), null);
+  assert.equal(searchableQuery("Linden Kitchen & Bath"), null);
   assert.equal(searchableQuery("Al"), null);
   assert.equal(searchableQuery("x'; drop"), null);
 });
