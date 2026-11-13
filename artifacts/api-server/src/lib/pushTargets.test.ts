@@ -1,7 +1,18 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseTargetQuery } from "./pushTargets";
-import { customerNameFilter } from "./newSor";
+import { estimateTargetWhere, parseTargetQuery } from "./pushTargets";
+import { customerNameFilter, openOrdersClause } from "./newSor";
+
+test("only records that can take items, plus the one typed in full", () => {
+  assert.equal(estimateTargetWhere({ kind: "number", prefix: "ES", digits: "237777" }),
+    "t.tranid LIKE '%237777%' AND (t.status = 'A' OR t.tranid = 'ES237777')");
+  assert.equal(estimateTargetWhere({ kind: "number", prefix: null, digits: "2377" }),
+    "t.tranid LIKE '%2377%' AND (t.status = 'A' OR t.tranid = 'ES2377')");
+  assert.equal(estimateTargetWhere({ kind: "number", prefix: "SO", digits: "714728" }), null);
+  assert.equal(estimateTargetWhere({ kind: "number", prefix: "SOR", digits: "61" }), null);
+  assert.equal(estimateTargetWhere({ kind: "name", name: "Systemtest" }), `t.status = 'A' AND ${customerNameFilter("Systemtest")}`);
+  assert.equal(openOrdersClause("714728"), "(t.status IN ('A','B','D','E','F','G') OR t.tranid = 'SO714728')");
+});
 
 test("the one search box reads record numbers with or without their letters", () => {
   assert.deepEqual(parseTargetQuery("ES241762"), { kind: "number", prefix: "ES", digits: "241762" });
