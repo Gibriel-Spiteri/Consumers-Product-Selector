@@ -5,7 +5,7 @@
     "eyebrow": "Consumers Kitchen & Bath · Product Selector guide",
     "title": "From a vendor's website, or a Quote List with no estimate or revision yet, to priced lines in NetSuite",
     "lede": "Where each step happens: on the vendor's own website with the customer, in the Consumers SmartAdd browser extension (Edge or Chrome), in the Product Selector on the sales PC, and in NetSuite. Part 2 starts a new estimate from the Quote List through NetSuite's Customer Search; part 3 starts a new Sales Order Revision with the Quote List on it. Click any numbered box to read its exact buttons.",
-    "meta": "Mapped from the code on 11/5/2026: Product Selector Special Order page, Quote List and the Consumers SmartAdd extension 1.5.3 (1.5.4 on 11/6: newest copy wins; 1.5.5: kits split into parts, Flusso finish squares; 1.5.6: kits on every vendor after sweep 2; 1.5.7: list price, Report issue; 1.5.8: report as the signed-in rep; 1.5.9: the Report an Issue form matches the site's, with a screenshot; 1.5.10: renamed Consumers SmartAdd, was Consumers QuickAdd; 1.5.11: Richelieu's list price from the server). Part 2 mapped from the code on 11/11/2026: Quote List New Estimate and the Customer Search pop-up (Employee Appointments Suitelet). SmartAdd 1.6.1 dropped the \"Confirm all Information Above\" line. Part 3 (New SOR) mapped from the code on 11/12/2026. On 11/13/2026 Send to NetSuite (one search box for a record number or the customer's name) became the Quote List's default; the classic Push to is one click away."
+    "meta": "Mapped from the code on 11/5/2026: Product Selector Special Order page, Quote List and the Consumers SmartAdd extension 1.5.3 (1.5.4 on 11/6: newest copy wins; 1.5.5: kits split into parts, Flusso finish squares; 1.5.6: kits on every vendor after sweep 2; 1.5.7: list price, Report issue; 1.5.8: report as the signed-in rep; 1.5.9: the Report an Issue form matches the site's, with a screenshot; 1.5.10: renamed Consumers SmartAdd, was Consumers QuickAdd; 1.5.11: Richelieu's list price from the server). Part 2 mapped from the code on 11/11/2026: Quote List New Estimate and the Customer Search pop-up (Employee Appointments Suitelet). SmartAdd 1.6.1 dropped the \"Confirm all Information Above\" line. Part 3 (New SOR) mapped from the code on 11/12/2026. On 11/13/2026 Send to NetSuite (one search box for an ES, SO or SOR number, listing only records that can take items) became the Quote List's default; the classic Push to is one click away."
   },
   "lanes": {
     "VS": {
@@ -278,7 +278,7 @@
           "kind": "action",
           "lane": "PS",
           "label": "Send to NetSuite: search the estimate, click Add here",
-          "detail": "Under Send these N items to NetSuite, type at least 3 digits of the estimate number (the ES is optional) or 3 letters of the customer's name. Results show by customer; click the open estimate (Add here). Before you type, Sent to recently lists the last 5 records this browser sent to."
+          "detail": "Under Send these N items to NetSuite, type at least 3 digits of the estimate number (the ES is optional); names are not searched. Only open estimates show, by customer; click the estimate (Add here). Before you type, Sent to recently lists the last 5 records this browser sent to."
         },
         {
           "id": "n_push",
@@ -868,7 +868,7 @@
           "kind": "start",
           "lane": "PS",
           "label": "Send to NetSuite: search the Sales Order number",
-          "detail": "Under Send these N items to NetSuite, type at least 3 digits of the Sales Order number (SO is optional) or 3 letters of the customer's name. Each order shows its status and what it can take: Start a revision, Add to SOR###, or Can't take items now."
+          "detail": "Under Send these N items to NetSuite, type at least 3 digits of the Sales Order number (SO is optional), or the SOR number. Only orders that can take a revision show, plus the one typed in full; each says what it can take: Start a revision, Add to SOR###, or Can't take items now."
         },
         {
           "id": "r_can",
@@ -1060,7 +1060,7 @@
     },
     {
       "title": "A search takes several seconds.",
-      "text": "Each Send to NetSuite search asks NetSuite about every estimate and order it finds, and whether each order can take a revision, so results take about 6 to 18 seconds. A spinner shows in the search box meanwhile."
+      "text": "Each Send to NetSuite search asks NetSuite about every estimate and order it finds, and whether each order can take a revision, so results can take several seconds. A spinner shows in the search box meanwhile."
     }
   ],
   "tips": [
@@ -1071,7 +1071,7 @@
     "New estimate needs NetSuite signed in, as the same rep, in the same browser as the Product Selector. Allow pop-ups for the Product Selector once.",
     "Search new customers by their full phone number or email first: that is the only way + Add New Customer shows, so nobody is added twice.",
     "An order can have only one open revision. If one is open as a Draft, the order's row says Add to SOR### instead of Start a revision.",
-    "Send to NetSuite takes ES, SO or SOR numbers or the customer's name. Back to the classic Push to (at its bottom) brings back the four Push to buttons for this browser; Use the new Send to NetSuite returns."
+    "Send to NetSuite takes ES, SO or SOR numbers, not names. Closed, processed and expired records stay out of the list unless you type the whole number. Back to the classic Push to (at its bottom) brings back the four Push to buttons for this browser; Use the new Send to NetSuite returns."
   ],
   "footer": "Vendor site special orders, new estimates and new revisions · Mapped from the code (Product Selector Special Order page and Quote List, Consumers SmartAdd extension 1.5.3) on 11/5/2026, extension 1.5.8 on 11/6, New Estimate on 11/11, New SOR on 11/12, Send to NetSuite the default on 11/13."
 }
