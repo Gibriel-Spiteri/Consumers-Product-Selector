@@ -808,7 +808,7 @@
     {
       "id": "p3",
       "title": "Start a new Sales Order Revision from the Quote List",
-      "intro": "The order is already a Sales Order and the customer wants to add to it. New SOR starts a Draft revision on the order with the Quote List already on it, so nobody has to start and save an empty revision first.",
+      "intro": "The order is already a Sales Order and the customer wants to add to it. New SOR starts a Draft revision on the order with the Quote List already on it, so nobody has to start and save an empty revision first. Items never go straight onto the order: an open Draft SOR is used (Use SOR###), and a new SOR is created only when the order has none open.",
       "caption": "Read top to bottom. The right-hand Product Selector column is only for an order that can't take a new revision.",
       "cols": [
         [
@@ -868,7 +868,7 @@
           "kind": "start",
           "lane": "PS",
           "label": "Send to NetSuite: search the Sales Order number",
-          "detail": "Under Send these N items to NetSuite, type at least 3 digits of the Sales Order number (SO is optional), or the SOR number. Only orders that can take a revision show, plus the one typed in full; each says what it can take: Start a revision, Add to SOR###, or Can't take items now."
+          "detail": "Under Send these N items to NetSuite, type at least 3 digits of the Sales Order number (SO is optional), or the SOR number. Only orders that can take a revision show, plus the one typed in full; each says what it can take: Use SOR### (its open Draft), Create new SOR (none open), or Can't take items now."
         },
         {
           "id": "r_can",
@@ -897,8 +897,8 @@
           "col": "PSb",
           "kind": "optional",
           "lane": "PS",
-          "label": "A Draft is already open: the order says Add to SOR###",
-          "detail": "When the open revision is a Draft that can take items, the order's row says Add to SOR### (SOR### open as a Draft). Clicking it is a normal push to that revision."
+          "label": "A Draft SOR is already open: the order says Use SOR###",
+          "detail": "When the open revision is a Draft that can take items, the order's row says Use SOR### (SOR### open as a Draft), and no new SOR is offered: an order has one open revision at a time. Clicking it is a normal push to that revision."
         },
         {
           "id": "r_create",
@@ -907,8 +907,8 @@
           "col": "PSa",
           "kind": "action",
           "lane": "PS",
-          "label": "Click Start a revision, then Start SOR with N items",
-          "detail": "The black bar says Start a revision on SO### with N items. Finish any amber Needs ... first. If the order's customer is the other type (Retail or CRD) than a line's Price As, a note in the bar says it will be priced at the customer's type. Pressing it twice, or again after a lost connection, never starts a second revision."
+          "label": "Click Create new SOR, then Create SOR with N items",
+          "detail": "Shown only when the order has no open SOR. The black bar says Create a new SOR on SO### with N items. Finish any amber Needs ... first. If the order's customer is the other type (Retail or CRD) than a line's Price As, a note in the bar says it will be priced at the customer's type. Pressing it twice, or again after a lost connection, never starts a second revision."
         },
         {
           "id": "r_start",
@@ -1070,7 +1070,7 @@
     "SmartAdd takes the list price where the vendor page shows one next to a sale price (since 1.5.7). Still check the List Price before Add to List.",
     "New estimate needs NetSuite signed in, as the same rep, in the same browser as the Product Selector. Allow pop-ups for the Product Selector once.",
     "Search new customers by their full phone number or email first: that is the only way + Add New Customer shows, so nobody is added twice.",
-    "An order can have only one open revision. If one is open as a Draft, the order's row says Add to SOR### instead of Start a revision.",
+    "Items for a Sales Order always go on a SOR. An order can have only one open revision: if it has a Draft, its row says Use SOR###; Create new SOR shows only when none is open.",
     "Send to NetSuite takes ES, SO or SOR numbers, not names. Closed, processed and expired records stay out of the list unless you type the whole number. Back to the classic Push to (at its bottom) brings back the four Push to buttons for this browser; Use the new Send to NetSuite returns."
   ],
   "footer": "Vendor site special orders, new estimates and new revisions · Mapped from the code (Product Selector Special Order page and Quote List, Consumers SmartAdd extension 1.5.3) on 11/5/2026, extension 1.5.8 on 11/6, New Estimate on 11/11, New SOR on 11/12, Send to NetSuite the default on 11/13."
