@@ -2,7 +2,8 @@ import fs from "fs";
 import path from "path";
 import jwt from "jsonwebtoken";
 import { logger } from "./logger";
-import { Semaphore } from "./concurrency";
+// import { Semaphore } from "./concurrency"; // 2026-11-13: limiter moved into nsGuard (shared across our apps)
+import { guardedFetch, setNsEventHook } from "./nsGuard";
 
 const NETSUITE_ACCOUNT_ID = process.env.NETSUITE_ACCOUNT_ID || "";
 const CLIENT_ID = process.env.NETSUITE_CLIENT_ID || "";
@@ -24,7 +25,10 @@ const NETSUITE_MAX_CONCURRENCY = Math.max(
   1,
   Number(process.env.NETSUITE_MAX_CONCURRENCY) || 3
 );
-const netsuiteSemaphore = new Semaphore(NETSUITE_MAX_CONCURRENCY);
+// const netsuiteSemaphore = new Semaphore(NETSUITE_MAX_CONCURRENCY);
+// 2026-11-13: nsGuard reads NETSUITE_MAX_CONCURRENCY (or NS_MAX_IN_FLIGHT) itself and defaults to 2, not 3: the
+// whole account allows only 5 at once and the CPS shares the unallocated pool with every other app.
+void NETSUITE_MAX_CONCURRENCY;
 
 // Single-flight guard: dedupes concurrent token refreshes so a burst of
 // requests triggers only one token round-trip instead of many.
@@ -41,15 +45,29 @@ let tokenRefreshPromise: Promise<string> | null = null;
 // request is blocked, not run, so trying more often costs NetSuite nothing. Was: [1000, 2000, 4000, 8000, 15000]
 const RETRY_429_DELAYS_MS = [500, 1000, 1500, 2000, 2500, 3000, 3000, 3000, 3000, 3000, 3000, 3000, 3000];
 
+// 2026-11-13 (concurrency guard across all apps): the same ~30 s ladder now lives in nsGuard.guardedFetch, which also
+// catches refusals NetSuite reports in the body (SSS_REQUEST_LIMIT_EXCEEDED, "Request Limit Exceeded" on a 400),
+// honors Retry-After, retries 502/503/504 and dropped connections for reads, and counts calls for /api/ns-health.
+// returnBusyResponse keeps the old contract: after the window the caller gets the 429 and shows "NetSuite is busy".
+// timeoutMs 0 keeps the old behavior of no per-call timeout (the item sync's big SuiteQL pages).
+// Was:
+// export async function fetchNetSuite(url: string, init: RequestInit): Promise<Response> {
+//   for (let attempt = 0; ; attempt++) {
+//     const response = await netsuiteSemaphore.run(() => fetch(url, init));
+//     const delay = RETRY_429_DELAYS_MS[attempt];
+//     if (response.status !== 429 || delay === undefined) return response;
+//     await response.text().catch(() => "");
+//     logger.warn({ url, attempt: attempt + 1 }, "NetSuite concurrency limit hit; retrying");
+//     await new Promise(resolve => setTimeout(resolve, delay + Math.floor(Math.random() * 250)));
+//   }
+// }
+void RETRY_429_DELAYS_MS; // kept for the record above; nsGuard.RETRY_DELAYS_MS is the live copy
+setNsEventHook(event => {
+  if (event.kind === "retry") logger.warn({ call: event.label, attempt: event.attempt, status: event.status }, "NetSuite concurrency limit hit; retrying");
+  if (event.kind === "failed") logger.error({ call: event.label, attempts: event.attempt, status: event.status }, "NetSuite stayed busy; giving up");
+});
 export async function fetchNetSuite(url: string, init: RequestInit): Promise<Response> {
-  for (let attempt = 0; ; attempt++) {
-    const response = await netsuiteSemaphore.run(() => fetch(url, init));
-    const delay = RETRY_429_DELAYS_MS[attempt];
-    if (response.status !== 429 || delay === undefined) return response;
-    await response.text().catch(() => "");
-    logger.warn({ url, attempt: attempt + 1 }, "NetSuite concurrency limit hit; retrying");
-    await new Promise(resolve => setTimeout(resolve, delay + Math.floor(Math.random() * 250)));
-  }
+  return guardedFetch(url, init, { returnBusyResponse: true, timeoutMs: 0 });
 }
 
 function extractAccountId(): string {

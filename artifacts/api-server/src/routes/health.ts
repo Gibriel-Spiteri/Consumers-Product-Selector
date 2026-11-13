@@ -2,12 +2,20 @@ import { Router, type IRouter } from "express";
 import { HealthCheckResponse, GetSyncTimingResponse } from "@workspace/api-zod";
 import { triggerManualSync, getSyncTiming, getScheduleInterval, setScheduleInterval, getTimeWindow, setTimeWindow, getScheduledTimes, type ScheduleInterval, type TimeWindow } from "../lib/scheduler";
 import { getSyncProgress, getLastSyncResult } from "../lib/syncService";
+import { getNsStats } from "../lib/nsGuard";
 
 const router: IRouter = Router();
 
 router.get("/healthz", (_req, res) => {
   const data = HealthCheckResponse.parse({ status: "ok" });
   res.json(data);
+});
+
+// NetSuite call counts for the concurrency dashboard: counts only, no record data.
+router.get("/ns-health", (_req, res) => {
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Cache-Control", "no-store");
+  res.json({ app: "Consumers Product Selector", ...getNsStats() });
 });
 
 router.post("/dev/sync", async (req, res) => {
