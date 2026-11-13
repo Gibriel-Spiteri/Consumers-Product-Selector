@@ -3,9 +3,9 @@
   "header": {
     "pageTitle": "Vendor Site Special Orders",
     "eyebrow": "Consumers Kitchen & Bath · Product Selector guide",
-    "title": "From a vendor's website, or a Quote List with no estimate yet, to priced lines on a NetSuite estimate",
-    "lede": "Where each step happens: on the vendor's own website with the customer, in the Consumers SmartAdd browser extension (Edge or Chrome), in the Product Selector on the sales PC, and in NetSuite. Part 2 starts a new estimate from the Quote List through NetSuite's Customer Search. Click any numbered box to read its exact buttons.",
-    "meta": "Mapped from the code on 11/5/2026: Product Selector Special Order page, Quote List and the Consumers SmartAdd extension 1.5.3 (1.5.4 on 11/6: newest copy wins; 1.5.5: kits split into parts, Flusso finish squares; 1.5.6: kits on every vendor after sweep 2; 1.5.7: list price, Report issue; 1.5.8: report as the signed-in rep; 1.5.9: the Report an Issue form matches the site's, with a screenshot; 1.5.10: renamed Consumers SmartAdd, was Consumers QuickAdd; 1.5.11: Richelieu's list price from the server). Part 2 mapped from the code on 11/11/2026: Quote List New Estimate and the Customer Search pop-up (Employee Appointments Suitelet). SmartAdd 1.6.1 dropped the \"Confirm all Information Above\" line."
+    "title": "From a vendor's website, or a Quote List with no estimate or revision yet, to priced lines in NetSuite",
+    "lede": "Where each step happens: on the vendor's own website with the customer, in the Consumers SmartAdd browser extension (Edge or Chrome), in the Product Selector on the sales PC, and in NetSuite. Part 2 starts a new estimate from the Quote List through NetSuite's Customer Search; part 3 starts a new Sales Order Revision with the Quote List on it. Click any numbered box to read its exact buttons.",
+    "meta": "Mapped from the code on 11/5/2026: Product Selector Special Order page, Quote List and the Consumers SmartAdd extension 1.5.3 (1.5.4 on 11/6: newest copy wins; 1.5.5: kits split into parts, Flusso finish squares; 1.5.6: kits on every vendor after sweep 2; 1.5.7: list price, Report issue; 1.5.8: report as the signed-in rep; 1.5.9: the Report an Issue form matches the site's, with a screenshot; 1.5.10: renamed Consumers SmartAdd, was Consumers QuickAdd; 1.5.11: Richelieu's list price from the server). Part 2 mapped from the code on 11/11/2026: Quote List New Estimate and the Customer Search pop-up (Employee Appointments Suitelet). SmartAdd 1.6.1 dropped the \"Confirm all Information Above\" line. Part 3 (New SOR) mapped from the code on 11/12/2026."
   },
   "lanes": {
     "VS": {
@@ -31,6 +31,10 @@
       "name": "Customer Search",
       "who": "NetSuite pop-up window",
       "tone": "ok"
+    },
+    "SOR": {
+      "name": "NetSuite",
+      "who": "the Sales Order Revision"
     }
   },
   "parts": [
@@ -800,6 +804,228 @@
           "opt": {}
         }
       ]
+    },
+    {
+      "id": "p3",
+      "title": "Start a new Sales Order Revision from the Quote List",
+      "intro": "The order is already a Sales Order and the customer wants to add to it. New SOR starts a Draft revision on the order with the Quote List already on it, so nobody has to start and save an empty revision first.",
+      "caption": "Read top to bottom. The right-hand Product Selector column is only for an order that can't take a new revision.",
+      "cols": [
+        [
+          "PSa",
+          180
+        ],
+        [
+          "PSb",
+          180
+        ],
+        [
+          "NSR",
+          180
+        ]
+      ],
+      "lanes": [
+        [
+          "PS",
+          [
+            "PSa",
+            "PSb"
+          ]
+        ],
+        [
+          "SOR",
+          [
+            "NSR"
+          ]
+        ]
+      ],
+      "stages": [
+        {
+          "r0": 1,
+          "r1": 3,
+          "num": "10",
+          "name": "Find the order"
+        },
+        {
+          "r0": 4,
+          "r1": 5,
+          "num": "11",
+          "name": "NetSuite starts the revision"
+        },
+        {
+          "r0": 6,
+          "r1": 8,
+          "num": "12",
+          "name": "Finish it in NetSuite"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "r_find",
+          "num": 35,
+          "row": 1,
+          "col": "PSa",
+          "kind": "start",
+          "lane": "PS",
+          "label": "Quote List: Push to New SOR, type the Sales Order number",
+          "detail": "Under Push to, click New SOR and type at least 3 digits of the Sales Order number (SO is optional). Each order shows its status and any open revision."
+        },
+        {
+          "id": "r_can",
+          "num": 36,
+          "row": 2,
+          "col": "PSa",
+          "kind": "decision",
+          "lane": "PS",
+          "label": "Can this order take a new revision?",
+          "detail": "The same rules as the order's New Revision button in NetSuite: the order is open (not Closed or Cancelled), no revision is open on it, no change order (COR) is waiting for verification, and no discount codes are entered but not Applied."
+        },
+        {
+          "id": "r_why",
+          "num": 37,
+          "row": 2,
+          "col": "PSb",
+          "kind": "action",
+          "lane": "PS",
+          "label": "Click the order: the note says why not",
+          "detail": "For example: SO### is Closed, so it can't take a revision; or SOR### is open on SO### (Submitted). A new revision can start once it is processed; or discount codes have not been Applied yet."
+        },
+        {
+          "id": "r_offer",
+          "num": 39,
+          "row": 3,
+          "col": "PSb",
+          "kind": "optional",
+          "lane": "PS",
+          "label": "A Draft is already open: Push to SOR### instead",
+          "detail": "When the open revision is a Draft that can take items, the button becomes Push to SOR### instead, which is a normal push to that revision (part 1's SOR push)."
+        },
+        {
+          "id": "r_create",
+          "num": 38,
+          "row": 3,
+          "col": "PSa",
+          "kind": "action",
+          "lane": "PS",
+          "label": "Click Create SOR with these items",
+          "detail": "Finish any amber Needs ... first. If the order's customer is the other type (Retail or CRD) than a line's Price As, a note says it will be priced at the order's type. Pressing it twice, or again after a lost connection, never starts a second revision."
+        },
+        {
+          "id": "r_start",
+          "num": 40,
+          "row": 4,
+          "col": "NSR",
+          "kind": "auto",
+          "lane": "SOR",
+          "label": "A Draft revision starts on the order, you as Requested By",
+          "detail": "NetSuite starts it the same way the order's New Revision button does: it takes the order's snapshot and numbers the revision."
+        },
+        {
+          "id": "r_lines",
+          "num": 41,
+          "row": 5,
+          "col": "NSR",
+          "kind": "auto",
+          "lane": "SOR",
+          "label": "Your Quote List lines are added, priced as a push",
+          "detail": "Catalog items at the customer's price level, special orders with the product line multipliers and their Type, Model, Coll/Desc and Color, all as Add lines waiting to be approved. If they can't all go on, the new empty revision is removed and nothing is left behind."
+        },
+        {
+          "id": "r_done",
+          "num": 42,
+          "row": 6,
+          "col": "PSa",
+          "kind": "auto",
+          "lane": "PS",
+          "label": "Created SOR### on SO###; the items leave your list",
+          "detail": "The message has an Open SOR### in NetSuite link. If the answer was lost, Check again asks NetSuite before anything leaves the list; Start over if it has nothing."
+        },
+        {
+          "id": "r_recalc",
+          "num": 43,
+          "row": 7,
+          "col": "NSR",
+          "kind": "auto",
+          "lane": "SOR",
+          "label": "NetSuite recalculates the revision's totals and discounts",
+          "detail": "The note under the message says when it is done and shows the proposed total, as after a push to a revision."
+        },
+        {
+          "id": "r_end",
+          "num": 44,
+          "row": 8,
+          "col": "PSa",
+          "kind": "end",
+          "lane": "PS",
+          "label": "Open SOR###: review, reprint, sign, Update Sales Order",
+          "detail": "Finish the revision in NetSuite as usual. It must be printed and signed before Update Sales Order."
+        }
+      ],
+      "edges": [
+        {
+          "from": "r_find",
+          "to": "r_can",
+          "mode": "down",
+          "label": "",
+          "opt": {}
+        },
+        {
+          "from": "r_can",
+          "to": "r_create",
+          "mode": "down",
+          "label": "Yes",
+          "opt": {}
+        },
+        {
+          "from": "r_can",
+          "to": "r_why",
+          "mode": "side",
+          "label": "No",
+          "opt": {}
+        },
+        {
+          "from": "r_why",
+          "to": "r_offer",
+          "mode": "down",
+          "label": "",
+          "opt": {}
+        },
+        {
+          "from": "r_create",
+          "to": "r_start",
+          "mode": "down",
+          "label": "",
+          "opt": {}
+        },
+        {
+          "from": "r_start",
+          "to": "r_lines",
+          "mode": "down",
+          "label": "",
+          "opt": {}
+        },
+        {
+          "from": "r_lines",
+          "to": "r_done",
+          "mode": "down",
+          "label": "",
+          "opt": {}
+        },
+        {
+          "from": "r_done",
+          "to": "r_recalc",
+          "mode": "down",
+          "label": "",
+          "opt": {}
+        },
+        {
+          "from": "r_recalc",
+          "to": "r_end",
+          "mode": "down",
+          "label": "",
+          "opt": {}
+        }
+      ]
     }
   ],
   "gapsIntro": "What this process needs that the app or SmartAdd does not do yet.",
@@ -827,6 +1053,10 @@
     {
       "title": "A new estimate is not linked to an opportunity or appointment.",
       "text": "The Customer Search pop-up creates the estimate on its own (Gib's choice, 11/11/2026). Link an opportunity on the estimate in NetSuite if the sale needs one."
+    },
+    {
+      "title": "New SOR is open to every signed-in rep.",
+      "text": "In NetSuite only some roles see the New Revision button; the Product Selector does not know a rep's NetSuite role, so New SOR (like the push to a revision) works for anyone signed in to the Product Selector."
     }
   ],
   "tips": [
@@ -835,7 +1065,8 @@
     "When a vendor's website changes, update the product line's website on its PRD page in NetSuite; SmartAdd follows the next time the Product Selector is open.",
     "SmartAdd takes the list price where the vendor page shows one next to a sale price (since 1.5.7). Still check the List Price before Add to List.",
     "New Estimate needs NetSuite signed in, as the same rep, in the same browser as the Product Selector. Allow pop-ups for the Product Selector once.",
-    "Search new customers by their full phone number or email first: that is the only way + Add New Customer shows, so nobody is added twice."
+    "Search new customers by their full phone number or email first: that is the only way + Add New Customer shows, so nobody is added twice.",
+    "An order can have only one open revision. If one is open as a Draft, New SOR offers to push to it instead."
   ],
-  "footer": "Vendor site special orders and new estimates · Mapped from the code (Product Selector Special Order page and Quote List, Consumers SmartAdd extension 1.5.3) on 11/5/2026, extension 1.5.8 on 11/6, New Estimate through Customer Search on 11/11."
+  "footer": "Vendor site special orders, new estimates and new revisions · Mapped from the code (Product Selector Special Order page and Quote List, Consumers SmartAdd extension 1.5.3) on 11/5/2026, extension 1.5.8 on 11/6, New Estimate on 11/11, New SOR on 11/12."
 }
