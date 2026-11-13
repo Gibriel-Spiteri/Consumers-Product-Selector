@@ -39,7 +39,8 @@ type Target =
   | { key: string; kind: "newsor"; label: string; order: { id: string; tranId: string }; customer: string; category: string | null; categoryId: string | null }
   | { key: string; kind: "newestimate"; label: string; customer: string; category: null; categoryId: null };
 
-interface Row { key: string; title: string; meta: string; action: string; ok: boolean; target: Target | null }
+/** dim: shown for context only, low lit (an order whose open SOR is listed under it). */
+interface Row { key: string; title: string; meta: string; action: string; ok: boolean; target: Target | null; dim?: boolean }
 interface Group { key: string; name: string; number: string | null; category: string | null; rows: Row[] }
 
 const money = (n: number | null) => (n == null ? "" : `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
@@ -73,6 +74,30 @@ function groupResults(estimates: EstimateTarget[], orders: OrderTarget[]): Group
     const base = { category: o.customerCategory, categoryId: o.customerCategoryId, customer };
     // 2026-11-13, Gib: "We should always use an SOR for adding to Sales Orders ... Use open SOR number or Create New SOR
     // only if there is no open SOR" (it already worked that way; these are his words for the two buttons).
+    // Then: "If there's an open SOR on an SO show both the SO & SOR listed separately and show the SO low lit". The
+    // order is listed dim for context and its open SOR under it as its own row: Use SOR### or why it can't take items.
+    const open = o.openSor;
+    if (open) {
+      g.rows.push({
+        key: `so-${o.id}`, title: o.tranId, meta: `Sales Order, ${o.statusText}, ${open.number} open`,
+        ok: false, dim: true, action: "Items go on its SOR", target: null,
+      });
+      const state = open.status === "1" ? "Draft" : open.statusText || "open";
+      g.rows.push(o.offer
+        ? {
+          key: `sor-${open.id}`, title: open.number,
+          meta: `Revision of ${o.tranId}, ${state}${open.lastPrinted ? `, printed ${open.lastPrinted}` : ""}`,
+          ok: true, action: `Use ${open.number}`,
+          target: { key: `sor-${open.id}`, kind: "sor", label: open.number, sor: o.offer, ...base },
+        }
+        : {
+          key: `sor-${open.id}`, title: open.number, meta: o.blocked ?? open.blocked ?? `Revision of ${o.tranId}, ${state}`,
+          ok: false, action: "Can't take items now", target: null,
+        });
+      continue;
+    }
+    // No open SOR from here on. The o.offer branch below was the one-row form of an open Draft before the SO / SOR
+    // split and is no longer reached (an offer always has an open SOR); kept as it was.
     if (o.offer) {
       g.rows.push({
         key: `so-${o.id}`, title: o.tranId, meta: `Sales Order, ${o.statusText}, ${o.offer.number} open as a Draft`,
@@ -124,6 +149,8 @@ export default function PushTargetPanel({
   const latest = useRef(0);
 
   const searchable = searchableQuery(query);
+  // The results include a Sales Order (an SO or SOR search): no New estimate row under them.
+  const foundOrder = groups.some(g => g.rows.some(r => r.key.startsWith("so-")));
 
   const runSearch = useCallback(async (q: string) => {
     const id = ++latest.current;
@@ -243,7 +270,8 @@ export default function PushTargetPanel({
           aria-disabled={!row.ok}
           className={cn(
             "w-full flex items-center gap-3.5 px-6 py-3 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-sky-700",
-            isSel ? "bg-amber-50 shadow-[inset_0_0_0_2px_#f59e0b]" : row.ok ? "bg-white hover:bg-gray-50" : "bg-white cursor-default",
+            // dim (2026-11-13): low lit, for context only. Gray-500 keeps it readable (about 4.6:1 on gray-50).
+            isSel ? "bg-amber-50 shadow-[inset_0_0_0_2px_#f59e0b]" : row.dim ? "bg-gray-50 cursor-default" : row.ok ? "bg-white hover:bg-gray-50" : "bg-white cursor-default",
           )}
           data-testid={`row-target-${row.key}`}
         >
@@ -252,11 +280,13 @@ export default function PushTargetPanel({
             {isSel && <span className="w-2 h-2 rounded-full bg-amber-500" />}
           </span>
           <span className="flex-1 min-w-0">
-            <span className="block text-[15px] font-semibold text-gray-900">{row.title}</span>
+            {/* Was: title "text-[15px] font-semibold text-gray-900", meta "text-[13px] text-gray-500" for every row. */}
+            <span className={cn("block text-[15px]", row.dim ? "font-medium text-gray-500" : "font-semibold text-gray-900")}>{row.title}</span>
             <span className="block text-[13px] text-gray-500">{row.meta}</span>
           </span>
-          <span className={cn("shrink-0 text-[13px] font-semibold px-2.5 py-1.5 rounded-lg",
-            row.ok ? "text-gray-900 bg-gray-100" : "text-amber-800 bg-amber-50")}>{row.action}</span>
+          <span className={cn("shrink-0 text-[13px] px-2.5 py-1.5 rounded-lg",
+            // Was: row.ok ? "text-gray-900 bg-gray-100" : "text-amber-800 bg-amber-50" (font-semibold on all)
+            row.dim ? "font-medium text-gray-500" : row.ok ? "font-semibold text-gray-900 bg-gray-100" : "font-semibold text-amber-800 bg-amber-50")}>{row.action}</span>
         </button>
       </li>
     );
@@ -383,7 +413,9 @@ export default function PushTargetPanel({
                 <ul aria-label={g.name}>{g.rows.map(rowButton)}</ul>
               </div>
             ))}
-            {newEstimateRow}
+            {/* 2026-11-13, Gib: "New Estimate bar should be removed in these cases" (a search that found a Sales Order:
+                its items go on a SOR, never a new estimate). Was: {newEstimateRow} under every result. */}
+            {!foundOrder && newEstimateRow}
           </>
         )}
         {searchable && !searchError && !searching && groups.length === 0 && searchedFor === searchable && (
