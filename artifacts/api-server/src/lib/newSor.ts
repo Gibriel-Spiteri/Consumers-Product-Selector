@@ -26,6 +26,8 @@ export type OfferedSor = SorSummary & SorPushVerdict;
 
 export interface OrderForNewSor {
   id: string;
+  /** The order's customer (2026-11-13: the one search box groups results by customer). */
+  customerId?: string | null;
   tranId: string;
   status: string;
   statusText: string;
@@ -146,8 +148,39 @@ export async function searchOrdersForNewSor(digits: string): Promise<OrderForNew
     ORDER BY t.id DESC
   `);
   const rows = await withVerdicts(result.items.slice(0, 15));
-  // The pricing inputs stay on the server.
-  return rows.map(({ customerId: _c, priceLevel: _p, customerRecordCategory: _r, ...order }) => order);
+  // The pricing inputs stay on the server. Was (pre-2026-11-13): customerId was stripped too.
+  return rows.map(({ priceLevel: _p, customerRecordCategory: _r, ...order }) => order);
+}
+
+/** Customer-name matching for the Quote List's one search box (2026-11-13): company, first or last name. */
+export function customerNameFilter(name: string, alias = "c"): string {
+  const n = name.trim().toUpperCase().replace(/'/g, "''").replace(/[%_\\]/g, "\\$&");
+  return `(UPPER(${alias}.companyname) LIKE '%${n}%' OR UPPER(${alias}.lastname) LIKE '%${n}%' OR UPPER(${alias}.firstname) LIKE '%${n}%')`;
+}
+
+/** Open Sales Orders (statuses that can take a revision) of customers whose name matches, newest first. */
+export async function searchOrdersByCustomerName(name: string): Promise<OrderForNewSor[]> {
+  const result = await executeSuiteQL<OrderRow>(`
+    SELECT ${ORDER_COLUMNS}
+    FROM transaction t INNER JOIN customer c ON c.id = t.entity
+    WHERE t.type = 'SalesOrd' AND t.status IN (${OPEN_ORDER_STATUSES.map(s => `'${s}'`).join(",")}) AND ${customerNameFilter(name)}
+    ORDER BY t.id DESC
+  `);
+  const rows = await withVerdicts(result.items.slice(0, 10));
+  return rows.map(({ priceLevel: _p, customerRecordCategory: _r, ...order }) => order);
+}
+
+/** The Sales Order a revision number belongs to, with its New SOR verdict ("SOR61" finds SO714729). */
+export async function orderForSorNumber(sorDigits: string): Promise<OrderForNewSor | null> {
+  const so = await executeSuiteQL<{ soid: string }>(
+    `SELECT custrecord_sor_salesorder AS soid FROM customrecord_sor WHERE id = ${positiveId(sorDigits)}`,
+  );
+  const soId = so.items[0]?.soid;
+  if (!soId) return null;
+  const order = await loadOrderForNewSor(String(soId));
+  if (!order) return null;
+  const { priceLevel: _p, customerRecordCategory: _r, ...rest } = order;
+  return rest;
 }
 
 export async function loadOrderForNewSor(soId: string): Promise<(OrderForNewSor & OrderPricingContext) | null> {

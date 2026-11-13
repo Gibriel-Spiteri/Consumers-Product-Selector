@@ -32,7 +32,7 @@ const MIN_DIGITS = 3;
 const STATUS_LABEL: Record<string, string> = { "1": "Draft", "2": "Submitted", "3": "Processed", "5": "Cancelled", "6": "Check PO", "7": "Approved" };
 
 export default function SorPushPanel({ onPush, setPushResult, warnFor }: {
-  onPush: (sor: SorResult) => Promise<void>;
+  onPush: (sor: SorResult) => Promise<unknown>; // was Promise<void>; the push now answers whether it worked (2026-11-13)
   setPushResult: (r: null) => void;
   warnFor?: (sor: { tranId: string; customerCategory?: string; customerCategoryId?: string }) => string | null;
 }) {

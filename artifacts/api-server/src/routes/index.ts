@@ -5,6 +5,7 @@ import netsuiteRouter from "./netsuite";
 import estimatesRouter from "./estimates";
 import estimateHandoffRouter from "./estimateHandoff"; // 2026-11-11: new estimate through NetSuite's Customer Search pop-up
 import sorsRouter from "./sors";
+import pushTargetsRouter from "./pushTargets";
 import specialOrdersRouter from "./specialOrders";
 import authRouter from "./auth";
 import adminRouter from "./admin";
@@ -27,6 +28,7 @@ router.use(issuesRouter);
 router.use(estimateHandoffRouter);
 router.use(estimatesRouter);
 router.use(sorsRouter); // 2026-11-09: push Quote List items onto a Sales Order Revision
+router.use(pushTargetsRouter); // 2026-11-13: the Quote List's one search box (Push to redesign, variant B)
 router.use(specialOrdersRouter);
 router.use(adminRouter);
 router.use(imageProxyRouter);
