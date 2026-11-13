@@ -507,7 +507,9 @@ export default function QuoteListPage() {
   // started from NetSuite's Customer Search pop-up. 2026-11-12: or a new revision on a Sales Order ("newsor").
   // Was: useState<"estimate" | "sor" | "new">("estimate").
   const [pushTarget, setPushTarget] = useState<"estimate" | "sor" | "new" | "newsor">("estimate");
-  // 2026-11-13: the one search box (Push to redesign, variant B) behind a preview switch: ?pushui=new / ?pushui=classic.
+  // 2026-11-13: the one search box (Push to redesign, variant B). First behind a preview switch (?pushui=new), the
+  // default since Gib's "Make it the default" the same day; "Back to the classic Push to" or ?pushui=classic turns it off
+  // for that browser, "Use the new Send to NetSuite" or ?pushui=new turns it back on.
   const [pushUi, setPushUiState] = useState<PushUi>(() => readPushUi());
   const [formMode, setFormMode] = useState<{ kind: "add" } | { kind: "edit"; item: QuoteItem } | null>(null);
   const addEstimateItems = useAddEstimateItems();
@@ -1108,6 +1110,15 @@ export default function QuoteListPage() {
                 {label}
               </button>
             ))}
+            {/* 2026-11-13: the way back once the one search box is the default. */}
+            <button
+              type="button"
+              onClick={() => { setPushUi("new"); setPushUiState("new"); setPushResult(null); }}
+              className="ml-auto text-[12px] text-gray-500 underline underline-offset-2 hover:text-gray-700"
+              data-testid="button-push-ui-new"
+            >
+              Use the new Send to NetSuite
+            </button>
           </div>
           {/* Always mounted, only hidden: an open Customer Search pop-up keeps its hand-off when the rep switches tabs. */}
           <div hidden={pushTarget !== "new"}>

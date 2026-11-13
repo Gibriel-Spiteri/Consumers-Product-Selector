@@ -2,12 +2,12 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { pushUiFrom, recentWhen, searchableQuery, splitCustomer, withRecent } from "./push-ui";
 
-test("the preview switch: ?pushui=new or classic sticks in this browser; otherwise classic", () => {
-  assert.deepEqual(pushUiFrom("?pushui=new", null), { ui: "new", store: "new" });
+test("Send to NetSuite is the default; a browser that chose classic keeps it until ?pushui=new", () => {
+  assert.deepEqual(pushUiFrom("", null), { ui: "new", store: null });
+  assert.deepEqual(pushUiFrom("?pushui=other", null), { ui: "new", store: null });
+  assert.deepEqual(pushUiFrom("", "classic"), { ui: "classic", store: null });
+  assert.deepEqual(pushUiFrom("?pushui=new", "classic"), { ui: "new", store: "new" });
   assert.deepEqual(pushUiFrom("?pushui=classic", "new"), { ui: "classic", store: "classic" });
-  assert.deepEqual(pushUiFrom("", "new"), { ui: "new", store: null });
-  assert.deepEqual(pushUiFrom("", null), { ui: "classic", store: null });
-  assert.deepEqual(pushUiFrom("?pushui=other", null), { ui: "classic", store: null });
 });
 
 test("the search box takes ES / SO / SOR numbers or a name", () => {

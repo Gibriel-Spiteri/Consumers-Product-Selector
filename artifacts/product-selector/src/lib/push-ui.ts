@@ -1,14 +1,17 @@
 // The Quote List's "Send to NetSuite" redesign (2026-11-13, Gib picked variant B of
-// https://claude.ai/artifact/XVP62opudtXRsG2HTq6vRp). Behind a preview switch until Gib makes it the default:
-// ?pushui=new turns it on in this browser, ?pushui=classic turns it off.
+// https://claude.ai/artifact/XVP62opudtXRsG2HTq6vRp, then "Make it the default"). Every browser gets it unless it
+// chose the classic Push to ("Back to the classic Push to", or ?pushui=classic); "Use the new Send to NetSuite" in the
+// classic Push to row, or ?pushui=new, turns it back on.
 
 export type PushUi = "classic" | "new";
-export const PUSH_UI_KEY = "cps-push-ui";
+// Was "cps-push-ui" during the preview, when classic was the default; a new key so preview-time choices don't stick.
+export const PUSH_UI_KEY = "cps-push-ui-2";
 
 export function pushUiFrom(search: string, stored: string | null): { ui: PushUi; store: PushUi | null } {
   const param = new URLSearchParams(search).get("pushui");
   if (param === "new" || param === "classic") return { ui: param, store: param };
-  return { ui: stored === "new" ? "new" : "classic", store: null };
+  // Was (preview): stored === "new" ? "new" : "classic"
+  return { ui: stored === "classic" ? "classic" : "new", store: null };
 }
 
 export function readPushUi(): PushUi {
@@ -17,7 +20,8 @@ export function readPushUi(): PushUi {
     if (store) localStorage.setItem(PUSH_UI_KEY, store);
     return ui;
   } catch {
-    return "classic";
+    // Was (preview): return "classic";
+    return "new";
   }
 }
 
