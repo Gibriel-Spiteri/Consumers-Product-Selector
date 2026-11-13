@@ -17,7 +17,8 @@ import { loadRecent, recentWhen, saveRecent, searchableQuery, splitCustomer, wit
  * record number (or the customer's name, until Gib: "I dont want to include name searches in this field", and only
  * records that can take items since "No point in seeing processed orders that we cant add to", both the same day);
  * every estimate and Sales Order found says what it can take (Add here, Add to
- * SOR61, Start a revision, or why not), grouped by customer, with Start a new estimate always there. A black bar says
+ * SOR61, Start a revision, or why not; "Use SOR61" and "Create new SOR" since Gib's wording the same day), grouped by
+ * customer, with Start a new estimate always there. A black bar says
  * exactly what will happen before anything is sent. The sends themselves are the existing ones: the estimate push,
  * the SOR push, New SOR (hooks/use-new-sor.ts) and New Estimate (hooks/use-new-estimate.ts).
  * Was "Behind ?pushui=new." (preview); the default since Gib's "Make it the default" the same day (lib/push-ui.ts).
@@ -70,16 +71,20 @@ function groupResults(estimates: EstimateTarget[], orders: OrderTarget[]): Group
     const g = groupOf(o.customerId, o.customerName, o.customerCategory);
     const customer = splitCustomer(o.customerName).name;
     const base = { category: o.customerCategory, categoryId: o.customerCategoryId, customer };
+    // 2026-11-13, Gib: "We should always use an SOR for adding to Sales Orders ... Use open SOR number or Create New SOR
+    // only if there is no open SOR" (it already worked that way; these are his words for the two buttons).
     if (o.offer) {
       g.rows.push({
         key: `so-${o.id}`, title: o.tranId, meta: `Sales Order, ${o.statusText}, ${o.offer.number} open as a Draft`,
-        ok: true, action: `Add to ${o.offer.number}`,
+        // Was: `Add to ${o.offer.number}`
+        ok: true, action: `Use ${o.offer.number}`,
         target: { key: `so-${o.id}`, kind: "sor", label: o.offer.number, sor: o.offer, ...base },
       });
     } else if (!o.blocked) {
       g.rows.push({
-        key: `so-${o.id}`, title: o.tranId, meta: `Sales Order, ${o.statusText}, no revision open`,
-        ok: true, action: "Start a revision",
+        // Was: meta `..., no revision open`, action "Start a revision"
+        key: `so-${o.id}`, title: o.tranId, meta: `Sales Order, ${o.statusText}, no open SOR`,
+        ok: true, action: "Create new SOR",
         target: { key: `so-${o.id}`, kind: "newsor", label: o.tranId, order: { id: o.id, tranId: o.tranId }, ...base },
       });
     } else {
@@ -207,16 +212,19 @@ export default function PushTargetPanel({
 
   const confirmTitle = !selected ? "" :
     selected.kind === "newestimate" ? `Start a new estimate with ${unitsText}` :
-    selected.kind === "newsor" ? `Start a revision on ${selected.label} with ${unitsText}` :
+    // Was: `Start a revision on ${selected.label} with ${unitsText}`
+    selected.kind === "newsor" ? `Create a new SOR on ${selected.label} with ${unitsText}` :
     `Add ${unitsText}${total != null ? `, ${money(total)},` : ""} to ${selected.label}`;
   const confirmSub = !selected ? "" :
     selected.kind === "newestimate" ? "NetSuite's Customer Search opens in a pop-up: pick or add the customer, then Create Estimate there." :
-    selected.kind === "newsor" ? `${selected.customer}: NetSuite starts a Draft revision on the order with these items.` :
+    // Was: `${selected.customer}: NetSuite starts a Draft revision on the order with these items.`
+    selected.kind === "newsor" ? `${selected.customer}: NetSuite creates a Draft SOR on the order with these items.` :
     selected.kind === "sor" ? `${selected.customer}: Draft revision on ${selected.sor.soTranId}. Reprint it and have it signed before Update Sales Order.` :
     `${selected.customer}: open estimate.`;
   const sendLabel = !selected ? "" :
     selected.kind === "newestimate" ? "Find the customer in NetSuite" :
-    selected.kind === "newsor" ? (busy ? "Starting the revision..." : `Start SOR with ${unitsText}`) :
+    // Was: (busy ? "Starting the revision..." : `Start SOR with ${unitsText}`)
+    selected.kind === "newsor" ? (busy ? "Creating the SOR..." : `Create SOR with ${unitsText}`) :
     busy ? `Adding ${unitsText}...` : `Add ${unitsText} to ${selected.label}`;
   const basis = selected && selected.kind !== "newestimate"
     // The note names the customer ("SYSTEMTEST is a CRD customer"), not the record (was: selected.label, "SOR61 is a CRD customer").
@@ -257,7 +265,8 @@ export default function PushTargetPanel({
   const newEstimateRow = (
     <div className="flex flex-wrap items-center gap-3 px-6 py-4 bg-gray-50">
       <span className="flex-1 min-w-[220px] text-[14px] text-gray-700">
-        No estimate yet? Start one with these items. For a new revision, search the Sales Order.
+        {/* Was: "... For a new revision, search the Sales Order." */}
+        No estimate yet? Start one with these items. For a new SOR, search the Sales Order.
       </span>
       <button type="button" onClick={() => !busy && setSelected(NEW_ESTIMATE)}
         className={cn("h-10 px-4 rounded-xl border text-[14px] font-semibold bg-white",
