@@ -138,13 +138,25 @@ async function withVerdicts(rows: OrderRow[]): Promise<Array<OrderForNewSor & Or
   });
 }
 
-/** Sales Orders whose number contains the digits, newest first, each with whether it can take a new revision. */
-export async function searchOrdersForNewSor(digits: string): Promise<OrderForNewSor[]> {
+/**
+ * The Quote List's one search box (2026-11-13, Gib: "No point in seeing processed orders that we cant add to"): only
+ * orders that can take a revision, plus the one whose number was typed in full, so the box can say why not.
+ */
+export function openOrdersClause(digits: string): string {
+  return `(t.status IN (${OPEN_ORDER_STATUSES.map(s => `'${s}'`).join(",")}) OR t.tranid = 'SO${digits}')`;
+}
+
+/**
+ * Sales Orders whose number contains the digits, newest first, each with whether it can take a new revision.
+ * openOnly (the one search box): see openOrdersClause. The classic New SOR panel lists every status, as before.
+ */
+export async function searchOrdersForNewSor(digits: string, opts: { openOnly?: boolean } = {}): Promise<OrderForNewSor[]> {
   if (!/^\d{1,9}$/.test(digits)) return [];
+  // Was: WHERE t.type = 'SalesOrd' AND t.tranid LIKE '%${digits}%'
   const result = await executeSuiteQL<OrderRow>(`
     SELECT ${ORDER_COLUMNS}
     FROM transaction t LEFT JOIN customer c ON c.id = t.entity
-    WHERE t.type = 'SalesOrd' AND t.tranid LIKE '%${digits}%'
+    WHERE t.type = 'SalesOrd' AND t.tranid LIKE '%${digits}%'${opts.openOnly ? ` AND ${openOrdersClause(digits)}` : ""}
     ORDER BY t.id DESC
   `);
   const rows = await withVerdicts(result.items.slice(0, 15));

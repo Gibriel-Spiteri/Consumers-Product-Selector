@@ -42,14 +42,28 @@ export interface EstimateTarget {
   open: boolean;
 }
 
+/*
+ * 2026-11-13, Gib: "No point in seeing processed orders that we cant add to". Only open estimates (status A) come back,
+ * plus the one whose number was typed in full, so the box can say why it can't take items instead of "Nothing matches".
+ * PROD that day: A Open 329, B Processed 91,820, C Closed 41,886, X Expired 1,396. Null: no estimate can match.
+ */
+export function estimateTargetWhere(q: TargetQuery): string | null {
+  if (q.kind === "name") return `t.status = 'A' AND ${customerNameFilter(q.name)}`;
+  if (q.prefix === "SO" || q.prefix === "SOR") return null;
+  return `t.tranid LIKE '%${q.digits}%' AND (t.status = 'A' OR t.tranid = 'ES${q.digits}')`;
+}
+
 export async function searchEstimateTargets(q: TargetQuery): Promise<EstimateTarget[]> {
-  let where: string;
-  if (q.kind === "number") {
-    if (q.prefix === "SO" || q.prefix === "SOR") return [];
-    where = `t.tranid LIKE '%${q.digits}%'`;
-  } else {
-    where = customerNameFilter(q.name);
-  }
+  // Was (every status; the 25 newest, then Voided / Declined left out below):
+  // let where: string;
+  // if (q.kind === "number") {
+  //   if (q.prefix === "SO" || q.prefix === "SOR") return [];
+  //   where = `t.tranid LIKE '%${q.digits}%'`;
+  // } else {
+  //   where = customerNameFilter(q.name);
+  // }
+  const where = estimateTargetWhere(q);
+  if (!where) return [];
   const result = await executeSuiteQL<{
     id: string; tranid: string; entity: string | null; entityname: string | null; status: string | null;
     trandate: string | null; total: string | null; ccat: string | null; ccatname: string | null; ecat: string | null; ecatname: string | null;
@@ -91,7 +105,8 @@ export async function searchOrderTargets(q: TargetQuery): Promise<OrderForNewSor
     const order = await orderForSorNumber(q.digits);
     return order ? [order] : [];
   }
-  const orders = await searchOrdersForNewSor(q.digits);
+  // Open orders only, and the one typed in full (estimateTargetWhere explains). Was: searchOrdersForNewSor(q.digits).
+  const orders = await searchOrdersForNewSor(q.digits, { openOnly: true });
   if (q.prefix === null && orders.length === 0 && q.digits.length <= 4) {
     // A bare short number may be a revision number.
     const order = await orderForSorNumber(q.digits).catch(() => null);
