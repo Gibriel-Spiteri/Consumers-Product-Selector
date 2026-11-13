@@ -17,7 +17,8 @@ import { loadRecent, recentWhen, saveRecent, searchableQuery, splitCustomer, wit
  * record number or the customer's name; every estimate and Sales Order found says what it can take (Add here, Add to
  * SOR61, Start a revision, or why not), grouped by customer, with Start a new estimate always there. A black bar says
  * exactly what will happen before anything is sent. The sends themselves are the existing ones: the estimate push,
- * the SOR push, New SOR (hooks/use-new-sor.ts) and New Estimate (hooks/use-new-estimate.ts). Behind ?pushui=new.
+ * the SOR push, New SOR (hooks/use-new-sor.ts) and New Estimate (hooks/use-new-estimate.ts).
+ * Was "Behind ?pushui=new." (preview); the default since Gib's "Make it the default" the same day (lib/push-ui.ts).
  */
 interface EstimateTarget {
   id: string; tranId: string; customerId: string | null; customerName: string;
