@@ -47,6 +47,13 @@ test("NetSuite 429 (concurrency limit) is retried; other errors are not", async 
     globalThis.fetch = (async () => { calls++; return new Response("", { status: 400 }); }) as typeof fetch;
     assert.equal((await fetchNetSuite("https://example.test", { method: "PATCH" })).status, 400);
     assert.equal(calls, 1);
+    // RESTlets report the concurrency refusal in a 400 body, not as 429
+    calls = 0;
+    globalThis.fetch = (async () => ++calls < 2
+      ? new Response('{"error":{"code":"SSS_REQUEST_LIMIT_EXCEEDED","message":"Request Limit Exceeded"}}', { status: 400 })
+      : new Response("{}", { status: 200 })) as typeof fetch;
+    assert.equal((await fetchNetSuite("https://example.test", { method: "POST" })).status, 200);
+    assert.equal(calls, 2);
   } finally {
     globalThis.fetch = realFetch;
   }
