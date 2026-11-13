@@ -16,6 +16,8 @@ import {
 } from "@/lib/discount-refresh";
 import SorPushPanel, { type SorResult } from "@/components/sor-push-panel";
 import NewEstimatePanel, { type NewEstimateCreated } from "@/components/new-estimate-panel";
+import NewSorPanel, { type NewSorCreated } from "@/components/new-sor-panel";
+import { createdSorMessage } from "@/lib/new-sor";
 import { createdMessage } from "@/lib/new-estimate";
 
 // After a push, NetSuite recalculates the estimate's discounts and deposit (2026-11-09, Gib: "Pushing from the CPS
@@ -24,6 +26,17 @@ interface PushResult {
   success: boolean;
   message: string;
   discounts?: DiscountNote;
+  /** 2026-11-12 (New SOR): where to open what was made, e.g. the new revision in the SOR workbench. */
+  link?: { href: string; label: string };
+}
+
+function PushLinkLine({ link }: { link: { href: string; label: string } }) {
+  return (
+    <a href={link.href} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-[13px] font-semibold underline underline-offset-2"
+      data-testid="link-push-result">
+      {link.label}
+    </a>
+  );
 }
 
 async function refreshEstimateDiscounts(estimateId: number, tranId: string): Promise<DiscountNote> {
@@ -489,8 +502,9 @@ export default function QuoteListPage() {
   // Was: useState<{ success: boolean; message: string } | null>(null) (PushResult adds the discount note).
   const [pushResult, setPushResult] = useState<PushResult | null>(null);
   // 2026-11-09: where the Quote List pushes (estimate, or a Sales Order Revision). 2026-11-11: or a new estimate,
-  // started from NetSuite's Customer Search pop-up. Was: useState<"estimate" | "sor">("estimate").
-  const [pushTarget, setPushTarget] = useState<"estimate" | "sor" | "new">("estimate");
+  // started from NetSuite's Customer Search pop-up. 2026-11-12: or a new revision on a Sales Order ("newsor").
+  // Was: useState<"estimate" | "sor" | "new">("estimate").
+  const [pushTarget, setPushTarget] = useState<"estimate" | "sor" | "new" | "newsor">("estimate");
   const [formMode, setFormMode] = useState<{ kind: "add" } | { kind: "edit"; item: QuoteItem } | null>(null);
   const addEstimateItems = useAddEstimateItems();
 
@@ -673,6 +687,49 @@ export default function QuoteListPage() {
     return { items: estimateLines(snapshot), snapshot };
   };
 
+  // 2026-11-12 New SOR (components/new-sor-panel.tsx): the same checks and lines as a push to a revision.
+  const newSorItems = () => {
+    if (unfinished.length > 0) {
+      throw new Error(`${unfinishedText} before starting a revision: click the amber "Needs ..." on each one and fill in what is missing.`);
+    }
+    const snapshot = items.filter(i => i.netsuiteId);
+    if (snapshot.length === 0) throw new Error("No items with valid NetSuite IDs to put on a revision");
+    const lines: EstimateLineInput[] = snapshot.map(i => ({
+      netsuiteId: i.netsuiteId,
+      quantity: i.quantity,
+      ...(i.specialOrder ? { specialOrder: { ...i.specialOrder } } : {}),
+    }));
+    return { items: lines, snapshot };
+  };
+
+  // NetSuite has the new revision with the lines: as after a push, they leave the list before the revision is
+  // recalculated, so a slow or failed recalculation can never lead to sending them again.
+  const handleNewSorCreated = async (created: NewSorCreated, pushed: QuoteItem[]) => {
+    let msg = createdSorMessage(created.sorNumber, created.soTranId, created.itemsAdded);
+    const skipped = (created.skippedNetsuiteIds ?? []).map(String);
+    if (skipped.length > 0) {
+      msg += ` - skipped (no longer in NetSuite, kept in your list): ${skipped.map(id => describe(pushed, id)).join(", ")}`;
+    }
+    const priced = created.specialOrderLines ?? [];
+    if (priced.length > 0) {
+      msg += `. Special orders priced at ${priced.map(l => `${l.model} $${fmtPrice(l.rate)}${l.quantity > 1 ? ` x ${l.quantity}` : ""}`).join(", ")}`;
+    }
+    const link = { href: created.workbenchUrl, label: `Open ${created.sorNumber} in NetSuite` };
+    setPushResult({ success: true, message: msg, link, discounts: sorRefreshRunning(created.sorNumber) });
+    removeExactItems(pushed);
+    let note;
+    try {
+      const r = await fetch(`/api/sors/${encodeURIComponent(created.sorId)}/refresh`, { method: "POST", headers: authHeaders() });
+      const body = await r.json().catch(() => ({}));
+      note = r.ok
+        ? sorRefreshNote(body, created.sorNumber, null)
+        : sorRefreshFailed(created.sorNumber, typeof body?.error === "string" ? body.error : "NetSuite could not recalculate the revision.", null);
+    } catch {
+      note = sorRefreshFailed(created.sorNumber, null, null);
+    }
+    setPushResult({ success: true, message: msg, link, discounts: note });
+  };
+
   // NetSuite created the estimate (the server confirmed it): as after a push, the items leave the list before the
   // discounts are recalculated, so a slow or failed recalculation can never lead to sending them again.
   const handleNewEstimateCreated = async (created: NewEstimateCreated, pushed: QuoteItem[], skipped: string[]) => {
@@ -751,6 +808,7 @@ export default function QuoteListPage() {
               {/* Was: <span>{pushResult.message}</span> */}
               <span className="min-w-0">
                 <span className="block">{pushResult.message}</span>
+                {pushResult.link && <PushLinkLine link={pushResult.link} />}
                 {pushResult.discounts && <DiscountNoteLine note={pushResult.discounts} />}
               </span>
               <button onClick={() => setPushResult(null)} className="ml-auto p-1 hover:opacity-70 transition-opacity">
@@ -791,6 +849,7 @@ export default function QuoteListPage() {
               {/* Was: <span>{pushResult.message}</span> */}
               <span className="min-w-0">
                 <span className="block">{pushResult.message}</span>
+                {pushResult.link && <PushLinkLine link={pushResult.link} />}
                 {pushResult.discounts && <DiscountNoteLine note={pushResult.discounts} />}
               </span>
               <button onClick={() => setPushResult(null)} aria-label="Dismiss message" className="ml-auto p-1 hover:opacity-70 transition-opacity">
@@ -988,6 +1047,7 @@ export default function QuoteListPage() {
               {/* Was: <span>{pushResult.message}</span> */}
               <span className="min-w-0">
                 <span className="block">{pushResult.message}</span>
+                {pushResult.link && <PushLinkLine link={pushResult.link} />}
                 {pushResult.discounts && <DiscountNoteLine note={pushResult.discounts} />}
               </span>
               <button onClick={() => setPushResult(null)} className="ml-auto p-1 hover:opacity-70 transition-opacity">
@@ -1006,8 +1066,8 @@ export default function QuoteListPage() {
           {/* 2026-11-09: push to an estimate or to a Sales Order Revision. Was: the EstimateSearch line alone. */}
           <div className="flex items-center gap-2" role="tablist" aria-label="Push to" data-testid="toggle-push-target">
             <span className="text-[12px] text-gray-500 mr-1">Push to:</span>
-            {/* Was: [["estimate", "Estimate"], ["sor", "Sales Order Revision (SOR)"]] */}
-            {([["estimate", "Estimate"], ["sor", "Sales Order Revision (SOR)"], ["new", "New Estimate"]] as const).map(([key, label]) => (
+            {/* Was: [["estimate", "Estimate"], ["sor", "Sales Order Revision (SOR)"]]; 2026-11-12 adds New SOR. */}
+            {([["estimate", "Estimate"], ["sor", "Sales Order Revision (SOR)"], ["new", "New Estimate"], ["newsor", "New SOR"]] as const).map(([key, label]) => (
               <button
                 key={key}
                 role="tab"
@@ -1033,7 +1093,28 @@ export default function QuoteListPage() {
               onPending={() => setPushTarget("new")}
             />
           </div>
-          {pushTarget === "new" ? null : pushTarget === "estimate" ? (
+          {/* 2026-11-12 New SOR: also always mounted, so a Create in progress keeps its answer when the rep switches tabs. */}
+          <div hidden={pushTarget !== "newsor"} className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+            <div className="px-6 py-5 border-b border-gray-100">
+              <h3 className="font-semibold text-gray-900 text-[15px] mb-1">Start a New Sales Order Revision</h3>
+              <p className="text-[13px] text-gray-400">
+                Find the Sales Order. Create SOR starts a Draft revision on it with these items already added, priced the same as a push, and NetSuite recalculates it. Reprint it and have it signed before Update Sales Order.
+              </p>
+            </div>
+            <NewSorPanel
+              buildItems={newSorItems}
+              onCreated={handleNewSorCreated}
+              onPushExisting={handlePushToSor}
+              setPushResult={setPushResult}
+              describe={describe}
+              warnFor={order => basisWarning({
+                id: 0, tranId: order.tranId, customerName: "", status: "", date: "", total: null,
+                customerCategory: order.customerCategory, customerCategoryId: order.customerCategoryId,
+              })}
+              onPending={() => setPushTarget("newsor")}
+            />
+          </div>
+          {pushTarget === "new" || pushTarget === "newsor" ? null : pushTarget === "estimate" ? (
             <EstimateSearch onPush={handlePushToEstimate} pushResult={pushResult} setPushResult={setPushResult} warnFor={basisWarning} />
           ) : (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">

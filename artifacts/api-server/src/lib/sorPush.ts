@@ -157,6 +157,30 @@ export async function searchSors(digits: string): Promise<SorSummary[]> {
   return rows.map(r => toSummary(r, signing));
 }
 
+/*
+ * The open revisions on these Sales Orders (New SOR, 2026-11-12), newest first. "Open" is the workbench's own rule
+ * for one active revision per order (createNewSRR, resolveSrrParam): any status but Processed (3) or Voided (5),
+ * a blank status included, active or not.
+ */
+export async function openSorsByOrder(soIds: string[]): Promise<Map<string, SorSummary>> {
+  const ids = [...new Set(soIds.map(positiveId))];
+  const out = new Map<string, SorSummary>();
+  if (ids.length === 0) return out;
+  const result = await executeSuiteQL<SorRowSql>(`
+    SELECT ${SOR_COLUMNS}
+    FROM customrecord_sor s
+    INNER JOIN transaction t ON t.id = s.custrecord_sor_salesorder
+    WHERE s.custrecord_sor_salesorder IN (${ids.join(",")})
+      AND (s.custrecord_sor_status IS NULL OR s.custrecord_sor_status NOT IN (${SOR_STATUS.APPLIED}, ${SOR_STATUS.VOIDED}))
+    ORDER BY s.id DESC
+  `);
+  const signing = await signingBySor(result.items.map(r => String(r.id)));
+  for (const row of result.items) {
+    if (!out.has(String(row.soid))) out.set(String(row.soid), toSummary(row, signing));
+  }
+  return out;
+}
+
 export interface SorPushContext extends SorSummary {
   customerId: string | null;
   /** The customer's price level (the workbench's custpage_customer_pricelevel; "1" when blank). */
