@@ -36,7 +36,10 @@ let tokenRefreshPromise: Promise<string> | null = null;
 // (e.g. the sync that starts after every deploy) failed dropdowns and pushes.
 // 2026-11-09 (Gib OK'd): about 30 s of retries in all, not 15 s, before staff see "NetSuite is busy" (ES241850's
 // first push gave up). Was: const RETRY_429_DELAYS_MS = [1000, 2000, 4000, 8000];
-const RETRY_429_DELAYS_MS = [1000, 2000, 4000, 8000, 15000];
+// 2026-11-13 (Gib: speed up the Quote List search): the same ~30 s in shorter steps, so a slot that frees up is taken
+// within a few seconds, not after waits of 8 and 15 s (one search waited 34 s after five refusals in a row). A refused
+// request is blocked, not run, so trying more often costs NetSuite nothing. Was: [1000, 2000, 4000, 8000, 15000]
+const RETRY_429_DELAYS_MS = [500, 1000, 1500, 2000, 2500, 3000, 3000, 3000, 3000, 3000, 3000, 3000, 3000];
 
 export async function fetchNetSuite(url: string, init: RequestInit): Promise<Response> {
   for (let attempt = 0; ; attempt++) {

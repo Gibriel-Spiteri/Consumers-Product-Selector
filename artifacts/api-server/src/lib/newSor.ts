@@ -91,33 +91,55 @@ export function newSorVerdict(o: {
 interface OrderRow {
   id: string; tranid: string; status: string | null; st: string | null; customer: string | null;
   cat: string | null; catname: string | null; customerid: string | null; pricelevel: string | null; custcat: string | null;
+  /** ORDER_CHECKS (2026-11-13): COR waiting, discount codes not Applied, the open revision's id. */
+  cors?: string | null; pras?: string | null; opensor?: string | null;
 }
 
+/*
+ * The New SOR checks ride on the order row (2026-11-13, Gib: "speed it up"). They were three more requests sent at once
+ * after the order query; the account allows about 4-5 NetSuite requests at a time across every integration, so a
+ * search often got "concurrency limit" refusals and waited out the retries (1 + 2 + 4 + 8 s): 6 to 35 s per search.
+ * Same rules as the queries they replace (kept, commented out, in withVerdicts), checked on PROD orders with each block.
+ * createNewSRR's discount gate: entered on the order's Discounts tab, not Applied, not staged by a revision, not Unapplied.
+ */
+const ORDER_CHECKS = `
+  (SELECT COUNT(*) FROM customrecord_cor oc WHERE oc.custrecord_cor_salesorder = t.id AND oc.custrecord_cor_status = 2) AS cors,
+  (SELECT COUNT(*) FROM customrecord_txnpra op WHERE op.custrecord_txnpra_txnid = TO_CHAR(t.id) AND op.isinactive = 'F'
+    AND op.custrecord_txnpra_posted = 'F' AND op.custrecord_txnpra_sor IS NULL AND NVL(op.custrecord_txnpra_unapplied, 'F') = 'F') AS pras,
+  (SELECT MAX(os.id) FROM customrecord_sor os WHERE os.custrecord_sor_salesorder = t.id
+    AND (os.custrecord_sor_status IS NULL OR os.custrecord_sor_status NOT IN (${SOR_STATUS.APPLIED}, ${SOR_STATUS.VOIDED}))) AS opensor`;
+
+// Was: the columns below without ", ${ORDER_CHECKS}".
 const ORDER_COLUMNS = `
   t.id, t.tranid, t.status, BUILTIN.DF(t.status) AS st, BUILTIN.DF(t.entity) AS customer,
   t.custbody_customer_category AS cat, BUILTIN.DF(t.custbody_customer_category) AS catname,
-  t.entity AS customerid, c.pricelevel, c.category AS custcat`;
+  t.entity AS customerid, c.pricelevel, c.category AS custcat, ${ORDER_CHECKS}`;
 
 async function withVerdicts(rows: OrderRow[]): Promise<Array<OrderForNewSor & OrderPricingContext>> {
   if (rows.length === 0) return [];
-  const ids = rows.map(r => positiveId(String(r.id)));
-  const [open, cors, pras] = await Promise.all([
-    openSorsByOrder(ids),
-    executeSuiteQL<{ so: string; n: string }>(`
-      SELECT custrecord_cor_salesorder AS so, COUNT(*) AS n FROM customrecord_cor
-      WHERE custrecord_cor_salesorder IN (${ids.join(",")}) AND custrecord_cor_status = 2
-      GROUP BY custrecord_cor_salesorder
-    `),
-    // createNewSRR's gate: entered on the order's Discounts tab, not Applied, not staged by a revision, not Unapplied.
-    executeSuiteQL<{ txn: string; n: string }>(`
-      SELECT custrecord_txnpra_txnid AS txn, COUNT(*) AS n FROM customrecord_txnpra
-      WHERE custrecord_txnpra_txnid IN (${ids.map(id => `'${id}'`).join(",")}) AND isinactive = 'F'
-        AND custrecord_txnpra_posted = 'F' AND custrecord_txnpra_sor IS NULL AND NVL(custrecord_txnpra_unapplied, 'F') = 'F'
-      GROUP BY custrecord_txnpra_txnid
-    `),
-  ]);
-  const corBy = new Map(cors.items.map(r => [String(r.so), Number(r.n)]));
-  const praBy = new Map(pras.items.map(r => [String(r.txn), Number(r.n)]));
+  // Only orders with an open revision need its details (status, printed, signing): one more request, none otherwise.
+  const open = await openSorsByOrder(rows.filter(r => r.opensor != null).map(r => String(r.id)));
+  const corBy = new Map(rows.map(r => [String(r.id), Number(r.cors ?? 0)]));
+  const praBy = new Map(rows.map(r => [String(r.id), Number(r.pras ?? 0)]));
+  // Was (2026-11-12 to 11-13): three requests at once for every search.
+  // const ids = rows.map(r => positiveId(String(r.id)));
+  // const [open, cors, pras] = await Promise.all([
+  //   openSorsByOrder(ids),
+  //   executeSuiteQL<{ so: string; n: string }>(`
+  //     SELECT custrecord_cor_salesorder AS so, COUNT(*) AS n FROM customrecord_cor
+  //     WHERE custrecord_cor_salesorder IN (${ids.join(",")}) AND custrecord_cor_status = 2
+  //     GROUP BY custrecord_cor_salesorder
+  //   `),
+  //   // createNewSRR's gate: entered on the order's Discounts tab, not Applied, not staged by a revision, not Unapplied.
+  //   executeSuiteQL<{ txn: string; n: string }>(`
+  //     SELECT custrecord_txnpra_txnid AS txn, COUNT(*) AS n FROM customrecord_txnpra
+  //     WHERE custrecord_txnpra_txnid IN (${ids.map(id => `'${id}'`).join(",")}) AND isinactive = 'F'
+  //       AND custrecord_txnpra_posted = 'F' AND custrecord_txnpra_sor IS NULL AND NVL(custrecord_txnpra_unapplied, 'F') = 'F'
+  //     GROUP BY custrecord_txnpra_txnid
+  //   `),
+  // ]);
+  // const corBy = new Map(cors.items.map(r => [String(r.so), Number(r.n)]));
+  // const praBy = new Map(pras.items.map(r => [String(r.txn), Number(r.n)]));
   return rows.map(r => {
     const id = String(r.id);
     const sor = open.get(id);
@@ -153,11 +175,14 @@ export function openOrdersClause(digits: string): string {
 export async function searchOrdersForNewSor(digits: string, opts: { openOnly?: boolean } = {}): Promise<OrderForNewSor[]> {
   if (!/^\d{1,9}$/.test(digits)) return [];
   // Was: WHERE t.type = 'SalesOrd' AND t.tranid LIKE '%${digits}%'
+  // FETCH FIRST 15 (2026-11-13): the same 15 rows the slice below keeps, without fetching every match (a short number
+  // matched thousands, in pages of 1000, each a request). Was: ORDER BY t.id DESC with no row cap.
   const result = await executeSuiteQL<OrderRow>(`
     SELECT ${ORDER_COLUMNS}
     FROM transaction t LEFT JOIN customer c ON c.id = t.entity
     WHERE t.type = 'SalesOrd' AND t.tranid LIKE '%${digits}%'${opts.openOnly ? ` AND ${openOrdersClause(digits)}` : ""}
     ORDER BY t.id DESC
+    FETCH FIRST 15 ROWS ONLY
   `);
   const rows = await withVerdicts(result.items.slice(0, 15));
   // The pricing inputs stay on the server. Was (pre-2026-11-13): customerId was stripped too.
@@ -177,6 +202,7 @@ export async function searchOrdersByCustomerName(name: string): Promise<OrderFor
     FROM transaction t INNER JOIN customer c ON c.id = t.entity
     WHERE t.type = 'SalesOrd' AND t.status IN (${OPEN_ORDER_STATUSES.map(s => `'${s}'`).join(",")}) AND ${customerNameFilter(name)}
     ORDER BY t.id DESC
+    FETCH FIRST 10 ROWS ONLY
   `);
   const rows = await withVerdicts(result.items.slice(0, 10));
   return rows.map(({ priceLevel: _p, customerRecordCategory: _r, ...order }) => order);
@@ -184,12 +210,20 @@ export async function searchOrdersByCustomerName(name: string): Promise<OrderFor
 
 /** The Sales Order a revision number belongs to, with its New SOR verdict ("SOR61" finds SO714729). */
 export async function orderForSorNumber(sorDigits: string): Promise<OrderForNewSor | null> {
-  const so = await executeSuiteQL<{ soid: string }>(
-    `SELECT custrecord_sor_salesorder AS soid FROM customrecord_sor WHERE id = ${positiveId(sorDigits)}`,
-  );
-  const soId = so.items[0]?.soid;
-  if (!soId) return null;
-  const order = await loadOrderForNewSor(String(soId));
+  // 2026-11-13 (search speed): the order is found through the revision in the same request. Was: a lookup of the
+  // revision's order, then loadOrderForNewSor (two requests before the checks):
+  // const so = await executeSuiteQL<{ soid: string }>(
+  //   `SELECT custrecord_sor_salesorder AS soid FROM customrecord_sor WHERE id = ${positiveId(sorDigits)}`,
+  // );
+  // const soId = so.items[0]?.soid;
+  // if (!soId) return null;
+  // const order = await loadOrderForNewSor(String(soId));
+  const result = await executeSuiteQL<OrderRow>(`
+    SELECT ${ORDER_COLUMNS}
+    FROM transaction t LEFT JOIN customer c ON c.id = t.entity
+    WHERE t.type = 'SalesOrd' AND t.id = (SELECT sr.custrecord_sor_salesorder FROM customrecord_sor sr WHERE sr.id = ${positiveId(sorDigits)})
+  `);
+  const order = (await withVerdicts(result.items))[0];
   if (!order) return null;
   const { priceLevel: _p, customerRecordCategory: _r, ...rest } = order;
   return rest;

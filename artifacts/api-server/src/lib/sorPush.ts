@@ -103,7 +103,19 @@ interface SorRowSql {
   id: string; status: string | null; statustext: string | null; soid: string; sotranid: string | null;
   customer: string | null; cat: string | null; catname: string | null; created: string | null; printed: string | null;
   newtotal: string | null;
+  /** SIGNING_COLUMN (2026-11-13), when the query asks for it. */
+  signing?: string | null;
 }
+
+/*
+ * The revision's live Consumers Confirm request in the same query (2026-11-13, search speed: one request fewer per
+ * open revision). Same rule as signingBySor: the newest active request whose status is set and not closed. Checked in
+ * the sandbox (SOR3: only closed requests, none; SOR306: Signed); PROD has no requests linked to a revision yet.
+ */
+const SIGNING_COLUMN = `(SELECT sr.custrecord_sign_req_status FROM customrecord_sign_request sr WHERE sr.id = (
+    SELECT MAX(sr2.id) FROM customrecord_sign_request sr2 WHERE sr2.custrecord_sign_req_srr = s.id AND sr2.isinactive = 'F'
+      AND sr2.custrecord_sign_req_status IS NOT NULL
+      AND LOWER(sr2.custrecord_sign_req_status) NOT IN (${CLOSED_SIGNING.map(c => `'${c}'`).join(", ")}))) AS signing`;
 
 async function signingBySor(ids: string[]): Promise<Map<string, string>> {
   const out = new Map<string, string>();
@@ -166,15 +178,17 @@ export async function openSorsByOrder(soIds: string[]): Promise<Map<string, SorS
   const ids = [...new Set(soIds.map(positiveId))];
   const out = new Map<string, SorSummary>();
   if (ids.length === 0) return out;
+  // Was: SELECT ${SOR_COLUMNS} (signing came from a second request).
   const result = await executeSuiteQL<SorRowSql>(`
-    SELECT ${SOR_COLUMNS}
+    SELECT ${SOR_COLUMNS}, ${SIGNING_COLUMN}
     FROM customrecord_sor s
     INNER JOIN transaction t ON t.id = s.custrecord_sor_salesorder
     WHERE s.custrecord_sor_salesorder IN (${ids.join(",")})
       AND (s.custrecord_sor_status IS NULL OR s.custrecord_sor_status NOT IN (${SOR_STATUS.APPLIED}, ${SOR_STATUS.VOIDED}))
     ORDER BY s.id DESC
   `);
-  const signing = await signingBySor(result.items.map(r => String(r.id)));
+  // Was: const signing = await signingBySor(result.items.map(r => String(r.id)));
+  const signing = new Map(result.items.filter(r => r.signing).map(r => [String(r.id), String(r.signing).toLowerCase()]));
   for (const row of result.items) {
     if (!out.has(String(row.soid))) out.set(String(row.soid), toSummary(row, signing));
   }
