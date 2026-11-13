@@ -1059,8 +1059,8 @@
       "text": "In NetSuite only some roles see the New Revision button; the Product Selector does not know a rep's NetSuite role, so New SOR (like the push to a revision) works for anyone signed in to the Product Selector."
     },
     {
-      "title": "A search takes several seconds.",
-      "text": "Each Send to NetSuite search asks NetSuite about every estimate and order it finds, and whether each order can take a revision, so results can take several seconds. A spinner shows in the search box meanwhile."
+      "title": "A search can take a few seconds.",
+      "text": "Send to NetSuite asks NetSuite once or twice per search (since 11/13), so results usually show in 2 to 4 seconds. When NetSuite is busy with other work, for example right after the app is published, a search can take 10 seconds or so. A spinner shows in the search box meanwhile."
     }
   ],
   "tips": [
