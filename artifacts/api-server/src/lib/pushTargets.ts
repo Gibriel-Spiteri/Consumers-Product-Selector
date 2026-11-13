@@ -4,7 +4,8 @@ import { customerNameFilter, orderForSorNumber, searchOrdersByCustomerName, sear
 /*
  * One search box for the Quote List's "Send to NetSuite" (2026-11-13, Gib picked variant B of the Push to redesign:
  * https://claude.ai/artifact/XVP62opudtXRsG2HTq6vRp). It takes an estimate, Sales Order or revision number (with or
- * without ES / SO / SOR) or a customer's name, and returns the estimates and Sales Orders the items could go to.
+ * without ES / SO / SOR), and a customer's name until Gib dropped names the same day, and returns the estimates and
+ * Sales Orders the items could go to.
  * Each order carries the New SOR verdict (lib/newSor.ts): add to its open Draft, start a revision, or why not.
  */
 
@@ -12,7 +13,11 @@ export type TargetQuery =
   | { kind: "number"; prefix: "ES" | "SO" | "SOR" | null; digits: string }
   | { kind: "name"; name: string };
 
-/** "ES241762", "so 714728", "SOR61", "241762" -> a number; "Alvarez", "Linden Kitchen" -> a name; else null. */
+/**
+ * "ES241762", "so 714728", "SOR61", "241762" -> a number; anything else null.
+ * Names ("Alvarez" -> a name) were searchable until Gib, 2026-11-13: "I dont want to include name searches in this
+ * field". The name kind and its queries stay for now, unused.
+ */
 export function parseTargetQuery(raw: string): TargetQuery | null {
   const s = String(raw ?? "").trim();
   const m = s.replace(/\s+/g, "").toUpperCase().match(/^(ES|SOR|SO)?#?(\d+)$/);
@@ -23,8 +28,9 @@ export function parseTargetQuery(raw: string): TargetQuery | null {
     if (digits.length > 9 || (prefix !== "SOR" && digits.length < 3)) return null;
     return { kind: "number", prefix, digits };
   }
-  const name = s.replace(/\s+/g, " ");
-  if (name.length >= 3 && name.length <= 60 && /^[A-Za-z][A-Za-z .'&-]*$/.test(name)) return { kind: "name", name };
+  // Was (names, until 2026-11-13):
+  // const name = s.replace(/\s+/g, " ");
+  // if (name.length >= 3 && name.length <= 60 && /^[A-Za-z][A-Za-z .'&-]*$/.test(name)) return { kind: "name", name };
   return null;
 }
 

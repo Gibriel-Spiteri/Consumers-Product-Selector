@@ -29,13 +29,15 @@ export function setPushUi(ui: PushUi): void {
   try { localStorage.setItem(PUSH_UI_KEY, ui); } catch { /* stays as it is */ }
 }
 
-/** What the one search box can search: an ES / SO / SOR number (3+ digits, SOR any) or 3+ letters of a name. */
+/** What the one search box can search: an ES / SO / SOR number (3+ digits, SOR any). Names: no, since 2026-11-13. */
 export function searchableQuery(raw: string): string | null {
   const s = raw.trim();
   const compact = s.replace(/\s+/g, "").toUpperCase();
   const m = compact.match(/^(ES|SOR|SO)?#?(\d+)$/);
   if (m) return m[2].length <= 9 && (m[1] === "SOR" || m[2].length >= 3) ? compact : null;
-  return s.length >= 3 && /^[A-Za-z][A-Za-z .'&-]*$/.test(s) ? s : null;
+  // Was (3+ letters of a name), until Gib: "I dont want to include name searches in this field":
+  // return s.length >= 3 && /^[A-Za-z][A-Za-z .'&-]*$/.test(s) ? s : null;
+  return null;
 }
 
 /** "104453 Baloga" (NetSuite's customer display) -> name "Baloga", number "104453". */

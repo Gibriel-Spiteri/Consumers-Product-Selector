@@ -14,7 +14,9 @@ import { loadRecent, recentWhen, saveRecent, searchableQuery, splitCustomer, wit
  * intuitive", then picked variant B of https://claude.ai/artifact/XVP62opudtXRsG2HTq6vRp.
  *
  * The four Push to choices were two questions (estimate or Sales Order, existing or new). Here the rep types any
- * record number or the customer's name; every estimate and Sales Order found says what it can take (Add here, Add to
+ * record number (or the customer's name, until Gib: "I dont want to include name searches in this field", and only
+ * records that can take items since "No point in seeing processed orders that we cant add to", both the same day);
+ * every estimate and Sales Order found says what it can take (Add here, Add to
  * SOR61, Start a revision, or why not), grouped by customer, with Start a new estimate always there. A black bar says
  * exactly what will happen before anything is sent. The sends themselves are the existing ones: the estimate push,
  * the SOR push, New SOR (hooks/use-new-sor.ts) and New Estimate (hooks/use-new-estimate.ts).
@@ -273,8 +275,9 @@ export default function PushTargetPanel({
           <h3 className="font-semibold text-gray-900 text-[17px]">Send these {unitsText} to NetSuite</h3>
           {total != null && <span className="text-sm text-gray-500 tabular-nums">{unitsText}, {money(total)}</span>}
         </div>
+        {/* 2026-11-13, Gib: "I dont want to include name searches in this field". Was: "..., or the customer". */}
         <label htmlFor="push-target-q" className="block text-[13px] font-medium text-gray-700">
-          Find the estimate, Sales Order or revision, or the customer
+          Find the estimate, Sales Order or revision
         </label>
         <div className="relative">
           <Search size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" aria-hidden="true" />
@@ -286,7 +289,8 @@ export default function PushTargetPanel({
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter" && searchable) runSearch(searchable); }}
-            placeholder="ES241762, SO714728, SOR61 or a name like Alvarez"
+            // Was: "ES241762, SO714728, SOR61 or a name like Alvarez"
+            placeholder="ES241762, SO714728 or SOR61"
             className="w-full h-12 pl-11 pr-11 bg-white border border-gray-400 rounded-xl text-[15px] text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-700"
             data-testid="input-push-target"
           />
@@ -331,7 +335,8 @@ export default function PushTargetPanel({
         {!searchable && (
           <>
             {query.trim() && (
-              <p className="px-6 py-3 text-[13px] text-gray-500">Type 3 or more digits of the number, or 3 or more letters of the customer's name.</p>
+              // Was: "Type 3 or more digits of the number, or 3 or more letters of the customer's name."
+              <p className="px-6 py-3 text-[13px] text-gray-500">Type the record's number: 3 or more digits, with or without ES, SO or SOR.</p>
             )}
             {recent.length > 0 && !query.trim() && (
               <>
@@ -374,7 +379,8 @@ export default function PushTargetPanel({
         )}
         {searchable && !searchError && !searching && groups.length === 0 && searchedFor === searchable && (
           <>
-            <p className="px-6 py-4 text-[14px] text-gray-700"><strong>Nothing matches "{query.trim()}".</strong> Check the number, or search the customer's last name.</p>
+            <p className="px-6 py-4 text-[14px] text-gray-700"><strong>Nothing matches "{query.trim()}".</strong> Check the number.</p>
+            {/* Was: "... Check the number, or search the customer's last name." */}
             {newEstimateRow}
           </>
         )}

@@ -23,9 +23,11 @@ test("the one search box reads record numbers with or without their letters", ()
   assert.equal(parseTargetQuery("1234567890"), null);
 });
 
-test("names: letters, spaces and a few marks only; never SQL", () => {
-  assert.deepEqual(parseTargetQuery("  Linden   Kitchen & Bath "), { kind: "name", name: "Linden Kitchen & Bath" });
-  assert.deepEqual(parseTargetQuery("O'Brien"), { kind: "name", name: "O'Brien" });
+test("numbers only: names are not searched (Gib, 2026-11-13); never SQL", () => {
+  // Were names until 2026-11-13: { kind: "name", name: "Linden Kitchen & Bath" } and { kind: "name", name: "O'Brien" }.
+  assert.equal(parseTargetQuery("  Linden   Kitchen & Bath "), null);
+  assert.equal(parseTargetQuery("O'Brien"), null);
+  assert.equal(parseTargetQuery("systemtest"), null);
   assert.equal(parseTargetQuery("Al"), null);
   assert.equal(parseTargetQuery("x%' OR 1=1"), null);
   assert.equal(parseTargetQuery(""), null);
